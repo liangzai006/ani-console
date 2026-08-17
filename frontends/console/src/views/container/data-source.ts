@@ -33,6 +33,12 @@ function displayScalar(value: unknown): string | undefined {
   return undefined
 }
 
+function matchesStatus(item: ContainerInstance, status: ContainerInstanceQuery['status']) {
+  if (status === 'all') return true
+  if (status === 'deploying') return DEPLOYING_STATES.has(item.status)
+  return item.status === status
+}
+
 function mapContainerInstance(record: ContainerInstanceRecord): ContainerInstance {
   const compatibleRecord = record as ContainerInstanceRecord & Record<string, unknown>
   const cpu = displayScalar(compatibleRecord.cpu)
@@ -71,39 +77,42 @@ function countStatuses(items: ContainerInstance[]): ContainerInstanceStatusCount
   )
 }
 
-function matchesStatus(item: ContainerInstance, status: ContainerInstanceQuery['status']) {
-  if (status === 'all') return true
-  if (status === 'deploying') return DEPLOYING_STATES.has(item.status)
-  return item.status === status
-}
-
 function compareText(left: string, right: string) {
   return left.localeCompare(right, 'zh-CN')
 }
 
-async function fetchContainerInstancePage(cursor?: string): Promise<InstancePage> {
-  const query = { kind: 'container' as const, limit: API_PAGE_SIZE, ...(cursor ? { cursor } : {}) }
-  const { data, error } = await coreApi.GET('/instances', { params: { query } })
-  if (error) throw error
-  return data ?? { items: [], total: 0 }
+function toApiState(status: ContainerInstanceQuery['status']): string | null {
+  // Return a single state string for backend, or null to omit the param
+  if (status === 'all') return null
+  if (status === 'deploying') return null // can't filter multiple states in one param, keep frontend filtering
+  return status // 'running' | 'stopped' | 'failed'
 }
 
-async function fetchAllContainerInstances(fetchPage: ContainerInstancePageFetcher) {
-  const records: ContainerInstanceRecord[] = []
-  const seenCursors = new Set<string>()
-  let cursor: string | undefined
+async function fetchContainerInstancePage(cursor: string | undefined, status: ContainerInstanceQuery['status']): Promise<InstancePage> {
+  const params: Record<string, unknown> = { kind: 'container', limit: API_PAGE_SIZE }
+  if (cursor) params.cursor = cursor
 
-  do {
-    const page = await fetchPage(cursor)
-    records.push(...page.items)
-    const nextCursor = page.next_cursor ?? undefined
-    if (!nextCursor) break
-    if (seenCursors.has(nextCursor)) throw new Error('实例列表返回了重复游标')
-    seenCursors.add(nextCursor)
-    cursor = nextCursor
-  } while (cursor)
+  const apiState = toApiState(status)
+  if (apiState) {
+    params.state = apiState
+  }
 
-  return records
+  const { data, error } = await coreApi.GET('/instances', { params: { query: params } })
+  if (error) throw error
+
+  // Unwrap items that are wrapped as { instance: { ... } }
+  const rawItems = (data?.items ?? []) as Record<string, unknown>[]
+  const items = rawItems
+    .map((item) => {
+      const inst = item.instance as Record<string, unknown> | undefined
+      return (inst && typeof inst === 'object') ? inst : item
+    })
+
+  return {
+    items,
+    total: typeof data?.total === 'number' ? data.total : items.length,
+    next_cursor: typeof data?.next_cursor === 'string' ? data.next_cursor : null,
+  }
 }
 
 export function createContainerInstanceDataSource(
@@ -111,10 +120,8 @@ export function createContainerInstanceDataSource(
 ): ContainerInstanceDataSource {
   return {
     async list(query: ContainerInstanceQuery): Promise<ContainerInstanceListResult> {
-      const records = await fetchAllContainerInstances(fetchPage)
-      const allItems = records
-        .filter((record) => record.kind === 'container' && record.state !== 'deleted')
-        .map(mapContainerInstance)
+      const pageResult = await fetchPage(undefined, query.status)
+      const allItems = pageResult.items.map(mapContainerInstance)
       const keyword = query.keyword.trim().toLocaleLowerCase()
       let filtered = allItems.filter((item) => matchesStatus(item, query.status))
 

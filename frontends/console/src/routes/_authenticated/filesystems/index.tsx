@@ -33,7 +33,7 @@ function FilesystemsPage() {
   const create = useMutation({
     mutationFn: async () => {
       const { error } = await coreApi.POST('/filesystems', {
-        body: { name, protocol, size_gib: sizeGiB, idempotency_key: newIdempotencyKey() },
+        body: { name, protocol, size_gib: sizeGiB, idempotency_key: newIdempotencyKey(), performance_mode: 'standard' as const },
       })
       if (error) throw error
     },

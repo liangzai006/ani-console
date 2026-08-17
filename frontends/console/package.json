@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "codegen": "bash scripts/codegen.sh",
+    "codegen": "node scripts/codegen.mjs",
     "setup:e2e": "npx playwright install chromium && npx playwright install-deps chromium",
     "pretest:e2e": "node scripts/ensure-e2e.mjs",
     "test": "vitest run",
@@ -50,7 +50,7 @@
     "openapi-typescript": "^7.8.0",
     "oxlint": "^1.69.0",
     "tailwindcss": "^4.3.1",
-    "typescript": "^7.0.2",
+    "typescript": "^5.9.3",
     "vite": "^6.3.5",
     "vitest": "^3.2.4"
   }

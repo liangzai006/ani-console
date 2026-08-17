@@ -1,27 +1,26 @@
 #!/usr/bin/env node
 /**
  * Generate Core API types for Console from openapi/v1.yaml.
- *
- * Applies a tiny syntax normalisation for known OpenAPI YAML issues so
- * openapi-typescript can parse the Core contract without modifying v1.yaml.
  */
-import { execFileSync } from 'node:child_process'
-import fs from 'node:fs'
-import os from 'node:os'
-import path from 'node:path'
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import openapiTs from 'openapi-typescript'
 
-const here = path.dirname(fileURLToPath(import.meta.url))
-const consoleRoot = path.resolve(here, '..')
-const repoRoot = path.resolve(consoleRoot, '../..')
-const source = path.join(repoRoot, 'openapi/v1.yaml')
-const cacheDir = path.join(consoleRoot, '.cache')
-const normalized = path.join(cacheDir, 'core-openapi.normalized.yaml')
-const output = path.join(consoleRoot, 'src/api/core-schema.d.ts')
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const CONSOLE_ROOT = join(__dirname, '..')
+const REPO_ROOT = join(CONSOLE_ROOT, '..', '..')
+const source = join(REPO_ROOT, 'openapi', 'v1.yaml')
+const cacheDir = join(CONSOLE_ROOT, '.cache')
+const normalized = join(cacheDir, 'core-openapi.normalized.yaml')
+const output = join(CONSOLE_ROOT, 'src', 'api', 'core-schema.d.ts')
 
-let yaml = fs.readFileSync(source, 'utf8')
+let yaml = readFileSync(source, 'utf8')
+// openapi-typescript 7.x requires openapi: 3.0.x (not 3.1.x)
+yaml = yaml.replace(/^openapi: .+$/m, 'openapi: 3.0.3', 1)
+// Fix inline map syntax
 yaml = yaml.replace('secondary_color:{ type:', 'secondary_color: { type:')
-// branding/logo 引用未定义的 ServiceUnavailable；codegen 前内联为 ErrorResponse
+// branding/logo references undefined ServiceUnavailable; inline as ErrorResponse
 yaml = yaml.replace(
   /"503": \{ \$ref: '#\/components\/responses\/ServiceUnavailable' \}/g,
   `"503":
@@ -31,26 +30,10 @@ yaml = yaml.replace(
               schema: { $ref: '#/components/schemas/ErrorResponse' }`,
 )
 
-fs.mkdirSync(cacheDir, { recursive: true })
-fs.writeFileSync(normalized, yaml)
+mkdirSync(cacheDir, { recursive: true })
+writeFileSync(normalized, yaml)
 
-execFileSync(
-  'npx',
-  [
-    '--yes',
-    '--package',
-    'typescript@5.9.3',
-    '--package',
-    'openapi-typescript@7.13.0',
-    'openapi-typescript',
-    normalized,
-    '-o',
-    output,
-  ],
-  {
-    cwd: os.tmpdir(),
-    stdio: 'inherit',
-  },
-)
+const result = await openapiTs(normalized)
+writeFileSync(output, result)
 
-console.log(`✅ Core API types → ${path.relative(consoleRoot, output)}`)
+console.log(`✅ Core API types → ${relative(CONSOLE_ROOT, output)}`)

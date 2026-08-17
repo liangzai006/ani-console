@@ -13,7 +13,12 @@
       "Bash(echo \"Exit: $?\")",
       "Bash(spawnSync npx *)",
       "Bash(node *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(where.exe npx *)",
+      "Bash(npx --version)",
+      "Bash(npx --yes --package typescript@5.9.3 --package openapi-typescript@7.13.0 openapi-typescript \"D:/work/workcode/aiprocloud/ani-console/openapi/v1.yaml\" -o \"D:/work/workcode/aiprocloud/ani-console/frontends/console/src/api/core-schema.d.ts\")",
+      "Bash(grep -v '-instance-create')",
+      "Bash(git checkout *)"
     ]
   }
 }

@@ -202,7 +202,7 @@ export function ContainerInstancesPage({
     { value: 'all' as const, label: '全部', count: result.statusCounts.all },
     { value: 'running' as const, label: '运行中', count: result.statusCounts.running },
     { value: 'stopped' as const, label: '已停止', count: result.statusCounts.stopped },
-    { value: 'deploying' as const, label: '部署中', count: result.statusCounts.deploying },
+    { value: 'deleted' as const, label: '部署中', count: result.statusCounts.deploying },
     { value: 'failed' as const, label: '异常', count: result.statusCounts.failed },
   ]
 

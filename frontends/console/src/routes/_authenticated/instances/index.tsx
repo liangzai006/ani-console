@@ -197,24 +197,28 @@ function buildCreateInstanceBody(form: InstanceFormState, idempotencyKey = newId
       vendor: optionalTrimmed(form.gpu_vendor),
       model: optionalTrimmed(form.gpu_model),
       count: form.gpu_count,
+      allocation_mode: 'dedicated',
+      workload_class: 'inference',
     }
   }
 
   if (form.kind === 'sandbox') {
-    body.command = parseSandboxCommand(form.command) ?? null
+    (body as any).command = parseSandboxCommand(form.command) ?? null
     body.sandbox_config = {
       runtime_class: form.sandbox_runtime_class,
       session_timeout: form.sandbox_session_timeout,
+      idle_timeout: '10m',
+      on_timeout: 'pause',
       network_egress_policy: form.sandbox_network_egress_policy,
     }
   }
 
   if (form.network_mode === 'vpc' && form.subnet_id) {
-    body.network = {
-      vpc_id: optionalTrimmed(form.vpc_id),
+    (body as any).network = {
+      vpc_id: optionalTrimmed(form.vpc_id) ?? null,
       subnet_id: form.subnet_id,
     }
-    if (form.ip_allocation === 'manual') body.network.private_ip = optionalTrimmed(form.private_ip)
+    if (form.ip_allocation === 'manual') (body as any).network.private_ip = optionalTrimmed(form.private_ip) ?? null
   }
 
   return body

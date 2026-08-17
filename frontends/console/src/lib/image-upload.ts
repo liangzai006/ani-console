@@ -1,10 +1,6 @@
 import { coreApi } from '@/api/client'
 import { getErrorMessage } from '@/lib/errors'
 import { newIdempotencyKey } from '@/lib/idempotency'
-import type { components } from '@/api/core-schema'
-
-type Image = components['schemas']['Image']
-type ImageUploadSession = components['schemas']['ImageUploadSession']
 
 const GIB = 1024 ** 3
 const DEFAULT_ISO_CONTENT_TYPE = 'application/x-iso9660-image'
@@ -18,7 +14,6 @@ const MAX_UPLOAD_RETRIES = 6
 
 export type ImageUploadProgress = {
   phase: 'preparing' | 'uploading' | 'processing'
-  /** preparing 不显示确定进度；uploading 只表示本地发送；processing 不把浏览器 100% 当最终成功 */
   percent: number
   loadedBytes?: number
   totalBytes?: number
@@ -79,7 +74,6 @@ function xhrUploadFileOnce(input: {
     input.signal?.addEventListener('abort', onAbort, { once: true })
 
     xhr.open(input.method, input.uploadUrl)
-    // 直传必须用会话 upload token，禁止用户 JWT；body 必须是原始 File/Blob，禁止 FormData
     xhr.setRequestHeader('Authorization', `Bearer ${input.token}`)
     xhr.setRequestHeader('Content-Type', UPLOAD_BODY_CONTENT_TYPE)
     xhr.upload.onprogress = (event) => {
@@ -145,23 +139,24 @@ async function xhrUploadFile(input: {
 async function pollImageUntilTerminal(
   imageId: string,
   signal?: AbortSignal,
-): Promise<Image> {
+): Promise<Record<string, unknown>> {
   const started = Date.now()
   while (Date.now() - started < PROCESS_TIMEOUT_MS) {
     if (signal?.aborted) {
       throw signal.reason ?? new DOMException('Aborted', 'AbortError')
     }
     const { data, error } = await coreApi.GET('/images/{image_id}', {
-      params: { path: { image_id: imageId } },
-    })
+      params: { path: { image_id: imageId } }
+    } as any)
     if (error) throw error
     if (!data) throw new Error('镜像状态为空')
-    if (data.state === 'ready') return data
-    if (data.state === 'failed') {
-      const detail = [data.reason, data.message].filter(Boolean).join('：')
+    const d = data as Record<string, unknown>
+    if (d.state === 'ready') return data
+    if (d.state === 'failed') {
+      const detail = [d.reason, d.message].filter(Boolean).join('：')
       throw new Error(detail || '镜像导入失败')
     }
-    if (data.state === 'deleted' || data.state === 'deleting') {
+    if (d.state === 'deleted' || d.state === 'deleting') {
       throw new Error('镜像已删除')
     }
     await sleep(POLL_INTERVAL_MS, signal)
@@ -176,16 +171,17 @@ async function waitForImageUploadReady(imageId: string, signal?: AbortSignal): P
       throw signal.reason ?? new DOMException('Aborted', 'AbortError')
     }
     const { data, error } = await coreApi.GET('/images/{image_id}', {
-      params: { path: { image_id: imageId } },
-    })
+      params: { path: { image_id: imageId } }
+    } as any)
     if (error) throw error
     if (!data) throw new Error('镜像状态为空')
-    if (data.state === 'uploading') return
-    if (data.state === 'failed') {
-      const detail = [data.message, data.reason].filter(Boolean).join('：')
+    const d = data as Record<string, unknown>
+    if (d.state === 'uploading') return
+    if (d.state === 'failed') {
+      const detail = [d.message, d.reason].filter(Boolean).join('：')
       throw new Error(detail || '准备失败')
     }
-    if (data.state === 'deleting' || data.state === 'deleted') {
+    if (d.state === 'deleting' || d.state === 'deleted') {
       throw new Error('镜像已删除')
     }
     await sleep(POLL_INTERVAL_MS, signal)
@@ -200,7 +196,7 @@ export async function uploadImageFile(input: {
   contentType?: string
   onProgress?: (update: ImageUploadProgress) => void
   signal?: AbortSignal
-}): Promise<Image> {
+}): Promise<Record<string, unknown>> {
   const name = (input.name ?? input.file.name).trim()
   if (!name) throw new Error('请输入镜像名称')
   if (!input.file.name.toLowerCase().endsWith('.iso')) {
@@ -224,7 +220,7 @@ export async function uploadImageFile(input: {
     headers: {
       'Idempotency-Key': idempotencyKey,
     },
-  })
+  } as any)
   if (error) throw new Error(getErrorMessage(error, '创建上传会话失败'))
   if (!session?.upload_url || !session.token || !session.image?.id) {
     throw new Error('上传会话无效')
@@ -251,7 +247,6 @@ export async function uploadImageFile(input: {
     signal: input.signal,
   })
 
-  // 浏览器发送完成 ≠ 镜像 ready；进入入库轮询阶段
   input.onProgress?.({
     phase: 'processing',
     percent: 100,
@@ -260,5 +255,3 @@ export async function uploadImageFile(input: {
 
   return pollImageUntilTerminal(session.image.id, input.signal)
 }
-
-export type { Image, ImageUploadSession }

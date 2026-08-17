@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(ls node_modules/.bin/openapi-typescript*)",
+      "Bash(npx --yes --package openapi-typescript@7.13.0 openapi-typescript .cache/core-openapi.normalized.yaml -o src/api/core-schema.d.ts)",
+      "Bash(npm ls *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"console.log\\(require\\('path'\\).resolve\\('node_modules/openapi-typescript/dist/index.js'\\)\\)\")",
+      "Bash(node -e \"const m = require\\('openapi-typescript'\\); console.log\\(typeof m.default\\)\")",
+      "Bash(node -e \"import { dirname, join } from 'node:path'; import { fileURLToPath } from 'node:url'; const __dirname = dirname\\(fileURLToPath\\(import.meta.url\\)\\); const CONSOLE_ROOT = join\\(__dirname, '..'\\); const REPO_ROOT = join\\(CONSOLE_ROOT, '..', '..'\\); console.log\\('REPO_ROOT:', REPO_ROOT\\); console.log\\('source:', join\\(REPO_ROOT, 'openapi', 'v1.yaml'\\)\\);\")",
+      "Bash(node -e \"import { dirname, join } from 'node:path'; import { fileURLToPath } from 'node:url'; const url = 'file:///D:/work/workcode/aiprocloud/ani-console/frontends/console/scripts/gen-core-schema.mjs'; const __dirname = dirname\\(url\\); const CONSOLE_ROOT = join\\(__dirname, '..'\\); console.log\\('__dirname:', __dirname\\); console.log\\('CONSOLE_ROOT:', CONSOLE_ROOT\\);\")",
+      "Bash(node -e \"import { dirname, join, resolve } from 'node:path'; import { fileURLToPath } from 'node:url'; const url = 'file:///D:/work/workcode/aiprocloud/ani-console/frontends/console/scripts/gen-core-schema.mjs'; const __filename = fileURLToPath\\(url\\); const __dirname = dirname\\(__filename\\); console.log\\('__dirname:', __dirname\\); const CONSOLE_ROOT = join\\(__dirname, '..'\\); console.log\\('CONSOLE_ROOT:', CONSOLE_ROOT\\);\")",
+      "Bash(node scripts/gen-core-schema.mjs)",
+      "Bash(node -e \"const fs = require\\('fs'\\); const yaml = fs.readFileSync\\('../openapi/v1.yaml', 'utf8'\\); console.log\\('line 1:', JSON.stringify\\(yaml.split\\('\\\\n'\\)[0]\\)\\); console.log\\('match:', /^openapi: 3\\\\.1\\\\.0$/m.test\\(yaml\\)\\);\")",
+      "Bash(npm view *)",
+      "Bash(python3 -c \"import sys,json; print\\('\\\\n'.join\\([v for v in json.load\\(sys.stdin\\) if '7.8' in v or '7.9' in v or '7.1' in v]\\)\\)\")",
+      "Bash(grep -n 'jsonSchemaDialect\\\\|contentSchema\\\\|prefixItems\\\\|\\\\$defs' D:/work/workcode/aiprocloud/ani-console/openapi/services/v1.yaml)",
+      "Bash(node -e ' *)",
+      "Bash(node scripts/codegen.mjs)",
+      "Bash(node scripts/codegen-debug.mjs)",
+      "Bash(node scripts/openapi-ts-debug.mjs)",
+      "Bash(node scripts/openapi-ts-debug2.mjs)",
+      "Bash(node scripts/openapi-ts-debug3.mjs)",
+      "Bash(node -e \"import openapiTs from 'openapi-typescript'; const r = await openapiTs\\('.cache/core-openapi.normalized.yaml', { stringify: true }\\); console.log\\(typeof r, r.length\\);\")",
+      "Bash(grep -n 'prefixItems\\\\|jsonSchemaDialect\\\\|contentSchema\\\\|$dynamicRef\\\\|$dynamicAnchor\\\\|$vocabulary\\\\|unevaluatedProps\\\\|unevaluatedItems' D:/work/workcode/aiprocloud/ani-console/openapi/v1.yaml)"
+    ]
+  }
+}
