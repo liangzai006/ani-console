@@ -1,22 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
   Card,
-  Descriptions,
+  Dropdown,
   Empty,
   Form,
+  Grid,
   Input,
-  InputNumber,
+  Menu,
   Modal,
-  Select,
-  Space,
   Spin,
-  Tabs,
 } from '@arco-design/web-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { coreApi } from '@/api/client'
-import { PageHeader } from '@/components/shell/AppShell'
+import { DetailPageFrame } from '@/components/detailbase'
+import { AliIcon } from '@/components/icons/AliIcon'
 import { StatusTag } from '@/components/shell/StatusTag'
 import { CursorTable } from '@/components/tables/CursorTable'
 import { ApiErrorAlert } from '@/components/feedback/ApiErrorAlert'
@@ -25,35 +24,45 @@ import { showApiError } from '@/api/helpers'
 import { AsyncTaskPoller } from '@/components/feedback/AsyncTaskPoller'
 import { listOrThrow } from '@/lib/api-list'
 import { formatDateTime } from '@/lib/format'
+import {
+  DataTable,
+  ListNameCell,
+  ListPageFrame,
+  ListPageHeader,
+  ListRowActionButton,
+  ListRowActions,
+  ListToolbar,
+  StatusTabs,
+  ToolbarButton,
+  ToolbarIconButton,
+  ToolbarSearch,
+  type ListColumn,
+} from '@/components/pagebase'
+import {
+  getMockCluster,
+  getMockNodePools,
+  getMockWorkloads,
+  K8S_MOCK_ENABLED,
+  mockClusters,
+} from './-mock-data'
 import type { components } from '@/api/core-schema'
 
 type Cluster = components['schemas']['K8sCluster']
 type NodePool = components['schemas']['K8sClusterNodePool']
-type NodePoolGPU = components['schemas']['K8sClusterNodePoolGPU']
-type ProxyMethod = components['schemas']['K8sClusterProxyRequest']['method']
+type ClusterStatusFilter = 'all' | NonNullable<Cluster['state']>
+type ClusterSearchField = 'name' | 'id'
 
 export const Route = createFileRoute('/_authenticated/k8s-clusters/')({
   component: K8sClustersPage,
 })
 
 function K8sClustersPage() {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-
-  if (selectedId) {
-    return <ClusterDetail clusterId={selectedId} onBack={() => setSelectedId(null)} />
-  }
-
-  return <ClusterList onSelect={setSelectedId} />
-}
-
-function buildGpu(vendor: string, model: string, count: number, resourceName: string): NodePoolGPU | undefined {
-  const gpu: NodePoolGPU = {
-    vendor: vendor.trim() || undefined,
-    model: model.trim() || undefined,
-    count: count > 0 ? count : undefined,
-    resource_name: resourceName.trim() || undefined,
-  }
-  return gpu.vendor || gpu.model || gpu.count || gpu.resource_name ? gpu : undefined
+  const navigate = useNavigate()
+  return (
+    <ClusterList
+      onSelect={(clusterId) => navigate({ to: '/k8s-clusters/$clusterId', params: { clusterId } })}
+    />
+  )
 }
 
 function ClusterList({ onSelect }: { onSelect: (id: string) => void }) {
@@ -62,10 +71,19 @@ function ClusterList({ onSelect }: { onSelect: (id: string) => void }) {
   const [name, setName] = useState('')
   const [version, setVersion] = useState('1.36.0')
   const [taskId, setTaskId] = useState<string | null>(null)
+  const [status, setStatus] = useState<ClusterStatusFilter>('all')
+  const [searchField, setSearchField] = useState<ClusterSearchField>('name')
+  const [searchText, setSearchText] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([])
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['k8s-clusters'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/k8s-clusters', { params: { query: { limit: 50 } } })),
+    queryFn: () =>
+      K8S_MOCK_ENABLED
+        ? Promise.resolve({ items: mockClusters, total: mockClusters.length, next_cursor: null })
+        : listOrThrow(() => coreApi.GET('/k8s-clusters', { params: { query: { limit: 50 } } })),
   })
 
   const createCluster = useMutation({
@@ -87,40 +105,207 @@ function ClusterList({ onSelect }: { onSelect: (id: string) => void }) {
     onError: (e) => showApiError(e),
   })
 
+  const downloadKubeconfig = useMutation({
+    mutationFn: async (cluster: Cluster) => {
+      const clusterId = cluster.id
+      if (!clusterId) throw new Error('缺少集群 ID')
+      let content = `apiVersion: v1\nkind: Config\nclusters:\n- name: ${cluster.name ?? clusterId}\n`
+      if (!K8S_MOCK_ENABLED) {
+        const { data, error } = await coreApi.GET('/k8s-clusters/{cluster_id}/kubeconfig', {
+          params: { path: { cluster_id: clusterId } },
+        })
+        if (error) throw error
+        content = (data as { kubeconfig?: string })?.kubeconfig ?? JSON.stringify(data, null, 2)
+      }
+      const url = URL.createObjectURL(new Blob([content], { type: 'text/yaml' }))
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `kubeconfig-${clusterId}.yaml`
+      anchor.click()
+      URL.revokeObjectURL(url)
+    },
+    onError: (e) => showApiError(e),
+  })
+
+  const deleteCluster = useMutation({
+    mutationFn: async (cluster: Cluster) => {
+      if (K8S_MOCK_ENABLED) return
+      if (!cluster.id) throw new Error('缺少集群 ID')
+      const { error } = await coreApi.DELETE('/k8s-clusters/{cluster_id}', {
+        params: { path: { cluster_id: cluster.id } },
+      })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['k8s-clusters'] }),
+    onError: (e) => showApiError(e),
+  })
+
   const items = (data?.items ?? []) as Cluster[]
+  const statusCounts = useMemo(
+    () => ({
+      all: items.length,
+      provisioning: items.filter((item) => item.state === 'provisioning').length,
+      running: items.filter((item) => item.state === 'running').length,
+      deleting: items.filter((item) => item.state === 'deleting').length,
+    }),
+    [items],
+  )
+  const filteredItems = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase()
+    return items.filter((item) => {
+      if (status !== 'all' && item.state !== status) return false
+      if (!keyword) return true
+      return String(item[searchField] ?? '').toLowerCase().includes(keyword)
+    })
+  }, [items, searchField, searchText, status])
+  const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize)
+
+  useEffect(() => {
+    setPage(1)
+    setSelectedKeys([])
+  }, [searchField, searchText, status])
+
+  const columns: Array<ListColumn<Cluster>> = [
+    {
+      key: 'name',
+      title: '名称 / ID',
+      minWidth: 240,
+      render: (cluster) => (
+        <ListNameCell
+            name={
+              <Link
+                to="/k8s-clusters/$clusterId"
+                params={{ clusterId: cluster.id ?? '' }}
+              >
+              {cluster.name ?? cluster.id ?? '—'}
+            </Link>
+          }
+          id={cluster.id ?? '—'}
+        />
+      ),
+    },
+    { key: 'status', title: '状态', width: 120, render: (cluster) => <StatusTag status={cluster.state} /> },
+    { key: 'version', title: 'Kubernetes 版本', minWidth: 160, render: (cluster) => cluster.version ?? '—' },
+    { key: 'createdAt', title: '创建时间', minWidth: 190, render: (cluster) => formatDateTime(cluster.created_at) },
+    { key: 'updatedAt', title: '更新时间', minWidth: 190, render: (cluster) => formatDateTime(cluster.updated_at) },
+  ]
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="K8s 集群"
-        subtitle="租户 Kubernetes 集群管理"
-        extra={
-          <Button type="primary" onClick={() => setVisible(true)}>
-            创建集群
-          </Button>
+    <>
+      <ListPageFrame
+        header={
+          <ListPageHeader
+            iconClassName="icon-jiqun"
+            title="K8s 集群"
+            subtitle="创建和管理托管 Kubernetes 集群，统一维护版本、节点池与工作负载"
+            extra={
+              <ToolbarButton variant="primary" iconClassName="icon-add-1" onClick={() => setVisible(true)}>
+                创建集群
+              </ToolbarButton>
+            }
+          />
         }
-      />
-      {taskId ? <AsyncTaskPoller taskId={taskId} onComplete={() => setTaskId(null)} /> : null}
-      <CursorTable<Cluster>
-        columns={[
-          {
-            title: '名称',
-            render: (_, r) => (
-              <Button type="text" onClick={() => onSelect(r.id!)}>
-                {r.name ?? r.id}
-              </Button>
-            ),
-          },
-          { title: '版本', dataIndex: 'version' },
-          { title: '状态', render: (_, r) => <StatusTag status={r.state} /> },
-          { title: '创建时间', render: (_, r) => formatDateTime(r.created_at) },
-        ]}
-        data={{ items, next_cursor: data?.next_cursor }}
-        loading={isLoading}
-        error={error}
-        rowKey="id"
-        emptyDescription="暂无 K8s 集群，点击右上角创建"
-      />
+        tabs={
+          <StatusTabs
+            value={status}
+            onChange={setStatus}
+            items={[
+              { value: 'all', label: '全部', count: statusCounts.all },
+              { value: 'running', label: '运行中', count: statusCounts.running },
+              { value: 'provisioning', label: '创建中', count: statusCounts.provisioning },
+              { value: 'deleting', label: '删除中', count: statusCounts.deleting },
+            ]}
+          />
+        }
+        toolbar={
+          <ListToolbar
+            filters={
+              <ToolbarSearch
+                fields={[
+                  { value: 'name', label: '名称' },
+                  { value: 'id', label: 'ID' },
+                ]}
+                field={searchField}
+                value={searchText}
+                onFieldChange={setSearchField}
+                onChange={setSearchText}
+              />
+            }
+            tools={
+              <ToolbarIconButton
+                iconClassName="icon-refresh-1"
+                label="刷新"
+                spinning={isLoading}
+                onClick={() => void qc.invalidateQueries({ queryKey: ['k8s-clusters'] })}
+              />
+            }
+          />
+        }
+      >
+        {taskId ? <AsyncTaskPoller taskId={taskId} onComplete={() => setTaskId(null)} /> : null}
+        <DataTable
+          rows={pagedItems}
+          rowKey={(cluster) => cluster.id ?? cluster.name ?? ''}
+          columns={columns}
+          selectedKeys={selectedKeys}
+          onSelectedKeysChange={setSelectedKeys}
+          loading={isLoading}
+          error={error instanceof Error ? error.message : error ? '集群列表加载失败' : null}
+          onRetry={() => void qc.invalidateQueries({ queryKey: ['k8s-clusters'] })}
+          emptyIconClassName="icon-jiqun"
+          emptyText={searchText || status !== 'all' ? '没有符合条件的 K8s 集群' : '还没有 K8s 集群，点击「创建集群」开始'}
+          tableLabel="K8s 集群列表"
+          preserveTableOnEmpty
+          renderRowActions={(cluster) => (
+            <ListRowActions>
+              <ListRowActionButton onClick={() => cluster.id && onSelect(cluster.id)}>详情</ListRowActionButton>
+              <ListRowActionButton
+                loading={downloadKubeconfig.isPending}
+                onClick={() => downloadKubeconfig.mutate(cluster)}
+              >
+                kubeconfig
+              </ListRowActionButton>
+              <Dropdown
+                trigger="click"
+                position="br"
+                droplist={
+                  <Menu
+                    onClickMenuItem={(key) => {
+                      if (key !== 'delete') return
+                      Modal.confirm({
+                        title: '删除集群',
+                        content: `确定删除「${cluster.name ?? cluster.id}」？此操作不可恢复。`,
+                        onOk: () => deleteCluster.mutateAsync(cluster),
+                      })
+                    }}
+                  >
+                    <Menu.Item key="delete">删除</Menu.Item>
+                  </Menu>
+                }
+              >
+                <ListRowActionButton>
+                  更多
+                  <i className="iconfont icon-down-chevron-small" aria-hidden="true" />
+                </ListRowActionButton>
+              </Dropdown>
+            </ListRowActions>
+          )}
+          pagination={{
+            page,
+            pageSize,
+            total: filteredItems.length,
+            onPageChange: (nextPage) => {
+              setPage(nextPage)
+              setSelectedKeys([])
+            },
+            onPageSizeChange: (nextPageSize) => {
+              setPageSize(nextPageSize)
+              setPage(1)
+              setSelectedKeys([])
+            },
+          }}
+        />
+      </ListPageFrame>
       <Modal
         visible={visible}
         title="创建集群"
@@ -137,39 +322,17 @@ function ClusterList({ onSelect }: { onSelect: (id: string) => void }) {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </>
   )
 }
 
-function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack: () => void }) {
+export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack: () => void }) {
   const qc = useQueryClient()
-  const [taskId, setTaskId] = useState<string | null>(null)
-  const [proxyMethod, setProxyMethod] = useState<ProxyMethod>('GET')
-  const [proxyPath, setProxyPath] = useState('/api/v1/namespaces')
-  const [proxyQueryJson, setProxyQueryJson] = useState('{}')
-  const [proxyBodyJson, setProxyBodyJson] = useState('')
-  const [proxyResult, setProxyResult] = useState<unknown>(null)
-  const [poolVisible, setPoolVisible] = useState(false)
-  const [poolName, setPoolName] = useState('')
-  const [poolNodeCount, setPoolNodeCount] = useState(1)
-  const [poolInstanceType, setPoolInstanceType] = useState('standard')
-  const [poolGpuVendor, setPoolGpuVendor] = useState('')
-  const [poolGpuModel, setPoolGpuModel] = useState('')
-  const [poolGpuCount, setPoolGpuCount] = useState(0)
-  const [poolGpuResourceName, setPoolGpuResourceName] = useState('')
-  const [upgradeVersion, setUpgradeVersion] = useState('')
-  const [poolDetail, setPoolDetail] = useState<NodePool | null>(null)
-  const [editPool, setEditPool] = useState<NodePool | null>(null)
-  const [editNodeCount, setEditNodeCount] = useState(1)
-  const [editInstanceType, setEditInstanceType] = useState('')
-  const [editGpuVendor, setEditGpuVendor] = useState('')
-  const [editGpuModel, setEditGpuModel] = useState('')
-  const [editGpuCount, setEditGpuCount] = useState(0)
-  const [editGpuResourceName, setEditGpuResourceName] = useState('')
 
   const detail = useQuery({
     queryKey: ['k8s-cluster', clusterId],
     queryFn: async () => {
+      if (K8S_MOCK_ENABLED) return getMockCluster(clusterId)
       const { data, error } = await coreApi.GET('/k8s-clusters/{cluster_id}', {
         params: { path: { cluster_id: clusterId } },
       })
@@ -181,116 +344,21 @@ function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack: () =>
   const nodePools = useQuery({
     queryKey: ['k8s-node-pools', clusterId],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET('/k8s-clusters/{cluster_id}/node-pools', { params: { path: { cluster_id: clusterId } } }),
-      ),
+      K8S_MOCK_ENABLED
+        ? Promise.resolve({ items: getMockNodePools(clusterId), total: getMockNodePools(clusterId).length, next_cursor: null })
+        : listOrThrow(() =>
+            coreApi.GET('/k8s-clusters/{cluster_id}/node-pools', { params: { path: { cluster_id: clusterId } } }),
+          ),
   })
 
   const workloads = useQuery({
     queryKey: ['k8s-workloads', clusterId],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET('/k8s-clusters/{cluster_id}/workloads', { params: { path: { cluster_id: clusterId } } }),
-      ),
-  })
-
-  const proxyApi = useMutation({
-    mutationFn: async () => {
-      const query = proxyQueryJson.trim() ? JSON.parse(proxyQueryJson) : undefined
-      const body = proxyBodyJson.trim() ? JSON.parse(proxyBodyJson) : undefined
-      const { data, error } = await coreApi.POST('/k8s-clusters/{cluster_id}/proxy', {
-        params: { path: { cluster_id: clusterId } },
-        body: { method: proxyMethod, path: proxyPath, query, body, idempotency_key: newIdempotencyKey() },
-      })
-      if (error) throw error
-      setProxyResult(data)
-    },
-    onError: (e) => showApiError(e),
-  })
-
-  const createPool = useMutation({
-    mutationFn: async () => {
-      const { error } = await coreApi.POST('/k8s-clusters/{cluster_id}/node-pools', {
-        params: { path: { cluster_id: clusterId } },
-        body: {
-          name: poolName,
-          instance_type: poolInstanceType,
-          node_count: poolNodeCount,
-          gpu: buildGpu(poolGpuVendor, poolGpuModel, poolGpuCount, poolGpuResourceName),
-          idempotency_key: newIdempotencyKey(),
-        },
-      })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setPoolVisible(false)
-      setPoolName('')
-      setPoolNodeCount(1)
-      setPoolInstanceType('standard')
-      setPoolGpuVendor('')
-      setPoolGpuModel('')
-      setPoolGpuCount(0)
-      setPoolGpuResourceName('')
-      qc.invalidateQueries({ queryKey: ['k8s-node-pools', clusterId] })
-    },
-    onError: (e) => showApiError(e),
-  })
-
-  const deletePool = useMutation({
-    mutationFn: async (poolId: string) => {
-      const { error } = await coreApi.DELETE('/k8s-clusters/{cluster_id}/node-pools/{node_pool_id}', {
-        params: { path: { cluster_id: clusterId, node_pool_id: poolId } },
-      })
-      if (error) throw error
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['k8s-node-pools', clusterId] }),
-    onError: (e) => showApiError(e),
-  })
-
-  const loadPoolDetail = useMutation({
-    mutationFn: async (poolId: string) => {
-      const { data, error } = await coreApi.GET('/k8s-clusters/{cluster_id}/node-pools/{node_pool_id}', {
-        params: { path: { cluster_id: clusterId, node_pool_id: poolId } },
-      })
-      if (error) throw error
-      setPoolDetail(data ?? null)
-    },
-    onError: (e) => showApiError(e),
-  })
-
-  const updatePool = useMutation({
-    mutationFn: async () => {
-      if (!editPool?.id) throw new Error('缺少节点池 ID')
-      const { error } = await coreApi.PATCH('/k8s-clusters/{cluster_id}/node-pools/{node_pool_id}', {
-        params: { path: { cluster_id: clusterId, node_pool_id: editPool.id } },
-        body: {
-          node_count: editNodeCount,
-          instance_type: editInstanceType,
-          gpu: buildGpu(editGpuVendor, editGpuModel, editGpuCount, editGpuResourceName),
-          idempotency_key: newIdempotencyKey(),
-        },
-      })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setEditPool(null)
-      qc.invalidateQueries({ queryKey: ['k8s-node-pools', clusterId] })
-    },
-    onError: (e) => showApiError(e),
-  })
-
-  const upgrade = useMutation({
-    mutationFn: async (version: string) => {
-      const { response, error } = await coreApi.POST('/k8s-clusters/{cluster_id}/upgrade', {
-        params: { path: { cluster_id: clusterId } },
-        body: { version, idempotency_key: newIdempotencyKey() },
-      })
-      if (error) throw error
-      const loc = response.headers.get('Location')
-      const tid = loc?.match(/tasks\/([^/]+)/)?.[1]
-      if (tid) setTaskId(tid)
-    },
-    onError: (e) => showApiError(e),
+      K8S_MOCK_ENABLED
+        ? Promise.resolve({ items: getMockWorkloads(), total: getMockWorkloads().length, next_cursor: null })
+        : listOrThrow(() =>
+            coreApi.GET('/k8s-clusters/{cluster_id}/workloads', { params: { path: { cluster_id: clusterId } } }),
+          ),
   })
 
   const downloadKubeconfig = useMutation({
@@ -324,11 +392,8 @@ function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack: () =>
 
   if (detail.isLoading && !detail.data) {
     return (
-      <div className="space-y-5">
-        <PageHeader title="K8s 集群详情" subtitle="加载中…" />
-        <div className="flex justify-center py-16">
-          <Spin />
-        </div>
+      <div className="flex min-h-[480px] items-center justify-center" role="status" aria-label="正在加载 K8s 集群详情">
+        <Spin tip="正在加载集群详情…" />
       </div>
     )
   }
@@ -347,240 +412,117 @@ function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack: () =>
     })
   }
 
-  return (
-    <div className="space-y-5">
-      <PageHeader
-        title={c?.name ?? clusterId}
-        subtitle="K8s 集群详情"
-        extra={
-          <Space wrap>
-            <Button type="primary" loading={downloadKubeconfig.isPending} onClick={() => downloadKubeconfig.mutateAsync()}>
-              下载 Kubeconfig
-            </Button>
-            <Input
-              value={upgradeVersion}
-              onChange={setUpgradeVersion}
-              placeholder="升级版本"
-              className="w-[140px]"
-            />
-            <Button
-              type="outline"
-              loading={upgrade.isPending}
-              onClick={() => upgrade.mutateAsync(upgradeVersion || c?.version || '1.36.0')}
-            >
-              升级
-            </Button>
-            <Button type="outline" status="danger" onClick={confirmDeleteCluster}>
-              删除
-            </Button>
-            <Button type="text" onClick={onBack}>
-              返回列表
-            </Button>
-          </Space>
-        }
+  const nodePoolTab = (
+    <div>
+      <CursorTable<NodePool>
+        columns={[
+          { title: '名称', dataIndex: 'name' },
+          { title: '规格', dataIndex: 'instance_type' },
+          { title: '状态', render: (_, r) => <StatusTag status={r.state} /> },
+        ]}
+        data={{ items: poolItems, next_cursor: nodePools.data?.next_cursor }}
+        loading={nodePools.isLoading}
+        error={nodePools.error}
+        rowKey="id"
+        emptyDescription="暂无节点池，点击上方创建"
       />
-      {taskId ? <AsyncTaskPoller taskId={taskId} onComplete={() => setTaskId(null)} /> : null}
-      <Card>
-        <Descriptions
-          column={{ xs: 1, sm: 2, md: 3 }}
-          data={[
-            { label: 'ID', value: c?.id ?? clusterId },
-            { label: '版本', value: c?.version ?? '—' },
-            { label: '状态', value: <StatusTag status={c?.state} /> },
-            { label: '创建时间', value: formatDateTime(c?.created_at) },
-            { label: '更新时间', value: formatDateTime(c?.updated_at) },
-          ]}
-        />
-      </Card>
-      <Tabs>
-        <Tabs.TabPane key="pools" title="节点池">
-          <div className="space-y-4">
-            <Button type="primary" onClick={() => setPoolVisible(true)}>
-              创建节点池
-            </Button>
-            <CursorTable<NodePool>
-              columns={[
-                { title: '名称', dataIndex: 'name' },
-                { title: '节点数', dataIndex: 'node_count' },
-                { title: '规格', dataIndex: 'instance_type' },
-                { title: '状态', render: (_, r) => <StatusTag status={r.state} /> },
-                {
-                  title: '操作',
-                  render: (_, r) => (
-                    <Space>
-                      <Button type="text" loading={loadPoolDetail.isPending} onClick={() => loadPoolDetail.mutateAsync(r.id!)}>
-                        详情
-                      </Button>
-                      <Button
-                        type="text"
-                        onClick={() => {
-                          setEditPool(r)
-                          setEditNodeCount(r.node_count ?? 1)
-                          setEditInstanceType(r.instance_type ?? 'standard')
-                          setEditGpuVendor(r.gpu?.vendor ?? '')
-                          setEditGpuModel(r.gpu?.model ?? '')
-                          setEditGpuCount(r.gpu?.count ?? 0)
-                          setEditGpuResourceName(r.gpu?.resource_name ?? '')
-                        }}
-                      >
-                        调整
-                      </Button>
-                      <Button
-                        type="text"
-                        status="danger"
-                        onClick={() =>
-                          Modal.confirm({
-                            title: '删除节点池',
-                            content: `确定删除节点池「${r.name ?? r.id}」？`,
-                            onOk: () => deletePool.mutateAsync(r.id!),
-                          })
-                        }
-                      >
-                        删除
-                      </Button>
-                    </Space>
-                  ),
-                },
-              ]}
-              data={{ items: poolItems, next_cursor: nodePools.data?.next_cursor }}
-              loading={nodePools.isLoading}
-              error={nodePools.error}
-              rowKey="id"
-              emptyDescription="暂无节点池，点击上方创建"
-            />
-          </div>
-        </Tabs.TabPane>
-        <Tabs.TabPane key="workloads" title="Workloads">
-          <CursorTable<Record<string, unknown>>
-            columns={[
-              { title: 'ID', dataIndex: 'id' },
-              { title: '名称', dataIndex: 'name' },
-              { title: '类型', dataIndex: 'kind' },
-              { title: '命名空间', dataIndex: 'namespace' },
-            ]}
-            data={{ items: workloadItems, next_cursor: workloads.data?.next_cursor }}
-            loading={workloads.isLoading}
-            error={workloads.error}
-            rowKey="id"
-            emptyDescription="暂无 Workload"
-          />
-        </Tabs.TabPane>
-        <Tabs.TabPane key="proxy" title="API Proxy">
-          <div className="space-y-4">
-            <Space wrap>
-              <Select value={proxyMethod} onChange={setProxyMethod} className="w-[120px]">
-                <Select.Option value="GET">GET</Select.Option>
-                <Select.Option value="POST">POST</Select.Option>
-                <Select.Option value="PUT">PUT</Select.Option>
-                <Select.Option value="PATCH">PATCH</Select.Option>
-                <Select.Option value="DELETE">DELETE</Select.Option>
-              </Select>
-              <Input
-                value={proxyPath}
-                onChange={setProxyPath}
-                placeholder="K8s API 路径"
-                className="min-w-[280px]"
-              />
-              <Button type="primary" loading={proxyApi.isPending} onClick={() => proxyApi.mutateAsync()}>
-                执行代理
-              </Button>
-            </Space>
-            <Input.TextArea
-              value={proxyQueryJson}
-              onChange={setProxyQueryJson}
-              placeholder='Query JSON，例如 {"limit":"50"}'
-              autoSize={{ minRows: 2, maxRows: 4 }}
-            />
-            <Input.TextArea
-              value={proxyBodyJson}
-              onChange={setProxyBodyJson}
-              placeholder="Body JSON，可选"
-              autoSize={{ minRows: 3, maxRows: 8 }}
-            />
-            {proxyResult == null ? (
-              <Empty description="输入路径后执行代理请求" />
-            ) : (
-              <pre className="overflow-auto rounded bg-[var(--color-fill-2)] p-3 text-xs">
-                {JSON.stringify(proxyResult, null, 2)}
-              </pre>
-            )}
-          </div>
-        </Tabs.TabPane>
-      </Tabs>
-      <Modal
-        visible={poolVisible}
-        title="创建节点池"
-        onCancel={() => setPoolVisible(false)}
-        onOk={() => createPool.mutateAsync()}
-        confirmLoading={createPool.isPending}
-      >
-        <Form layout="vertical">
-          <Form.Item label="名称" required>
-            <Input value={poolName} onChange={setPoolName} placeholder="节点池名称" />
-          </Form.Item>
-          <Form.Item label="节点数" required>
-            <InputNumber value={poolNodeCount} min={1} precision={0} onChange={(value) => setPoolNodeCount(Number(value ?? 1))} />
-          </Form.Item>
-          <Form.Item label="实例规格" required>
-            <Input value={poolInstanceType} onChange={setPoolInstanceType} placeholder="standard" />
-          </Form.Item>
-          <Form.Item label="GPU 厂商">
-            <Input value={poolGpuVendor} onChange={setPoolGpuVendor} />
-          </Form.Item>
-          <Form.Item label="GPU 型号">
-            <Input value={poolGpuModel} onChange={setPoolGpuModel} />
-          </Form.Item>
-          <Form.Item label="GPU 数量">
-            <InputNumber value={poolGpuCount} min={0} precision={0} onChange={(value) => setPoolGpuCount(Number(value ?? 0))} />
-          </Form.Item>
-          <Form.Item label="GPU Resource Name">
-            <Input value={poolGpuResourceName} onChange={setPoolGpuResourceName} placeholder="nvidia.com/gpu" />
-          </Form.Item>
-        </Form>
-      </Modal>
-      <Modal
-        visible={!!editPool}
-        title="调整节点池"
-        onCancel={() => setEditPool(null)}
-        onOk={() => updatePool.mutateAsync()}
-        confirmLoading={updatePool.isPending}
-      >
-        <Form layout="vertical">
-          <Form.Item label="节点数" required>
-            <InputNumber value={editNodeCount} min={0} precision={0} onChange={(value) => setEditNodeCount(Number(value ?? 0))} />
-          </Form.Item>
-          <Form.Item label="实例规格" required>
-            <Input value={editInstanceType} onChange={setEditInstanceType} />
-          </Form.Item>
-          <Form.Item label="GPU 厂商">
-            <Input value={editGpuVendor} onChange={setEditGpuVendor} />
-          </Form.Item>
-          <Form.Item label="GPU 型号">
-            <Input value={editGpuModel} onChange={setEditGpuModel} />
-          </Form.Item>
-          <Form.Item label="GPU 数量">
-            <InputNumber value={editGpuCount} min={0} precision={0} onChange={(value) => setEditGpuCount(Number(value ?? 0))} />
-          </Form.Item>
-          <Form.Item label="GPU Resource Name">
-            <Input value={editGpuResourceName} onChange={setEditGpuResourceName} />
-          </Form.Item>
-        </Form>
-      </Modal>
-      <Modal visible={!!poolDetail} title="节点池详情" footer={null} onCancel={() => setPoolDetail(null)}>
-        <Descriptions
-          column={1}
-          data={[
-            { label: 'ID', value: poolDetail?.id },
-            { label: '名称', value: poolDetail?.name },
-            { label: '节点数', value: poolDetail?.node_count },
-            { label: '实例规格', value: poolDetail?.instance_type },
-            { label: 'GPU', value: poolDetail?.gpu ? JSON.stringify(poolDetail.gpu) : '—' },
-            { label: '状态', value: poolDetail?.state },
-            { label: '创建时间', value: formatDateTime(poolDetail?.created_at) },
-            { label: '更新时间', value: formatDateTime(poolDetail?.updated_at) },
-          ]}
-        />
-      </Modal>
     </div>
+  )
+
+  const workloadTab = (
+    <CursorTable<Record<string, unknown>>
+      columns={[
+        { title: '名称', dataIndex: 'name' },
+        { title: '类型', dataIndex: 'kind' },
+        { title: '命名空间', dataIndex: 'namespace' },
+        { title: '副本', dataIndex: 'replicas' },
+        { title: '就绪副本', dataIndex: 'ready_replicas' },
+        { title: '状态', render: (_, r) => <StatusTag status={String(r.status ?? '')} /> },
+      ]}
+      data={{ items: workloadItems, next_cursor: workloads.data?.next_cursor }}
+      loading={workloads.isLoading}
+      error={workloads.error}
+      rowKey={(row) => `${String(row.namespace ?? '')}/${String(row.kind ?? '')}/${String(row.name ?? '')}`}
+      emptyDescription="暂无工作负载"
+    />
+  )
+
+  const deploymentCount = workloadItems.filter((item) => item.kind === 'Deployment').length
+  const podCount = workloadItems.reduce((total, item) => total + Number(item.ready_replicas ?? 0), 0)
+  const serviceCount = 0
+
+  const nodeCount = poolItems.reduce((total, pool) => total + Number(pool.node_count ?? 0), 0)
+
+  return (
+    <>
+      <DetailPageFrame
+        breadcrumbs={[
+          { label: 'K8s 集群', to: '/k8s-clusters' },
+          { label: c?.name ?? clusterId },
+        ]}
+        icon={<AliIcon name="jiqun" size={28} />}
+        title={c?.name ?? clusterId}
+        status={<StatusTag status={c?.state} />}
+        headerItems={[
+          { label: '规格', value: '—' },
+          { label: 'K8s 版本', value: c?.version ?? '—' },
+          { label: '节点数', value: nodeCount },
+        ]}
+        actions={
+          <Button type="outline" status="danger" onClick={confirmDeleteCluster}>
+            删除
+          </Button>
+        }
+        cards={[
+          {
+            key: 'basic',
+            title: '基本信息',
+            fields: [
+              { label: 'ID', value: c?.id ?? clusterId },
+              { label: '状态', value: <StatusTag status={c?.state} /> },
+              { label: '规格', value: '—' },
+              { label: 'K8s 版本', value: c?.version ?? '—' },
+              { label: '节点数', value: nodeCount },
+              { label: '创建时间', value: formatDateTime(c?.created_at) },
+              { label: '关联对象', value: '1 个' },
+            ],
+          },
+          {
+            key: 'related',
+            title: '关联摘要',
+            fields: [{ label: '关联对象', value: '1 个' }],
+            defaultCollapsed: true,
+          },
+        ]}
+        tabs={[
+          { key: 'nodes', label: '节点', content: nodePoolTab },
+          {
+            key: 'workloads',
+            label: '工作负载',
+            content: (
+              <div>
+                <Grid.Row gutter={16} className="mb-4">
+                  <Grid.Col span={8}><Card title="Deployments">{deploymentCount}</Card></Grid.Col>
+                  <Grid.Col span={8}><Card title="Pods">{podCount}</Card></Grid.Col>
+                  <Grid.Col span={8}><Card title="Services">{serviceCount}</Card></Grid.Col>
+                </Grid.Row>
+                {workloadTab}
+              </div>
+            ),
+          },
+          {
+            key: 'kubeconfig',
+            label: 'kubeconfig',
+            content: (
+              <Button type="primary" loading={downloadKubeconfig.isPending} onClick={() => downloadKubeconfig.mutateAsync()}>
+                下载 Kubeconfig
+              </Button>
+            ),
+          },
+          { key: 'events', label: '事件', content: <Empty description="暂无集群事件" /> },
+        ]}
+        onBack={onBack}
+      />
+    </>
   )
 }

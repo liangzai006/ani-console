@@ -48,6 +48,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/password/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 租户账密登录（账号密码） */
+        post: operations["passwordLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/oidc/begin": {
         parameters: {
             query?: never;
@@ -3069,6 +3086,16 @@ export interface components {
              */
             redirect_uri: string;
         };
+        PasswordLoginRequest: {
+            /** @description 租户 slug，用于定位 users 表所属 tenant */
+            tenant_name: string;
+            /** @description 登录用户名（不含命名空间前缀） */
+            username: string;
+            /** Format: password */
+            password: string;
+            /** @description 可选幂等键，重复提交返回同一 TokenPair */
+            idempotency_key?: string;
+        };
         BeginOIDCLoginResponse: {
             /** Format: uri */
             authorization_url: string;
@@ -3640,6 +3667,34 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    passwordLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description 账密登录成功，返回 TokenPair */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPairResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimitExceeded"];
         };
     };
     beginOIDCLogin: {

@@ -65,7 +65,7 @@ function GpuInventoryPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="GPU 清单" subtitle="设备库存与占用分布" />
+      <PageHeader title="GPU 算力管理" subtitle="设备库存与占用分布" />
       {summaryError ? <ApiErrorAlert error={summaryError} title="占用数据加载失败" /> : null}
       <Grid.Row gutter={16}>
         <Grid.Col xs={24} md={8}>

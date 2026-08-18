@@ -38,7 +38,7 @@ export function VmVolumeDetailPage({ instanceId, volumeId }: VmVolumeDetailPageP
   return (
     <DetailPageFrame
       breadcrumbs={[
-        { label: 'VM 实例', to: '/instances/vm' },
+        { label: '云主机 VM', to: '/instances/vm' },
         { label: volume.instanceName, to: '/instances/vm/$instanceId', params: { instanceId } },
         { label: volume.name },
       ]}

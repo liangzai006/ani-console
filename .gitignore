@@ -1,3 +1,5 @@
 .vscode
 .cursor
 .agents
+# codex sandbox
+.pnpm-store

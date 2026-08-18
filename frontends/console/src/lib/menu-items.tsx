@@ -30,20 +30,26 @@ export const menuItems: readonly MenuItem[] = [
     label: '算力与实例',
     icon: <IconCloud />,
     children: [
-      { key: '/instances/container', label: '容器实例', icon: <IconApps /> },
-      { key: '/instances/vm', label: 'VM 实例', icon: <IconDesktop /> },
-      { key: '/instances/gpu', label: 'GPU 容器实例', icon: <IconCloud /> },
-      { key: '/instances/sandbox', label: 'Sandbox 实例', icon: <IconExperiment /> },
-      { key: '/gpu-inventory', label: 'GPU 清单', icon: <IconUnorderedList /> },
-      { key: '/sandbox-templates', label: 'Sandbox 模板', icon: <IconUnorderedList /> },
-    ],
-  },
-  {
-    key: 'colony',
-    label: '集群',
-    icon: <IconApps />,
-    children: [
-      { key: '/k8s-clusters', label: 'K8s 集群', icon: <IconApps /> },
+      { key: '/gpu-inventory', label: 'GPU 算力管理', icon: <IconCloud /> },
+      {
+        key: 'compute-instances',
+        label: '实例',
+        icon: <IconDesktop />,
+        children: [
+          { key: '/instances/vm', label: '云主机 VM' },
+          { key: '/instances/container', label: '容器实例' },
+          { key: '/instances/gpu', label: 'GPU 容器实例' },
+          { key: '/instances/sandbox', label: 'Sandbox 实例' },
+        ],
+      },
+      {
+        key: 'compute-clusters',
+        label: '集群',
+        icon: <IconApps />,
+        children: [
+          { key: '/k8s-clusters', label: 'K8s 集群' },
+        ],
+      },
     ],
   },
   {
@@ -51,8 +57,7 @@ export const menuItems: readonly MenuItem[] = [
     label: '存储',
     icon: <IconStorage />,
     children: [
-      { key: '/images', label: '可启动镜像', icon: <IconFile /> },
-      { key: '/volumes', label: '块存储', icon: <IconStorage /> },
+      { key: '/volumes', label: '块存储卷', icon: <IconStorage /> },
       { key: '/filesystems', label: '文件存储', icon: <IconFile /> },
       { key: '/objects', label: '对象存储', icon: <IconStorage /> },
       { key: '/vector-stores', label: '向量存储', icon: <IconUnorderedList /> },
@@ -72,10 +77,20 @@ export const menuItems: readonly MenuItem[] = [
   },
   {
     key: 'registry',
-    label: '镜像 Registry',
+    label: '镜像与 Registry',
     icon: <IconFile />,
     children: [
+      { key: '/images', label: '可启动镜像', icon: <IconFile /> },
       { key: '/registry', label: '镜像 Registry', icon: <IconFile /> },
+    ],
+  },
+  {
+    key: 'security',
+    label: '安全',
+    icon: <IconLock />,
+    children: [
+      { key: '/encryption', label: '加密密钥', icon: <IconLock /> },
+      { key: '/secrets', label: '密钥管理', icon: <IconSafe /> },
     ],
   },
   {
@@ -88,19 +103,10 @@ export const menuItems: readonly MenuItem[] = [
   },
   {
     key: 'usage',
-    label: '用量',
+    label: '用量与账单',
     icon: <IconNav />,
     children: [
       { key: '/usage', label: '用量', icon: <IconNav /> },
-    ],
-  },
-  {
-    key: 'security',
-    label: '安全',
-    icon: <IconLock />,
-    children: [
-      { key: '/encryption', label: '加密密钥', icon: <IconLock /> },
-      { key: '/secrets', label: '密钥管理', icon: <IconSafe /> },
     ],
   },
   {

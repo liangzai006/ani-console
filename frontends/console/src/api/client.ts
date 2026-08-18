@@ -24,6 +24,7 @@ export function expireAuthSession() {
 function isPublicAuthRequest(request: Request): boolean {
   const path = new URL(request.url).pathname
   return (
+    path.endsWith('/auth/password/login') ||
     path.endsWith('/auth/oidc/begin') ||
     path.endsWith('/auth/token') ||
     path.endsWith('/auth/refresh')

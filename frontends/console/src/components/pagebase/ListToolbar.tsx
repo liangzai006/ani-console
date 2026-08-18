@@ -1,4 +1,5 @@
 import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { Select } from '@arco-design/web-react'
 import styles from './pagebase.module.css'
 
 type ListToolbarProps = {
@@ -89,18 +90,14 @@ export function ToolbarSearch<T extends string>({
 
   return (
     <div className={styles.searchControl}>
-      <select
+      <Select
         aria-label="搜索字段"
         className={styles.searchField}
         value={field}
-        onChange={(event) => onFieldChange(event.target.value as T)}
-      >
-        {fields.map((item) => (
-          <option key={item.value} value={item.value}>
-            {item.label}
-          </option>
-        ))}
-      </select>
+        bordered={false}
+        onChange={(value) => onFieldChange(value as T)}
+        options={fields}
+      />
       <label className={styles.visuallyHidden} htmlFor={inputId}>
         搜索内容
       </label>

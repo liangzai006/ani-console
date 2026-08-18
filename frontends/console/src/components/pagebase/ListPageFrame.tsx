@@ -1,16 +1,15 @@
 import type { ReactNode } from 'react'
 import styles from './pagebase.module.css'
 
-type ListPageHeaderProps = {
+export type ListPageTitleProps = {
   iconClassName: string
   title: string
   subtitle?: string
-  extra?: ReactNode
 }
 
-export function ListPageHeader({ iconClassName, title, subtitle, extra }: ListPageHeaderProps) {
+export function ListPageTitle({ iconClassName, title, subtitle }: ListPageTitleProps) {
   return (
-    <header className={styles.pageHeader}>
+    <>
       <div className={styles.pageHeaderIcon} aria-hidden="true">
         <i className={`iconfont ${iconClassName}`} />
       </div>
@@ -18,6 +17,18 @@ export function ListPageHeader({ iconClassName, title, subtitle, extra }: ListPa
         <h1 className={styles.pageHeaderTitle}>{title}</h1>
         {subtitle ? <p className={styles.pageHeaderSubtitle}>{subtitle}</p> : null}
       </div>
+    </>
+  )
+}
+
+type ListPageHeaderProps = ListPageTitleProps & {
+  extra?: ReactNode
+}
+
+export function ListPageHeader({ iconClassName, title, subtitle, extra }: ListPageHeaderProps) {
+  return (
+    <header className={styles.pageHeader}>
+      <ListPageTitle iconClassName={iconClassName} title={title} subtitle={subtitle} />
       {extra ? <div className={styles.pageHeaderExtra}>{extra}</div> : null}
     </header>
   )

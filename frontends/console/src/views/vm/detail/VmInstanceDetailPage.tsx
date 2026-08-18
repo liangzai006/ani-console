@@ -58,7 +58,7 @@ export function VmInstanceDetailPage({ instanceId }: VmInstanceDetailPageProps) 
   return (
     <DetailPageFrame
       breadcrumbs={[
-        { label: 'VM 实例', to: '/instances/vm' },
+        { label: '云主机 VM', to: '/instances/vm' },
         { label: detail.name },
       ]}
       icon={<AliIcon name="yunzhuji" size={28} />}

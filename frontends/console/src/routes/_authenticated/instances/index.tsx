@@ -1,13 +1,26 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Form, Input, InputNumber, Message, Modal, Radio, Select, Space, Switch, Typography } from '@arco-design/web-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { coreApi } from '@/api/client'
 import { newIdempotencyKey } from '@/lib/idempotency'
 import { PageHeader } from '@/components/shell/AppShell'
 import { CursorTable } from '@/components/tables/CursorTable'
+import {
+  DataTable,
+  ListPageFrame,
+  ListPageHeader,
+  ListNameCell,
+  ListToolbar,
+  StatusTabs,
+  ToolbarButton,
+  ToolbarIconButton,
+  ToolbarSearch,
+  type ListColumn,
+} from '@/components/pagebase'
 import { StatusTag } from '@/components/shell/StatusTag'
 import { formatDateTime } from '@/lib/format'
+import { getErrorMessage } from '@/lib/errors'
 import { AsyncTaskPoller } from '@/components/feedback/AsyncTaskPoller'
 import { Ipv4CidrInput } from '@/components/forms/Ipv4CidrInput'
 import { listOrThrow } from '@/lib/api-list'
@@ -26,6 +39,8 @@ type InstanceKind = CreateInstanceRequest['kind']
 type NetworkMode = 'default' | 'vpc'
 type IpAllocationMode = 'auto' | 'manual'
 type VmBootMode = 'containerDisk' | 'iso'
+type InstanceStatusFilter = 'all' | 'running' | 'stopped' | 'deploying' | 'failed'
+type InstanceSearchField = 'name' | 'id'
 
 const VM_BOOT_IMAGE = 'quay.io/kubevirt/cirros-container-disk-demo:v1.2.0'
 const CONTAINER_IMAGE = 'dockerproxy.net/library/nginx:1.27-alpine'
@@ -235,8 +250,14 @@ export function InstancesListPage(props: InstancesListPageProps = {}) {
   const navigate = useNavigate()
   const [visible, setVisible] = useState(false)
   const [taskId, setTaskId] = useState<string | null>(null)
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [statusFilter, setStatusFilter] = useState<InstanceStatusFilter>('all')
+  const [searchField, setSearchField] = useState<InstanceSearchField>('name')
+  const [searchText, setSearchText] = useState('')
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['instances', kindFilter ?? 'all'],
     queryFn: async () => {
       // Core accepts kind=sandbox for the real Sandbox list flow; generated query enum is still narrower.
@@ -250,6 +271,152 @@ export function InstancesListPage(props: InstancesListPageProps = {}) {
   })
 
   const items = ((data?.items ?? []) as Instance[]).filter((item) => item.state !== 'deleted')
+  const prototypeTable = kindFilter === 'gpu_container' || kindFilter === 'sandbox'
+  const normalizedSearch = searchText.trim().toLowerCase()
+  const matchesStatus = (item: Instance) => {
+    if (statusFilter === 'all') return true
+    if (statusFilter === 'deploying') {
+      return item.state === 'pending' || item.state === 'provisioning' || item.state === 'starting'
+    }
+    if (statusFilter === 'failed') return item.state === 'failed'
+    return item.state === statusFilter
+  }
+  const filteredItems = items.filter((item) => {
+    if (!matchesStatus(item)) return false
+    if (!normalizedSearch) return true
+    const value = searchField === 'id' ? item.id : (item.name ?? '')
+    return value.toLowerCase().includes(normalizedSearch)
+  })
+  const statusTabs = [
+    { value: 'all' as const, label: '全部', count: items.length },
+    { value: 'running' as const, label: '运行中', count: items.filter((item) => item.state === 'running').length },
+    { value: 'stopped' as const, label: '已停止', count: items.filter((item) => item.state === 'stopped').length },
+    {
+      value: 'deploying' as const,
+      label: '部署中',
+      count: items.filter(
+        (item) => item.state === 'pending' || item.state === 'provisioning' || item.state === 'starting',
+      ).length,
+    },
+    {
+      value: 'failed' as const,
+      label: '异常',
+      count: items.filter((item) => item.state === 'failed').length,
+    },
+  ]
+  const prototypeColumns: Array<ListColumn<Instance>> = [
+    {
+      key: 'name',
+      title: '名称 / ID',
+      minWidth: 180,
+      render: (row) => (
+        <ListNameCell
+          name={
+            <Link
+              to={kindFilter === 'sandbox' ? '/instances/sandbox/$instanceId' : '/instances/$instanceId'}
+              params={{ instanceId: row.id }}
+            >
+              {row.name ?? row.id}
+            </Link>
+          }
+          id={row.id}
+        />
+      ),
+    },
+    { key: 'kind', title: '类型', minWidth: 120, render: (row) => row.kind },
+    { key: 'vpc', title: 'VPC', minWidth: 140, render: (row) => getInstanceNetworkValue(row, 'vpc_id') },
+    { key: 'subnet', title: '子网', minWidth: 140, render: (row) => getInstanceNetworkValue(row, 'subnet_id') },
+    { key: 'ip', title: 'IP', minWidth: 140, render: (row) => getInstanceDisplayIp(row) },
+    { key: 'state', title: '状态', minWidth: 110, render: (row) => <StatusTag status={row.state} /> },
+    { key: 'createdAt', title: '创建时间', minWidth: 180, render: (row) => formatDateTime(row.created_at) },
+  ]
+  const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize)
+  const createRoute = createRouteForKind(kindFilter)
+  const openCreate = () => {
+    if (createRoute) {
+      navigate({ to: createRoute })
+      return
+    }
+    setVisible(true)
+  }
+  const prototypeDataTable = (
+    <DataTable
+      rows={pagedItems}
+      rowKey={(row) => row.id}
+      columns={prototypeColumns}
+      selectedKeys={selectedKeys}
+      onSelectedKeysChange={setSelectedKeys}
+      loading={isLoading}
+      error={error ? getErrorMessage(error) : null}
+      emptyIconClassName={kindFilter === 'sandbox' ? 'icon-Sandbox' : 'icon-GPU'}
+      emptyText="暂无实例，点击右上角创建"
+      tableLabel={`${title}列表`}
+      preserveTableOnEmpty={kindFilter === 'sandbox'}
+      pagination={{
+        page,
+        pageSize,
+        total: filteredItems.length,
+        onPageChange: setPage,
+        onPageSizeChange: (nextPageSize) => {
+          setPageSize(nextPageSize)
+          setPage(1)
+          setSelectedKeys([])
+        },
+      }}
+    />
+  )
+
+  useEffect(() => {
+    setPage(1)
+    setSelectedKeys([])
+  }, [searchField, searchText, statusFilter])
+
+  if (prototypeTable) {
+    return (
+      <ListPageFrame
+        header={
+          <ListPageHeader
+            iconClassName={kindFilter === 'sandbox' ? 'icon-Sandbox' : 'icon-GPUrongqishili'}
+            title={title}
+            subtitle={subtitle}
+            extra={
+              <ToolbarButton variant="primary" iconClassName="icon-add-1" onClick={openCreate}>
+                创建{title}
+              </ToolbarButton>
+            }
+          />
+        }
+        tabs={<StatusTabs items={statusTabs} value={statusFilter} onChange={setStatusFilter} />}
+        toolbar={
+          <ListToolbar
+            filters={
+              <ToolbarSearch
+                fields={[
+                  { value: 'name', label: '名称' },
+                  { value: 'id', label: 'ID' },
+                ]}
+                field={searchField}
+                value={searchText}
+                onFieldChange={setSearchField}
+                onChange={setSearchText}
+              />
+            }
+            tools={
+              <ToolbarIconButton
+                iconClassName="icon-refresh-1"
+                label="刷新"
+                spinning={isFetching}
+                onClick={() => void refetch()}
+              />
+            }
+          />
+        }
+      >
+        {taskId ? <AsyncTaskPoller taskId={taskId} onComplete={() => setTaskId(null)} /> : null}
+        {prototypeDataTable}
+      </ListPageFrame>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -259,14 +426,7 @@ export function InstancesListPage(props: InstancesListPageProps = {}) {
         extra={
           <Button
             type="primary"
-            onClick={() => {
-              const createRoute = createRouteForKind(kindFilter)
-              if (createRoute) {
-                navigate({ to: createRoute })
-                return
-              }
-              setVisible(true)
-            }}
+            onClick={openCreate}
           >
             创建实例
           </Button>

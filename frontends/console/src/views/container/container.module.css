@@ -1,27 +1,3 @@
-.nameCell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.nameLink {
-  width: fit-content;
-  color: rgb(var(--primary-6));
-  font-size: 14px;
-  line-height: 20px;
-  text-decoration: none;
-}
-
-.nameLink:hover {
-  color: rgb(var(--primary-7));
-}
-
-.nameId {
-  color: var(--color-text-3);
-  font-size: 12px;
-  line-height: 16px;
-}
-
 .headerActions {
   display: flex;
   align-items: center;

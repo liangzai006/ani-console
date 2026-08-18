@@ -38,6 +38,7 @@ import { Route as AuthenticatedVolumesVolumeIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedSettingsApiKeysRouteImport } from './routes/_authenticated/settings/api-keys'
 import { Route as AuthenticatedSecretsSecretIdRouteImport } from './routes/_authenticated/secrets/$secretId'
 import { Route as AuthenticatedObjectsBucketIdRouteImport } from './routes/_authenticated/objects/$bucketId'
+import { Route as AuthenticatedK8sClustersClusterIdRouteImport } from './routes/_authenticated/k8s-clusters/$clusterId'
 import { Route as AuthenticatedInstancesVmRouteImport } from './routes/_authenticated/instances/vm'
 import { Route as AuthenticatedInstancesSandboxRouteImport } from './routes/_authenticated/instances/sandbox'
 import { Route as AuthenticatedInstancesGpuRouteImport } from './routes/_authenticated/instances/gpu'
@@ -234,6 +235,12 @@ const AuthenticatedObjectsBucketIdRoute =
     path: '/objects/$bucketId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedK8sClustersClusterIdRoute =
+  AuthenticatedK8sClustersClusterIdRouteImport.update({
+    id: '/k8s-clusters/$clusterId',
+    path: '/k8s-clusters/$clusterId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedInstancesVmRoute =
   AuthenticatedInstancesVmRouteImport.update({
     id: '/instances/vm',
@@ -404,9 +411,9 @@ const AuthenticatedInstancesVmInstanceIdVolumesVolumeIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRouteWithChildren
   '/login/callback': typeof LoginCallbackRoute
+  '/': typeof AuthenticatedIndexRoute
   '/login/': typeof LoginIndexRoute
   '/demo/a-1': typeof AuthenticatedDemoA1Route
   '/demo/a-2': typeof AuthenticatedDemoA2Route
@@ -421,30 +428,31 @@ export interface FileRoutesByFullPath {
   '/instances/gpu': typeof AuthenticatedInstancesGpuRouteWithChildren
   '/instances/sandbox': typeof AuthenticatedInstancesSandboxRouteWithChildren
   '/instances/vm': typeof AuthenticatedInstancesVmRouteWithChildren
+  '/k8s-clusters/$clusterId': typeof AuthenticatedK8sClustersClusterIdRoute
   '/objects/$bucketId': typeof AuthenticatedObjectsBucketIdRouteWithChildren
   '/secrets/$secretId': typeof AuthenticatedSecretsSecretIdRoute
   '/settings/api-keys': typeof AuthenticatedSettingsApiKeysRoute
   '/volumes/$volumeId': typeof AuthenticatedVolumesVolumeIdRoute
   '/instances/console/$instanceId': typeof InstancesConsoleInstanceIdRoute
   '/instances/terminal/$instanceId': typeof InstancesTerminalInstanceIdRoute
-  '/audit/': typeof AuthenticatedAuditIndexRoute
-  '/bare-metal/': typeof AuthenticatedBareMetalIndexRoute
-  '/encryption/': typeof AuthenticatedEncryptionIndexRoute
-  '/filesystems/': typeof AuthenticatedFilesystemsIndexRoute
-  '/gpu-inventory/': typeof AuthenticatedGpuInventoryIndexRoute
-  '/images/': typeof AuthenticatedImagesIndexRoute
-  '/instances/': typeof AuthenticatedInstancesIndexRoute
-  '/k8s-clusters/': typeof AuthenticatedK8sClustersIndexRoute
-  '/notifications/': typeof AuthenticatedNotificationsIndexRoute
-  '/objects/': typeof AuthenticatedObjectsIndexRoute
-  '/observability/': typeof AuthenticatedObservabilityIndexRoute
-  '/registry/': typeof AuthenticatedRegistryIndexRoute
-  '/sandbox-templates/': typeof AuthenticatedSandboxTemplatesIndexRoute
-  '/secrets/': typeof AuthenticatedSecretsIndexRoute
-  '/settings/': typeof AuthenticatedSettingsIndexRoute
-  '/usage/': typeof AuthenticatedUsageIndexRoute
-  '/vector-stores/': typeof AuthenticatedVectorStoresIndexRoute
-  '/volumes/': typeof AuthenticatedVolumesIndexRoute
+  '/audit': typeof AuthenticatedAuditIndexRoute
+  '/bare-metal': typeof AuthenticatedBareMetalIndexRoute
+  '/encryption': typeof AuthenticatedEncryptionIndexRoute
+  '/filesystems': typeof AuthenticatedFilesystemsIndexRoute
+  '/gpu-inventory': typeof AuthenticatedGpuInventoryIndexRoute
+  '/images': typeof AuthenticatedImagesIndexRoute
+  '/instances': typeof AuthenticatedInstancesIndexRoute
+  '/k8s-clusters': typeof AuthenticatedK8sClustersIndexRoute
+  '/notifications': typeof AuthenticatedNotificationsIndexRoute
+  '/objects': typeof AuthenticatedObjectsIndexRoute
+  '/observability': typeof AuthenticatedObservabilityIndexRoute
+  '/registry': typeof AuthenticatedRegistryIndexRoute
+  '/sandbox-templates': typeof AuthenticatedSandboxTemplatesIndexRoute
+  '/secrets': typeof AuthenticatedSecretsIndexRoute
+  '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/usage': typeof AuthenticatedUsageIndexRoute
+  '/vector-stores': typeof AuthenticatedVectorStoresIndexRoute
+  '/volumes': typeof AuthenticatedVolumesIndexRoute
   '/instances/container/create': typeof AuthenticatedInstancesContainerCreateRouteRoute
   '/instances/$instanceId/operations': typeof AuthenticatedInstancesInstanceIdOperationsRoute
   '/instances/container/$instanceId': typeof AuthenticatedInstancesContainerInstanceIdRoute
@@ -454,11 +462,11 @@ export interface FileRoutesByFullPath {
   '/instances/vm/$instanceId': typeof AuthenticatedInstancesVmInstanceIdRouteWithChildren
   '/instances/vm/create': typeof AuthenticatedInstancesVmCreateRoute
   '/objects/$bucketId/$objectId': typeof AuthenticatedObjectsBucketIdObjectIdRoute
-  '/networks/load-balancers/': typeof AuthenticatedNetworksLoadBalancersIndexRoute
-  '/networks/routes/': typeof AuthenticatedNetworksRoutesIndexRoute
-  '/networks/security-groups/': typeof AuthenticatedNetworksSecurityGroupsIndexRoute
-  '/networks/subnets/': typeof AuthenticatedNetworksSubnetsIndexRoute
-  '/networks/vpcs/': typeof AuthenticatedNetworksVpcsIndexRoute
+  '/networks/load-balancers': typeof AuthenticatedNetworksLoadBalancersIndexRoute
+  '/networks/routes': typeof AuthenticatedNetworksRoutesIndexRoute
+  '/networks/security-groups': typeof AuthenticatedNetworksSecurityGroupsIndexRoute
+  '/networks/subnets': typeof AuthenticatedNetworksSubnetsIndexRoute
+  '/networks/vpcs': typeof AuthenticatedNetworksVpcsIndexRoute
   '/objects/$bucketId/': typeof AuthenticatedObjectsBucketIdIndexRoute
   '/instances/vm/$instanceId/volumes/$volumeId': typeof AuthenticatedInstancesVmInstanceIdVolumesVolumeIdRoute
 }
@@ -479,6 +487,7 @@ export interface FileRoutesByTo {
   '/instances/gpu': typeof AuthenticatedInstancesGpuRouteWithChildren
   '/instances/sandbox': typeof AuthenticatedInstancesSandboxRouteWithChildren
   '/instances/vm': typeof AuthenticatedInstancesVmRouteWithChildren
+  '/k8s-clusters/$clusterId': typeof AuthenticatedK8sClustersClusterIdRoute
   '/secrets/$secretId': typeof AuthenticatedSecretsSecretIdRoute
   '/settings/api-keys': typeof AuthenticatedSettingsApiKeysRoute
   '/volumes/$volumeId': typeof AuthenticatedVolumesVolumeIdRoute
@@ -539,6 +548,7 @@ export interface FileRoutesById {
   '/_authenticated/instances/gpu': typeof AuthenticatedInstancesGpuRouteWithChildren
   '/_authenticated/instances/sandbox': typeof AuthenticatedInstancesSandboxRouteWithChildren
   '/_authenticated/instances/vm': typeof AuthenticatedInstancesVmRouteWithChildren
+  '/_authenticated/k8s-clusters/$clusterId': typeof AuthenticatedK8sClustersClusterIdRoute
   '/_authenticated/objects/$bucketId': typeof AuthenticatedObjectsBucketIdRouteWithChildren
   '/_authenticated/secrets/$secretId': typeof AuthenticatedSecretsSecretIdRoute
   '/_authenticated/settings/api-keys': typeof AuthenticatedSettingsApiKeysRoute
@@ -583,9 +593,9 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/login'
     | '/login/callback'
+    | '/'
     | '/login/'
     | '/demo/a-1'
     | '/demo/a-2'
@@ -600,30 +610,31 @@ export interface FileRouteTypes {
     | '/instances/gpu'
     | '/instances/sandbox'
     | '/instances/vm'
+    | '/k8s-clusters/$clusterId'
     | '/objects/$bucketId'
     | '/secrets/$secretId'
     | '/settings/api-keys'
     | '/volumes/$volumeId'
     | '/instances/console/$instanceId'
     | '/instances/terminal/$instanceId'
-    | '/audit/'
-    | '/bare-metal/'
-    | '/encryption/'
-    | '/filesystems/'
-    | '/gpu-inventory/'
-    | '/images/'
-    | '/instances/'
-    | '/k8s-clusters/'
-    | '/notifications/'
-    | '/objects/'
-    | '/observability/'
-    | '/registry/'
-    | '/sandbox-templates/'
-    | '/secrets/'
-    | '/settings/'
-    | '/usage/'
-    | '/vector-stores/'
-    | '/volumes/'
+    | '/audit'
+    | '/bare-metal'
+    | '/encryption'
+    | '/filesystems'
+    | '/gpu-inventory'
+    | '/images'
+    | '/instances'
+    | '/k8s-clusters'
+    | '/notifications'
+    | '/objects'
+    | '/observability'
+    | '/registry'
+    | '/sandbox-templates'
+    | '/secrets'
+    | '/settings'
+    | '/usage'
+    | '/vector-stores'
+    | '/volumes'
     | '/instances/container/create'
     | '/instances/$instanceId/operations'
     | '/instances/container/$instanceId'
@@ -633,11 +644,11 @@ export interface FileRouteTypes {
     | '/instances/vm/$instanceId'
     | '/instances/vm/create'
     | '/objects/$bucketId/$objectId'
-    | '/networks/load-balancers/'
-    | '/networks/routes/'
-    | '/networks/security-groups/'
-    | '/networks/subnets/'
-    | '/networks/vpcs/'
+    | '/networks/load-balancers'
+    | '/networks/routes'
+    | '/networks/security-groups'
+    | '/networks/subnets'
+    | '/networks/vpcs'
     | '/objects/$bucketId/'
     | '/instances/vm/$instanceId/volumes/$volumeId'
   fileRoutesByTo: FileRoutesByTo
@@ -658,6 +669,7 @@ export interface FileRouteTypes {
     | '/instances/gpu'
     | '/instances/sandbox'
     | '/instances/vm'
+    | '/k8s-clusters/$clusterId'
     | '/secrets/$secretId'
     | '/settings/api-keys'
     | '/volumes/$volumeId'
@@ -717,6 +729,7 @@ export interface FileRouteTypes {
     | '/_authenticated/instances/gpu'
     | '/_authenticated/instances/sandbox'
     | '/_authenticated/instances/vm'
+    | '/_authenticated/k8s-clusters/$clusterId'
     | '/_authenticated/objects/$bucketId'
     | '/_authenticated/secrets/$secretId'
     | '/_authenticated/settings/api-keys'
@@ -778,7 +791,7 @@ declare module '@tanstack/react-router' {
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
-      fullPath: '/'
+      fullPath: ''
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -806,126 +819,126 @@ declare module '@tanstack/react-router' {
     '/_authenticated/volumes/': {
       id: '/_authenticated/volumes/'
       path: '/volumes'
-      fullPath: '/volumes/'
+      fullPath: '/volumes'
       preLoaderRoute: typeof AuthenticatedVolumesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/vector-stores/': {
       id: '/_authenticated/vector-stores/'
       path: '/vector-stores'
-      fullPath: '/vector-stores/'
+      fullPath: '/vector-stores'
       preLoaderRoute: typeof AuthenticatedVectorStoresIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/usage/': {
       id: '/_authenticated/usage/'
       path: '/usage'
-      fullPath: '/usage/'
+      fullPath: '/usage'
       preLoaderRoute: typeof AuthenticatedUsageIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
       path: '/settings'
-      fullPath: '/settings/'
+      fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/secrets/': {
       id: '/_authenticated/secrets/'
       path: '/secrets'
-      fullPath: '/secrets/'
+      fullPath: '/secrets'
       preLoaderRoute: typeof AuthenticatedSecretsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/sandbox-templates/': {
       id: '/_authenticated/sandbox-templates/'
       path: '/sandbox-templates'
-      fullPath: '/sandbox-templates/'
+      fullPath: '/sandbox-templates'
       preLoaderRoute: typeof AuthenticatedSandboxTemplatesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/registry/': {
       id: '/_authenticated/registry/'
       path: '/registry'
-      fullPath: '/registry/'
+      fullPath: '/registry'
       preLoaderRoute: typeof AuthenticatedRegistryIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/observability/': {
       id: '/_authenticated/observability/'
       path: '/observability'
-      fullPath: '/observability/'
+      fullPath: '/observability'
       preLoaderRoute: typeof AuthenticatedObservabilityIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/objects/': {
       id: '/_authenticated/objects/'
       path: '/objects'
-      fullPath: '/objects/'
+      fullPath: '/objects'
       preLoaderRoute: typeof AuthenticatedObjectsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/notifications/': {
       id: '/_authenticated/notifications/'
       path: '/notifications'
-      fullPath: '/notifications/'
+      fullPath: '/notifications'
       preLoaderRoute: typeof AuthenticatedNotificationsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/k8s-clusters/': {
       id: '/_authenticated/k8s-clusters/'
       path: '/k8s-clusters'
-      fullPath: '/k8s-clusters/'
+      fullPath: '/k8s-clusters'
       preLoaderRoute: typeof AuthenticatedK8sClustersIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/instances/': {
       id: '/_authenticated/instances/'
       path: '/instances'
-      fullPath: '/instances/'
+      fullPath: '/instances'
       preLoaderRoute: typeof AuthenticatedInstancesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/images/': {
       id: '/_authenticated/images/'
       path: '/images'
-      fullPath: '/images/'
+      fullPath: '/images'
       preLoaderRoute: typeof AuthenticatedImagesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/gpu-inventory/': {
       id: '/_authenticated/gpu-inventory/'
       path: '/gpu-inventory'
-      fullPath: '/gpu-inventory/'
+      fullPath: '/gpu-inventory'
       preLoaderRoute: typeof AuthenticatedGpuInventoryIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/filesystems/': {
       id: '/_authenticated/filesystems/'
       path: '/filesystems'
-      fullPath: '/filesystems/'
+      fullPath: '/filesystems'
       preLoaderRoute: typeof AuthenticatedFilesystemsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/encryption/': {
       id: '/_authenticated/encryption/'
       path: '/encryption'
-      fullPath: '/encryption/'
+      fullPath: '/encryption'
       preLoaderRoute: typeof AuthenticatedEncryptionIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/bare-metal/': {
       id: '/_authenticated/bare-metal/'
       path: '/bare-metal'
-      fullPath: '/bare-metal/'
+      fullPath: '/bare-metal'
       preLoaderRoute: typeof AuthenticatedBareMetalIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/audit/': {
       id: '/_authenticated/audit/'
       path: '/audit'
-      fullPath: '/audit/'
+      fullPath: '/audit'
       preLoaderRoute: typeof AuthenticatedAuditIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
@@ -969,6 +982,13 @@ declare module '@tanstack/react-router' {
       path: '/objects/$bucketId'
       fullPath: '/objects/$bucketId'
       preLoaderRoute: typeof AuthenticatedObjectsBucketIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/k8s-clusters/$clusterId': {
+      id: '/_authenticated/k8s-clusters/$clusterId'
+      path: '/k8s-clusters/$clusterId'
+      fullPath: '/k8s-clusters/$clusterId'
+      preLoaderRoute: typeof AuthenticatedK8sClustersClusterIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/instances/vm': {
@@ -1072,35 +1092,35 @@ declare module '@tanstack/react-router' {
     '/_authenticated/networks/vpcs/': {
       id: '/_authenticated/networks/vpcs/'
       path: '/networks/vpcs'
-      fullPath: '/networks/vpcs/'
+      fullPath: '/networks/vpcs'
       preLoaderRoute: typeof AuthenticatedNetworksVpcsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/networks/subnets/': {
       id: '/_authenticated/networks/subnets/'
       path: '/networks/subnets'
-      fullPath: '/networks/subnets/'
+      fullPath: '/networks/subnets'
       preLoaderRoute: typeof AuthenticatedNetworksSubnetsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/networks/security-groups/': {
       id: '/_authenticated/networks/security-groups/'
       path: '/networks/security-groups'
-      fullPath: '/networks/security-groups/'
+      fullPath: '/networks/security-groups'
       preLoaderRoute: typeof AuthenticatedNetworksSecurityGroupsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/networks/routes/': {
       id: '/_authenticated/networks/routes/'
       path: '/networks/routes'
-      fullPath: '/networks/routes/'
+      fullPath: '/networks/routes'
       preLoaderRoute: typeof AuthenticatedNetworksRoutesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/networks/load-balancers/': {
       id: '/_authenticated/networks/load-balancers/'
       path: '/networks/load-balancers'
-      fullPath: '/networks/load-balancers/'
+      fullPath: '/networks/load-balancers'
       preLoaderRoute: typeof AuthenticatedNetworksLoadBalancersIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
@@ -1307,6 +1327,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInstancesGpuRoute: typeof AuthenticatedInstancesGpuRouteWithChildren
   AuthenticatedInstancesSandboxRoute: typeof AuthenticatedInstancesSandboxRouteWithChildren
   AuthenticatedInstancesVmRoute: typeof AuthenticatedInstancesVmRouteWithChildren
+  AuthenticatedK8sClustersClusterIdRoute: typeof AuthenticatedK8sClustersClusterIdRoute
   AuthenticatedObjectsBucketIdRoute: typeof AuthenticatedObjectsBucketIdRouteWithChildren
   AuthenticatedSecretsSecretIdRoute: typeof AuthenticatedSecretsSecretIdRoute
   AuthenticatedSettingsApiKeysRoute: typeof AuthenticatedSettingsApiKeysRoute
@@ -1356,6 +1377,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInstancesSandboxRoute:
     AuthenticatedInstancesSandboxRouteWithChildren,
   AuthenticatedInstancesVmRoute: AuthenticatedInstancesVmRouteWithChildren,
+  AuthenticatedK8sClustersClusterIdRoute:
+    AuthenticatedK8sClustersClusterIdRoute,
   AuthenticatedObjectsBucketIdRoute:
     AuthenticatedObjectsBucketIdRouteWithChildren,
   AuthenticatedSecretsSecretIdRoute: AuthenticatedSecretsSecretIdRoute,

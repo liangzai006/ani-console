@@ -6,6 +6,7 @@ import {
   DataTable,
   ListPageFrame,
   ListPageHeader,
+  ListNameCell,
   ListRowActionButton,
   ListRowActions,
   ListToolbar,
@@ -158,12 +159,12 @@ export function ContainerInstancesPage({
       title: COLUMN_LABELS.name,
       minWidth: 220,
       render: (row) => (
-        <div className={styles.nameCell}>
-          <Link className={styles.nameLink} to="/instances/container/$instanceId" params={{ instanceId: row.id }}>
+        <ListNameCell
+          name={<Link to="/instances/container/$instanceId" params={{ instanceId: row.id }}>
             {row.name}
-          </Link>
-          <span className={styles.nameId}>{row.id}</span>
-        </div>
+          </Link>}
+          id={row.id}
+        />
       ),
     },
     {
@@ -329,6 +330,7 @@ export function ContainerInstancesPage({
         emptyIconClassName="icon-rongqishili"
         emptyText={keyword || status !== 'all' ? '没有符合条件的容器实例' : '还没有容器实例，点击「创建容器实例」开始'}
         tableLabel="容器实例列表"
+        preserveTableOnEmpty
         renderRowActions={(row) => {
           const isRunning = row.status === 'running'
           const canStart = row.status === 'stopped' || row.status === 'failed'

@@ -1,201 +1,56 @@
-# ANI Console · 任务计划（Task Plan）
+# Console 当前状态
 
-> **唯一任务计划真来源**（与阶段索引 [`CONSOLE-SPRINT-PHASES.md`](./CONSOLE-SPRINT-PHASES.md) 配套）。  
-> 最后更新：**2026-06-25**  
-> API 契约：`openapi/v1.yaml`（仅 **Core**；不含 Services `openapi/services/v1.yaml`）
+> 本文件是当前任务状态与简短开发记录的唯一真来源。
 
----
+## 当前口径
 
-## 1. 文档体系（做任何事都要留存）
+- 项目：独立 ANI Console 前端。
+- 后端：`D:\Wks\Repos\Work\ANI`。
+- API：`/api/v1`，通过 `coreApi` 调用。
+- 验证：`pnpm run verify`（typecheck + production build）。
+- 测试：快速迭代阶段不保留自动化测试资产。
+- 菜单约束：信息架构、名称与顺序对齐产品原型；实现保留现有顶部一级导航，二、三级菜单使用现有 Arco 侧栏、缩进与折叠交互，不复刻原型的导航视觉样式。
 
-| 文档 | 路径 | 职责 |
-|------|------|------|
-| **任务计划（本文件）** | `docs/CONSOLE-TASK-PLAN.md` | 全局路线图、已完成/待办、路由与 API 覆盖概览 |
-| **阶段索引** | `docs/CONSOLE-SPRINT-PHASES.md` | P1–P10 冻结表 + P11+ 活跃阶段一行索引 |
-| **过程记录（每阶段）** | `docs/sprints/SPRINT-Pxx-*.md` | **改了什么、新增什么、测了什么**（强制） |
-| **过程记录模板** | `docs/sprints/SPRINT-TEMPLATE.md` | 新阶段复制此模板填写 |
-| **工程约定** | `CONVENTIONS.md` | 目录、测试、文档强制规则 |
+## 已覆盖模块
 
-**强制流程**（见 `CONVENTIONS.md` §4、§6）：
+登录、概览、实例、GPU、Sandbox、K8s、镜像、块/文件/对象存储、网络、向量库、Registry、加密、密钥、监控、用量和操作详情。
 
-```text
-读任务计划 → 实现 → 补单元+E2E → npm run verify → 写 SPRINT-Pxx（含变更清单）→ 更新本文件待办表 + CONSOLE-SPRINT-PHASES 索引
-```
+## 当前缺口
 
----
+- Bare Metal、Notifications、Audit 仍为占位页面，等待后端契约。
+- OIDC 登录入口暂时隐藏；当前使用租户账密登录。
+- 浏览器自动化回归暂时移除。
 
-## 2. 阶段总览
-
-### 2.1 已完成（P1–P17）
-
-| 阶段 | 名称 | 状态 | 过程文档 |
-|------|------|------|----------|
-| P1 | 工程脚手架与壳层 | 🔒 冻结 | 见 [CONSOLE-SPRINT-PHASES](./CONSOLE-SPRINT-PHASES.md) 冻结章 |
-| P2 | 认证与设置 | 🔒 冻结 | 同上 |
-| P3 | 概览 Dashboard | 🔒 冻结 | 同上 |
-| P4 | 实例与算力 | 🔒 冻结 | 同上 |
-| P5 | 网络五类 CRUD | 🔒 冻结 | 同上 |
-| P6 | 存储（列表级） | 🔒 冻结 | 同上 |
-| P7 | 向量存储 | 🔒 冻结 | 同上 |
-| P8 | Registry 基础 | 🔒 冻结 | 同上 |
-| P9 | K8s 基础 | 🔒 冻结 | 同上 |
-| P10 | 安全/监控/用量/占位 | 🔒 冻结 | 同上 |
-| P11 | vitest + verify 基建 | ✅ | [SPRINT-P11](./sprints/SPRINT-P11-test-harness.md) |
-| P12 | 存储深化 | ✅ | [SPRINT-P12](./sprints/SPRINT-P12-storage-deep.md) |
-| P13 | Registry + Dashboard 最近操作 | ✅ | [SPRINT-P13](./sprints/SPRINT-P13-registry-dashboard.md) |
-| P14 | K8s 完整 | ✅ | [SPRINT-P14](./sprints/SPRINT-P14-k8s-full.md) |
-| P15 | 安全/监控/操作详情 | ✅ | [SPRINT-P15](./sprints/SPRINT-P15-security-obs-ops.md) |
-| P16 | Playwright E2E | ✅ | [SPRINT-P16](./sprints/SPRINT-P16-e2e-playwright.md) |
-| P17 | 单元测试 + 测试规范 | ✅ | [SPRINT-P17](./sprints/SPRINT-P17-unit-tests-policy.md) |
-
-**当前门禁**：`cd frontends/console && npm run verify` → 82 unit + 47 e2e + build
-
-### 2.2 待办（P18+）
-
-| 阶段 | 名称 | 状态 | 范围（计划） |
-|------|------|------|----------------|
-| P18 | 网络与向量库详情 | ✅ | SCB-06/07 已交付 GET 详情 Drawer |
-| P19 | E2E 按模块补全 | ✅ | 新增 API Key / Sandbox 模块 E2E，覆盖提升至 22 条 |
-| P20 | Mock Server 联调 E2E（可选） | ✅ | 新增 `test:e2e:mock-server`，对 `127.0.0.1:4010` 执行 smoke |
-| P21 | 性能与分包 | ✅ | 启用路由自动分包 + ECharts core 按需注册，build 大包告警已消除 |
-| P23 | Sandbox 真实实例接入 | ✅ | `kind=sandbox` 创建、列表过滤、详情 Provider/Sandbox 状态展示 |
-
-> 启动任一阶段时：复制 [SPRINT-TEMPLATE](./sprints/SPRINT-TEMPLATE.md) → 填写 → 将上表状态改为「进行中」。
-
-### 2.3 规范合规落地（SCB，与 P 轨并行）
-
-> **设计规范 2.0 已冻结**（2026-06-25）。存量 UI 须按规范对齐，顺序见 [CONSOLE-SPEC-COMPLIANCE-BATCHES.md](./CONSOLE-SPEC-COMPLIANCE-BATCHES.md)。
-
-| 批次 | 名称 | 状态 |
-|------|------|------|
-| SCB-01 | 壳层与共享组件 | ✅ |
-| SCB-02 | 认证与设置 | ✅ |
-| SCB-03 | 概览 Dashboard | ✅ |
-| SCB-04 | 实例与算力 | ✅ |
-| SCB-05 | 存储 | ✅ |
-| SCB-06 | 网络 | ✅ |
-| SCB-07 | 向量库 | ✅ |
-| SCB-08 | K8s | ✅ |
-| SCB-09 | Registry | ✅ |
-| SCB-10 | 安全与密钥 | ✅ |
-| SCB-11 | 监控与用量 | ✅ |
-| SCB-12 | 占位页 | ⏸ 阻塞于 API |
-| SCB-02L | 顶栏一级 + 左 侧栏二级布局重构（用户显式覆盖冻结令） | ✅ |
-
-**规则**：先完成当前 SCB 再进入下一批；可与 P18+ 功能合批，但 SCB 序号不可跳。
-
----
-
-## 3. 功能覆盖地图
-
-### 3.1 已实现路由（`src/routes/`）
-
-| 模块 | 路径 | 阶段 | 深化程度 |
-|------|------|------|----------|
-| 概览 | `/` | P3, P13 | 指标 + 最近实例/操作 |
-| 登录 | `/login`, `/login/callback` | P2 | OIDC |
-| 设置 | `/settings`, `/settings/api-keys` | P2 | 基础 |
-| 实例 | `/instances`, `/instances/$id`, operations | P4, P15 | 列表/详情/操作链 |
-| GPU | `/gpu-inventory` | P4 | 列表 + 占用 |
-| Sandbox | `/instances/sandbox`, `/instances/sandbox/$id`, `/sandbox-templates` | P4, P23 | 真实 `kind=sandbox` 创建/列表/详情 + 模板列表/使用模板预填 |
-| K8s | `/k8s-clusters` | P9, P14 | 创建/节点池/Proxy/升级 |
-| 可启动镜像 | `/images` | P22 | 列表 + 本地 ISO 直传（upload_url）+ 删除；供 VM ISO 启动 / noVNC 装机 |
-| 块存储 | `/volumes`, `/volumes/$id` | P6, P12 | 列表 + 快照 |
-| 文件存储 | `/filesystems`, `/filesystems/$id` | P6, P12 | 列表 + 挂载目标 |
-| 对象存储 | `/objects` | P6, P12 | 桶/上传/下载/删除 |
-| 向量库 | `/vector-stores` | P7, SCB-07 | 列表 CRUD + 详情 Drawer + 检索/插入 |
-| 网络 | `/networks/*` 五类 | P5, SCB-06 | 列表 CRUD + 详情 Drawer（含路由 GET/DELETE） |
-| Registry | `/registry` | P8, P13, SCB-09 | 三级导航 + 权限/扫描 |
-| 加密 | `/encryption` | P10, P15, SCB-10 | 列表 + 轮换/seal/unseal |
-| 密钥 | `/secrets`, `/secrets/$id` | P10, P15, SCB-10 | 列表 + 详情 + 绑定 |
-| 监控 | `/observability` | P10, P15, SCB-11 | 查询 + 规则列表三态 |
-| 用量 | `/usage` | P10, SCB-11 | 指标卡 + 趋势图 |
-| 操作详情 | `/instance-operations/$id` | P15, SCB-11 | 详情 + 步骤表 |
-| 占位 | `/bare-metal`, `/notifications`, `/audit` | P10 | 等 Core 契约 path |
-
-### 3.2 Core API 覆盖说明
-
-- OpenAPI **约 107** 个 `operationId`；Console 覆盖**主路径**，非 107 一一 UI。
-- **故意不做**：`reportTokenUsage`（Console 不上报 token 用量）。
-- **不在范围**：`openapi/services/v1.yaml`（Services 层，本仓库 Console 仅 Core）。
-
-### 3.3 已知缺口（汇总自 P15 及评审）
-
-- [x] 网络资源 GET 详情（VPC/子网/安全组/LB/路由 Drawer）
-- [x] 向量库 GET 详情页（Drawer）
-- [x] Registry 当前已落地边缘 API（创建项目/权限/Pull Secret/扫描查询）已覆盖 mock-server 联调
-- [ ] BareMetal / Notifications / Audit 真实页面（待契约）
-- [x] E2E 已覆盖核心模块（含 encryption、registry、network、vector、usage、operation）
-- [x] Mock Server 最小 smoke 联调（与浏览器 fixture mock 分层并行）
-- [x] Mock Server 扩展覆盖（smoke 从 2 条扩展至 11 条，覆盖概览/实例/API Key/网络/存储/Registry）
-
-### 3.4 Registry 接口-页面-测试映射（当前）
-
-| API | 页面/动作 | 联调覆盖 |
-|------|-----------|----------|
-| `GET /registry/projects` | Registry 项目列表 | `mock-server-smoke` |
-| `POST /registry/projects` | 创建项目 | `mock-server-smoke` |
-| `GET /registry/projects/{project}/repositories` | 选中项目后仓库列表 | `mock-server-smoke` |
-| `GET /registry/projects/{project}/repositories/{repository}/artifacts` | 选中仓库后制品列表 | `mock-server-smoke` |
-| `GET /registry/projects/{project}/scan-report` | 项目扫描报告 | `mock-server-smoke` |
-| `POST /registry/projects/{project}/repositories/{repository}/permissions` | 设置权限 | `mock-server-smoke` |
-| `POST /registry/projects/{project}/pull-secret` | 创建 Pull Secret | `mock-server-smoke` |
-| `GET /registry/images/scan-result` | 镜像扫描查询 | `mock-server-smoke` |
-
----
-
-## 4. 测试资产清单
-
-| 类型 | 命令 | 数量（2026-06-25） | 位置 |
-|------|------|-------------------|------|
-| 单元 | `npm run test:unit` | 80 | `src/**/*.test.{ts,tsx}` |
-| E2E | `npm run test:e2e` | 49 | `e2e/**/*.spec.ts` |
-| 全量 | `npm run verify` | 上两者 + codegen + tsc + build | `package.json` |
-
-E2E 支撑：`e2e/support/api-mock.ts`、`auth.ts`；`scripts/ensure-e2e.mjs`
-
----
-
-## 5. 变更日志（计划级）
+## 最近变更
 
 | 日期 | 事项 |
 |------|------|
-| 2026-07-25 | SCB-02L 完成：顶栏一级 + 左 侧栏二级布局重构；用户显式覆盖设计规范 2.0 冻结令（仅壳层）；新增 `TopNav` / `Sidebar`，删除 `SideMenu`；49 e2e / 65 unit 全绿。过程记录见 [SPRINT-SCB-02L](./sprints/SPRINT-SCB-02L-top-nav-layout.md) |
-| 2026-07-14 | VM noVNC 控制台增加“适配窗口 / 原始尺寸”显示模式；原始尺寸关闭 noVNC 缩放并允许拖动画布，用于缓解鼠标坐标偏移 |
-| 2026-07-14 | 修复 Core API 401 会话失效处理：refresh 不可用时清理认证持久化并跳转 `/login?redirect=...`；默认门禁 82 unit / 47 e2e |
-| 2026-07-14 | 已部署 Console 到 isolated 集群：`docker.changqingyun.cn/ani/ani-console:dev-sandbox-template-ts7-20260714-105051`；代码提交 `4bc39dd`；`ani-console` rollout 成功，NodePort `30081` 返回 200 |
-| 2026-07-14 | Sandbox 模板列表补充“使用模板”动作，跳转创建页并预填镜像/资源规格；后端当前仅提供模板 GET，未启用模板 CRUD |
-| 2026-07-14 | Console 工具链升级 TypeScript 7.0.2；移除 `baseUrl`，OpenAPI codegen 隔离使用 TS5 兼容链路；默认门禁 80 unit / 46 e2e |
-| 2026-07-14 | P23 完成（Sandbox 真实 `kind=sandbox` 创建、列表过滤、详情 Provider/Sandbox 状态展示；默认门禁 80 unit / 45 e2e） |
-| 2026-06-25 | P20 再扩展（Mock Server smoke 扩展至 11 条，新增文件存储与对象存储联调） |
-| 2026-06-25 | P20 再扩展（Mock Server smoke 扩展至 9 条，新增 Registry 创建项目动作联调） |
-| 2026-06-25 | P20 再扩展（Mock Server smoke 扩展至 8 条，新增 Registry 权限/Pull Secret/扫描查询联调） |
-| 2026-06-25 | P20 再扩展（Mock Server smoke 扩展至 7 条，新增 Registry 三级导航联调） |
-| 2026-06-25 | P20 再扩展（Mock Server smoke 扩展至 6 条，新增网络 VPC / 块存储详情） |
-| 2026-06-25 | P20 扩展覆盖完成（Mock Server smoke 扩展至 4 条，覆盖概览/实例/API Key） |
-| 2026-06-25 | P21 第二轮完成（开启路由 autoCodeSplitting + 图表按需加载，build 无 chunk>500 告警） |
-| 2026-06-25 | P19 完成（新增 API Key / Sandbox E2E，默认 E2E 22 条） |
-| 2026-06-25 | P20 最小闭环完成（新增 `test:e2e:mock-server` 与 Mock Server smoke） |
-| 2026-06-25 | P21 首轮分包完成（manualChunks：tanstack + echarts，主包显著下降） |
-| 2026-06-25 | 初版任务计划；P1–P17 记入已完成；P18–P21 待办立项 |
-| 2026-06-25 | SCB-12 阻塞态收尾（占位页 + E2E，SPRINT-SCB-12） |
-| 2026-06-25 | SCB-11 监控与用量合规完成（SPRINT-SCB-11） |
-| 2026-06-25 | SCB-10 安全与密钥合规完成（SPRINT-SCB-10） |
-| 2026-06-25 | SCB-09 Registry 合规完成（SPRINT-SCB-09） |
-| 2026-06-25 | SCB-08 K8s 集群合规完成（SPRINT-SCB-08） |
-| 2026-06-25 | SCB-07 向量库合规 + P18 完成（SPRINT-SCB-07） |
-| 2026-06-25 | SCB-06 网络合规 + P18 网络详情 Drawer（SPRINT-SCB-06） |
-| 2026-06-25 | SCB-05 存储合规完成（SPRINT-SCB-05） |
-| 2026-06-25 | SCB-04 实例与算力合规完成（SPRINT-SCB-04） |
-| 2026-06-25 | SCB-03 概览 Dashboard 合规完成（SPRINT-SCB-03） |
-
----
-
-## 6. 相关入口
-
-- [CONSOLE-SPRINT-PHASES.md](./CONSOLE-SPRINT-PHASES.md)
-- [sprints/README.md](./sprints/README.md)
-- [CONVENTIONS.md](../CONVENTIONS.md)
-- [UI规范-2.0.md](../../UI规范-2.0.md)（视觉，**已冻结**）
-- [DESIGN-SPEC-FREEZE.md](../../DESIGN-SPEC-FREEZE.md)
-- [CONSOLE-SPEC-COMPLIANCE-BATCHES.md](./CONSOLE-SPEC-COMPLIANCE-BATCHES.md)
+| 2026-08-18 | 移除 K8s 集群详情页不存在的“创建节点池”能力：删除 `DetailPageFrame` actions 中的入口，以及对应创建弹窗、表单状态、POST 请求和 GPU 参数构造逻辑；详情页操作仅保留删除集群。TypeScript typecheck 与 `git diff --check` 通过。 |
+| 2026-08-18 | 精简 K8s 集群详情基本信息中的关联对象文案，由“1 个 · 见右侧摘要”调整为“1 个”。TypeScript typecheck 与 `git diff --check` 通过。 |
+| 2026-08-18 | 修正 K8s 集群详情路由与公共骨架：列表不再通过页面内 `selectedId` 切换详情，新增 `/k8s-clusters/$clusterId` 文件路由并自动更新路由树；详情改用 `DetailPageFrame` 复用统一面包屑、页头、信息卡与 Tab 布局，actions 区保留明确的“创建节点池”和“删除”操作。TypeScript typecheck 与 `git diff --check` 通过；production build 被 Node 运行时 `uv_os_get_passwd returned ENOMEM` 阻断。 |
+| 2026-08-18 | 修正 K8s 集群详情基本信息 Key/Value 对齐：Descriptions 使用固定表格布局，Key 列统一为 104px 并左对齐，Value 列统一从同一位置左对齐。TypeScript typecheck 与 `git diff --check` 通过。 |
+| 2026-08-18 | 收敛 K8s 集群详情“节点”Tab 列表，仅保留名称、规格、状态三列；移除节点数与操作列，并清理随操作列失去入口的节点池详情、调整、删除请求及弹窗代码。TypeScript typecheck 与 `git diff --check` 通过。 |
+| 2026-08-18 | 按指定内容收敛 K8s 集群详情“基本信息”为 ID、状态、规格、K8s 版本、节点数、创建时间、关联对象 7 项；开发 Mock 首个集群调整为 `k8s_5oi7sx`、运行中、规格 `—`、版本 `1.28`、3 节点、`2026-07-10 09:10`，右侧关联摘要同步显示 1 个对象且不臆造资源类型。TypeScript typecheck 与 `git diff --check` 通过。 |
+| 2026-08-18 | 按产品要求移除 K8s 集群详情页的版本升级能力：删除页头升级入口、升级弹窗及仅供该入口使用的状态、请求和任务跟踪代码，保留创建节点池与删除操作。TypeScript typecheck 与 `git diff --check` 通过。 |
+| 2026-08-18 | 修复公共列表操作列遮罩：缩短透明渐变区并让操作文字区域保持不透明，分别匹配普通、悬停与选中行背景；扩大遮罩宽度并收紧操作间距，解决 K8s 集群列表“详情 / kubeconfig / 更多”与底层单元格文字重叠的问题。TypeScript typecheck 与 `git diff --check` 通过。 |
+| 2026-08-18 | 修正 K8s 详情“关联摘要”：经 GitNexus 核对 `产品原型-7.29` 的 `relatedOf()` 与 `ANI` 的 `K8sClusterRecord`，当前均无可展示的 K8s 关联对象字段，移除错误填入的节点池、工作负载和 Kubeconfig 信息，改为标准空态；相关数据仍在各自 Tab 展示。TypeScript typecheck 与 `git diff --check` 通过。 |
+| 2026-08-18 | 提升 K8s 节点池创建入口：将“创建节点池”从节点 Tab 内容区移动到集群详情页头主操作区，使默认概览及任意 Tab 下均可直接创建，并移除原位置的重复按钮。TypeScript typecheck 与 `git diff --check` 通过。 |
+| 2026-08-18 | 清理 K8s 详情页中的对标/能力边界说明文案；按 `产品原型-7.29` 补齐集群列表行操作“详情 / kubeconfig / 更多”，更多菜单提供带二次确认的删除操作，开发 Mock 模式支持下载示例 kubeconfig。TypeScript typecheck 与 `git diff --check` 通过。 |
+| 2026-08-18 | 通过 GitNexus 对照 `产品原型-7.29` 的 K8s 详情定义，详情页由左右分栏检查器改为“面包屑 + 页头 + 全宽 Tabs + 内容区”；Tabs 对齐为概览、节点、工作负载、kubeconfig、事件，概览采用基本信息/关联摘要双栏，工作负载增加摘要指标，kubeconfig 强调短时下载，并移除原型未包含的 API Proxy 可见入口。TypeScript typecheck 通过；production build 被 Node 运行时 `uv_os_get_passwd returned ENOMEM` 阻断。 |
+| 2026-08-18 | 修复 K8s 集群列表名称对齐：对照云主机与容器列表，将 `ListNameCell` 内带默认内边距的 Arco 文本按钮改为同类页面使用的路由链接，使名称与下方集群 ID 左边缘对齐。`git diff --check` 通过。 |
+| 2026-08-18 | 为 K8s 集群页面增加可移除的开发预览 Mock：数据集中在路由私有 `-mock-data.ts`，覆盖集群状态、节点池与工作负载；仅开发模式默认启用，可通过 `VITE_K8S_MOCK_DATA=false` 恢复真实查询，生产构建不启用。`git diff --check` 通过；当前会话无 Node/pnpm 可执行环境，typecheck 与 production build 未能启动。 |
+| 2026-08-18 | 对照已落地的同类型原型布局完成 K8s 集群页面：列表接入统一 `ListPageFrame`、状态 Tab、名称/ID 搜索、刷新、固定分页与三态表格；详情接入统一 `DetailPageFrame`，按基本信息与节点池/工作负载/API Proxy Tab 组织内容，并保留创建、升级、Kubeconfig、节点池管理和删除能力。`git diff --check` 通过；当前会话未提供 Node/pnpm 可执行环境，typecheck 与 production build 未能启动。 |
+| 2026-08-18 | 更新 Agent 强制约束：UI/交互优先使用 Arco Design React，确认组件库无法满足后才允许自实现并记录原因；新增组件或样式前必须先检索并复用/扩展项目公共组件及同类页面实现。 |
+| 2026-08-18 | 抽取公共 `ListPageTitle`：统一承载列表页头的图标、标题和副标题；`ListPageHeader` 收敛为卡片容器与右侧操作区，后续页面可集中替换页头内容表现。 |
+| 2026-08-18 | 公共列表操作列组件化：`ListRowActionButton` 从原生按钮切换为 Arco `Button type="text"`，与已有 Arco `Dropdown/Menu` 共同统一行操作按钮、悬停态和菜单交互。 |
+| 2026-08-18 | 公共列表下拉统一使用 Arco `Select`：替换搜索字段和分页每页条数的原生 `<select>`，统一下拉弹层、选中态和控件尺寸，已接入 `pagebase` 的实例列表同步生效。 |
+| 2026-08-18 | 抽取公共 `ListNameCell` 并接入云主机、容器、GPU 容器和 Sandbox 列表：名称链接统一无下划线，名称下方显示实例 ID，列标题统一为“名称 / ID”；移除 VM/容器重复的页面私有样式。TypeScript typecheck 通过。 |
+| 2026-08-18 | 检查实例模块并修复列表样式：GPU 容器与 Sandbox 接入与云主机一致的 `ListPageFrame + ListPageHeader + StatusTabs + ListToolbar + DataTable` 公共结构，补充状态筛选、名称/ID 搜索和刷新；表格撑满剩余视口且分页固定在底部，容器与 Sandbox 空数据时均保留表头和表格区域。四类实例均已接入列表、独立创建和详情；GPU/Sandbox 尚未补齐批量操作、列设置及列表行操作。TypeScript typecheck 通过。 |
+| 2026-08-18 | 对齐原型 GPU 模块：`/gpu-inventory` 从“GPU / GPU 清单”三级结构调整为“算力与实例”下的二级模块“GPU 算力管理”，并同步页面标题；二级模块按“GPU 算力管理 / 实例 / 集群”排列，API 契约路径保持不变。 |
+| 2026-08-18 | 菜单改为三级信息架构：一级继续位于顶部，二、三级位于侧栏；“算力与实例”下由“实例”“集群”等二级模块组织三级叶子，“集群”从顶部一级菜单调整为二级模块；详情路由可自动展开对应侧栏祖先分组。TypeScript typecheck 与 `git diff --check` 通过；production build 仍被当前 Node 运行时 `uv_os_get_passwd returned ENOMEM` 阻断。 |
+| 2026-08-18 | 对齐原型菜单信息架构：统一“云主机 VM”“块存储卷”等资源名称；按 VM、容器、GPU 顺序排列算力菜单；将“可启动镜像”归入“镜像与 Registry”；一级菜单按安全、监控、用量、设置排列；隐藏 Sandbox 模板入口（路由与创建页模板能力保留）。TypeScript typecheck 通过；production build 因当前 Node 运行时 `uv_os_get_passwd returned ENOMEM` 未能启动。 |
+| 2026-08-18 | 登录表单默认填充测试租户 `tenant-a`、用户名 `admin` 和密码 `Correct@123`，方便本地联调；TypeScript typecheck 与 production build 通过。 |
+| 2026-08-18 | 精简项目文档：根 `AGENTS.md` 改为独立 Console 入口；移除全部 `CLAUDE.md`、分离前 ANI 综合文档、旧 PRD/计划和逐 Sprint 流水账；保留冻结设计规范、工程约定与当前状态真来源。验证：链接扫描、`pnpm run verify`、GitNexus detect-changes、`git diff --check`。 |
+| 2026-08-18 | 移除全部自动化测试资产及 Vitest/Testing Library/jsdom，`verify` 收敛为 typecheck + production build。 |
+| 2026-08-18 | 登录页接入 `POST /auth/password/login`，暂时隐藏 OIDC 登录入口。 |
+| 2026-08-18 | 工具链固定 TanStack Router `1.121.21`，保留后端类型快照并移除本地 OpenAPI 镜像与生成流程。 |

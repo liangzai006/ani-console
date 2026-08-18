@@ -29,7 +29,10 @@ function collectLeafPaths(items: MenuItem[]): string[] {
 
 function findActiveAncestors(items: MenuItem[], pathname: string): string[] | null {
   for (const item of items) {
-    if (item.key === pathname) return []
+    if (
+      item.key === pathname
+      || (item.key.startsWith('/') && pathname.startsWith(`${item.key}/`))
+    ) return []
     if (item.children) {
       const sub = findActiveAncestors(item.children, pathname)
       if (sub !== null) return [item.key, ...sub]

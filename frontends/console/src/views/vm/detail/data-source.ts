@@ -26,7 +26,7 @@ function percentFor(instanceId: string, salt: number) {
 
 function buildDetail(instanceId: string): VmInstanceDetail {
   const instance = getSharedVmInstance(instanceId)
-  if (!instance) throw new Error('VM 实例不存在或无权访问')
+  if (!instance) throw new Error('云主机 VM 不存在或无权访问')
   const hash = hashString(instanceId)
   return {
     ...instance,

@@ -41,7 +41,7 @@ export function TopNav({ activeKey }: TopNavProps) {
   const confirmLogout = () => {
     Modal.confirm({
       title: '确认退出登录',
-      content: '退出后需重新通过 OIDC 登录。',
+      content: '退出后需重新登录。',
       okButtonProps: { status: 'danger' },
       onOk: () => logout.mutateAsync(),
     })

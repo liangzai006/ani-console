@@ -6,6 +6,7 @@ import {
   DataTable,
   ListPageFrame,
   ListPageHeader,
+  ListNameCell,
   ListRowActionButton,
   ListRowActions,
   ListToolbar,
@@ -183,12 +184,12 @@ export function VmInstancesPage({ dataSource = vmInstanceDataSource }: { dataSou
         title: COLUMN_LABELS.name,
         minWidth: 220,
         render: (row) => (
-          <div className={styles.nameCell}>
-            <Link className={styles.nameLink} to="/instances/vm/$instanceId" params={{ instanceId: row.id }}>
+          <ListNameCell
+            name={<Link to="/instances/vm/$instanceId" params={{ instanceId: row.id }}>
               {row.name}
-            </Link>
-            <span className={styles.nameId}>{row.id}</span>
-          </div>
+            </Link>}
+            id={row.id}
+          />
         ),
       },
       {

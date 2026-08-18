@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Button, Card, Typography } from '@arco-design/web-react'
+import { Button, Card, Form, Input, Message } from '@arco-design/web-react'
 import { useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { coreApi } from '@/api/client'
 import { AuthCenterLayout } from '@/components/shell/AuthCenterLayout'
-import { ApiErrorAlert } from '@/components/feedback/ApiErrorAlert'
-import { isAuthenticated } from '@/stores/auth'
+import { parseApiError } from '@/lib/errors'
+import { isAuthenticated, useAuthStore } from '@/stores/auth'
 import { newIdempotencyKey } from '@/lib/idempotency'
 
 export const Route = createFileRoute('/login/')({
@@ -17,6 +17,7 @@ export const Route = createFileRoute('/login/')({
 function LoginPage() {
   const navigate = useNavigate()
   const { redirect = '/' } = Route.useSearch()
+  const setTokens = useAuthStore((state) => state.setTokens)
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -25,32 +26,66 @@ function LoginPage() {
   }, [navigate, redirect])
 
   const login = useMutation({
-    mutationFn: async () => {
-      const redirectUri = import.meta.env.VITE_OIDC_REDIRECT_URI || `${window.location.origin}/login/callback`
-      const { data, error } = await coreApi.POST('/auth/oidc/begin', {
-        body: { redirect_uri: redirectUri, tenant_name: 'default', idempotency_key: newIdempotencyKey() },
+    mutationFn: async (values: PasswordLoginValues) => {
+      const { data, error } = await coreApi.POST('/auth/password/login', {
+        body: {
+          tenant_name: values.tenant_name.trim(),
+          username: values.username.trim(),
+          password: values.password,
+          idempotency_key: newIdempotencyKey(),
+        },
       })
       if (error) throw error
-      if (!data?.authorization_url) throw new Error('未返回授权地址')
-      window.location.href = data.authorization_url
+      if (!data?.access_token || !data.refresh_token) throw new Error('登录响应缺少令牌')
+      return data
+    },
+    onSuccess: (tokens) => {
+      setTokens(tokens)
+      Message.success('登录成功')
+      navigate({ to: redirect, replace: true })
+    },
+    onError: (error) => {
+      Message.error(getPasswordLoginErrorMessage(error))
     },
   })
 
   return (
     <AuthCenterLayout>
       <Card className="w-full max-w-[400px]" title="登录 ANI Console">
-        <Typography.Paragraph type="secondary" className="!mb-4">
-          使用企业 OIDC 账号登录
-        </Typography.Paragraph>
-        <Button type="primary" long loading={login.isPending} onClick={() => login.mutate()}>
-          OIDC 登录
-        </Button>
-        {login.isError ? (
-          <div className="mt-4">
-            <ApiErrorAlert error={login.error} title="登录失败" />
-          </div>
-        ) : null}
+        <Form<PasswordLoginValues>
+          layout="vertical"
+          initialValues={{ tenant_name: 'tenant-a', username: 'admin', password: 'Correct@123' }}
+          disabled={login.isPending}
+          onSubmit={(values) => login.mutate(values)}
+        >
+          <Form.Item label="租户标识" field="tenant_name" rules={[{ required: true, message: '请输入租户标识' }]}>
+            <Input placeholder="请输入租户标识" maxLength={64} allowClear autoComplete="organization" />
+          </Form.Item>
+          <Form.Item label="用户名" field="username" rules={[{ required: true, message: '请输入用户名' }]}>
+            <Input placeholder="请输入用户名" maxLength={64} allowClear autoComplete="username" />
+          </Form.Item>
+          <Form.Item label="密码" field="password" rules={[{ required: true, message: '请输入密码' }]}>
+            <Input.Password placeholder="请输入密码" maxLength={256} autoComplete="current-password" />
+          </Form.Item>
+          <Button type="primary" htmlType="submit" long loading={login.isPending}>
+            登录
+          </Button>
+        </Form>
       </Card>
     </AuthCenterLayout>
   )
+}
+
+interface PasswordLoginValues {
+  tenant_name: string
+  username: string
+  password: string
+}
+
+export function getPasswordLoginErrorMessage(error: unknown): string {
+  const parsed = parseApiError(error)
+  if (parsed.code === 'INVALID_CREDENTIALS') return '用户名或密码错误'
+  if (parsed.code === 'TENANT_NOT_FOUND') return '租户不存在，请检查租户标识'
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return '网络异常，请稍后重试'
+  return parsed.message || '登录失败，请稍后重试'
 }

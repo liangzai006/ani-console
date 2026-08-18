@@ -3,11 +3,11 @@ import {
   useEffect,
   useMemo,
   useRef,
-  type ButtonHTMLAttributes,
   type CSSProperties,
   type MouseEvent,
   type ReactNode,
 } from 'react'
+import { Button, Select, type ButtonProps } from '@arco-design/web-react'
 import styles from './pagebase.module.css'
 
 export type ListSortDirection = 'asc' | 'desc'
@@ -48,6 +48,7 @@ type DataTableProps<T> = {
   emptyIconClassName?: string
   emptyText?: string
   tableLabel?: string
+  preserveTableOnEmpty?: boolean
   renderRowActions?: (row: T) => ReactNode
 }
 
@@ -139,18 +140,16 @@ function Pagination({ pagination }: { pagination: ListPagination }) {
         <i className="iconfont icon-right-arrow" aria-hidden="true" />
       </button>
       <span className={styles.paginationDivider} />
-      <select
+      <Select
         className={styles.paginationSelect}
         aria-label="每页条数"
         value={pagination.pageSize}
-        onChange={(event) => pagination.onPageSizeChange(Number(event.target.value))}
-      >
-        {(pagination.pageSizeOptions ?? [10, 20, 50]).map((size) => (
-          <option key={size} value={size}>
-            {size} 条/页
-          </option>
-        ))}
-      </select>
+        onChange={(value) => pagination.onPageSizeChange(Number(value))}
+        options={(pagination.pageSizeOptions ?? [10, 20, 50]).map((size) => ({
+          value: size,
+          label: `${size} 条/页`,
+        }))}
+      />
       <span className={styles.paginationDivider} />
       <label className={styles.paginationJump}>
         <span>前往</span>
@@ -187,6 +186,7 @@ export function DataTable<T>({
   emptyIconClassName = 'icon-yunzhuji',
   emptyText = '暂无数据',
   tableLabel = '数据列表',
+  preserveTableOnEmpty = false,
   renderRowActions,
 }: DataTableProps<T>) {
   const selectedSet = useMemo(() => new Set(selectedKeys), [selectedKeys])
@@ -233,7 +233,7 @@ export function DataTable<T>({
               </button>
             ) : null}
           </div>
-        ) : rows.length === 0 ? (
+        ) : rows.length === 0 && !preserveTableOnEmpty ? (
           <div className={styles.tableState}>
             <i className={`iconfont ${emptyIconClassName} ${styles.emptyIcon}`} aria-hidden="true" />
             <span>{emptyText}</span>
@@ -282,7 +282,16 @@ export function DataTable<T>({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length + 1 + (renderRowActions ? 1 : 0)}>
+                    <div className={styles.tableState}>
+                      <i className={`iconfont ${emptyIconClassName} ${styles.emptyIcon}`} aria-hidden="true" />
+                      <span>{emptyText}</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : rows.map((row) => {
                 const key = rowKey(row)
                 const selected = selectedSet.has(key)
                 return (
@@ -329,13 +338,22 @@ export function ListRowActions({ children }: { children: ReactNode }) {
   return <div className={styles.rowActions}>{children}</div>
 }
 
+export function ListNameCell({ name, id }: { name: ReactNode; id: ReactNode }) {
+  return (
+    <div className={styles.listNameCell}>
+      <span className={styles.listName}>{name}</span>
+      <span className={styles.listNameId}>{id}</span>
+    </div>
+  )
+}
+
 export const ListRowActionButton = forwardRef<
   HTMLButtonElement,
-  ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }
+  ButtonProps & { children: ReactNode }
 >(function ListRowActionButton({ children, ...buttonProps }, ref) {
   return (
-    <button ref={ref} type="button" className={styles.rowActionButton} {...buttonProps}>
+    <Button ref={ref} type="text" size="small" className={styles.rowActionButton} {...buttonProps}>
       {children}
-    </button>
+    </Button>
   )
 })

@@ -13,7 +13,7 @@ function VmInstanceCreatePage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="创建 VM 实例"
+        title="创建云主机 VM"
         subtitle="按页面分区填写镜像、规格、SSH 与网络配置。"
         extra={
           <Button type="text" onClick={() => navigate({ to: '/instances/vm' })}>
