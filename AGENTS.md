@@ -2,12 +2,12 @@
 
 ## 项目定位
 
-本仓库只包含 ANI Console 前端。后端已拆分到 `D:\Wks\Repos\Work\ANI`，接口以该仓库的 Core OpenAPI、实现代码和 GitNexus 索引为准。
+本仓库只包含 ANI Console 前端。后端由独立的 ANI 仓库维护，接口以其 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
 
 ## 开发入口
 
-1. 阅读 [DESIGN-SPEC-FREEZE.md](./DESIGN-SPEC-FREEZE.md) 和冻结的 2.0 设计规范。
-2. 阅读 [CONVENTIONS.md](./CONVENTIONS.md)。
+1. 阅读 [设计规范冻结令](./docs/design/DESIGN-SPEC-FREEZE.md) 和同目录下冻结的 2.0 设计规范。
+2. 阅读 [工程约定](./docs/CONVENTIONS.md)。
 3. 当前状态与变更记录见 [docs/CONSOLE-TASK-PLAN.md](./docs/CONSOLE-TASK-PLAN.md)。
 4. 在仓库根目录运行 `pnpm run verify`。
 

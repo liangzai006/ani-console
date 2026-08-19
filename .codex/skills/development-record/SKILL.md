@@ -20,8 +20,8 @@ description: 在经过验证的代码变更后更新项目开发记录。在本�
 ## 工作流程
 
 1. 在创建任何新文件之前，先用 `rg` 找到相关的记录文件。
-   - Console sprint 工作通常记录在 `docs/sprints/SPRINT-*.md`。
-   - Console 任务状态可以记录在 `docs/CONSOLE-TASK-PLAN.md` 或 `docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md`。
+   - Console 状态统一记录在 `docs/CONSOLE-TASK-PLAN.md`。
+   - 设计规范批次状态记录在 `docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md`。
    - 不要编辑已经冻结的产品规范文件。
 2. 添加一条简洁记录，覆盖：
    - 变更的文件或区域
@@ -33,24 +33,12 @@ description: 在经过验证的代码变更后更新项目开发记录。在本�
 5. 在最终回复前，对被修改的记录文件运行 `git diff --check`。
 
 
-## Core 实现规则
+## Console 实现规则
 
-Core 改动按以下顺序执行：
-
-1. 定义成功条件和最小可验证改动。
-2. 任何功能变更都先都要遵循 OpenAPI 契约。
-3. 在最接近且有意义的层级新增或更新聚焦测试。
-4. 仅按 `CLAUDE.md` 中的批次类型规则更新开发记录。
-5. 运行必要验证命令，或明确说明为什么无法运行。
-
-保持以下不变量：
-
-- Core API `servers[0].url` 保持为 `https://{host}/api/v1`。
-- Services API `servers[0].url` 保持为 `https://{host}/api/v1/svc`。
-- POST 创建操作和有副作用的 PUT/PATCH 操作必须支持 `idempotency_key`。
-- Core SDK 只能由 Core OpenAPI 生成；Services SDK 只能由 Services OpenAPI 生成。
-- Gateway handler、Core domain service、Services business service 不得直接导入 provider SDK。
-- Kubernetes API 的使用必须限制在 adapter/controller/preflight 等边界内。
+- 后端契约和实现以独立 `ANI` 仓库为准。
+- 前端类型快照保留在 `src/api/core-schema.d.ts`。
+- POST 和有副作用的 PUT/PATCH 必须携带 `idempotency_key`。
+- 当前验证门禁为 typecheck 与 production build，不保留自动化测试资产。
 
 
 ## 最终回复

@@ -5,7 +5,7 @@
 ## 当前口径
 
 - 项目：独立 ANI Console 前端。
-- 后端：`D:\Wks\Repos\Work\ANI`。
+- 后端：独立 ANI 仓库（GitNexus 索引 `ANI`）。
 - API：`/api/v1`，通过 `coreApi` 调用。
 - 验证：`pnpm run verify`（typecheck + production build）。
 - 测试：快速迭代阶段不保留自动化测试资产。
@@ -25,6 +25,7 @@
 
 | 日期 | 事项 |
 |------|------|
+| 2026-08-19 | 统一项目文档目录：工程约定迁入 `docs/`，冻结设计规范整体迁入 `docs/design/` 并保持正文不变；新增文档索引，更新 README、AGENTS、Cursor 规则与开发记录技能中的有效入口，移除不再维护的 Sprint 占位文档及前后端合并时期的 Core/OpenAPI/CLAUDE 路径描述。根目录 `pnpm run verify`（typecheck + production build）通过。 |
 | 2026-08-19 | 将独立 ANI Console 从 `frontends/console` 提升为仓库根项目：迁移应用源码、配置、部署与文档，移除遗留 Services OpenAPI 镜像，更新根级入口和忽略规则，并让 Docker 构建使用 `pnpm-lock.yaml`。根目录 `pnpm run verify`（typecheck + production build）通过。 |
 | 2026-08-18 | 移除 K8s 集群详情页不存在的“创建节点池”能力：删除 `DetailPageFrame` actions 中的入口，以及对应创建弹窗、表单状态、POST 请求和 GPU 参数构造逻辑；详情页操作仅保留删除集群。TypeScript typecheck 与 `git diff --check` 通过。 |
 | 2026-08-18 | 精简 K8s 集群详情基本信息中的关联对象文案，由“1 个 · 见右侧摘要”调整为“1 个”。TypeScript typecheck 与 `git diff --check` 通过。 |

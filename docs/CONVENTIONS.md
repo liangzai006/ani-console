@@ -22,7 +22,7 @@
 ## API
 
 - 所有请求通过 `src/api/client.ts` 的 `coreApi`。
-- 类型保留在 `src/api/core-schema.d.ts` 快照；契约核对后端 `D:\Wks\Repos\Work\ANI`。
+- 类型保留在 `src/api/core-schema.d.ts` 快照；契约核对独立 ANI 仓库的 Core OpenAPI 与实现。
 - POST 和有副作用的 PUT/PATCH 必须携带 `idempotency_key`。
 - 服务端数据使用 TanStack Query，客户端 UI 状态使用 Zustand。
 
@@ -36,4 +36,4 @@ pnpm run verify
 
 ## 记录
 
-功能、工具链或验证规则变化后，在 [docs/CONSOLE-TASK-PLAN.md](./docs/CONSOLE-TASK-PLAN.md) 追加一条简短记录。
+功能、工具链或验证规则变化后，在 [CONSOLE-TASK-PLAN.md](./CONSOLE-TASK-PLAN.md) 追加一条简短记录。

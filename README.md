@@ -1,6 +1,6 @@
 # ANI Console
 
-独立的 ANI Web Console。后端位于 `D:\Wks\Repos\Work\ANI`，浏览器请求统一使用 `/api/v1` 前缀。
+独立的 ANI Web Console。后端由独立的 ANI 仓库维护，浏览器请求统一使用 `/api/v1` 前缀。
 
 ## 开发
 
@@ -20,6 +20,7 @@ React 18、TypeScript、Vite、TanStack Router/Query、Arco Design React、Zusta
 
 ## 文档
 
-- [工程约定](./CONVENTIONS.md)
-- [当前任务与变更记录](./docs/CONSOLE-TASK-PLAN.md)
-- [设计规范冻结令](./DESIGN-SPEC-FREEZE.md)
+- [文档索引](./docs/README.md)
+- [工程约定](./docs/CONVENTIONS.md)
+- [当前状态与变更记录](./docs/CONSOLE-TASK-PLAN.md)
+- [设计规范冻结令](./docs/design/DESIGN-SPEC-FREEZE.md)

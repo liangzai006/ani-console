@@ -1,8 +1,8 @@
 ---
-description: ANI 产品设计规范 2.0 已冻结；Console 实现须只读遵循并按 SCB 批次改造；Core 改动须遵守 API、架构与验证边界
+description: ANI 产品设计规范 2.0 已冻结；Console 实现须只读遵循并按 SCB 批次改造
 globs:
-  - frontends/console/**
-  - openapi/v1.yaml
+  - src/**
+  - docs/**
 alwaysApply: true
 ---
 
@@ -10,19 +10,17 @@ alwaysApply: true
 
 ## 冻结令
 
-产品设计规范 **2.0 已于 2026-06-25 冻结**。真来源：[DESIGN-SPEC-FREEZE.md](../../DESIGN-SPEC-FREEZE.md)
+产品设计规范 **2.0 已于 2026-06-25 冻结**。真来源：[DESIGN-SPEC-FREEZE.md](../../docs/design/DESIGN-SPEC-FREEZE.md)
 
 **禁止**修改下列文档正文：`UI规范-2.0.md`、`产品设计规范-*-2.0.md`（不含已废止的 TDesign 版）。
 
 ## 实现前必读（只读）
 
-1. `DESIGN-SPEC-FREEZE.md`
-2. `UI规范-2.0.md`
-3. `产品设计规范-设计原则-2.0.md` → `Arco组件与Token-2.0` → `页面模板-2.0` → `样式与Tailwind边界-2.0`
-4. `frontends/console/docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md`（当前 SCB 批次）
-5. `frontends/console/CONVENTIONS.md`
-
-Console 专项入口：`frontends/console/CLAUDE.md`
+1. `docs/design/DESIGN-SPEC-FREEZE.md`
+2. `docs/design/UI规范-2.0.md`
+3. `docs/design/产品设计规范-设计原则-2.0.md` → `Arco组件与Token-2.0` → `页面模板-2.0` → `样式与Tailwind边界-2.0`
+4. `docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md`（当前 SCB 批次）
+5. `docs/CONVENTIONS.md`
 
 ## Console 实现规则
 
@@ -32,24 +30,11 @@ Console 专项入口：`frontends/console/CLAUDE.md`
 - **页面**：`src/routes/` 路由与页面同文件；列表/表单须 loading / empty / error 三态
 - **批次**：存量页按 **SCB-01 → SCB-12** 顺序改造，不得跳批；进度写 `SPRINT-SCB-*.md`，不改冻结规范
 
-## Core 实现规则
+## API 契约
 
-Core 改动按以下顺序执行：
-
-1. 定义成功条件和最小可验证改动。
-2. 任何功能变更都先都要遵循 OpenAPI 契约。
-3. 在最接近且有意义的层级新增或更新聚焦测试。
-4. 仅按 `CLAUDE.md` 中的批次类型规则更新开发记录。
-5. 运行必要验证命令，或明确说明为什么无法运行。
-
-保持以下不变量：
-
-- Core API `servers[0].url` 保持为 `https://{host}/api/v1`。
-- Services API `servers[0].url` 保持为 `https://{host}/api/v1/svc`。
-- POST 创建操作和有副作用的 PUT/PATCH 操作必须支持 `idempotency_key`。
-- Core SDK 只能由 Core OpenAPI 生成；Services SDK 只能由 Services OpenAPI 生成。
-- Gateway handler、Core domain service、Services business service 不得直接导入 provider SDK。
-- Kubernetes API 的使用必须限制在 adapter/controller/preflight 等边界内。
+- 后端契约和实现以独立 `ANI` 仓库为准。
+- 前端请求统一通过 `src/api/client.ts` 的 `coreApi`。
+- POST 和有副作用的 PUT/PATCH 必须携带 `idempotency_key`。
 
 
 ## 禁止
@@ -60,4 +45,4 @@ Core 改动按以下顺序执行：
 
 ## 验收
 
-每批次：`cd frontends/console && npm run verify`
+每批次在仓库根目录运行：`pnpm run verify`
