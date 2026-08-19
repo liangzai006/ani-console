@@ -29,7 +29,6 @@
 ## 验证
 
 ```bash
-cd frontends/console
 pnpm run verify
 ```
 

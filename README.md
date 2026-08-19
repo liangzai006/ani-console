@@ -22,4 +22,4 @@ React 18、TypeScript、Vite、TanStack Router/Query、Arco Design React、Zusta
 
 - [工程约定](./CONVENTIONS.md)
 - [当前任务与变更记录](./docs/CONSOLE-TASK-PLAN.md)
-- [设计规范冻结令](../../DESIGN-SPEC-FREEZE.md)
+- [设计规范冻结令](./DESIGN-SPEC-FREEZE.md)

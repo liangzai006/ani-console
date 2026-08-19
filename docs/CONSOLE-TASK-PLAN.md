@@ -25,6 +25,7 @@
 
 | 日期 | 事项 |
 |------|------|
+| 2026-08-19 | 将独立 ANI Console 从 `frontends/console` 提升为仓库根项目：迁移应用源码、配置、部署与文档，移除遗留 Services OpenAPI 镜像，更新根级入口和忽略规则，并让 Docker 构建使用 `pnpm-lock.yaml`。根目录 `pnpm run verify`（typecheck + production build）通过。 |
 | 2026-08-18 | 移除 K8s 集群详情页不存在的“创建节点池”能力：删除 `DetailPageFrame` actions 中的入口，以及对应创建弹窗、表单状态、POST 请求和 GPU 参数构造逻辑；详情页操作仅保留删除集群。TypeScript typecheck 与 `git diff --check` 通过。 |
 | 2026-08-18 | 精简 K8s 集群详情基本信息中的关联对象文案，由“1 个 · 见右侧摘要”调整为“1 个”。TypeScript typecheck 与 `git diff --check` 通过。 |
 | 2026-08-18 | 修正 K8s 集群详情路由与公共骨架：列表不再通过页面内 `selectedId` 切换详情，新增 `/k8s-clusters/$clusterId` 文件路由并自动更新路由树；详情改用 `DetailPageFrame` 复用统一面包屑、页头、信息卡与 Tab 布局，actions 区保留明确的“创建节点池”和“删除”操作。TypeScript typecheck 与 `git diff --check` 通过；production build 被 Node 运行时 `uv_os_get_passwd returned ENOMEM` 阻断。 |

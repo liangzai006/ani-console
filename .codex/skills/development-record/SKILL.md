@@ -13,16 +13,15 @@ description: 在经过验证的代码变更后更新项目开发记录。在本�
 在进行修改或审查前，按顺序读取：
 
 1. `AGENTS.md`
-2. `CLAUDE.md`
-3. `.codex/skills/development-record/SKILL.md`
-4. 本次任务相关的契约、代码、测试和开发记录
+2. `.codex/skills/development-record/SKILL.md`
+3. 本次任务相关的契约、代码、测试和开发记录
 
 
 ## 工作流程
 
 1. 在创建任何新文件之前，先用 `rg` 找到相关的记录文件。
-   - Console sprint 工作通常记录在 `frontends/console/docs/sprints/SPRINT-*.md`。
-   - Console 任务状态可以记录在 `frontends/console/docs/CONSOLE-TASK-PLAN.md` 或 `frontends/console/docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md`。
+   - Console sprint 工作通常记录在 `docs/sprints/SPRINT-*.md`。
+   - Console 任务状态可以记录在 `docs/CONSOLE-TASK-PLAN.md` 或 `docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md`。
    - 不要编辑已经冻结的产品规范文件。
 2. 添加一条简洁记录，覆盖：
    - 变更的文件或区域

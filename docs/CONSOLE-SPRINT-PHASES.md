@@ -7,6 +7,5 @@
 统一验收命令：
 
 ```bash
-cd frontends/console
 pnpm run verify
 ```

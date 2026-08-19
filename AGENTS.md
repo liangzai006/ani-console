@@ -7,9 +7,9 @@
 ## 开发入口
 
 1. 阅读 [DESIGN-SPEC-FREEZE.md](./DESIGN-SPEC-FREEZE.md) 和冻结的 2.0 设计规范。
-2. 阅读 [frontends/console/CONVENTIONS.md](./frontends/console/CONVENTIONS.md)。
-3. 当前状态与变更记录见 [frontends/console/docs/CONSOLE-TASK-PLAN.md](./frontends/console/docs/CONSOLE-TASK-PLAN.md)。
-4. 在 `frontends/console` 运行 `pnpm run verify`。
+2. 阅读 [CONVENTIONS.md](./CONVENTIONS.md)。
+3. 当前状态与变更记录见 [docs/CONSOLE-TASK-PLAN.md](./docs/CONSOLE-TASK-PLAN.md)。
+4. 在仓库根目录运行 `pnpm run verify`。
 
 ## 强制规则
 
