@@ -27,10 +27,10 @@
 
 ## GitNexus
 
-仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-7.29`。
+仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-8.19`。
 
 - 修改函数、类或方法前运行 upstream impact 分析。
 - HIGH/CRITICAL 风险必须先告知用户。
 - 完成后运行 `gitnexus detect-changes -r ani-console -s all`。
 - 查看接口、后端契约或执行流时，必须使用 GitNexus 索引 `ANI`（`-r ANI`）。
-- 查看产品原型、页面信息架构或交互布局时，必须使用 GitNexus 索引 `产品原型-7.29`（`-r 产品原型-7.29`）。
+- 查看产品原型、页面信息架构或交互布局时，必须使用 GitNexus 索引 `产品原型-8.19`（`-r 产品原型-8.19`）。
