@@ -29,10 +29,12 @@
 ## 验证
 
 ```bash
-pnpm run verify
+pnpm run typecheck
+git diff --check
+gitnexus detect-changes -r ani-console -s all
 ```
 
-当前 `verify` 为 typecheck + production build。快速迭代阶段不保留自动化测试资产。
+快速迭代阶段默认只运行 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测，不保留自动化测试资产。构建、页面和交互由用户通过后台运行的 `pnpm dev` 等方式手动验证；Agent 不运行 `pnpm run verify` 或 production build，也不启动、重启或中断该服务。
 
 ## 记录
 

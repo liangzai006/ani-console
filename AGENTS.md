@@ -9,7 +9,7 @@
 1. 阅读 [设计规范冻结令](./docs/design/DESIGN-SPEC-FREEZE.md) 和同目录下冻结的 2.0 设计规范。
 2. 阅读 [工程约定](./docs/CONVENTIONS.md)。
 3. 当前状态与变更记录见 [docs/CONSOLE-TASK-PLAN.md](./docs/CONSOLE-TASK-PLAN.md)。
-4. 在仓库根目录运行 `pnpm run verify`。
+4. 默认运行 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不得运行 `pnpm run verify`、production build，或启动、重启 `pnpm dev`，构建、页面与交互由用户手动验证。
 
 ## 强制规则
 
@@ -22,7 +22,7 @@
 - Core API 统一通过 `src/api/client.ts` 的 `coreApi` 调用。
 - POST 及有副作用的 PUT/PATCH 必须携带 `idempotency_key`。
 - 不修改冻结设计规范正文。
-- 当前快速迭代阶段不保留自动化测试资产；门禁为 typecheck 与 production build。
+- 当前快速迭代阶段不保留自动化测试资产；默认检查为 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测。Agent 不得运行 `pnpm run verify` 或 production build，也不得启动、重启或中断用户后台运行的 `pnpm dev`。
 - 不覆盖或清理用户已有的无关工作区改动。
 
 ## GitNexus

@@ -38,7 +38,8 @@ description: 在经过验证的代码变更后更新项目开发记录。在本�
 - 后端契约和实现以独立 `ANI` 仓库为准。
 - 前端类型快照保留在 `src/api/core-schema.d.ts`。
 - POST 和有副作用的 PUT/PATCH 必须携带 `idempotency_key`。
-- 当前验证门禁为 typecheck 与 production build，不保留自动化测试资产。
+- 当前默认验证为 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测，不保留自动化测试资产。
+- Agent 不运行 `pnpm run verify` 或 production build；不得启动、重启或中断用户后台运行的 `pnpm dev`，构建与页面交互由用户手动验证。
 
 
 ## 最终回复
