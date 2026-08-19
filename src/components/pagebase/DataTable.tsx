@@ -39,8 +39,9 @@ type DataTableProps<T> = {
   rows: T[]
   rowKey: (row: T) => string
   columns: Array<ListColumn<T>>
-  selectedKeys: string[]
-  onSelectedKeysChange: (keys: string[]) => void
+  selectedKeys?: string[]
+  onSelectedKeysChange?: (keys: string[]) => void
+  selectable?: boolean
   pagination: ListPagination
   loading?: boolean
   error?: string | null
@@ -177,8 +178,9 @@ export function DataTable<T>({
   rows,
   rowKey,
   columns,
-  selectedKeys,
-  onSelectedKeysChange,
+  selectedKeys = [],
+  onSelectedKeysChange = () => undefined,
+  selectable = true,
   pagination,
   loading = false,
   error,
@@ -242,14 +244,16 @@ export function DataTable<T>({
           <table className={styles.dataTable} aria-label={tableLabel}>
             <thead>
               <tr>
-                <th className={styles.checkboxColumn}>
-                  <SelectionCheckbox
-                    checked={allChecked}
-                    indeterminate={indeterminate}
-                    label="选择当前页全部数据"
-                    onChange={toggleAll}
-                  />
-                </th>
+                {selectable ? (
+                  <th className={styles.checkboxColumn}>
+                    <SelectionCheckbox
+                      checked={allChecked}
+                      indeterminate={indeterminate}
+                      label="选择当前页全部数据"
+                      onChange={toggleAll}
+                    />
+                  </th>
+                ) : null}
                 {columns.map((column) => {
                   const columnStyle: CSSProperties = {
                     width: column.width,
@@ -284,7 +288,7 @@ export function DataTable<T>({
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length + 1 + (renderRowActions ? 1 : 0)}>
+                  <td colSpan={columns.length + (selectable ? 1 : 0) + (renderRowActions ? 1 : 0)}>
                     <div className={styles.tableState}>
                       <i className={`iconfont ${emptyIconClassName} ${styles.emptyIcon}`} aria-hidden="true" />
                       <span>{emptyText}</span>
@@ -298,16 +302,18 @@ export function DataTable<T>({
                   <tr
                     key={key}
                     className={selected ? styles.selectedRow : ''}
-                    aria-selected={selected}
-                    onClick={(event) => handleRowClick(event, key)}
+                    aria-selected={selectable ? selected : undefined}
+                    onClick={selectable ? (event) => handleRowClick(event, key) : undefined}
                   >
-                    <td className={styles.checkboxColumn}>
-                      <SelectionCheckbox
-                        checked={selected}
-                        label={`选择数据 ${key}`}
-                        onChange={() => toggleRow(key)}
-                      />
-                    </td>
+                    {selectable ? (
+                      <td className={styles.checkboxColumn}>
+                        <SelectionCheckbox
+                          checked={selected}
+                          label={`选择数据 ${key}`}
+                          onChange={() => toggleRow(key)}
+                        />
+                      </td>
+                    ) : null}
                     {columns.map((column) => (
                       <td
                         key={column.key}

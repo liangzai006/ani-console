@@ -27,7 +27,7 @@ export const menuItems: readonly MenuItem[] = [
   { key: '/', label: '概览', icon: <IconDashboard /> },
   {
     key: 'compute',
-    label: '算力与实例',
+    label: '计算',
     icon: <IconCloud />,
     children: [
       { key: '/gpu-inventory', label: 'GPU 算力管理', icon: <IconCloud /> },
@@ -53,6 +53,18 @@ export const menuItems: readonly MenuItem[] = [
     ],
   },
   {
+    key: 'network-management',
+    label: '网络',
+    icon: <IconNav />,
+    children: [
+      { key: '/networks/vpcs', label: 'VPC', icon: <IconNav /> },
+      { key: '/networks/subnets', label: '子网', icon: <IconNav /> },
+      { key: '/networks/security-groups', label: '安全组', icon: <IconSafe /> },
+      { key: '/networks/load-balancers', label: '负载均衡', icon: <IconNav /> },
+      { key: '/networks/routes', label: '路由', icon: <IconNav /> },
+    ],
+  },
+  {
     key: 'storage',
     label: '存储',
     icon: <IconStorage />,
@@ -61,18 +73,6 @@ export const menuItems: readonly MenuItem[] = [
       { key: '/filesystems', label: '文件存储', icon: <IconFile /> },
       { key: '/objects', label: '对象存储', icon: <IconStorage /> },
       { key: '/vector-stores', label: '向量存储', icon: <IconUnorderedList /> },
-    ],
-  },
-  {
-    key: 'network-management',
-    label: '网络管理',
-    icon: <IconNav />,
-    children: [
-      { key: '/networks/vpcs', label: 'VPC', icon: <IconNav /> },
-      { key: '/networks/subnets', label: '子网', icon: <IconNav /> },
-      { key: '/networks/security-groups', label: '安全组', icon: <IconSafe /> },
-      { key: '/networks/load-balancers', label: '负载均衡', icon: <IconNav /> },
-      { key: '/networks/routes', label: '路由', icon: <IconNav /> },
     ],
   },
   {

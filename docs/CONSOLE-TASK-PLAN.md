@@ -7,6 +7,7 @@
 - 项目：独立 ANI Console 前端。
 - 后端：独立 ANI 仓库（GitNexus 索引 `ANI`）。
 - API：`/api/v1`，通过 `coreApi` 调用。
+- 产品原型：GitNexus 索引 `产品原型-8.19`；页面信息架构与交互布局以该版本为准。
 - 验证：默认运行 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；Agent 不运行 `pnpm run verify` 或 production build，构建、页面与交互由用户通过后台 `pnpm dev` 等方式手动验证。
 - 测试：快速迭代阶段不保留自动化测试资产。
 - 菜单约束：信息架构、名称与顺序对齐产品原型；实现保留现有顶部一级导航，二、三级菜单使用现有 Arco 侧栏、缩进与折叠交互，不复刻原型的导航视觉样式。
@@ -25,8 +26,7 @@
 
 | 日期 | 事项 |
 |------|------|
-| 2026-08-19 | 更新开发验证规则：Agent 默认只运行 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测，不执行 `pnpm run verify` 或 production build，也不启动、重启或中断用户后台运行的 `pnpm dev`；构建、页面与交互由用户手动验证。同步更新 `AGENTS.md`、工程约定、开发记录技能和 README。 |
-| 2026-08-19 | 对照 GitNexus `产品原型-7.29` 的 VPC 定义重做网络 VPC 页面：列表接入统一页头、状态 Tab、名称/ID 搜索、刷新、固定分页和三态表格，展示名称/ID、状态、CIDR、子网数、路由条目和创建时间；创建弹窗补齐名称/CIDR 校验与幂等键，删除保留依赖资源冲突提示；新增独立 VPC 详情路由，详情实现全部位于 `$vpcId.tsx`，按概览、子网、路由、关联资源组织，并同步将一级菜单“网络管理”改为“网络”且移动到“存储”之前。ANI 当前 VPC 创建契约不含描述字段，页面未提交虚构字段。隔离临时工作区 TypeScript typecheck 与 production build 通过，拆分后再次运行 TypeScript typecheck 通过，`git diff --check` 通过；GitNexus detect-changes 为 HIGH，主要覆盖 VPC 整页流程与生成路由树，索引仍落后 3 个提交。 |
+| 2026-08-19 | 对照产品原型与 ANI 契约重做网络 VPC、子网列表及独立详情页：统一列表页头、筛选搜索、刷新、分页、三态表格、创建校验与删除冲突提示，并关闭无批量操作列表的多选；详情统一资源页头、基本信息、关联摘要和 Tab 布局，关联资源使用 Arco List/Empty 单行展示真实可判定对象。子网详情最终保留“关联资源”和“路由”Tab：关联资源仅展示实例，路由固定展示系统默认路由并映射自定义路由；未伪造 ANI 契约缺失字段。产品原型索引更新为 `产品原型-8.19`，开发验证规则同步收敛为 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；相关检查通过，页面交互由用户手动验证。 |
 | 2026-08-19 | 统一项目文档目录：工程约定迁入 `docs/`，冻结设计规范整体迁入 `docs/design/` 并保持正文不变；新增文档索引，更新 README、AGENTS、Cursor 规则与开发记录技能中的有效入口，移除不再维护的 Sprint 占位文档及前后端合并时期的 Core/OpenAPI/CLAUDE 路径描述。根目录 `pnpm run verify`（typecheck + production build）通过。 |
 | 2026-08-19 | 将独立 ANI Console 从 `frontends/console` 提升为仓库根项目：迁移应用源码、配置、部署与文档，移除遗留 Services OpenAPI 镜像，更新根级入口和忽略规则，并让 Docker 构建使用 `pnpm-lock.yaml`。根目录 `pnpm run verify`（typecheck + production build）通过。 |
 | 2026-08-18 | 移除 K8s 集群详情页不存在的“创建节点池”能力：删除 `DetailPageFrame` actions 中的入口，以及对应创建弹窗、表单状态、POST 请求和 GPU 参数构造逻辑；详情页操作仅保留删除集群。TypeScript typecheck 与 `git diff --check` 通过。 |

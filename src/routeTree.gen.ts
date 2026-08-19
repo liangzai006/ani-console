@@ -59,6 +59,8 @@ import { Route as AuthenticatedNetworksSecurityGroupsIndexRouteImport } from './
 import { Route as AuthenticatedNetworksRoutesIndexRouteImport } from './routes/_authenticated/networks/routes/index'
 import { Route as AuthenticatedNetworksLoadBalancersIndexRouteImport } from './routes/_authenticated/networks/load-balancers/index'
 import { Route as AuthenticatedObjectsBucketIdObjectIdRouteImport } from './routes/_authenticated/objects/$bucketId/$objectId'
+import { Route as AuthenticatedNetworksVpcsVpcIdRouteImport } from './routes/_authenticated/networks/vpcs/$vpcId'
+import { Route as AuthenticatedNetworksSubnetsSubnetIdRouteImport } from './routes/_authenticated/networks/subnets/$subnetId'
 import { Route as AuthenticatedInstancesVmCreateRouteImport } from './routes/_authenticated/instances/vm/create'
 import { Route as AuthenticatedInstancesVmInstanceIdRouteImport } from './routes/_authenticated/instances/vm/$instanceId'
 import { Route as AuthenticatedInstancesSandboxCreateRouteImport } from './routes/_authenticated/instances/sandbox/create'
@@ -355,6 +357,18 @@ const AuthenticatedObjectsBucketIdObjectIdRoute =
     path: '/$objectId',
     getParentRoute: () => AuthenticatedObjectsBucketIdRoute,
   } as any)
+const AuthenticatedNetworksVpcsVpcIdRoute =
+  AuthenticatedNetworksVpcsVpcIdRouteImport.update({
+    id: '/networks/vpcs/$vpcId',
+    path: '/networks/vpcs/$vpcId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedNetworksSubnetsSubnetIdRoute =
+  AuthenticatedNetworksSubnetsSubnetIdRouteImport.update({
+    id: '/networks/subnets/$subnetId',
+    path: '/networks/subnets/$subnetId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedInstancesVmCreateRoute =
   AuthenticatedInstancesVmCreateRouteImport.update({
     id: '/create',
@@ -461,6 +475,8 @@ export interface FileRoutesByFullPath {
   '/instances/sandbox/create': typeof AuthenticatedInstancesSandboxCreateRoute
   '/instances/vm/$instanceId': typeof AuthenticatedInstancesVmInstanceIdRouteWithChildren
   '/instances/vm/create': typeof AuthenticatedInstancesVmCreateRoute
+  '/networks/subnets/$subnetId': typeof AuthenticatedNetworksSubnetsSubnetIdRoute
+  '/networks/vpcs/$vpcId': typeof AuthenticatedNetworksVpcsVpcIdRoute
   '/objects/$bucketId/$objectId': typeof AuthenticatedObjectsBucketIdObjectIdRoute
   '/networks/load-balancers': typeof AuthenticatedNetworksLoadBalancersIndexRoute
   '/networks/routes': typeof AuthenticatedNetworksRoutesIndexRoute
@@ -519,6 +535,8 @@ export interface FileRoutesByTo {
   '/instances/sandbox/create': typeof AuthenticatedInstancesSandboxCreateRoute
   '/instances/vm/$instanceId': typeof AuthenticatedInstancesVmInstanceIdRouteWithChildren
   '/instances/vm/create': typeof AuthenticatedInstancesVmCreateRoute
+  '/networks/subnets/$subnetId': typeof AuthenticatedNetworksSubnetsSubnetIdRoute
+  '/networks/vpcs/$vpcId': typeof AuthenticatedNetworksVpcsVpcIdRoute
   '/objects/$bucketId/$objectId': typeof AuthenticatedObjectsBucketIdObjectIdRoute
   '/networks/load-balancers': typeof AuthenticatedNetworksLoadBalancersIndexRoute
   '/networks/routes': typeof AuthenticatedNetworksRoutesIndexRoute
@@ -581,6 +599,8 @@ export interface FileRoutesById {
   '/_authenticated/instances/sandbox/create': typeof AuthenticatedInstancesSandboxCreateRoute
   '/_authenticated/instances/vm/$instanceId': typeof AuthenticatedInstancesVmInstanceIdRouteWithChildren
   '/_authenticated/instances/vm/create': typeof AuthenticatedInstancesVmCreateRoute
+  '/_authenticated/networks/subnets/$subnetId': typeof AuthenticatedNetworksSubnetsSubnetIdRoute
+  '/_authenticated/networks/vpcs/$vpcId': typeof AuthenticatedNetworksVpcsVpcIdRoute
   '/_authenticated/objects/$bucketId/$objectId': typeof AuthenticatedObjectsBucketIdObjectIdRoute
   '/_authenticated/networks/load-balancers/': typeof AuthenticatedNetworksLoadBalancersIndexRoute
   '/_authenticated/networks/routes/': typeof AuthenticatedNetworksRoutesIndexRoute
@@ -643,6 +663,8 @@ export interface FileRouteTypes {
     | '/instances/sandbox/create'
     | '/instances/vm/$instanceId'
     | '/instances/vm/create'
+    | '/networks/subnets/$subnetId'
+    | '/networks/vpcs/$vpcId'
     | '/objects/$bucketId/$objectId'
     | '/networks/load-balancers'
     | '/networks/routes'
@@ -701,6 +723,8 @@ export interface FileRouteTypes {
     | '/instances/sandbox/create'
     | '/instances/vm/$instanceId'
     | '/instances/vm/create'
+    | '/networks/subnets/$subnetId'
+    | '/networks/vpcs/$vpcId'
     | '/objects/$bucketId/$objectId'
     | '/networks/load-balancers'
     | '/networks/routes'
@@ -762,6 +786,8 @@ export interface FileRouteTypes {
     | '/_authenticated/instances/sandbox/create'
     | '/_authenticated/instances/vm/$instanceId'
     | '/_authenticated/instances/vm/create'
+    | '/_authenticated/networks/subnets/$subnetId'
+    | '/_authenticated/networks/vpcs/$vpcId'
     | '/_authenticated/objects/$bucketId/$objectId'
     | '/_authenticated/networks/load-balancers/'
     | '/_authenticated/networks/routes/'
@@ -1131,6 +1157,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedObjectsBucketIdObjectIdRouteImport
       parentRoute: typeof AuthenticatedObjectsBucketIdRoute
     }
+    '/_authenticated/networks/vpcs/$vpcId': {
+      id: '/_authenticated/networks/vpcs/$vpcId'
+      path: '/networks/vpcs/$vpcId'
+      fullPath: '/networks/vpcs/$vpcId'
+      preLoaderRoute: typeof AuthenticatedNetworksVpcsVpcIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/networks/subnets/$subnetId': {
+      id: '/_authenticated/networks/subnets/$subnetId'
+      path: '/networks/subnets/$subnetId'
+      fullPath: '/networks/subnets/$subnetId'
+      preLoaderRoute: typeof AuthenticatedNetworksSubnetsSubnetIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/instances/vm/create': {
       id: '/_authenticated/instances/vm/create'
       path: '/create'
@@ -1350,6 +1390,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUsageIndexRoute: typeof AuthenticatedUsageIndexRoute
   AuthenticatedVectorStoresIndexRoute: typeof AuthenticatedVectorStoresIndexRoute
   AuthenticatedVolumesIndexRoute: typeof AuthenticatedVolumesIndexRoute
+  AuthenticatedNetworksSubnetsSubnetIdRoute: typeof AuthenticatedNetworksSubnetsSubnetIdRoute
+  AuthenticatedNetworksVpcsVpcIdRoute: typeof AuthenticatedNetworksVpcsVpcIdRoute
   AuthenticatedNetworksLoadBalancersIndexRoute: typeof AuthenticatedNetworksLoadBalancersIndexRoute
   AuthenticatedNetworksRoutesIndexRoute: typeof AuthenticatedNetworksRoutesIndexRoute
   AuthenticatedNetworksSecurityGroupsIndexRoute: typeof AuthenticatedNetworksSecurityGroupsIndexRoute
@@ -1403,6 +1445,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedUsageIndexRoute: AuthenticatedUsageIndexRoute,
   AuthenticatedVectorStoresIndexRoute: AuthenticatedVectorStoresIndexRoute,
   AuthenticatedVolumesIndexRoute: AuthenticatedVolumesIndexRoute,
+  AuthenticatedNetworksSubnetsSubnetIdRoute:
+    AuthenticatedNetworksSubnetsSubnetIdRoute,
+  AuthenticatedNetworksVpcsVpcIdRoute: AuthenticatedNetworksVpcsVpcIdRoute,
   AuthenticatedNetworksLoadBalancersIndexRoute:
     AuthenticatedNetworksLoadBalancersIndexRoute,
   AuthenticatedNetworksRoutesIndexRoute: AuthenticatedNetworksRoutesIndexRoute,
