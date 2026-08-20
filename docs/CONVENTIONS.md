@@ -4,6 +4,7 @@
 
 - `src/routes/`：TanStack Router 路由与页面，必须同文件。
 - `src/components/`：跨页面共享组件。
+- 资源创建模态框统一放在 `src/components/<domain>/`，通过 `visible`、`onCancel`、成功回调及必要的上下文默认值暴露复用接口，避免绑定具体路由。
 - `src/api/`：`coreApi` 与后端类型快照。
 - `src/stores/`：客户端状态。
 - `src/lib/`、`src/hooks/`：共享逻辑。
@@ -14,6 +15,7 @@
 - 组件库：`@arco-design/web-react`。
 - 图标：`@arco-design/web-react/icon`。
 - 颜色与状态：Arco Token。
+- 动态规则、联动选择器、异步选项、复杂校验等表单项必须拆为领域共享组件；路由页面负责页面级数据和交互编排，不复制字段结构与校验逻辑。
 - Tailwind 仅用于布局。
 - 列表必须覆盖 loading、empty、error。
 - 危险操作必须二次确认。

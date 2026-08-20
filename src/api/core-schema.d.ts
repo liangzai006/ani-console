@@ -532,6 +532,43 @@ export interface paths {
         patch: operations["updateNetworkSecurityGroup"];
         trace?: never;
     };
+    "/networks/security-groups/{security_group_id}/rules": {
+        parameters: { query?: never; header?: never; path?: never; cookie?: never };
+        /** 查询安全组规则列表 */
+        get: operations["listNetworkSecurityGroupRules"];
+        put?: never;
+        /** 创建安全组规则 */
+        post: operations["createNetworkSecurityGroupRule"];
+        delete?: never; options?: never; head?: never; patch?: never; trace?: never;
+    };
+    "/networks/security-groups/{security_group_id}/rules/{rule_id}": {
+        parameters: { query?: never; header?: never; path?: never; cookie?: never };
+        /** 查询安全组规则 */
+        get: operations["getNetworkSecurityGroupRule"];
+        /** 更新安全组规则 */
+        put: operations["updateNetworkSecurityGroupRule"];
+        post?: never;
+        /** 删除安全组规则 */
+        delete: operations["deleteNetworkSecurityGroupRule"];
+        options?: never; head?: never; patch?: never; trace?: never;
+    };
+    "/networks/security-groups/{security_group_id}/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询安全组绑定列表 */
+        get: operations["listNetworkSecurityGroupBindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/networks/load-balancers": {
         parameters: {
             query?: never;
@@ -2698,12 +2735,59 @@ export interface components {
             /** @enum {string} */
             action: "allow" | "deny";
         };
+        NetworkSecurityGroupRuleResource: {
+            id: string;
+            security_group_id: string;
+            /** @description 数值越小优先级越高。 */
+            priority: number;
+            direction: "ingress" | "egress";
+            protocol: "tcp" | "udp" | "icmp" | "all";
+            port_range: string;
+            cidr: string;
+            action: "allow" | "deny";
+            description?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at?: string | null;
+        };
+        NetworkSecurityGroupRuleListResponse: {
+            items: components["schemas"]["NetworkSecurityGroupRuleResource"][];
+            total: number;
+            next_cursor?: string | null;
+        };
+        CreateNetworkSecurityGroupRuleRequest: {
+            idempotency_key: string;
+            priority: number;
+            direction: "ingress" | "egress";
+            protocol: "tcp" | "udp" | "icmp" | "all";
+            port_range: string;
+            cidr: string;
+            action: "allow" | "deny";
+            description?: string | null;
+        };
+        UpdateNetworkSecurityGroupRuleRequest: {
+            idempotency_key: string;
+            priority?: number;
+            direction?: "ingress" | "egress";
+            protocol?: "tcp" | "udp" | "icmp" | "all";
+            port_range?: string;
+            cidr?: string;
+            action?: "allow" | "deny";
+            description?: string | null;
+        };
         NetworkSecurityGroup: {
             id: string;
             tenant_id: string;
             name: string;
+            /** @description 所属 VPC；历史资源可为空。 */
+            vpc_id?: string | null;
             description?: string | null;
             rules: components["schemas"]["NetworkSecurityGroupRule"][];
+            /** @description 安全组规则总数；只读聚合字段。 */
+            readonly rule_count?: number;
+            /** @description 关联实例总数；只读聚合字段。 */
+            readonly bound_instance_count?: number;
             state: components["schemas"]["NetworkResourceState"];
             reason?: string | null;
             dev_profile?: components["schemas"]["CoreDevProfileInfo"];
@@ -2711,6 +2795,21 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        /** @enum {string} */
+        NetworkSecurityGroupBindingTargetType: "instance" | "network_interface" | "load_balancer";
+        NetworkSecurityGroupBinding: {
+            id: string;
+            security_group_id: string;
+            target_type: components["schemas"]["NetworkSecurityGroupBindingTargetType"];
+            target_id: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        NetworkSecurityGroupBindingListResponse: {
+            items: components["schemas"]["NetworkSecurityGroupBinding"][];
+            total: number;
+            next_cursor?: string | null;
         };
         NetworkLoadBalancerListener: {
             /** @enum {string} */
@@ -2776,6 +2875,8 @@ export interface components {
             /** @description 客户端生成；同一 tenant_id 下 24 小时内去重 */
             idempotency_key: string;
             name: string;
+            /** @description 所属 VPC；Console 创建流程始终提供。 */
+            vpc_id?: string | null;
             description?: string | null;
             rules?: components["schemas"]["NetworkSecurityGroupRule"][];
         };
@@ -4548,6 +4649,61 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    listNetworkSecurityGroupRules: {
+        parameters: { query?: { direction?: "ingress" | "egress"; protocol?: "tcp" | "udp" | "icmp" | "all"; limit?: number; cursor?: string }; header?: never; path: { security_group_id: string }; cookie?: never };
+        requestBody?: never;
+        responses: { 200: { headers: { [name: string]: unknown }; content: { "application/json": components["schemas"]["NetworkSecurityGroupRuleListResponse"] } }; 401: components["responses"]["Unauthorized"]; 403: components["responses"]["Forbidden"]; 404: components["responses"]["NotFound"] };
+    };
+    createNetworkSecurityGroupRule: {
+        parameters: { query?: never; header?: never; path: { security_group_id: string }; cookie?: never };
+        requestBody: { content: { "application/json": components["schemas"]["CreateNetworkSecurityGroupRuleRequest"] } };
+        responses: { 201: { headers: { [name: string]: unknown }; content: { "application/json": components["schemas"]["NetworkSecurityGroupRuleResource"] } }; 400: components["responses"]["BadRequest"]; 401: components["responses"]["Unauthorized"]; 403: components["responses"]["Forbidden"]; 404: components["responses"]["NotFound"]; 409: components["responses"]["Conflict"] };
+    };
+    getNetworkSecurityGroupRule: {
+        parameters: { query?: never; header?: never; path: { security_group_id: string; rule_id: string }; cookie?: never };
+        requestBody?: never;
+        responses: { 200: { headers: { [name: string]: unknown }; content: { "application/json": components["schemas"]["NetworkSecurityGroupRuleResource"] } }; 401: components["responses"]["Unauthorized"]; 403: components["responses"]["Forbidden"]; 404: components["responses"]["NotFound"] };
+    };
+    updateNetworkSecurityGroupRule: {
+        parameters: { query?: never; header?: never; path: { security_group_id: string; rule_id: string }; cookie?: never };
+        requestBody: { content: { "application/json": components["schemas"]["UpdateNetworkSecurityGroupRuleRequest"] } };
+        responses: { 200: { headers: { [name: string]: unknown }; content: { "application/json": components["schemas"]["NetworkSecurityGroupRuleResource"] } }; 400: components["responses"]["BadRequest"]; 401: components["responses"]["Unauthorized"]; 403: components["responses"]["Forbidden"]; 404: components["responses"]["NotFound"]; 409: components["responses"]["Conflict"] };
+    };
+    deleteNetworkSecurityGroupRule: {
+        parameters: { query?: never; header?: never; path: { security_group_id: string; rule_id: string }; cookie?: never };
+        requestBody?: never;
+        responses: { 200: { headers: { [name: string]: unknown }; content: { "application/json": components["schemas"]["NetworkSecurityGroupRuleResource"] } }; 401: components["responses"]["Unauthorized"]; 403: components["responses"]["Forbidden"]; 404: components["responses"]["NotFound"]; 409: components["responses"]["Conflict"] };
+    };
+    listNetworkSecurityGroupBindings: {
+        parameters: {
+            query?: {
+                target_type?: components["schemas"]["NetworkSecurityGroupBindingTargetType"];
+                target_id?: string;
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                security_group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 安全组绑定列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkSecurityGroupBindingListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listNetworkLoadBalancers: {

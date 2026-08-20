@@ -16,6 +16,7 @@
 - UI 只使用 Arco Design React；颜色使用 Arco Token，Tailwind 仅负责布局。
 - 实现 UI 与交互时优先使用 Arco Design React 组件；只有确认组件库无法满足需求时才允许自行实现，并在变更说明中记录原因。
 - 新增组件或样式前，先检索 `src/components/` 和同类页面是否已有符合需求的实现；已有实现应优先复用或扩展公共组件，不得复制为页面私有版本。
+- 资源创建模态框，以及包含动态列表、异步选项、字段联动或复杂校验的表单项，必须抽到 `src/components/<domain>/` 作为可复用组件；路由页面只负责页面级查询、状态编排与导航，不得长期内联或复制同类表单。
 - 新建页面时必须先参考同类型的已有页面；若已有布局可复用或沿用，除非用户另有指定，应优先按照已有布局实现，例如列表页、带 Tab 的详情页。
 - 一般不改动页面 Layout，包括菜单栏、导航及相关壳层骨架；只有用户明确指定时才允许调整。
 - 页面与路由同放在 `src/routes/`；共享组件放在 `src/components/`。
@@ -34,3 +35,48 @@
 - 完成后运行 `gitnexus detect-changes -r ani-console -s all`。
 - 查看接口、后端契约或执行流时，必须使用 GitNexus 索引 `ANI`（`-r ANI`）。
 - 查看产品原型、页面信息架构或交互布局时，必须使用 GitNexus 索引 `产品原型-8.19`（`-r 产品原型-8.19`）。
+
+<!-- gitnexus:start -->
+# GitNexus — Code Intelligence
+
+This project is indexed by GitNexus as **ani-console** (1731 symbols, 3888 relationships, 133 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+
+> Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
+
+## Always Do
+
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "master"})`.
+- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
+- When exploring unfamiliar code, use `query({search_query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.
+- For security review, `explain({target: "fileOrSymbol"})` lists taint findings (source→sink flows; needs `analyze --pdg`).
+
+## Never Do
+
+- NEVER edit a function, class, or method without first running `impact` on it.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
+- NEVER rename symbols with find-and-replace — use `rename` which understands the call graph.
+- NEVER commit changes without running `detect_changes()` to check affected scope.
+
+## Resources
+
+| Resource | Use for |
+|----------|---------|
+| `gitnexus://repo/ani-console/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/ani-console/clusters` | All functional areas |
+| `gitnexus://repo/ani-console/processes` | All execution flows |
+| `gitnexus://repo/ani-console/process/{name}` | Step-by-step execution trace |
+
+## CLI
+
+| Task | Read this skill file |
+|------|---------------------|
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+
+<!-- gitnexus:end -->

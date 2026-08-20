@@ -60,8 +60,8 @@ export const menuItems: readonly MenuItem[] = [
       { key: '/networks/vpcs', label: 'VPC', icon: <IconNav /> },
       { key: '/networks/subnets', label: '子网', icon: <IconNav /> },
       { key: '/networks/security-groups', label: '安全组', icon: <IconSafe /> },
-      { key: '/networks/load-balancers', label: '负载均衡', icon: <IconNav /> },
       { key: '/networks/routes', label: '路由', icon: <IconNav /> },
+      { key: '/networks/load-balancers', label: '负载均衡', icon: <IconNav /> },
     ],
   },
   {

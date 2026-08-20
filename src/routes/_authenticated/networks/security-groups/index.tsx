@@ -1,225 +1,261 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Form, Input, Modal, Select, Space } from '@arco-design/web-react'
-import { useState } from 'react'
-import { networkRulesTable, SimpleResourceCrud } from '@/components/crud/SimpleResourceCrud'
-import { StatusTag } from '@/components/shell/StatusTag'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Modal, Select } from '@arco-design/web-react'
+import { useEffect, useMemo, useState } from 'react'
 import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
-import { newIdempotencyKey } from '@/lib/idempotency'
-import { listOrThrow } from '@/lib/api-list'
-import { formatDateTime } from '@/lib/format'
 import type { components } from '@/api/core-schema'
+import { CreateSecurityGroupModal } from '@/components/network/CreateSecurityGroupModal'
+import {
+  DataTable,
+  ListNameCell,
+  ListPageFrame,
+  ListPageHeader,
+  ListRowActionButton,
+  ListRowActions,
+  ListToolbar,
+  StatusTabs,
+  ToolbarButton,
+  ToolbarIconButton,
+  ToolbarSearch,
+  type ListColumn,
+} from '@/components/pagebase'
+import { listOrThrow } from '@/lib/api-list'
+import { getErrorMessage } from '@/lib/errors'
+import { formatDateTime } from '@/lib/format'
+import { newIdempotencyKey } from '@/lib/idempotency'
 
-type SecurityGroupRule = components['schemas']['NetworkSecurityGroupRule']
+type SecurityGroup = components['schemas']['NetworkSecurityGroup']
+type Vpc = components['schemas']['NetworkVPC']
+type StatusFilter = 'all' | 'available'
+type SearchField = 'name' | 'id'
 
-export const Route = createFileRoute('/_authenticated/networks/security-groups/')({
-  component: SecurityGroupsPage,
-})
+export const Route = createFileRoute('/_authenticated/networks/security-groups/')({ component: SecurityGroupsPage })
 
 function SecurityGroupsPage() {
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [rules, setRules] = useState<SecurityGroupRule[]>([])
+  const navigate = useNavigate()
+  const [createVisible, setCreateVisible] = useState(false)
+  const [status, setStatus] = useState<StatusFilter>('all')
+  const [searchField, setSearchField] = useState<SearchField>('name')
+  const [searchText, setSearchText] = useState('')
+  const [filterVpcId, setFilterVpcId] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const securityGroups = useQuery({
+    queryKey: ['network-security-groups'],
+    queryFn: () => listOrThrow(() => coreApi.GET('/networks/security-groups', { params: { query: { limit: 100 } } })),
+  })
+  const vpcs = useQuery({
+    queryKey: ['network-vpcs', 'security-group-create'],
+    queryFn: () => listOrThrow(() => coreApi.GET('/networks/vpcs', { params: { query: { limit: 100 } } })),
+  })
 
-  return (
-    <SimpleResourceCrud
-      title="安全组"
-      queryKey="network-sg"
-      emptyDescription="暂无安全组，点击右上角创建"
-      showState
-      list={() => listOrThrow(() => coreApi.GET('/networks/security-groups', { params: { query: { limit: 50 } } }))}
-      onCreate={async () => {}}
-      createForm={{
-        content: (
-          <Form layout="vertical">
-            <Form.Item label="名称" required>
-              <Input aria-label="名称" value={name} onChange={setName} />
-            </Form.Item>
-            <Form.Item label="描述">
-              <Input value={description} onChange={setDescription} />
-            </Form.Item>
-            <Form.Item label="规则">
-              <SecurityGroupRulesFields rules={rules} onChange={setRules} />
-            </Form.Item>
-          </Form>
-        ),
-        onSubmit: async () => {
-          const { error } = await coreApi.POST('/networks/security-groups', {
-            body: {
-              name,
-              description: description || undefined,
-              rules,
-              idempotency_key: newIdempotencyKey(),
-            },
-          })
-          if (error) throw error
-        },
-        onReset: () => {
-          setName('')
-          setDescription('')
-          setRules([])
-        },
-      }}
-      onDelete={async (id) => {
-        const { error } = await coreApi.DELETE('/networks/security-groups/{security_group_id}', {
-          params: { path: { security_group_id: id } },
-        })
-        if (error) throw error
-      }}
-      detail={{
-        fetch: async (id) => {
-          const { data, error } = await coreApi.GET('/networks/security-groups/{security_group_id}', {
-            params: { path: { security_group_id: id } },
-          })
-          if (error) throw error
-          return data as Record<string, unknown>
-        },
-        buildFields: (r) => [
-          { label: 'ID', value: String(r.id) },
-          { label: '名称', value: String(r.name) },
-          { label: '描述', value: String(r.description ?? '—') },
-          { label: '状态', value: <StatusTag status={r.state as string} /> },
-          { label: '创建时间', value: formatDateTime(r.created_at as string) },
-        ],
-        extraContent: (r) => (
-          <div className="space-y-3">
-            <SecurityGroupRulesEditor record={r} />
-            {networkRulesTable(r.rules as Record<string, unknown>[] | undefined)}
-          </div>
-        ),
-      }}
-    />
-  )
-}
-
-function SecurityGroupRulesEditor({ record }: { record: Record<string, unknown> }) {
   const qc = useQueryClient()
-  const securityGroupId = String(record.id)
-  const [visible, setVisible] = useState(false)
-  const [description, setDescription] = useState(String(record.description ?? ''))
-  const [rules, setRules] = useState<SecurityGroupRule[]>((record.rules as SecurityGroupRule[] | undefined) ?? [])
-
-  const openEditor = () => {
-    setDescription(String(record.description ?? ''))
-    setRules((record.rules as SecurityGroupRule[] | undefined) ?? [])
-    setVisible(true)
-  }
-
-  const update = useMutation({
-    mutationFn: async () => {
-      const { error } = await coreApi.PATCH('/networks/security-groups/{security_group_id}', {
-        params: { path: { security_group_id: securityGroupId } },
-        body: { description: description || undefined, rules, idempotency_key: newIdempotencyKey() },
+  const deleteSecurityGroup = useMutation({
+    mutationFn: async (item: SecurityGroup) => {
+      const { error } = await coreApi.DELETE('/networks/security-groups/{security_group_id}', {
+        params: { path: { security_group_id: item.id } },
       })
       if (error) throw error
     },
-    onSuccess: () => {
-      setVisible(false)
-      qc.invalidateQueries({ queryKey: ['network-sg'] })
-      qc.invalidateQueries({ queryKey: ['network-sg', 'detail', securityGroupId] })
-    },
-    onError: (e) => showApiError(e),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['network-security-groups'] }),
+    onError: (error) => showApiError(error),
   })
+  const copySecurityGroup = useMutation({
+    mutationFn: async (item: SecurityGroup) => {
+      const { error } = await coreApi.POST('/networks/security-groups', {
+        body: {
+          name: `${item.name}-copy`,
+          vpc_id: item.vpc_id,
+          description: item.description,
+          rules: item.rules,
+          idempotency_key: newIdempotencyKey(),
+        },
+      })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['network-security-groups'] }),
+    onError: (error) => showApiError(error),
+  })
+
+  const items = (securityGroups.data?.items ?? []) as SecurityGroup[]
+  const vpcNames = useMemo(
+    () => new Map(((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => [vpc.id, vpc.name])),
+    [vpcs.data?.items],
+  )
+  const statusCounts = useMemo(
+    () => ({ all: items.length, available: items.filter((item) => item.state === 'available').length }),
+    [items],
+  )
+  const filteredItems = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase()
+    return items.filter(
+      (item) =>
+        (status === 'all' || item.state === status) &&
+        (!filterVpcId || item.vpc_id === filterVpcId) &&
+        (!keyword || item[searchField].toLowerCase().includes(keyword)),
+    )
+  }, [filterVpcId, items, searchField, searchText, status])
+  const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize)
+  useEffect(() => setPage(1), [filterVpcId, searchField, searchText, status])
+
+  const columns: Array<ListColumn<SecurityGroup>> = [
+    {
+      key: 'name',
+      title: '名称 / ID',
+      minWidth: 240,
+      render: (item) => (
+        <ListNameCell
+          name={
+            <Link to="/networks/security-groups/$securityGroupId" params={{ securityGroupId: item.id }}>
+              {item.name}
+            </Link>
+          }
+          id={item.id}
+        />
+      ),
+    },
+    {
+      key: 'vpc',
+      title: 'VPC',
+      minWidth: 180,
+      render: (item) =>
+        item.vpc_id ? (
+          <Link to="/networks/vpcs/$vpcId" params={{ vpcId: item.vpc_id }}>
+            {vpcNames.get(item.vpc_id) ?? item.vpc_id}
+          </Link>
+        ) : (
+          '—'
+        ),
+    },
+    { key: 'rules', title: '规则数', width: 110, render: (item) => item.rule_count ?? item.rules.length },
+    { key: 'instances', title: '关联实例', width: 120, render: (item) => item.bound_instance_count ?? 0 },
+    { key: 'createdAt', title: '创建时间', minWidth: 190, render: (item) => formatDateTime(item.created_at) },
+  ]
 
   return (
     <>
-      <Button type="outline" onClick={openEditor}>
-        编辑规则
-      </Button>
-      <Modal
-        visible={visible}
-        title="编辑安全组规则"
-        onCancel={() => setVisible(false)}
-        onOk={() => update.mutateAsync()}
-        confirmLoading={update.isPending}
-        okText="保存"
-      >
-        <Form layout="vertical">
-          <Form.Item label="描述">
-            <Input value={description} onChange={setDescription} />
-          </Form.Item>
-          <div className="space-y-3">
-            <SecurityGroupRulesFields rules={rules} onChange={setRules} />
-          </div>
-        </Form>
-      </Modal>
-    </>
-  )
-}
-
-function SecurityGroupRulesFields({
-  rules,
-  onChange,
-}: {
-  rules: SecurityGroupRule[]
-  onChange: (rules: SecurityGroupRule[]) => void
-}) {
-  const setRule = (index: number, patch: Partial<SecurityGroupRule>) => {
-    onChange(rules.map((rule, i) => (i === index ? { ...rule, ...patch } : rule)))
-  }
-
-  return (
-    <div className="space-y-3">
-      {rules.map((rule, index) => (
-        <Space key={index} className="w-full" wrap>
-          <Select
-            aria-label="方向"
-            value={rule.direction}
-            onChange={(direction) => setRule(index, { direction })}
-            style={{ width: 110 }}
-          >
-            <Select.Option value="ingress">ingress</Select.Option>
-            <Select.Option value="egress">egress</Select.Option>
-          </Select>
-          <Select
-            aria-label="协议"
-            value={rule.protocol}
-            onChange={(protocol) => setRule(index, { protocol })}
-            style={{ width: 100 }}
-          >
-            <Select.Option value="tcp">tcp</Select.Option>
-            <Select.Option value="udp">udp</Select.Option>
-            <Select.Option value="icmp">icmp</Select.Option>
-            <Select.Option value="all">all</Select.Option>
-          </Select>
-          <Input
-            aria-label="端口"
-            value={rule.port_range}
-            onChange={(port_range) => setRule(index, { port_range })}
-            style={{ width: 100 }}
+      <ListPageFrame
+        header={
+          <ListPageHeader
+            iconClassName="icon-anquanzu"
+            title="安全组"
+            subtitle="通过入方向和出方向规则控制实例网络访问"
+            extra={
+              <ToolbarButton variant="primary" iconClassName="icon-add-1" onClick={() => setCreateVisible(true)}>
+                创建安全组
+              </ToolbarButton>
+            }
           />
-          <Input
-            aria-label="CIDR"
-            value={rule.cidr}
-            onChange={(cidr) => setRule(index, { cidr })}
-            style={{ width: 150 }}
+        }
+        tabs={
+          <StatusTabs
+            value={status}
+            onChange={setStatus}
+            items={[
+              { value: 'all', label: '全部', count: statusCounts.all },
+              { value: 'available', label: '可用', count: statusCounts.available },
+            ]}
           />
-          <Select
-            aria-label="动作"
-            value={rule.action}
-            onChange={(action) => setRule(index, { action })}
-            style={{ width: 100 }}
-          >
-            <Select.Option value="allow">allow</Select.Option>
-            <Select.Option value="deny">deny</Select.Option>
-          </Select>
-          <Button status="danger" type="text" onClick={() => onChange(rules.filter((_, i) => i !== index))}>
-            删除
-          </Button>
-        </Space>
-      ))}
-      <Button
-        type="outline"
-        onClick={() =>
-          onChange([
-            ...rules,
-            { direction: 'ingress', protocol: 'tcp', port_range: '80', cidr: '0.0.0.0/0', action: 'allow' },
-          ])
+        }
+        toolbar={
+          <ListToolbar
+            filters={
+              <div className="flex flex-wrap gap-3">
+                <ToolbarSearch
+                  fields={[
+                    { value: 'name', label: '名称' },
+                    { value: 'id', label: 'ID' },
+                  ]}
+                  field={searchField}
+                  value={searchText}
+                  onFieldChange={setSearchField}
+                  onChange={setSearchText}
+                />
+                <Select
+                  aria-label="按 VPC 筛选"
+                  value={filterVpcId || undefined}
+                  onChange={setFilterVpcId}
+                  allowClear
+                  placeholder="全部 VPC"
+                  loading={vpcs.isLoading}
+                  style={{ width: 220 }}
+                >
+                  {((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => (
+                    <Select.Option key={vpc.id} value={vpc.id}>
+                      {vpc.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </div>
+            }
+            tools={
+              <ToolbarIconButton
+                iconClassName="icon-refresh-1"
+                label="刷新"
+                spinning={securityGroups.isFetching || vpcs.isFetching}
+                onClick={() => void Promise.all([securityGroups.refetch(), vpcs.refetch()])}
+              />
+            }
+          />
         }
       >
-        添加规则
-      </Button>
-    </div>
+        <DataTable
+          rows={pagedItems}
+          rowKey={(item) => item.id}
+          columns={columns}
+          selectable={false}
+          loading={securityGroups.isLoading}
+          error={securityGroups.error ? getErrorMessage(securityGroups.error, '安全组列表加载失败') : null}
+          onRetry={() => void securityGroups.refetch()}
+          emptyIconClassName="icon-anquanzu"
+          emptyText={
+            searchText || filterVpcId || status !== 'all'
+              ? '没有符合条件的安全组'
+              : '还没有安全组，点击「创建安全组」开始'
+          }
+          tableLabel="安全组列表"
+          preserveTableOnEmpty
+          renderRowActions={(item) => (
+            <ListRowActions>
+              <ListRowActionButton
+                onClick={() =>
+                  navigate({ to: '/networks/security-groups/$securityGroupId', params: { securityGroupId: item.id } })
+                }
+              >
+                详情
+              </ListRowActionButton>
+              <ListRowActionButton loading={copySecurityGroup.isPending} onClick={() => copySecurityGroup.mutate(item)}>
+                复制
+              </ListRowActionButton>
+              <ListRowActionButton
+                status="danger"
+                onClick={() =>
+                  Modal.confirm({
+                    title: '删除安全组',
+                    content: `确定删除「${item.name}」？安全组被实例使用时无法删除，请先解除关联。`,
+                    okButtonProps: { status: 'danger' },
+                    onOk: () => deleteSecurityGroup.mutateAsync(item),
+                  })
+                }
+              >
+                删除
+              </ListRowActionButton>
+            </ListRowActions>
+          )}
+          pagination={{
+            page,
+            pageSize,
+            total: filteredItems.length,
+            onPageChange: setPage,
+            onPageSizeChange: (next) => {
+              setPageSize(next)
+              setPage(1)
+            },
+          }}
+        />
+      </ListPageFrame>
+      <CreateSecurityGroupModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
+    </>
   )
 }

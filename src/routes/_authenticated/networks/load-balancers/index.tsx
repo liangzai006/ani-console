@@ -1,186 +1,259 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { Button, Form, Input, InputNumber, Select, Space } from '@arco-design/web-react'
-import { useState } from 'react'
-import { networkListenersTable, SimpleResourceCrud } from '@/components/crud/SimpleResourceCrud'
-import { StatusTag } from '@/components/shell/StatusTag'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Dropdown, Menu, Modal, Select } from '@arco-design/web-react'
+import { useEffect, useMemo, useState } from 'react'
 import { coreApi } from '@/api/client'
-import { newIdempotencyKey } from '@/lib/idempotency'
-import { listOrThrow } from '@/lib/api-list'
-import { formatDateTime } from '@/lib/format'
+import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
+import { CreateLoadBalancerModal } from '@/components/network/CreateLoadBalancerModal'
+import {
+  DataTable,
+  ListNameCell,
+  ListPageFrame,
+  ListPageHeader,
+  ListRowActionButton,
+  ListRowActions,
+  ListToolbar,
+  StatusTabs,
+  ToolbarButton,
+  ToolbarIconButton,
+  ToolbarSearch,
+  type ListColumn,
+} from '@/components/pagebase'
+import { StatusTag } from '@/components/shell/StatusTag'
+import { listOrThrow } from '@/lib/api-list'
+import { getErrorMessage } from '@/lib/errors'
+import { formatDateTime } from '@/lib/format'
 
-type LoadBalancerListener = components['schemas']['NetworkLoadBalancerListener']
+type LoadBalancer = components['schemas']['NetworkLoadBalancer']
+type Vpc = components['schemas']['NetworkVPC']
+type StatusFilter = 'all' | 'running' | 'error'
+type SearchField = 'name' | 'id'
 
-export const Route = createFileRoute('/_authenticated/networks/load-balancers/')({
-  component: LoadBalancersPage,
-})
+export const Route = createFileRoute('/_authenticated/networks/load-balancers/')({ component: LoadBalancersPage })
 
 function LoadBalancersPage() {
-  const [name, setName] = useState('')
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const [createVisible, setCreateVisible] = useState(false)
+  const [status, setStatus] = useState<StatusFilter>('all')
+  const [searchField, setSearchField] = useState<SearchField>('name')
+  const [searchText, setSearchText] = useState('')
   const [vpcId, setVpcId] = useState('')
-  const [subnetId, setSubnetId] = useState('')
-  const [scheme, setScheme] = useState<'internal' | 'public'>('internal')
-  const [listeners, setListeners] = useState<LoadBalancerListener[]>([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const loadBalancers = useQuery({
+    queryKey: ['network-load-balancers'],
+    queryFn: () => listOrThrow(() => coreApi.GET('/networks/load-balancers', { params: { query: { limit: 100 } } })),
+  })
   const vpcs = useQuery({
-    queryKey: ['network-vpcs', 'select'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/networks/vpcs', { params: { query: { limit: 50 } } })),
+    queryKey: ['network-vpcs', 'load-balancer-list'],
+    queryFn: () => listOrThrow(() => coreApi.GET('/networks/vpcs', { params: { query: { limit: 100 } } })),
   })
-  const subnets = useQuery({
-    queryKey: ['network-subnets', 'select'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/networks/subnets', { params: { query: { limit: 50 } } })),
+  const deleteLoadBalancer = useMutation({
+    mutationFn: async (item: LoadBalancer) => {
+      const { error } = await coreApi.DELETE('/networks/load-balancers/{load_balancer_id}', {
+        params: { path: { load_balancer_id: item.id } },
+      })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['network-load-balancers'] }),
+    onError: (error) => showApiError(error),
   })
-
+  const items = (loadBalancers.data?.items ?? []) as LoadBalancer[]
+  const statusCounts = useMemo(
+    () => ({
+      all: items.length,
+      running: items.filter((item) => item.state === 'available').length,
+      error: items.filter((item) => item.state === 'failed').length,
+    }),
+    [items],
+  )
+  const filteredItems = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase()
+    return items.filter((item) => {
+      if (status === 'running' && item.state !== 'available') return false
+      if (status === 'error' && item.state !== 'failed') return false
+      if (vpcId && item.vpc_id !== vpcId) return false
+      return !keyword || item[searchField].toLowerCase().includes(keyword)
+    })
+  }, [items, searchField, searchText, status, vpcId])
+  const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize)
+  useEffect(() => setPage(1), [searchField, searchText, status, vpcId])
+  const columns: Array<ListColumn<LoadBalancer>> = [
+    {
+      key: 'name',
+      title: '名称 / ID',
+      minWidth: 240,
+      render: (item) => (
+        <ListNameCell
+          name={
+            <Link to="/networks/load-balancers/$loadBalancerId" params={{ loadBalancerId: item.id }}>
+              {item.name}
+            </Link>
+          }
+          id={item.id}
+        />
+      ),
+    },
+    { key: 'state', title: '状态', width: 120, render: (item) => <StatusTag status={item.state} /> },
+    { key: 'vip', title: 'VIP', minWidth: 150, render: (item) => item.vip || '—' },
+    { key: 'listeners', title: '监听器', width: 110, render: (item) => item.listeners.length },
+    { key: 'backends', title: '后端数', width: 110, render: () => '—' },
+    { key: 'createdAt', title: '创建时间', minWidth: 190, render: (item) => formatDateTime(item.created_at) },
+  ]
   return (
-    <SimpleResourceCrud
-      title="负载均衡"
-      queryKey="network-lb"
-      emptyDescription="暂无负载均衡，点击右上角创建"
-      showState
-      list={() => listOrThrow(() => coreApi.GET('/networks/load-balancers', { params: { query: { limit: 50 } } }))}
-      onCreate={async () => {}}
-      createForm={{
-        content: (
-          <Form layout="vertical">
-            <Form.Item label="名称" required>
-              <Input aria-label="名称" value={name} onChange={setName} />
-            </Form.Item>
-            <Form.Item label="VPC" required>
-              <Select aria-label="VPC" value={vpcId} onChange={setVpcId} loading={vpcs.isLoading} placeholder="选择 VPC">
-                {(vpcs.data?.items ?? []).map((vpc) => (
-                  <Select.Option key={String(vpc.id)} value={String(vpc.id)}>
-                    {String(vpc.name ?? vpc.id)}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item label="子网">
-              <Select value={subnetId} onChange={setSubnetId} loading={subnets.isLoading} allowClear placeholder="可选">
-                {(subnets.data?.items ?? [])
-                  .filter((subnet) => !vpcId || subnet.vpc_id === vpcId)
-                  .map((subnet) => (
-                    <Select.Option key={String(subnet.id)} value={String(subnet.id)}>
-                      {String(subnet.name ?? subnet.id)}
+    <>
+      <ListPageFrame
+        header={
+          <ListPageHeader
+            iconClassName="icon-fuzaijunhengqi"
+            title="负载均衡"
+            subtitle="通过 VIP、监听器和后端组对外提供高可用服务"
+            extra={
+              <ToolbarButton variant="primary" iconClassName="icon-add-1" onClick={() => setCreateVisible(true)}>
+                创建负载均衡
+              </ToolbarButton>
+            }
+          />
+        }
+        tabs={
+          <StatusTabs
+            value={status}
+            onChange={setStatus}
+            items={[
+              { value: 'all', label: '全部', count: statusCounts.all },
+              { value: 'running', label: '运行中', count: statusCounts.running },
+              { value: 'error', label: '异常', count: statusCounts.error },
+            ]}
+          />
+        }
+        toolbar={
+          <ListToolbar
+            filters={
+              <div className="flex flex-wrap gap-3">
+                <ToolbarSearch
+                  fields={[
+                    { value: 'name', label: '名称' },
+                    { value: 'id', label: 'ID' },
+                  ]}
+                  field={searchField}
+                  value={searchText}
+                  onFieldChange={setSearchField}
+                  onChange={setSearchText}
+                />
+                <Select
+                  aria-label="按 VPC 筛选"
+                  value={vpcId || undefined}
+                  onChange={setVpcId}
+                  allowClear
+                  placeholder="全部 VPC"
+                  loading={vpcs.isLoading}
+                  style={{ width: 220 }}
+                >
+                  {((vpcs.data?.items ?? []) as Vpc[]).map((item) => (
+                    <Select.Option key={item.id} value={item.id}>
+                      {item.name}
                     </Select.Option>
                   ))}
-              </Select>
-            </Form.Item>
-            <Form.Item label="类型">
-              <Select value={scheme} onChange={setScheme}>
-                <Select.Option value="internal">internal</Select.Option>
-                <Select.Option value="public">public</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item label="监听器">
-              <LoadBalancerListenersFields listeners={listeners} onChange={setListeners} />
-            </Form.Item>
-          </Form>
-        ),
-        onSubmit: async () => {
-          const { error } = await coreApi.POST('/networks/load-balancers', {
-            body: {
-              name,
-              vpc_id: vpcId,
-              subnet_id: subnetId || undefined,
-              scheme,
-              listeners,
-              idempotency_key: newIdempotencyKey(),
-            },
-          })
-          if (error) throw error
-        },
-        onReset: () => {
-          setName('')
-          setVpcId('')
-          setSubnetId('')
-          setScheme('internal')
-          setListeners([])
-        },
-      }}
-      onDelete={async (id) => {
-        const { error } = await coreApi.DELETE('/networks/load-balancers/{load_balancer_id}', {
-          params: { path: { load_balancer_id: id } },
-        })
-        if (error) throw error
-      }}
-      detail={{
-        fetch: async (id) => {
-          const { data, error } = await coreApi.GET('/networks/load-balancers/{load_balancer_id}', {
-            params: { path: { load_balancer_id: id } },
-          })
-          if (error) throw error
-          return data as Record<string, unknown>
-        },
-        buildFields: (r) => [
-          { label: 'ID', value: String(r.id) },
-          { label: '名称', value: String(r.name) },
-          { label: 'VPC', value: String(r.vpc_id) },
-          { label: '子网', value: String(r.subnet_id ?? '—') },
-          { label: '类型', value: String(r.scheme) },
-          { label: 'VIP', value: String(r.vip ?? '—') },
-          { label: '状态', value: <StatusTag status={r.state as string} /> },
-          { label: '创建时间', value: formatDateTime(r.created_at as string) },
-        ],
-        extraContent: (r) => networkListenersTable(r.listeners as Record<string, unknown>[] | undefined),
-      }}
-    />
-  )
-}
-
-function LoadBalancerListenersFields({
-  listeners,
-  onChange,
-}: {
-  listeners: LoadBalancerListener[]
-  onChange: (listeners: LoadBalancerListener[]) => void
-}) {
-  const setListener = (index: number, patch: Partial<LoadBalancerListener>) => {
-    onChange(listeners.map((listener, i) => (i === index ? { ...listener, ...patch } : listener)))
-  }
-
-  return (
-    <div className="space-y-3">
-      {listeners.map((listener, index) => (
-        <Space key={index} className="w-full" wrap>
-          <Select
-            aria-label="协议"
-            value={listener.protocol}
-            onChange={(protocol) => setListener(index, { protocol })}
-            style={{ width: 110 }}
-          >
-            <Select.Option value="http">http</Select.Option>
-            <Select.Option value="https">https</Select.Option>
-            <Select.Option value="tcp">tcp</Select.Option>
-          </Select>
-          <InputNumber
-            aria-label="端口"
-            value={listener.port}
-            min={1}
-            max={65535}
-            precision={0}
-            onChange={(port) => setListener(index, { port: Number(port ?? 1) })}
-            style={{ width: 120 }}
+                </Select>
+              </div>
+            }
+            tools={
+              <ToolbarIconButton
+                iconClassName="icon-refresh-1"
+                label="刷新"
+                spinning={loadBalancers.isFetching || vpcs.isFetching}
+                onClick={() => void Promise.all([loadBalancers.refetch(), vpcs.refetch()])}
+              />
+            }
           />
-          <InputNumber
-            aria-label="目标端口"
-            value={listener.target_port}
-            min={1}
-            max={65535}
-            precision={0}
-            onChange={(target_port) => setListener(index, { target_port: Number(target_port ?? 1) })}
-            style={{ width: 120 }}
-          />
-          <Button status="danger" type="text" onClick={() => onChange(listeners.filter((_, i) => i !== index))}>
-            删除
-          </Button>
-        </Space>
-      ))}
-      <Button
-        type="outline"
-        onClick={() => onChange([...listeners, { protocol: 'tcp', port: 80, target_port: 8080 }])}
+        }
       >
-        添加监听器
-      </Button>
-    </div>
+        <DataTable
+          rows={pagedItems}
+          rowKey={(item) => item.id}
+          columns={columns}
+          selectable={false}
+          loading={loadBalancers.isLoading}
+          error={loadBalancers.error ? getErrorMessage(loadBalancers.error, '负载均衡列表加载失败') : null}
+          onRetry={() => void loadBalancers.refetch()}
+          emptyIconClassName="icon-fuzaijunhengqi"
+          emptyText={
+            searchText || vpcId || status !== 'all'
+              ? '没有符合条件的负载均衡'
+              : '还没有负载均衡，点击「创建负载均衡」开始'
+          }
+          tableLabel="负载均衡列表"
+          preserveTableOnEmpty
+          renderRowActions={(item) => (
+            <ListRowActions>
+              <ListRowActionButton
+                onClick={() =>
+                  navigate({ to: '/networks/load-balancers/$loadBalancerId', params: { loadBalancerId: item.id } })
+                }
+              >
+                详情
+              </ListRowActionButton>
+              <Dropdown
+                droplist={
+                  <Menu>
+                    <Menu.Item
+                      key="listeners"
+                      onClick={() =>
+                        navigate({
+                          to: '/networks/load-balancers/$loadBalancerId',
+                          params: { loadBalancerId: item.id },
+                        })
+                      }
+                    >
+                      配置监听
+                    </Menu.Item>
+                    <Menu.Item
+                      key="backends"
+                      onClick={() =>
+                        navigate({
+                          to: '/networks/load-balancers/$loadBalancerId',
+                          params: { loadBalancerId: item.id },
+                        })
+                      }
+                    >
+                      绑定后端
+                    </Menu.Item>
+                    <Menu.Item
+                      key="delete"
+                      onClick={() =>
+                        Modal.confirm({
+                          title: '删除负载均衡',
+                          content: `确定删除「${item.name}」？`,
+                          okButtonProps: { status: 'danger' },
+                          onOk: () => deleteLoadBalancer.mutateAsync(item),
+                        })
+                      }
+                    >
+                      删除
+                    </Menu.Item>
+                  </Menu>
+                }
+                trigger="click"
+              >
+                <ListRowActionButton>更多</ListRowActionButton>
+              </Dropdown>
+            </ListRowActions>
+          )}
+          pagination={{
+            page,
+            pageSize,
+            total: filteredItems.length,
+            onPageChange: setPage,
+            onPageSizeChange: (next) => {
+              setPageSize(next)
+              setPage(1)
+            },
+          }}
+        />
+      </ListPageFrame>
+      <CreateLoadBalancerModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
+    </>
   )
 }

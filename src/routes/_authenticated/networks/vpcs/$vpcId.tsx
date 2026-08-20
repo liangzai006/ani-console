@@ -24,7 +24,12 @@ type RelatedResource = {
   name: string
   status: string
   group: '网络' | '算力'
-  route: '/networks/subnets' | '/networks/security-groups' | '/networks/routes' | '/networks/load-balancers' | '/instances/$instanceId'
+  route:
+    | '/networks/subnets'
+    | '/networks/security-groups'
+    | '/networks/routes'
+    | '/networks/load-balancers/$loadBalancerId'
+    | '/instances/$instanceId'
 }
 
 export const Route = createFileRoute('/_authenticated/networks/vpcs/$vpcId')({ component: VpcDetailPage })
@@ -46,16 +51,12 @@ function VpcDetailPage() {
   const subnets = useQuery({
     queryKey: ['network-subnets', vpcId],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET('/networks/subnets', { params: { query: { vpc_id: vpcId, limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET('/networks/subnets', { params: { query: { vpc_id: vpcId, limit: 100 } } })),
   })
   const routes = useQuery({
     queryKey: ['network-routes', vpcId],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET('/networks/routes', { params: { query: { vpc_id: vpcId, limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET('/networks/routes', { params: { query: { vpc_id: vpcId, limit: 100 } } })),
   })
   const securityGroups = useQuery({
     queryKey: ['network-security-groups', 'vpc-related'],
@@ -63,10 +64,7 @@ function VpcDetailPage() {
   })
   const loadBalancers = useQuery({
     queryKey: ['network-load-balancers', 'vpc', vpcId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET('/networks/load-balancers', { params: { query: { limit: 100 } } }),
-      ),
+    queryFn: () => listOrThrow(() => coreApi.GET('/networks/load-balancers', { params: { query: { limit: 100 } } })),
   })
   const instances = useQuery({
     queryKey: ['instances', 'vpc', vpcId],
@@ -138,7 +136,7 @@ function VpcDetailPage() {
       name: item.name,
       status: item.state,
       group: '网络' as const,
-      route: '/networks/load-balancers' as const,
+      route: '/networks/load-balancers/$loadBalancerId' as const,
     })),
     ...associatedInstances.map((item) => ({
       id: item.id,
@@ -151,11 +149,16 @@ function VpcDetailPage() {
   ]
   const networkRelatedResources = relatedResources.filter((resource) => resource.group === '网络')
   const computeRelatedResources = relatedResources.filter((resource) => resource.group === '算力')
-  const relatedLoading = subnets.isLoading || securityGroups.isLoading || routes.isLoading || loadBalancers.isLoading || instances.isLoading
+  const relatedLoading =
+    subnets.isLoading || securityGroups.isLoading || routes.isLoading || loadBalancers.isLoading || instances.isLoading
 
   const openRelatedResource = (resource: RelatedResource) => {
     if (resource.route === '/instances/$instanceId') {
       navigate({ to: resource.route, params: { instanceId: resource.id } })
+      return
+    }
+    if (resource.route === '/networks/load-balancers/$loadBalancerId') {
+      navigate({ to: resource.route, params: { loadBalancerId: resource.id } })
       return
     }
     navigate({ to: resource.route })
@@ -224,8 +227,10 @@ function VpcDetailPage() {
         {
           key: 'subnets',
           label: '子网',
-          content: (
-            subnets.error ? <ApiErrorAlert error={subnets.error} /> : <Table<Subnet>
+          content: subnets.error ? (
+            <ApiErrorAlert error={subnets.error} />
+          ) : (
+            <Table<Subnet>
               columns={[
                 { title: '名称', dataIndex: 'name' },
                 { title: 'CIDR', dataIndex: 'cidr' },
@@ -243,8 +248,10 @@ function VpcDetailPage() {
         {
           key: 'routes',
           label: '路由',
-          content: (
-            routes.error ? <ApiErrorAlert error={routes.error} /> : <Table<NetworkRoute>
+          content: routes.error ? (
+            <ApiErrorAlert error={routes.error} />
+          ) : (
+            <Table<NetworkRoute>
               columns={[
                 { title: '目标 CIDR', dataIndex: 'destination_cidr' },
                 { title: '下一跳类型', dataIndex: 'next_hop_type' },
@@ -267,13 +274,36 @@ function VpcDetailPage() {
               <Typography.Text>
                 共 <Typography.Text bold>{relatedResources.length}</Typography.Text> 个关联对象
               </Typography.Text>
-              {subnets.error || securityGroups.error || routes.error || loadBalancers.error || instances.error ? <ApiErrorAlert error={subnets.error ?? securityGroups.error ?? routes.error ?? loadBalancers.error ?? instances.error} /> : null}
+              {subnets.error || securityGroups.error || routes.error || loadBalancers.error || instances.error ? (
+                <ApiErrorAlert
+                  error={
+                    subnets.error ?? securityGroups.error ?? routes.error ?? loadBalancers.error ?? instances.error
+                  }
+                />
+              ) : null}
               <Card title={`网络关联 ${networkRelatedResources.length}`} size="small">
                 <List
                   loading={relatedLoading}
                   dataSource={networkRelatedResources}
                   noDataElement={<Empty description="暂无网络关联资源" />}
-                  render={(resource) => <div className="flex w-full items-center gap-3 px-5 py-3"><Tag className="shrink-0">{resource.kind}</Tag><span className="min-w-0 flex-1 truncate">{resource.name}</span><Typography.Text className="shrink-0" type="secondary">{resource.id}</Typography.Text><StatusTag status={resource.status} /><Button className="shrink-0" type="text" size="mini" onClick={() => openRelatedResource(resource)}>打开</Button></div>}
+                  render={(resource) => (
+                    <div className="flex w-full items-center gap-3 px-5 py-3">
+                      <Tag className="shrink-0">{resource.kind}</Tag>
+                      <span className="min-w-0 flex-1 truncate">{resource.name}</span>
+                      <Typography.Text className="shrink-0" type="secondary">
+                        {resource.id}
+                      </Typography.Text>
+                      <StatusTag status={resource.status} />
+                      <Button
+                        className="shrink-0"
+                        type="text"
+                        size="mini"
+                        onClick={() => openRelatedResource(resource)}
+                      >
+                        打开
+                      </Button>
+                    </div>
+                  )}
                 />
               </Card>
               <Card title={`算力关联 ${computeRelatedResources.length}`} size="small">
@@ -281,7 +311,24 @@ function VpcDetailPage() {
                   loading={relatedLoading}
                   dataSource={computeRelatedResources}
                   noDataElement={<Empty description="暂无算力关联资源" />}
-                  render={(resource) => <div className="flex w-full items-center gap-3 px-5 py-3"><Tag className="shrink-0">{resource.kind}</Tag><span className="min-w-0 flex-1 truncate">{resource.name}</span><Typography.Text className="shrink-0" type="secondary">{resource.id}</Typography.Text><StatusTag status={resource.status} /><Button className="shrink-0" type="text" size="mini" onClick={() => openRelatedResource(resource)}>打开</Button></div>}
+                  render={(resource) => (
+                    <div className="flex w-full items-center gap-3 px-5 py-3">
+                      <Tag className="shrink-0">{resource.kind}</Tag>
+                      <span className="min-w-0 flex-1 truncate">{resource.name}</span>
+                      <Typography.Text className="shrink-0" type="secondary">
+                        {resource.id}
+                      </Typography.Text>
+                      <StatusTag status={resource.status} />
+                      <Button
+                        className="shrink-0"
+                        type="text"
+                        size="mini"
+                        onClick={() => openRelatedResource(resource)}
+                      >
+                        打开
+                      </Button>
+                    </div>
+                  )}
                 />
               </Card>
             </Space>

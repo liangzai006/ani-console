@@ -1,179 +1,232 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { Form, Input, Select } from '@arco-design/web-react'
-import { useState } from 'react'
-import { Ipv4CidrInput } from '@/components/forms/Ipv4CidrInput'
-import { SimpleResourceCrud } from '@/components/crud/SimpleResourceCrud'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Modal, Select } from '@arco-design/web-react'
+import { useEffect, useMemo, useState } from 'react'
 import { coreApi } from '@/api/client'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { showApiError } from '@/api/helpers'
+import type { components } from '@/api/core-schema'
+import { CreateRouteModal } from '@/components/network/CreateRouteModal'
+import {
+  DataTable,
+  ListNameCell,
+  ListPageFrame,
+  ListPageHeader,
+  ListRowActionButton,
+  ListRowActions,
+  ListToolbar,
+  StatusTabs,
+  ToolbarButton,
+  ToolbarIconButton,
+  ToolbarSearch,
+  type ListColumn,
+} from '@/components/pagebase'
 import { listOrThrow } from '@/lib/api-list'
-import { formatDateTime } from '@/lib/format'
-import { assertNonEmpty, ipv4CidrError, requireIpv4Cidr } from '@/lib/validators'
+import { getErrorMessage } from '@/lib/errors'
 
-export const Route = createFileRoute('/_authenticated/networks/routes/')({
-  component: NetworkRoutesPage,
-})
+type NetworkRoute = components['schemas']['NetworkRoute']
+type Vpc = components['schemas']['NetworkVPC']
+type SearchField = 'description' | 'id'
+type StatusFilter = 'all' | 'available'
+
+export const Route = createFileRoute('/_authenticated/networks/routes/')({ component: NetworkRoutesPage })
 
 function NetworkRoutesPage() {
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const [createVisible, setCreateVisible] = useState(false)
+  const [searchField, setSearchField] = useState<SearchField>('description')
+  const [searchText, setSearchText] = useState('')
+  const [status, setStatus] = useState<StatusFilter>('all')
   const [filterVpcId, setFilterVpcId] = useState('')
-  const [vpcId, setVpcId] = useState('')
-  const [destinationCidr, setDestinationCidr] = useState('0.0.0.0/0')
-  const [nextHopType, setNextHopType] = useState<'gateway' | 'instance' | 'nat'>('gateway')
-  const [nextHopId, setNextHopId] = useState('')
-  const [description, setDescription] = useState('')
-  const [vpcIdError, setVpcIdError] = useState<string>()
-  const [nextHopIdError, setNextHopIdError] = useState<string>()
-  const destinationCidrError = ipv4CidrError(destinationCidr, '目标网段')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const routes = useQuery({
+    queryKey: ['network-routes'],
+    queryFn: () => listOrThrow(() => coreApi.GET('/networks/routes', { params: { query: { limit: 100 } } })),
+  })
   const vpcs = useQuery({
-    queryKey: ['network-vpcs', 'select'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/networks/vpcs', { params: { query: { limit: 50 } } })),
+    queryKey: ['network-vpcs', 'route-list'],
+    queryFn: () => listOrThrow(() => coreApi.GET('/networks/vpcs', { params: { query: { limit: 100 } } })),
+  })
+  const deleteRoute = useMutation({
+    mutationFn: async (item: NetworkRoute) => {
+      const { error } = await coreApi.DELETE('/networks/routes/{route_id}', { params: { path: { route_id: item.id } } })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['network-routes'] }),
+    onError: (error) => showApiError(error),
   })
 
-  return (
-    <SimpleResourceCrud
-      title="路由"
-      subtitle="VPC 路由表条目"
-      queryKey={['network-routes', filterVpcId]}
-      emptyDescription="暂无路由条目，点击右上角创建"
-      filters={
-        <Select
-          aria-label="按 VPC 筛选"
-          value={filterVpcId}
-          onChange={setFilterVpcId}
-          loading={vpcs.isLoading}
-          allowClear
-          placeholder="按 VPC 筛选"
-          style={{ width: 260 }}
-        >
-          {(vpcs.data?.items ?? []).map((vpc) => (
-            <Select.Option key={String(vpc.id)} value={String(vpc.id)}>
-              {String(vpc.name ?? vpc.id)}
-            </Select.Option>
-          ))}
-        </Select>
-      }
-      list={() =>
-        listOrThrow(() =>
-          coreApi.GET('/networks/routes', {
-            params: { query: { limit: 50, vpc_id: filterVpcId || undefined } },
-          }),
-        )
-      }
-      onCreate={async () => {}}
-      createForm={{
-        content: (
-          <Form layout="vertical">
-            <Form.Item label="VPC" required validateStatus={vpcIdError ? 'error' : undefined} help={vpcIdError}>
-              <Select
-                aria-label="VPC"
-                value={vpcId}
-                onChange={(value) => {
-                  setVpcId(value)
-                  setVpcIdError(undefined)
-                }}
-                loading={vpcs.isLoading}
-                placeholder="选择 VPC"
-              >
-                {(vpcs.data?.items ?? []).map((vpc) => (
-                  <Select.Option key={String(vpc.id)} value={String(vpc.id)}>
-                    {String(vpc.name ?? vpc.id)}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item
-              label="目标网段"
-              required
-              validateStatus={destinationCidrError ? 'error' : undefined}
-              help={destinationCidrError}
-            >
-              <Ipv4CidrInput value={destinationCidr} onChange={setDestinationCidr} placeholder="0.0.0.0" withPrefix />
-            </Form.Item>
-            <Form.Item label="下一跳类型" required>
-              <Select value={nextHopType} onChange={setNextHopType}>
-                <Select.Option value="gateway">gateway</Select.Option>
-                <Select.Option value="instance">instance</Select.Option>
-                <Select.Option value="nat">nat</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item
-              label="下一跳 ID"
-              required
-              validateStatus={nextHopIdError ? 'error' : undefined}
-              help={nextHopIdError}
-            >
-              <Input
-                aria-label="下一跳 ID"
-                value={nextHopId}
-                onChange={(value) => {
-                  setNextHopId(value)
-                  setNextHopIdError(undefined)
-                }}
-              />
-            </Form.Item>
-            <Form.Item label="描述">
-              <Input value={description} onChange={setDescription} />
-            </Form.Item>
-          </Form>
-        ),
-        onSubmit: async () => {
-          const nextVpcIdError = vpcId.trim() ? undefined : 'VPC不能为空'
-          const nextNextHopIdError = nextHopId.trim() ? undefined : '下一跳 ID不能为空'
-          setVpcIdError(nextVpcIdError)
-          setNextHopIdError(nextNextHopIdError)
-          if (nextVpcIdError || destinationCidrError || nextNextHopIdError) {
-            throw new Error('请完整填写路由信息')
+  const items = (routes.data?.items ?? []) as NetworkRoute[]
+  const vpcNames = useMemo(
+    () => new Map(((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => [vpc.id, vpc.name])),
+    [vpcs.data?.items],
+  )
+  const statusCounts = useMemo(() => ({ all: items.length, available: items.length }), [items.length])
+  const filteredItems = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase()
+    return items.filter(
+      (item) =>
+        (!filterVpcId || item.vpc_id === filterVpcId) &&
+        (!keyword ||
+          String(item[searchField] ?? '')
+            .toLowerCase()
+            .includes(keyword)),
+    )
+  }, [filterVpcId, items, searchField, searchText])
+  const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize)
+  useEffect(() => setPage(1), [filterVpcId, searchField, searchText, status])
+  const columns: Array<ListColumn<NetworkRoute>> = [
+    {
+      key: 'name',
+      title: '名称 / ID',
+      minWidth: 240,
+      render: (item) => (
+        <ListNameCell
+          name={
+            <Link to="/networks/routes/$routeId" params={{ routeId: item.id }}>
+              {item.description?.trim() || item.destination_cidr}
+            </Link>
           }
-          const { error } = await coreApi.POST('/networks/routes', {
-            body: {
-              vpc_id: assertNonEmpty(vpcId, 'VPC'),
-              destination_cidr: requireIpv4Cidr(destinationCidr, '目标网段'),
-              next_hop_type: nextHopType,
-              next_hop_id: assertNonEmpty(nextHopId, '下一跳 ID'),
-              description: description || undefined,
-              idempotency_key: newIdempotencyKey(),
+          id={item.id}
+        />
+      ),
+    },
+    {
+      key: 'vpc',
+      title: 'VPC',
+      minWidth: 180,
+      render: (item) => (
+        <Link to="/networks/vpcs/$vpcId" params={{ vpcId: item.vpc_id }}>
+          {vpcNames.get(item.vpc_id) ?? item.vpc_id}
+        </Link>
+      ),
+    },
+    { key: 'destination', title: '目标网段', minWidth: 160, render: (item) => item.destination_cidr },
+    { key: 'nextHop', title: '下一跳', minWidth: 180, render: (item) => item.next_hop_id },
+    {
+      key: 'nextHopType',
+      title: '类型',
+      width: 120,
+      render: (item) => (item.next_hop_type === 'instance' ? '实例' : item.next_hop_type === 'nat' ? 'NAT' : '网关'),
+    },
+    { key: 'priority', title: '下一跳优先级', width: 140, render: () => '—' },
+  ]
+
+  return (
+    <>
+      <ListPageFrame
+        header={
+          <ListPageHeader
+            iconClassName="icon-VPCluyouqi"
+            title="路由"
+            subtitle="管理 VPC 的自定义流量转发规则"
+            extra={
+              <ToolbarButton variant="primary" iconClassName="icon-add-1" onClick={() => setCreateVisible(true)}>
+                创建路由
+              </ToolbarButton>
+            }
+          />
+        }
+        tabs={
+          <StatusTabs
+            value={status}
+            onChange={setStatus}
+            items={[
+              { value: 'all', label: '全部', count: statusCounts.all },
+              { value: 'available', label: '可用', count: statusCounts.available },
+            ]}
+          />
+        }
+        toolbar={
+          <ListToolbar
+            filters={
+              <div className="flex flex-wrap gap-3">
+                <ToolbarSearch
+                  fields={[
+                    { value: 'description', label: '名称' },
+                    { value: 'id', label: 'ID' },
+                  ]}
+                  field={searchField}
+                  value={searchText}
+                  onFieldChange={setSearchField}
+                  onChange={setSearchText}
+                />
+                <Select
+                  aria-label="按 VPC 筛选"
+                  value={filterVpcId || undefined}
+                  onChange={setFilterVpcId}
+                  allowClear
+                  placeholder="全部 VPC"
+                  loading={vpcs.isLoading}
+                  style={{ width: 220 }}
+                >
+                  {((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => (
+                    <Select.Option key={vpc.id} value={vpc.id}>
+                      {vpc.name}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </div>
+            }
+            tools={
+              <ToolbarIconButton
+                iconClassName="icon-refresh-1"
+                label="刷新"
+                spinning={routes.isFetching || vpcs.isFetching}
+                onClick={() => void Promise.all([routes.refetch(), vpcs.refetch()])}
+              />
+            }
+          />
+        }
+      >
+        <DataTable
+          rows={pagedItems}
+          rowKey={(item) => item.id}
+          columns={columns}
+          selectable={false}
+          loading={routes.isLoading}
+          error={routes.error ? getErrorMessage(routes.error, '路由列表加载失败') : null}
+          onRetry={() => void routes.refetch()}
+          emptyIconClassName="icon-VPCluyouqi"
+          emptyText={searchText || filterVpcId ? '没有符合条件的路由' : '还没有自定义路由，点击「创建路由」开始'}
+          tableLabel="路由列表"
+          preserveTableOnEmpty
+          renderRowActions={(item) => (
+            <ListRowActions>
+              <ListRowActionButton
+                onClick={() => navigate({ to: '/networks/routes/$routeId', params: { routeId: item.id } })}
+              >
+                详情
+              </ListRowActionButton>
+              <ListRowActionButton
+                status="danger"
+                onClick={() =>
+                  Modal.confirm({
+                    title: '删除路由',
+                    content: `确定删除「${item.description?.trim() || item.destination_cidr}」？删除后该转发规则将立即失效。`,
+                    okButtonProps: { status: 'danger' },
+                    onOk: () => deleteRoute.mutateAsync(item),
+                  })
+                }
+              >
+                删除
+              </ListRowActionButton>
+            </ListRowActions>
+          )}
+          pagination={{
+            page,
+            pageSize,
+            total: filteredItems.length,
+            onPageChange: setPage,
+            onPageSizeChange: (next) => {
+              setPageSize(next)
+              setPage(1)
             },
-          })
-          if (error) throw error
-        },
-        onReset: () => {
-          setVpcId('')
-          setDestinationCidr('0.0.0.0/0')
-          setNextHopType('gateway')
-          setNextHopId('')
-          setVpcIdError(undefined)
-          setNextHopIdError(undefined)
-          setDescription('')
-        },
-      }}
-      extraColumns={[
-        { title: '目标网段', dataIndex: 'destination_cidr' },
-        { title: '下一跳类型', dataIndex: 'next_hop_type' },
-        { title: '下一跳', dataIndex: 'next_hop_id' },
-        { title: 'VPC', dataIndex: 'vpc_id' },
-      ]}
-      onDelete={async (id) => {
-        const { error } = await coreApi.DELETE('/networks/routes/{route_id}', { params: { path: { route_id: id } } })
-        if (error) throw error
-      }}
-      detail={{
-        fetch: async (id) => {
-          const { data, error } = await coreApi.GET('/networks/routes/{route_id}', {
-            params: { path: { route_id: id } },
-          })
-          if (error) throw error
-          return data as Record<string, unknown>
-        },
-        buildFields: (r) => [
-          { label: 'ID', value: String(r.id) },
-          { label: 'VPC', value: String(r.vpc_id) },
-          { label: '目标网段', value: String(r.destination_cidr) },
-          { label: '下一跳类型', value: String(r.next_hop_type) },
-          { label: '下一跳', value: String(r.next_hop_id) },
-          { label: '描述', value: String(r.description ?? '—') },
-          { label: '创建时间', value: formatDateTime(r.created_at as string) },
-        ],
-      }}
-    />
+          }}
+        />
+      </ListPageFrame>
+      <CreateRouteModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
+    </>
   )
 }

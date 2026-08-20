@@ -61,6 +61,9 @@ import { Route as AuthenticatedNetworksLoadBalancersIndexRouteImport } from './r
 import { Route as AuthenticatedObjectsBucketIdObjectIdRouteImport } from './routes/_authenticated/objects/$bucketId/$objectId'
 import { Route as AuthenticatedNetworksVpcsVpcIdRouteImport } from './routes/_authenticated/networks/vpcs/$vpcId'
 import { Route as AuthenticatedNetworksSubnetsSubnetIdRouteImport } from './routes/_authenticated/networks/subnets/$subnetId'
+import { Route as AuthenticatedNetworksSecurityGroupsSecurityGroupIdRouteImport } from './routes/_authenticated/networks/security-groups/$securityGroupId'
+import { Route as AuthenticatedNetworksRoutesRouteIdRouteImport } from './routes/_authenticated/networks/routes/$routeId'
+import { Route as AuthenticatedNetworksLoadBalancersLoadBalancerIdRouteImport } from './routes/_authenticated/networks/load-balancers/$loadBalancerId'
 import { Route as AuthenticatedInstancesVmCreateRouteImport } from './routes/_authenticated/instances/vm/create'
 import { Route as AuthenticatedInstancesVmInstanceIdRouteImport } from './routes/_authenticated/instances/vm/$instanceId'
 import { Route as AuthenticatedInstancesSandboxCreateRouteImport } from './routes/_authenticated/instances/sandbox/create'
@@ -369,6 +372,24 @@ const AuthenticatedNetworksSubnetsSubnetIdRoute =
     path: '/networks/subnets/$subnetId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedNetworksSecurityGroupsSecurityGroupIdRoute =
+  AuthenticatedNetworksSecurityGroupsSecurityGroupIdRouteImport.update({
+    id: '/networks/security-groups/$securityGroupId',
+    path: '/networks/security-groups/$securityGroupId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedNetworksRoutesRouteIdRoute =
+  AuthenticatedNetworksRoutesRouteIdRouteImport.update({
+    id: '/networks/routes/$routeId',
+    path: '/networks/routes/$routeId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedNetworksLoadBalancersLoadBalancerIdRoute =
+  AuthenticatedNetworksLoadBalancersLoadBalancerIdRouteImport.update({
+    id: '/networks/load-balancers/$loadBalancerId',
+    path: '/networks/load-balancers/$loadBalancerId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedInstancesVmCreateRoute =
   AuthenticatedInstancesVmCreateRouteImport.update({
     id: '/create',
@@ -475,6 +496,9 @@ export interface FileRoutesByFullPath {
   '/instances/sandbox/create': typeof AuthenticatedInstancesSandboxCreateRoute
   '/instances/vm/$instanceId': typeof AuthenticatedInstancesVmInstanceIdRouteWithChildren
   '/instances/vm/create': typeof AuthenticatedInstancesVmCreateRoute
+  '/networks/load-balancers/$loadBalancerId': typeof AuthenticatedNetworksLoadBalancersLoadBalancerIdRoute
+  '/networks/routes/$routeId': typeof AuthenticatedNetworksRoutesRouteIdRoute
+  '/networks/security-groups/$securityGroupId': typeof AuthenticatedNetworksSecurityGroupsSecurityGroupIdRoute
   '/networks/subnets/$subnetId': typeof AuthenticatedNetworksSubnetsSubnetIdRoute
   '/networks/vpcs/$vpcId': typeof AuthenticatedNetworksVpcsVpcIdRoute
   '/objects/$bucketId/$objectId': typeof AuthenticatedObjectsBucketIdObjectIdRoute
@@ -535,6 +559,9 @@ export interface FileRoutesByTo {
   '/instances/sandbox/create': typeof AuthenticatedInstancesSandboxCreateRoute
   '/instances/vm/$instanceId': typeof AuthenticatedInstancesVmInstanceIdRouteWithChildren
   '/instances/vm/create': typeof AuthenticatedInstancesVmCreateRoute
+  '/networks/load-balancers/$loadBalancerId': typeof AuthenticatedNetworksLoadBalancersLoadBalancerIdRoute
+  '/networks/routes/$routeId': typeof AuthenticatedNetworksRoutesRouteIdRoute
+  '/networks/security-groups/$securityGroupId': typeof AuthenticatedNetworksSecurityGroupsSecurityGroupIdRoute
   '/networks/subnets/$subnetId': typeof AuthenticatedNetworksSubnetsSubnetIdRoute
   '/networks/vpcs/$vpcId': typeof AuthenticatedNetworksVpcsVpcIdRoute
   '/objects/$bucketId/$objectId': typeof AuthenticatedObjectsBucketIdObjectIdRoute
@@ -599,6 +626,9 @@ export interface FileRoutesById {
   '/_authenticated/instances/sandbox/create': typeof AuthenticatedInstancesSandboxCreateRoute
   '/_authenticated/instances/vm/$instanceId': typeof AuthenticatedInstancesVmInstanceIdRouteWithChildren
   '/_authenticated/instances/vm/create': typeof AuthenticatedInstancesVmCreateRoute
+  '/_authenticated/networks/load-balancers/$loadBalancerId': typeof AuthenticatedNetworksLoadBalancersLoadBalancerIdRoute
+  '/_authenticated/networks/routes/$routeId': typeof AuthenticatedNetworksRoutesRouteIdRoute
+  '/_authenticated/networks/security-groups/$securityGroupId': typeof AuthenticatedNetworksSecurityGroupsSecurityGroupIdRoute
   '/_authenticated/networks/subnets/$subnetId': typeof AuthenticatedNetworksSubnetsSubnetIdRoute
   '/_authenticated/networks/vpcs/$vpcId': typeof AuthenticatedNetworksVpcsVpcIdRoute
   '/_authenticated/objects/$bucketId/$objectId': typeof AuthenticatedObjectsBucketIdObjectIdRoute
@@ -663,6 +693,9 @@ export interface FileRouteTypes {
     | '/instances/sandbox/create'
     | '/instances/vm/$instanceId'
     | '/instances/vm/create'
+    | '/networks/load-balancers/$loadBalancerId'
+    | '/networks/routes/$routeId'
+    | '/networks/security-groups/$securityGroupId'
     | '/networks/subnets/$subnetId'
     | '/networks/vpcs/$vpcId'
     | '/objects/$bucketId/$objectId'
@@ -723,6 +756,9 @@ export interface FileRouteTypes {
     | '/instances/sandbox/create'
     | '/instances/vm/$instanceId'
     | '/instances/vm/create'
+    | '/networks/load-balancers/$loadBalancerId'
+    | '/networks/routes/$routeId'
+    | '/networks/security-groups/$securityGroupId'
     | '/networks/subnets/$subnetId'
     | '/networks/vpcs/$vpcId'
     | '/objects/$bucketId/$objectId'
@@ -786,6 +822,9 @@ export interface FileRouteTypes {
     | '/_authenticated/instances/sandbox/create'
     | '/_authenticated/instances/vm/$instanceId'
     | '/_authenticated/instances/vm/create'
+    | '/_authenticated/networks/load-balancers/$loadBalancerId'
+    | '/_authenticated/networks/routes/$routeId'
+    | '/_authenticated/networks/security-groups/$securityGroupId'
     | '/_authenticated/networks/subnets/$subnetId'
     | '/_authenticated/networks/vpcs/$vpcId'
     | '/_authenticated/objects/$bucketId/$objectId'
@@ -1171,6 +1210,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNetworksSubnetsSubnetIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/networks/security-groups/$securityGroupId': {
+      id: '/_authenticated/networks/security-groups/$securityGroupId'
+      path: '/networks/security-groups/$securityGroupId'
+      fullPath: '/networks/security-groups/$securityGroupId'
+      preLoaderRoute: typeof AuthenticatedNetworksSecurityGroupsSecurityGroupIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/networks/routes/$routeId': {
+      id: '/_authenticated/networks/routes/$routeId'
+      path: '/networks/routes/$routeId'
+      fullPath: '/networks/routes/$routeId'
+      preLoaderRoute: typeof AuthenticatedNetworksRoutesRouteIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/networks/load-balancers/$loadBalancerId': {
+      id: '/_authenticated/networks/load-balancers/$loadBalancerId'
+      path: '/networks/load-balancers/$loadBalancerId'
+      fullPath: '/networks/load-balancers/$loadBalancerId'
+      preLoaderRoute: typeof AuthenticatedNetworksLoadBalancersLoadBalancerIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/instances/vm/create': {
       id: '/_authenticated/instances/vm/create'
       path: '/create'
@@ -1390,6 +1450,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUsageIndexRoute: typeof AuthenticatedUsageIndexRoute
   AuthenticatedVectorStoresIndexRoute: typeof AuthenticatedVectorStoresIndexRoute
   AuthenticatedVolumesIndexRoute: typeof AuthenticatedVolumesIndexRoute
+  AuthenticatedNetworksLoadBalancersLoadBalancerIdRoute: typeof AuthenticatedNetworksLoadBalancersLoadBalancerIdRoute
+  AuthenticatedNetworksRoutesRouteIdRoute: typeof AuthenticatedNetworksRoutesRouteIdRoute
+  AuthenticatedNetworksSecurityGroupsSecurityGroupIdRoute: typeof AuthenticatedNetworksSecurityGroupsSecurityGroupIdRoute
   AuthenticatedNetworksSubnetsSubnetIdRoute: typeof AuthenticatedNetworksSubnetsSubnetIdRoute
   AuthenticatedNetworksVpcsVpcIdRoute: typeof AuthenticatedNetworksVpcsVpcIdRoute
   AuthenticatedNetworksLoadBalancersIndexRoute: typeof AuthenticatedNetworksLoadBalancersIndexRoute
@@ -1445,6 +1508,12 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedUsageIndexRoute: AuthenticatedUsageIndexRoute,
   AuthenticatedVectorStoresIndexRoute: AuthenticatedVectorStoresIndexRoute,
   AuthenticatedVolumesIndexRoute: AuthenticatedVolumesIndexRoute,
+  AuthenticatedNetworksLoadBalancersLoadBalancerIdRoute:
+    AuthenticatedNetworksLoadBalancersLoadBalancerIdRoute,
+  AuthenticatedNetworksRoutesRouteIdRoute:
+    AuthenticatedNetworksRoutesRouteIdRoute,
+  AuthenticatedNetworksSecurityGroupsSecurityGroupIdRoute:
+    AuthenticatedNetworksSecurityGroupsSecurityGroupIdRoute,
   AuthenticatedNetworksSubnetsSubnetIdRoute:
     AuthenticatedNetworksSubnetsSubnetIdRoute,
   AuthenticatedNetworksVpcsVpcIdRoute: AuthenticatedNetworksVpcsVpcIdRoute,
