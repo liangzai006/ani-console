@@ -223,6 +223,7 @@ export function DetailPageFrame({
                   </button>
                 )
               })}
+              {activeTab?.extra ? <div className={styles.tabExtra}>{activeTab.extra}</div> : null}
             </div>
             <div
               id={activeTab ? `detail-tab-panel-${activeTab.key}` : undefined}

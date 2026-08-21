@@ -438,6 +438,13 @@
   content: '';
 }
 
+.tabExtra {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin-left: auto;
+}
+
 .tabBody {
   flex: 1 1 auto;
   min-width: 0;

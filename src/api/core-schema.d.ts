@@ -769,6 +769,161 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/buckets/{bucket_id}/acl": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** 设置桶 ACL */
+        put: operations["setStorageBucketACL"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/buckets/{bucket_id}/storage-class": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** 设置桶默认存储类型 */
+        put: operations["setStorageBucketClass"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/buckets/{bucket_id}/objects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        /** 按前缀浏览桶内对象 */
+        get: operations["listBucketObjects"];
+        put?: never;
+        post?: never;
+        /** 删除桶内对象 */
+        delete: operations["deleteBucketObject"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/buckets/{bucket_id}/objects/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 申请桶内对象上传预签名 URL */
+        post: operations["uploadBucketObject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/buckets/{bucket_id}/prefixes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 创建对象存储前缀 */
+        post: operations["createBucketPrefix"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/buckets/{bucket_id}/objects/presigned-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 生成桶内对象临时访问链接 */
+        post: operations["generateBucketObjectPresignedURL"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/buckets/{bucket_id}/lifecycle-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        /** 查询桶生命周期规则 */
+        get: operations["listStorageBucketLifecycleRules"];
+        put?: never;
+        /** 创建桶生命周期规则 */
+        post: operations["createStorageBucketLifecycleRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/buckets/{bucket_id}/lifecycle-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 删除桶生命周期规则 */
+        delete: operations["deleteStorageBucketLifecycleRule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/objects": {
         parameters: {
             query?: never;
@@ -2908,6 +3063,15 @@ export interface components {
             /** Format: int64 */
             size_gib: number;
             storage_class: string;
+            zone?: string | null;
+            /** @enum {string} */
+            volume_type?: "ssd" | "hdd" | "high_performance_ssd" | null;
+            iops?: number | null;
+            encrypted?: boolean | null;
+            mount_instance_id?: string | null;
+            mount_route?: string | null;
+            mount_name?: string | null;
+            snapshots_count?: number | null;
             state: components["schemas"]["StorageResourceState"];
             reason?: string | null;
             dev_profile?: components["schemas"]["CoreDevProfileInfo"];
@@ -2972,6 +3136,13 @@ export interface components {
             size_gib: number;
             /** @default standard */
             storage_class: string;
+            zone?: string;
+            /** @enum {string} */
+            volume_type?: "ssd" | "hdd" | "high_performance_ssd";
+            /** @default false */
+            encrypted?: boolean;
+            mount_instance_id?: string | null;
+            mount_route?: string | null;
         };
         CreateStorageFilesystemRequest: {
             /** @description 客户端生成；同一 tenant_id 下 24 小时内去重 */
@@ -3444,12 +3615,25 @@ export interface components {
             id: string;
             name: string;
             region?: string | null;
+            /** Format: uri */
+            endpoint?: string | null;
             /** @enum {string} */
             access_mode: "private" | "public_read";
+            /** @enum {string} */
+            acl?: "private" | "tenant_read" | null;
+            acl_label?: string | null;
+            /** @enum {string} */
+            storage_class?: "standard" | "infrequent_access" | null;
+            /** @enum {string} */
+            versioning?: "disabled" | "enabled" | null;
             object_count?: number;
             size_bytes?: number;
+            lifecycle_rules?: components["schemas"]["StorageBucketLifecycleRule"][];
+            lifecycle_note?: string | null;
             /** Format: date-time */
             created_at: string;
+            /** Format: date-time */
+            updated_at?: string | null;
         };
         StorageBucketListResponse: {
             items: components["schemas"]["StorageBucketRecord"][];
@@ -3465,6 +3649,85 @@ export interface components {
              * @enum {string}
              */
             access_mode: "private" | "public_read";
+        };
+        StorageBucketACLUpdateRequest: {
+            idempotency_key: string;
+            /** @enum {string} */
+            acl: "private" | "tenant_read";
+        };
+        StorageBucketClassUpdateRequest: {
+            idempotency_key: string;
+            /** @enum {string} */
+            storage_class: "standard" | "infrequent_access";
+        };
+        StorageBucketObjectEntry: {
+            /** @enum {string} */
+            kind: "prefix" | "object";
+            name: string;
+            key: string;
+            /** Format: int64 */
+            size_bytes?: number | null;
+            size_label?: string | null;
+            /** Format: date-time */
+            updated_at?: string | null;
+            /** @enum {string} */
+            storage_class?: "standard" | "infrequent_access" | null;
+        };
+        StorageBucketObjectListResponse: {
+            items: components["schemas"]["StorageBucketObjectEntry"][];
+            total: number;
+            prefix: string;
+            next_cursor?: string | null;
+        };
+        BucketObjectUploadRequest: {
+            idempotency_key: string;
+            key: string;
+            /** @default application/octet-stream */
+            content_type?: string;
+            /** Format: int64 */
+            size_bytes?: number | null;
+            /** @enum {string} */
+            storage_class?: "standard" | "infrequent_access";
+        };
+        BucketPrefixCreateRequest: {
+            idempotency_key: string;
+            prefix: string;
+        };
+        BucketObjectDeleteResponse: {
+            bucket_id: string;
+            key: string;
+            deleted: boolean;
+        };
+        BucketObjectPresignedURLRequest: {
+            key: string;
+            /** @default 24 */
+            expires_hours?: number;
+            /** @enum {string} */
+            method?: "GET" | "PUT";
+        };
+        StorageBucketLifecycleRule: {
+            id: string;
+            name: string;
+            prefix: string;
+            expire_days: number;
+            to_infrequent_days: number;
+            enabled: boolean;
+        };
+        StorageBucketLifecycleRuleCreateRequest: {
+            idempotency_key: string;
+            name: string;
+            prefix: string;
+            expire_days: number;
+            to_infrequent_days: number;
+            enabled: boolean;
+        };
+        StorageBucketLifecycleRuleListResponse: {
+            items: components["schemas"]["StorageBucketLifecycleRule"][];
+            total: number;
+        };
+        StorageBucketLifecycleRulesUpdateRequest: {
+            idempotency_key: string;
+            rules: components["schemas"]["StorageBucketLifecycleRule"][];
         };
         StorageObjectUploadRequest: {
             idempotency_key: string;
@@ -5259,6 +5522,295 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    setStorageBucketACL: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageBucketACLUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description 桶 ACL 已更新 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBucketRecord"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setStorageBucketClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageBucketClassUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description 桶存储类型已更新 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBucketRecord"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listBucketObjects: {
+        parameters: {
+            query?: {
+                prefix?: string;
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 桶对象和前缀列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBucketObjectListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteBucketObject: {
+        parameters: {
+            query: {
+                key: string;
+            };
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 对象已删除 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BucketObjectDeleteResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    uploadBucketObject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BucketObjectUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description 预签名上传 URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageObjectUploadResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createBucketPrefix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BucketPrefixCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description 前缀已创建 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBucketObjectEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    generateBucketObjectPresignedURL: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BucketObjectPresignedURLRequest"];
+            };
+        };
+        responses: {
+            /** @description 预签名 URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageObjectDownloadInfo"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listStorageBucketLifecycleRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 生命周期规则列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBucketLifecycleRuleListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createStorageBucketLifecycleRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageBucketLifecycleRuleCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description 生命周期规则已创建 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBucketLifecycleRule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteStorageBucketLifecycleRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bucket_id: string;
+                rule_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 生命周期规则已删除 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBucketLifecycleRuleListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listStorageObjects: {

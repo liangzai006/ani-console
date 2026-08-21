@@ -7,12 +7,14 @@ type StorageObject = components['schemas']['StorageObject']
 export async function uploadStorageObjectFile(input: {
   bucketId: string
   file: File
+  prefix?: string
   idempotencyKey?: string
 }): Promise<StorageObject> {
+  const key = input.prefix && input.prefix !== '/' ? `${input.prefix}${input.file.name}` : input.file.name
   const { data, error } = await coreApi.POST('/objects/upload', {
     body: {
       bucket_id: input.bucketId,
-      key: input.file.name,
+      key,
       content_type: input.file.type || 'application/octet-stream',
       idempotency_key: input.idempotencyKey ?? newIdempotencyKey(),
     },

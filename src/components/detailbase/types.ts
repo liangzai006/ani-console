@@ -30,4 +30,5 @@ export type DetailTab = {
   key: string
   label: ReactNode
   content: ReactNode
+  extra?: ReactNode
 }

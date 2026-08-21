@@ -1,115 +1,160 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Form, Input, Message, Modal, Select } from '@arco-design/web-react'
-import { useState } from 'react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 import { coreApi } from '@/api/client'
-import { PageHeader } from '@/components/shell/AppShell'
-import { CursorTable } from '@/components/tables/CursorTable'
-import { newIdempotencyKey } from '@/lib/idempotency'
-import { showApiError } from '@/api/helpers'
-import { listOrThrow } from '@/lib/api-list'
-import { formatDateTime } from '@/lib/format'
-import { bucketNamePattern } from '@/lib/validators'
 import type { components } from '@/api/core-schema'
+import { CreateBucketModal } from '@/components/storage/CreateBucketModal'
+import {
+  DataTable,
+  ListNameCell,
+  ListPageFrame,
+  ListPageHeader,
+  ListRowActionButton,
+  ListRowActions,
+  ListToolbar,
+  ToolbarButton,
+  ToolbarIconButton,
+  ToolbarSearch,
+  type ListColumn,
+} from '@/components/pagebase'
+import { listOrThrow } from '@/lib/api-list'
+import { getErrorMessage } from '@/lib/errors'
+import { formatBytes, formatDateTime } from '@/lib/format'
 
 type Bucket = components['schemas']['StorageBucketRecord']
+type SearchField = 'name' | 'id'
 
-export const Route = createFileRoute('/_authenticated/objects/')({
-  component: ObjectsPage,
-})
+export const Route = createFileRoute('/_authenticated/objects/')({ component: ObjectsPage })
 
 function ObjectsPage() {
-  const qc = useQueryClient()
-  const [bucketVisible, setBucketVisible] = useState(false)
-  const [bucketName, setBucketName] = useState('')
-  const [bucketRegion, setBucketRegion] = useState('')
-  const [bucketAccessMode, setBucketAccessMode] = useState<'private' | 'public_read'>('private')
-
-  const { data, isLoading, error } = useQuery({
+  const navigate = useNavigate()
+  const [createVisible, setCreateVisible] = useState(false)
+  const [searchField, setSearchField] = useState<SearchField>('name')
+  const [searchText, setSearchText] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const buckets = useQuery({
     queryKey: ['buckets'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/buckets', { params: { query: { limit: 50 } } })),
+    queryFn: () => listOrThrow(() => coreApi.GET('/buckets', { params: { query: { limit: 100 } } })),
   })
+  const items = (buckets.data?.items ?? []) as Bucket[]
+  const filteredItems = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase()
+    return items.filter(
+      (item) => !keyword || String(item[searchField]).toLowerCase().includes(keyword),
+    )
+  }, [items, searchField, searchText])
+  const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize)
+  useEffect(() => setPage(1), [searchField, searchText])
 
-  const createBucket = useMutation({
-    mutationFn: async () => {
-      if (!bucketNamePattern.test(bucketName)) {
-        throw new Error('存储桶名称需为 3-63 位小写字母、数字或连字符，且首尾必须是字母或数字')
-      }
-      const { error } = await coreApi.POST('/buckets', {
-        body: {
-          name: bucketName,
-          region: bucketRegion || undefined,
-          access_mode: bucketAccessMode,
-          idempotency_key: newIdempotencyKey(),
-        },
-      })
-      if (error) throw error
+  const columns: Array<ListColumn<Bucket>> = [
+    {
+      key: 'name',
+      title: '名称 / ID',
+      minWidth: 240,
+      render: (item) => (
+        <ListNameCell
+          name={
+            <Link to="/objects/$bucketId" params={{ bucketId: item.id }}>
+              {item.name}
+            </Link>
+          }
+          id={item.id}
+        />
+      ),
     },
-    onSuccess: () => {
-      setBucketVisible(false)
-      setBucketName('')
-      setBucketRegion('')
-      setBucketAccessMode('private')
-      qc.invalidateQueries({ queryKey: ['buckets'] })
+    {
+      key: 'acl',
+      title: '权限',
+      width: 120,
+      render: (item) => (item.acl === 'tenant_read' ? '租户内读' : '私有'),
     },
-    onError: (e) => showApiError(e),
-  })
-
-  const items = (data?.items ?? []) as Bucket[]
+    {
+      key: 'storageClass',
+      title: '存储类型',
+      width: 120,
+      render: (item) => (item.storage_class === 'infrequent_access' ? '低频' : '标准'),
+    },
+    { key: 'region', title: 'Region', minWidth: 140, render: (item) => item.region ?? '—' },
+    { key: 'objectCount', title: '对象数', width: 110, render: (item) => item.object_count ?? 0 },
+    { key: 'sizeBytes', title: '总大小', minWidth: 130, render: (item) => formatBytes(item.size_bytes) },
+    { key: 'createdAt', title: '创建时间', minWidth: 190, render: (item) => formatDateTime(item.created_at) },
+  ]
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="对象存储"
-        subtitle="S3 兼容存储桶"
-        extra={
-          <Button type="primary" onClick={() => setBucketVisible(true)}>
-            创建存储桶
-          </Button>
+    <>
+      <ListPageFrame
+        header={
+          <ListPageHeader
+            iconClassName="icon-duixiangcunchu1"
+            title="对象存储"
+            subtitle="S3 兼容存储桶，用于保存非结构化对象数据"
+            extra={
+              <ToolbarButton variant="primary" iconClassName="icon-add-1" onClick={() => setCreateVisible(true)}>
+                创建存储桶
+              </ToolbarButton>
+            }
+          />
         }
-      />
-      <CursorTable
-        columns={[
-          {
-            title: '名称',
-            render: (_, r) => (
-              <Link to="/objects/$bucketId" params={{ bucketId: r.id }} className="text-inherit">
-                {r.name}
-              </Link>
-            ),
-          },
-          { title: '访问模式', dataIndex: 'access_mode' },
-          { title: '对象数', dataIndex: 'object_count' },
-          { title: '创建时间', render: (_, r) => formatDateTime(r.created_at) },
-        ]}
-        data={{ items, next_cursor: data?.next_cursor }}
-        loading={isLoading}
-        error={error}
-        rowKey="id"
-        emptyDescription="暂无存储桶，点击右上角创建"
-      />
-      <Modal
-        visible={bucketVisible}
-        title="创建存储桶"
-        onCancel={() => setBucketVisible(false)}
-        onOk={() => createBucket.mutateAsync().catch((e) => Message.error(e instanceof Error ? e.message : '创建失败'))}
-        confirmLoading={createBucket.isPending}
+        toolbar={
+          <ListToolbar
+            filters={
+              <ToolbarSearch
+                fields={[
+                  { value: 'name', label: '名称' },
+                  { value: 'id', label: 'ID' },
+                ]}
+                field={searchField}
+                value={searchText}
+                onFieldChange={setSearchField}
+                onChange={setSearchText}
+              />
+            }
+            tools={
+              <ToolbarIconButton
+                iconClassName="icon-refresh-1"
+                label="刷新"
+                spinning={buckets.isFetching}
+                onClick={() => void buckets.refetch()}
+              />
+            }
+          />
+        }
       >
-        <Form layout="vertical">
-          <Form.Item label="名称" required>
-            <Input value={bucketName} onChange={setBucketName} />
-          </Form.Item>
-          <Form.Item label="Region">
-            <Input value={bucketRegion} onChange={setBucketRegion} placeholder="可选" />
-          </Form.Item>
-          <Form.Item label="访问模式">
-            <Select value={bucketAccessMode} onChange={setBucketAccessMode}>
-              <Select.Option value="private">private</Select.Option>
-              <Select.Option value="public_read">public_read</Select.Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+        <DataTable
+          rows={pagedItems}
+          rowKey={(item) => item.id}
+          columns={columns}
+          selectable={false}
+          loading={buckets.isLoading}
+          error={buckets.error ? getErrorMessage(buckets.error, '对象存储桶列表加载失败') : null}
+          onRetry={() => void buckets.refetch()}
+          emptyIconClassName="icon-duixiangcunchu1"
+          emptyText={searchText ? '没有符合条件的存储桶' : '还没有存储桶，点击「创建存储桶」开始'}
+          tableLabel="对象存储桶列表"
+          preserveTableOnEmpty
+          renderRowActions={(item) => (
+            <ListRowActions>
+              <ListRowActionButton
+                onClick={() => navigate({ to: '/objects/$bucketId', params: { bucketId: item.id } })}
+              >
+                详情
+              </ListRowActionButton>
+            </ListRowActions>
+          )}
+          pagination={{
+            page,
+            pageSize,
+            total: filteredItems.length,
+            onPageChange: setPage,
+            onPageSizeChange: (next) => {
+              setPageSize(next)
+              setPage(1)
+            },
+          }}
+        />
+      </ListPageFrame>
+      <CreateBucketModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
+    </>
   )
 }

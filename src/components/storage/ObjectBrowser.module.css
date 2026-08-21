@@ -1,0 +1,113 @@
+.browser {
+  min-width: 760px;
+  overflow-x: auto;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.breadcrumb {
+  min-width: 0;
+}
+
+.columns,
+.row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 100px 160px 100px minmax(280px, auto);
+  align-items: center;
+  gap: 12px;
+}
+
+.columns {
+  min-height: 40px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-border-2);
+  background: var(--color-fill-1);
+  color: var(--color-text-2);
+  font-weight: 500;
+}
+
+.list {
+  width: 100%;
+}
+
+.item {
+  padding: 0 !important;
+}
+
+.row {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  color: var(--color-text-2);
+}
+
+.row:hover {
+  background: var(--color-fill-1);
+}
+
+.parentRow {
+  border-bottom: 1px solid var(--color-border-2);
+}
+
+.entryButton,
+.entryLabel {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-1);
+  font: inherit;
+  text-align: left;
+}
+
+.entryButton {
+  cursor: pointer;
+}
+
+.entryButton:hover .entryName {
+  color: rgb(var(--primary-6));
+}
+
+.entryButton:focus-visible {
+  outline: 2px solid rgb(var(--primary-6));
+  outline-offset: 3px;
+}
+
+.entryName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folderIcon {
+  flex: 0 0 auto;
+  color: rgb(var(--warning-6));
+  font-size: 20px;
+}
+
+.fileIcon,
+.backIcon {
+  flex: 0 0 auto;
+  color: var(--color-text-3);
+  font-size: 20px;
+}
+
+.actions {
+  justify-content: flex-end;
+}
+
+.loading {
+  display: flex;
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+}

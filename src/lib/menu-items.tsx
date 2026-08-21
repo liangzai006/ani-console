@@ -69,9 +69,9 @@ export const menuItems: readonly MenuItem[] = [
     label: '存储',
     icon: <IconStorage />,
     children: [
-      { key: '/volumes', label: '块存储卷', icon: <IconStorage /> },
-      { key: '/filesystems', label: '文件存储', icon: <IconFile /> },
+      { key: '/volumes', label: '块存储', icon: <IconStorage /> },
       { key: '/objects', label: '对象存储', icon: <IconStorage /> },
+      { key: '/filesystems', label: '文件存储', icon: <IconFile /> },
       { key: '/vector-stores', label: '向量存储', icon: <IconUnorderedList /> },
     ],
   },
