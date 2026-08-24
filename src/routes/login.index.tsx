@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Button, Card, Form, Input, Message } from '@arco-design/web-react'
+import { Alert, Button, Card, Divider, Form, Input, Message } from '@arco-design/web-react'
 import { useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { coreApi } from '@/api/client'
@@ -18,6 +18,7 @@ function LoginPage() {
   const navigate = useNavigate()
   const { redirect = '/' } = Route.useSearch()
   const setTokens = useAuthStore((state) => state.setTokens)
+  const setDevelopmentBypass = useAuthStore((state) => state.setDevelopmentBypass)
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -49,6 +50,12 @@ function LoginPage() {
     },
   })
 
+  const skipLogin = () => {
+    setDevelopmentBypass(true)
+    Message.info('已进入开发预览模式')
+    navigate({ to: redirect, replace: true })
+  }
+
   return (
     <AuthCenterLayout>
       <Card className="w-full max-w-[400px]" title="登录 ANI Console">
@@ -71,6 +78,15 @@ function LoginPage() {
             登录
           </Button>
         </Form>
+        {import.meta.env.DEV ? (
+          <>
+            <Divider />
+            <Alert type="warning" content="开发预览模式不会携带登录令牌，依赖后端鉴权的数据可能无法加载。" />
+            <Button type="text" long className="mt-3" onClick={skipLogin}>
+              跳过登录（仅开发模式）
+            </Button>
+          </>
+        ) : null}
       </Card>
     </AuthCenterLayout>
   )

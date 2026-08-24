@@ -1,6 +1,6 @@
 import createClient, { type Middleware } from 'openapi-fetch'
 import type { paths } from './core-schema'
-import { useAuthStore } from '@/stores/auth'
+import { isDevelopmentAuthBypassActive, useAuthStore } from '@/stores/auth'
 import { newIdempotencyKey } from '@/lib/idempotency'
 
 export const CORE_API_BASE = '/api/v1'
@@ -43,6 +43,7 @@ const authMiddleware: Middleware = {
   async onResponse({ response, request }) {
     if (isPublicAuthRequest(request)) return response
     if (response.status !== 401) return response
+    if (isDevelopmentAuthBypassActive()) return response
     const refreshToken = useAuthStore.getState().tokens?.refresh_token
     if (!refreshToken || request.url.includes('/auth/refresh')) {
       expireAuthSession()

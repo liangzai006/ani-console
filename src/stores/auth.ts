@@ -10,8 +10,10 @@ export interface AuthTokens {
 
 interface AuthState {
   tokens: AuthTokens | null
+  developmentBypass: boolean
   hydrated: boolean
   setTokens: (tokens: AuthTokens | null) => void
+  setDevelopmentBypass: (enabled: boolean) => void
   clear: () => void
   getAccessToken: () => string | null
   getAccessTokenJti: () => string | null
@@ -39,9 +41,11 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       tokens: null,
+      developmentBypass: false,
       hydrated: false,
-      setTokens: (tokens) => set({ tokens }),
-      clear: () => set({ tokens: null }),
+      setTokens: (tokens) => set({ tokens, developmentBypass: false }),
+      setDevelopmentBypass: (enabled) => set({ developmentBypass: import.meta.env.DEV && enabled }),
+      clear: () => set({ tokens: null, developmentBypass: false }),
       getAccessToken: () => get().tokens?.access_token ?? null,
       getAccessTokenJti: () => {
         const token = get().tokens?.access_token
@@ -51,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'ani-console-auth',
-      partialize: (state) => ({ tokens: state.tokens }),
+      partialize: (state) => ({ tokens: state.tokens, developmentBypass: state.developmentBypass }),
       skipHydration: true,
       onRehydrateStorage: () => () => {
         useAuthStore.setState({ hydrated: true })
@@ -65,5 +69,9 @@ export function isAuthHydrated(): boolean {
 }
 
 export function isAuthenticated(): boolean {
-  return !!useAuthStore.getState().tokens?.access_token
+  return !!useAuthStore.getState().tokens?.access_token || isDevelopmentAuthBypassActive()
+}
+
+export function isDevelopmentAuthBypassActive(): boolean {
+  return import.meta.env.DEV && useAuthStore.getState().developmentBypass
 }
