@@ -751,6 +751,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询模型仓库列表 */
+        get: operations["listModels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/buckets": {
         parameters: {
             query?: never;
@@ -3089,6 +3106,8 @@ export interface components {
             /** Format: int64 */
             size_gib: number;
             endpoint?: string | null;
+            /** @enum {string|null} */
+            performance_mode?: "standard" | "throughput" | null;
             state: components["schemas"]["StorageResourceState"];
             reason?: string | null;
             dev_profile?: components["schemas"]["CoreDevProfileInfo"];
@@ -3096,6 +3115,41 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        ModelCatalogVersion: {
+            id: string;
+            model_id: string;
+            version: string;
+            format: string;
+            is_encrypted: boolean;
+            /** Format: int64 */
+            size_bytes: number;
+            checksum_sha256?: string | null;
+            storage_path: string;
+            /** Format: date-time */
+            created_at?: string | null;
+        };
+        ModelCatalogItem: {
+            id: string;
+            name: string;
+            display_name: string;
+            description?: string | null;
+            /** @enum {string} */
+            source: "upload" | "huggingface" | "modelscope" | "builtin" | string;
+            capabilities: string[];
+            /** @enum {string} */
+            status: "pending" | "downloading" | "ready" | "error" | "deleted" | string;
+            /** Format: int64 */
+            total_size_bytes: number;
+            /** Format: date-time */
+            created_at?: string | null;
+            /** Format: date-time */
+            updated_at?: string | null;
+            versions: components["schemas"]["ModelCatalogVersion"][];
+        };
+        ModelCatalogListResponse: {
+            items: components["schemas"]["ModelCatalogItem"][];
+            next_cursor?: string | null;
         };
         StorageObject: {
             id: string;
@@ -3155,6 +3209,11 @@ export interface components {
             protocol: "nfs" | "cephfs";
             /** Format: int64 */
             size_gib: number;
+            /**
+             * @default standard
+             * @enum {string}
+             */
+            performance_mode: "standard" | "throughput";
         };
         CreateStorageObjectRequest: {
             /** @description 客户端生成；同一 tenant_id 下 24 小时内去重 */
@@ -5362,6 +5421,33 @@ export interface operations {
                     "application/json": components["schemas"]["StorageFilesystemListResponse"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listModels: {
+        parameters: {
+            query?: {
+                status?: string;
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 模型仓库列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };

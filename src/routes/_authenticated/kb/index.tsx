@@ -2,10 +2,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
+import { servicesApi } from "@/api/services-client";
+import type { components } from "@/api/services-schema";
 import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { CreateVectorStoreModal } from "@/components/storage/CreateVectorStoreModal";
+import { CreateKnowledgeBaseModal } from "@/components/knowledge/CreateKnowledgeBaseModal";
 import {
   DataTable,
   ListNameCell,
@@ -21,19 +21,18 @@ import {
   type ListColumn,
 } from "@/components/pagebase";
 import { StatusTag } from "@/components/shell/StatusTag";
-import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 
-type VectorStore = components["schemas"]["VectorStore"];
-type StatusFilter = "all" | "ready" | "pending";
+type KnowledgeBase = components["schemas"]["KnowledgeBase"];
+type StatusFilter = "all" | "active" | "rebuilding";
 type SearchField = "name" | "id";
 
-export const Route = createFileRoute("/_authenticated/vector-stores/")({
-  component: VectorStoresPage,
+export const Route = createFileRoute("/_authenticated/kb/")({
+  component: KnowledgeBasesPage,
 });
 
-function VectorStoresPage() {
+function KnowledgeBasesPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
@@ -42,47 +41,46 @@ function VectorStoresPage() {
   const [searchText, setSearchText] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const stores = useQuery({
-    queryKey: ["vector-stores"],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/vector-stores", { params: { query: { limit: 100 } } }),
-      ),
+  const query = useQuery({
+    queryKey: ["knowledge-bases"],
+    queryFn: async () => {
+      const { data, error } = await servicesApi.GET("/knowledge-bases");
+      if (error) throw error;
+      return data;
+    },
   });
   const remove = useMutation({
-    mutationFn: async (item: VectorStore) => {
-      const { error } = await coreApi.DELETE(
-        "/vector-stores/{vector_store_id}",
-        { params: { path: { vector_store_id: item.id } } },
-      );
+    mutationFn: async (item: KnowledgeBase) => {
+      const { error } = await servicesApi.DELETE("/knowledge-bases/{kb_id}", {
+        params: { path: { kb_id: item.id } },
+      });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["vector-stores"] }),
-    onError: (error) => showApiError(error),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge-bases"] }),
+    onError: (error) => showApiError(error, "删除知识库失败"),
   });
-  const items = (stores.data?.items ?? []) as VectorStore[];
+  const items = (query.data?.items ?? []).filter(
+    (item) => item.status !== "deleted",
+  );
   const counts = useMemo(
     () => ({
       all: items.length,
-      ready: items.filter((item) => item.state === "ready").length,
-      pending: items.filter((item) => item.state === "pending").length,
+      active: items.filter((item) => item.status === "active").length,
+      rebuilding: items.filter((item) => item.status === "rebuilding").length,
     }),
     [items],
   );
-  const filteredItems = useMemo(() => {
+  const filtered = useMemo(() => {
     const keyword = searchText.trim().toLowerCase();
     return items.filter(
       (item) =>
-        (status === "all" || item.state === status) &&
-        (!keyword || String(item[searchField]).toLowerCase().includes(keyword)),
+        (status === "all" || item.status === status) &&
+        (!keyword || item[searchField].toLowerCase().includes(keyword)),
     );
   }, [items, searchField, searchText, status]);
-  const pagedItems = filteredItems.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
   useEffect(() => setPage(1), [searchField, searchText, status]);
-  const columns: Array<ListColumn<VectorStore>> = [
+  const columns: Array<ListColumn<KnowledgeBase>> = [
     {
       key: "name",
       title: "名称 / ID",
@@ -91,8 +89,9 @@ function VectorStoresPage() {
         <ListNameCell
           name={
             <Link
-              to="/vector-stores/$vectorStoreId"
-              params={{ vectorStoreId: item.id }}
+              to="/kb/$kbId"
+              params={{ kbId: item.id }}
+              search={{ tab: "overview" }}
             >
               {item.name}
             </Link>
@@ -102,25 +101,31 @@ function VectorStoresPage() {
       ),
     },
     {
-      key: "state",
+      key: "status",
       title: "状态",
       width: 120,
-      render: (item) => <StatusTag status={item.state} />,
+      render: (item) => <StatusTag status={item.status} />,
     },
     {
-      key: "dimension",
-      title: "向量维度",
-      width: 120,
-      render: (item) => item.dimension,
+      key: "docs",
+      title: "文档数",
+      width: 100,
+      render: (item) => item.doc_count ?? 0,
     },
     {
-      key: "metric",
-      title: "距离度量",
-      width: 140,
-      render: (item) => item.metric.toUpperCase(),
+      key: "model",
+      title: "Embedding 模型",
+      minWidth: 180,
+      render: (item) => item.embedding_model || "—",
     },
     {
-      key: "createdAt",
+      key: "topk",
+      title: "TopK",
+      width: 90,
+      render: (item) => item.top_k ?? "—",
+    },
+    {
+      key: "created",
       title: "创建时间",
       minWidth: 190,
       render: (item) => formatDateTime(item.created_at),
@@ -131,16 +136,16 @@ function VectorStoresPage() {
       <ListPageFrame
         header={
           <ListPageHeader
-            iconClassName="icon-xiangliang"
-            title="向量存储"
-            subtitle="管理用于语义检索和 AI 应用的向量数据"
+            iconClassName="icon-zhishiku"
+            title="知识库管理"
+            subtitle="创建知识库、管理文档并验证知识问答"
             extra={
               <ToolbarButton
                 variant="primary"
                 iconClassName="icon-add-1"
                 onClick={() => setCreateVisible(true)}
               >
-                创建向量存储
+                创建知识库
               </ToolbarButton>
             }
           />
@@ -151,8 +156,12 @@ function VectorStoresPage() {
             onChange={setStatus}
             items={[
               { value: "all", label: "全部", count: counts.all },
-              { value: "ready", label: "可用", count: counts.ready },
-              { value: "pending", label: "创建中", count: counts.pending },
+              { value: "active", label: "活跃", count: counts.active },
+              {
+                value: "rebuilding",
+                label: "重建中",
+                count: counts.rebuilding,
+              },
             ]}
           />
         }
@@ -174,51 +183,63 @@ function VectorStoresPage() {
               <ToolbarIconButton
                 iconClassName="icon-refresh-1"
                 label="刷新"
-                spinning={stores.isFetching}
-                onClick={() => void stores.refetch()}
+                spinning={query.isFetching}
+                onClick={() => void query.refetch()}
               />
             }
           />
         }
       >
         <DataTable
-          rows={pagedItems}
+          rows={paged}
           rowKey={(item) => item.id}
           columns={columns}
           selectable={false}
-          loading={stores.isLoading}
+          loading={query.isLoading}
           error={
-            stores.error
-              ? getErrorMessage(stores.error, "向量存储列表加载失败")
+            query.error
+              ? getErrorMessage(query.error, "知识库列表加载失败")
               : null
           }
-          onRetry={() => void stores.refetch()}
-          emptyIconClassName="icon-xiangliang"
+          onRetry={() => void query.refetch()}
+          emptyIconClassName="icon-zhishiku"
           emptyText={
             searchText || status !== "all"
-              ? "没有符合条件的向量存储"
-              : "还没有向量存储，点击「创建向量存储」开始"
+              ? "没有符合条件的知识库"
+              : "还没有知识库，可创建后上传文档并进行问答"
           }
-          tableLabel="向量存储列表"
+          tableLabel="知识库列表"
           preserveTableOnEmpty
           renderRowActions={(item) => (
             <ListRowActions>
               <ListRowActionButton
                 onClick={() =>
                   navigate({
-                    to: "/vector-stores/$vectorStoreId",
-                    params: { vectorStoreId: item.id },
+                    to: "/kb/$kbId",
+                    params: { kbId: item.id },
+                    search: { tab: "overview" },
                   })
                 }
               >
                 详情
               </ListRowActionButton>
               <ListRowActionButton
+                onClick={() =>
+                  navigate({
+                    to: "/kb/$kbId",
+                    params: { kbId: item.id },
+                    search: { tab: "chat" },
+                  })
+                }
+              >
+                问答
+              </ListRowActionButton>
+              <ListRowActionButton
                 status="danger"
                 onClick={() =>
                   Modal.confirm({
-                    title: "删除向量存储",
-                    content: `确定删除「${item.name}」？其中的向量数据将不可恢复。`,
+                    title: "删除知识库",
+                    content: `确定删除「${item.name}」？知识库及其文档将不可恢复。`,
                     okButtonProps: { status: "danger" },
                     onOk: () => remove.mutateAsync(item),
                   })
@@ -231,7 +252,7 @@ function VectorStoresPage() {
           pagination={{
             page,
             pageSize,
-            total: filteredItems.length,
+            total: filtered.length,
             onPageChange: setPage,
             onPageSizeChange: (next) => {
               setPageSize(next);
@@ -240,9 +261,16 @@ function VectorStoresPage() {
           }}
         />
       </ListPageFrame>
-      <CreateVectorStoreModal
+      <CreateKnowledgeBaseModal
         visible={createVisible}
         onCancel={() => setCreateVisible(false)}
+        onCreated={(item) =>
+          navigate({
+            to: "/kb/$kbId",
+            params: { kbId: item.id },
+            search: { tab: "overview" },
+          })
+        }
       />
     </>
   );

@@ -1,453 +1,455 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
-  Card,
-  Descriptions,
-  Empty,
   Form,
   Input,
   Message,
   Modal,
-  Radio,
   Select,
   Space,
-  Spin,
-  Switch,
   Typography,
-} from '@arco-design/web-react'
-import { useState } from 'react'
-import { coreApi } from '@/api/client'
-import { PageHeader } from '@/components/shell/AppShell'
-import { StatusTag } from '@/components/shell/StatusTag'
-import { CursorTable } from '@/components/tables/CursorTable'
-import { ApiErrorAlert } from '@/components/feedback/ApiErrorAlert'
-import { newIdempotencyKey } from '@/lib/idempotency'
-import { showApiError } from '@/api/helpers'
-import { listOrThrow } from '@/lib/api-list'
-import { formatDateTime } from '@/lib/format'
-import type { components } from '@/api/core-schema'
+} from "@arco-design/web-react";
+import { useEffect, useMemo, useState } from "react";
+import { coreApi } from "@/api/client";
+import { showApiError } from "@/api/helpers";
+import type { components } from "@/api/core-schema";
+import {
+  DataTable,
+  ListPageFrame,
+  ListPageHeader,
+  ListRowActionButton,
+  ListRowActions,
+  ListToolbar,
+  ToolbarIconButton,
+  ToolbarSearch,
+  type ListColumn,
+} from "@/components/pagebase";
+import { getErrorMessage } from "@/lib/errors";
+import { formatBytes, formatDateTime } from "@/lib/format";
 
-type RegistryProject = components['schemas']['RegistryProject']
-type RegistryRepository = components['schemas']['RegistryRepository']
-type RegistryArtifact = components['schemas']['RegistryArtifact']
-type RegistryAction = components['schemas']['SetRegistryPermissionRequest']['actions'][number]
-type RegistryPullSecretKubernetesApply = components['schemas']['RegistryPullSecretKubernetesApply']
-
-type PullSecretMode = 'create-only' | 'kubernetes-apply'
-
-const K8S_DOCKER_CONFIG_SECRET_TYPE = 'kubernetes.io/dockerconfigjson'
-
-export const Route = createFileRoute('/_authenticated/registry/')({
+export const Route = createFileRoute("/_authenticated/registry/")({
   component: RegistryPage,
-})
+});
+
+type RegistryProject = components["schemas"]["RegistryProject"];
+type RegistryScanResult = components["schemas"]["RegistryScanResult"];
+type RegistryPurpose = "container" | "gpu" | "sandbox" | "system";
+type RegistryImage = {
+  project: string;
+  repository: string;
+  tag: string;
+  image: string;
+  purpose?: RegistryPurpose;
+  digest: string;
+  size_bytes: number;
+  pull_command?: string;
+  pushed_at: string;
+  scan_status: RegistryScanResult;
+};
+type RegistryImageListResponse = {
+  items: RegistryImage[];
+  total: number;
+  next_cursor?: string | null;
+};
+type RegistryPushInstructions = {
+  project: string;
+  registry: string;
+  repository_example: string;
+  commands: Array<{ label: string; command: string }>;
+};
+type RegistryApiResponse<T> = Promise<{ data?: T; error?: unknown }>;
+
+const PURPOSE_LABELS: Record<RegistryPurpose, string> = {
+  container: "容器镜像",
+  gpu: "GPU 镜像",
+  sandbox: "沙箱镜像",
+  system: "系统镜像",
+};
+
+function copyText(value: string, success: string) {
+  void navigator.clipboard
+    .writeText(value)
+    .then(() => Message.success(success));
+}
+
+function scanSummary(scan: RegistryScanResult) {
+  if (scan.status === "not_scanned") return "未扫描";
+  if (scan.status === "pending" || scan.status === "running") return "扫描中";
+  if (scan.status === "failed") return "扫描失败";
+  if (scan.critical || scan.high)
+    return `严重 ${scan.critical} · 高危 ${scan.high}`;
+  return "未发现高危漏洞";
+}
 
 function RegistryPage() {
-  const qc = useQueryClient()
-  const [project, setProject] = useState<string | null>(null)
-  const [repo, setRepo] = useState<string | null>(null)
-  const [createVisible, setCreateVisible] = useState(false)
-  const [projectName, setProjectName] = useState('')
-  const [projectPublic, setProjectPublic] = useState(false)
-  const [permVisible, setPermVisible] = useState(false)
-  const [permissionSubject, setPermissionSubject] = useState('developers')
-  const [permissionActions, setPermissionActions] = useState<RegistryAction[]>(['pull', 'push'])
-  const [pullSecretVisible, setPullSecretVisible] = useState(false)
-  const [pullSecretMode, setPullSecretMode] = useState<PullSecretMode>('create-only')
-  const [pullSecretName, setPullSecretName] = useState('ani-registry-pull')
-  const [pullSecretNamespace, setPullSecretNamespace] = useState('')
-  const [pullSecretApplyResult, setPullSecretApplyResult] = useState<RegistryPullSecretKubernetesApply | null>(null)
-  const [scanImage, setScanImage] = useState('')
-  const [scanResult, setScanResult] = useState<components['schemas']['RegistryScanResult'] | null>(null)
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [keyword, setKeyword] = useState("");
+  const [purpose, setPurpose] = useState<"all" | RegistryPurpose>("all");
+  const [project, setProject] = useState("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [guideVisible, setGuideVisible] = useState(false);
+  const [guideProject, setGuideProject] = useState("");
+  const [guideRepository, setGuideRepository] = useState("demo/app");
 
   const projects = useQuery({
-    queryKey: ['registry-projects'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/registry/projects', { params: { query: { limit: 50 } } })),
-  })
-
-  const repos = useQuery({
-    queryKey: ['registry-repos', project],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET('/registry/projects/{project}/repositories', {
-          params: { path: { project: project! }, query: { limit: 50 } },
-        }),
-      ),
-    enabled: !!project,
-  })
-
-  const artifacts = useQuery({
-    queryKey: ['registry-artifacts', project, repo],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET('/registry/projects/{project}/repositories/{repository}/artifacts', {
-          params: { path: { project: project!, repository: repo! }, query: { limit: 50 } },
-        }),
-      ),
-    enabled: !!project && !!repo,
-  })
-
-  const scan = useQuery({
-    queryKey: ['registry-scan', project],
+    queryKey: ["registry-projects"],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET('/registry/projects/{project}/scan-report', {
-        params: { path: { project: project! } },
-      })
-      if (error) throw error
-      return data
+      const { data, error } = await coreApi.GET("/registry/projects", {
+        params: { query: { limit: 100 } },
+      });
+      if (error) throw error;
+      return (data?.items ?? []) as RegistryProject[];
     },
-    enabled: !!project,
-  })
+  });
+  const images = useQuery({
+    queryKey: ["registry-images"],
+    queryFn: async () => {
+      const request = coreApi.GET as unknown as (
+        path: string,
+        options: { params: { query: { limit: number; cursor?: string } } },
+      ) => RegistryApiResponse<RegistryImageListResponse>;
+      const items: RegistryImage[] = [];
+      let cursor: string | undefined;
+      do {
+        const { data, error } = await request("/registry/images", {
+          params: { query: { limit: 100, cursor } },
+        });
+        if (error) throw error;
+        items.push(...(data?.items ?? []));
+        cursor = data?.next_cursor ?? undefined;
+      } while (cursor);
+      return items;
+    },
+  });
+  const guide = useQuery({
+    queryKey: ["registry-push-instructions", guideProject, guideRepository],
+    queryFn: async () => {
+      const request = coreApi.GET as unknown as (
+        path: string,
+        options: {
+          params: { path: { project: string }; query: { repository: string } };
+        },
+      ) => RegistryApiResponse<RegistryPushInstructions>;
+      const { data, error } = await request(
+        "/registry/projects/{project}/push-instructions",
+        {
+          params: {
+            path: { project: guideProject },
+            query: { repository: guideRepository.trim() || "demo/app" },
+          },
+        },
+      );
+      if (error) throw error;
+      return data;
+    },
+    enabled: guideVisible && !!guideProject,
+  });
 
-  const createProject = useMutation({
-    mutationFn: async () => {
-      const { error } = await coreApi.POST('/registry/projects', {
-        body: { name: projectName, public: projectPublic, idempotency_key: newIdempotencyKey() },
-      })
-      if (error) throw error
+  useEffect(() => {
+    if (!guideProject && projects.data?.[0])
+      setGuideProject(projects.data[0].name);
+  }, [guideProject, projects.data]);
+  useEffect(() => setPage(1), [keyword, project, purpose]);
+
+  const deleteTag = useMutation({
+    mutationFn: async (item: RegistryImage) => {
+      const request = coreApi.DELETE as unknown as (
+        path: string,
+        options: {
+          params: {
+            path: { project: string; repository: string; tag: string };
+          };
+        },
+      ) => RegistryApiResponse<unknown>;
+      const { error } = await request(
+        "/registry/projects/{project}/repositories/{repository}/tags/{tag}",
+        {
+          params: {
+            path: {
+              project: item.project,
+              repository: item.repository,
+              tag: item.tag,
+            },
+          },
+        },
+      );
+      if (error) throw error;
     },
     onSuccess: () => {
-      setCreateVisible(false)
-      setProjectName('')
-      setProjectPublic(false)
-      qc.invalidateQueries({ queryKey: ['registry-projects'] })
+      void qc.invalidateQueries({ queryKey: ["registry-images"] });
+      Message.success("镜像 Tag 已删除");
     },
-    onError: (e) => showApiError(e),
-  })
+    onError: (error) => showApiError(error),
+  });
 
-  const setPermission = useMutation({
-    mutationFn: async () => {
-      const { error } = await coreApi.POST('/registry/projects/{project}/repositories/{repository}/permissions', {
-        params: { path: { project: project!, repository: repo! } },
-        body: { subject: permissionSubject, actions: permissionActions, idempotency_key: newIdempotencyKey() },
-      })
-      if (error) throw error
+  const filteredItems = useMemo(() => {
+    const query = keyword.trim().toLowerCase();
+    return (images.data ?? []).filter(
+      (item) =>
+        (purpose === "all" || item.purpose === purpose) &&
+        (project === "all" || item.project === project) &&
+        (!query ||
+          `${item.image} ${item.repository} ${item.tag} ${item.project}`
+            .toLowerCase()
+            .includes(query)),
+    );
+  }, [images.data, keyword, project, purpose]);
+  const columns: Array<ListColumn<RegistryImage>> = [
+    {
+      key: "image",
+      title: "镜像名",
+      minWidth: 240,
+      render: (item) => (
+        <div>
+          <Typography.Text className="block font-medium">
+            {item.repository}
+          </Typography.Text>
+          <Typography.Text type="secondary" className="text-xs">
+            {item.digest}
+          </Typography.Text>
+        </div>
+      ),
     },
-    onSuccess: () => setPermVisible(false),
-    onError: (e) => showApiError(e),
-  })
-
-  const resetPullSecretForm = () => {
-    setPullSecretMode('create-only')
-    setPullSecretName('ani-registry-pull')
-    setPullSecretNamespace('')
-  }
-
-  const openPullSecretModal = () => {
-    resetPullSecretForm()
-    setPullSecretVisible(true)
-  }
-
-  const submitPullSecret = () => {
-    const namespace = pullSecretNamespace.trim()
-    if (pullSecretMode === 'kubernetes-apply' && !namespace) {
-      Message.error('创建并应用到 Kubernetes 时，Namespace 为必填项')
-      return
-    }
-    createPullSecret.mutateAsync()
-  }
-
-  const createPullSecret = useMutation({
-    mutationFn: async () => {
-      const namespace = pullSecretNamespace.trim()
-      const body = {
-        name: pullSecretName,
-        idempotency_key: newIdempotencyKey(),
-        ...(namespace ? { namespace } : {}),
-      }
-
-      if (pullSecretMode === 'kubernetes-apply') {
-        const { data, error } = await coreApi.POST('/registry/projects/{project}/pull-secret/kubernetes-apply', {
-          params: { path: { project: project! } },
-          body: { ...body, namespace },
-        })
-        if (error) throw error
-        return data
-      }
-
-      const { error } = await coreApi.POST('/registry/projects/{project}/pull-secret', {
-        params: { path: { project: project! } },
-        body,
-      })
-      if (error) throw error
-      return undefined
+    {
+      key: "purpose",
+      title: "用途",
+      width: 110,
+      render: (item) => (item.purpose ? PURPOSE_LABELS[item.purpose] : "—"),
     },
-    onSuccess: (data) => {
-      setPullSecretVisible(false)
-      resetPullSecretForm()
-      if (data) setPullSecretApplyResult(data)
+    {
+      key: "project",
+      title: "项目",
+      minWidth: 130,
+      render: (item) => item.project,
     },
-    onError: (e) => showApiError(e),
-  })
-
-  const fetchImageScan = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await coreApi.GET('/registry/images/scan-result', {
-        params: { query: { image: scanImage } },
-      })
-      if (error) throw error
-      setScanResult(data ?? null)
+    { key: "tag", title: "Tag", minWidth: 120, render: (item) => item.tag },
+    {
+      key: "size",
+      title: "大小",
+      width: 100,
+      render: (item) => formatBytes(item.size_bytes),
     },
-    onError: (e) => showApiError(e),
-  })
-
-  const projectItems = (projects.data?.items ?? []) as RegistryProject[]
-  const repoItems = (repos.data?.items ?? []) as RegistryRepository[]
-  const artifactItems = (artifacts.data?.items ?? []) as RegistryArtifact[]
-
-  const selectProject = (name: string) => {
-    setProject(name)
-    setRepo(null)
-    setScanResult(null)
-  }
+    {
+      key: "pushedAt",
+      title: "推送时间",
+      minWidth: 170,
+      render: (item) => formatDateTime(item.pushed_at),
+    },
+    {
+      key: "scan",
+      title: "漏洞摘要",
+      minWidth: 170,
+      render: (item) => scanSummary(item.scan_status),
+    },
+  ];
+  const goCreate = (item: RegistryImage) => {
+    const target =
+      item.purpose === "gpu"
+        ? "/instances/gpu/create"
+        : item.purpose === "sandbox"
+          ? "/instances/sandbox/create"
+          : item.purpose === "system"
+            ? "/instances"
+            : "/instances/container/create";
+    void navigate({ to: target });
+  };
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="镜像 Registry"
-        subtitle="Harbor 项目 / 仓库 / 制品"
-        extra={
-          <Button type="primary" onClick={() => setCreateVisible(true)}>
-            创建项目
-          </Button>
-        }
-      />
-
-      <Card title="项目">
-        <CursorTable<RegistryProject>
-          columns={[
-            {
-              title: '项目',
-              render: (_, r) => (
-                <Button type="text" onClick={() => selectProject(r.name)}>
-                  {r.name}
-                </Button>
-              ),
-            },
-            { title: '公开', render: (_, r) => (r.public ? '是' : '否') },
-            { title: '创建时间', render: (_, r) => formatDateTime(r.created_at) },
-          ]}
-          data={{ items: projectItems, next_cursor: projects.data?.next_cursor }}
-          loading={projects.isLoading}
-          error={projects.error}
-          rowKey="name"
-          emptyDescription="暂无 Registry 项目，点击右上角创建"
-        />
-      </Card>
-
-      {!project ? (
-        <Empty description="请选择项目以查看仓库与扫描报告" />
-      ) : (
-        <Card title={`仓库 · ${project}`}>
-          <div className="space-y-4">
-            <CursorTable<RegistryRepository>
-              columns={[
-                {
-                  title: '仓库',
-                  render: (_, r) => (
-                    <Button type="text" onClick={() => setRepo(r.name)}>
-                      {r.name}
-                    </Button>
-                  ),
-                },
-                { title: '制品数', dataIndex: 'artifact_count' },
-                { title: '拉取次数', dataIndex: 'pull_count' },
-              ]}
-              data={{ items: repoItems, next_cursor: repos.data?.next_cursor }}
-              loading={repos.isLoading}
-              error={repos.error}
-              rowKey="name"
-              emptyDescription="该项目暂无仓库"
-            />
-            <div>
-              <Typography.Text type="secondary" className="mb-2 block text-sm font-medium">
-                项目扫描报告
-              </Typography.Text>
-              {scan.isLoading ? (
-                <div className="flex justify-center py-6">
-                  <Spin />
-                </div>
-              ) : scan.isError ? (
-                <ApiErrorAlert error={scan.error} />
-              ) : scan.data ? (
-                <Descriptions
-                  column={{ xs: 1, sm: 2, md: 4 }}
-                  data={[
-                    { label: '状态', value: <StatusTag status={scan.data.status} /> },
-                    { label: 'Critical', value: String(scan.data.critical) },
-                    { label: 'High', value: String(scan.data.high) },
-                    { label: '已扫描制品', value: `${scan.data.scanned_artifacts}/${scan.data.artifacts_total}` },
-                  ]}
-                />
-              ) : (
-                <Empty description="暂无扫描报告" />
-              )}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {project && !repo ? (
-        <Empty description="请选择仓库以查看制品与权限操作" />
-      ) : null}
-
-      {project && repo ? (
-        <Card
-          title={`制品 · ${repo}`}
-          extra={
-            <Space>
-              <Button type="outline" onClick={() => setPermVisible(true)}>
-                设置权限
-              </Button>
-              <Button type="outline" onClick={openPullSecretModal}>
-                Pull Secret
-              </Button>
-            </Space>
-          }
-        >
-          <div className="space-y-4">
-            <CursorTable<RegistryArtifact>
-              columns={[
-                { title: 'Digest', dataIndex: 'digest' },
-                { title: '标签', render: (_, r) => (r.tags?.length ? r.tags.join(', ') : '—') },
-                { title: '大小', dataIndex: 'size_bytes' },
-                {
-                  title: '扫描',
-                  render: (_, r) => <StatusTag status={r.scan_status?.status} />,
-                },
-                { title: '推送时间', render: (_, r) => formatDateTime(r.pushed_at) },
-              ]}
-              data={{ items: artifactItems, next_cursor: artifacts.data?.next_cursor }}
-              loading={artifacts.isLoading}
-              error={artifacts.error}
-              rowKey="digest"
-              emptyDescription="该仓库暂无制品"
-            />
-            <div className="space-y-3">
-              <Typography.Text type="secondary" className="block text-sm font-medium">
-                镜像扫描查询
-              </Typography.Text>
-              <Space wrap>
-                <Input
-                  value={scanImage}
-                  onChange={setScanImage}
-                  placeholder="完整镜像引用"
-                  className="min-w-[280px]"
-                />
-                <Button type="primary" loading={fetchImageScan.isPending} onClick={() => fetchImageScan.mutateAsync()}>
-                  查询扫描结果
-                </Button>
-              </Space>
-              {scanResult == null ? (
-                <Empty description="输入镜像引用后查询" />
-              ) : (
-                <Descriptions
-                  column={{ xs: 1, sm: 2, md: 4 }}
-                  data={[
-                    { label: '镜像', value: scanResult.image },
-                    { label: '状态', value: <StatusTag status={scanResult.status} /> },
-                    { label: 'Critical', value: String(scanResult.critical) },
-                    { label: 'High', value: String(scanResult.high) },
-                  ]}
-                />
-              )}
-            </div>
-          </div>
-        </Card>
-      ) : null}
-
-      <Modal
-        visible={permVisible}
-        title="仓库权限"
-        onCancel={() => setPermVisible(false)}
-        onOk={() => setPermission.mutateAsync()}
-        confirmLoading={setPermission.isPending}
-      >
-        <Form layout="vertical">
-          <Form.Item label="Subject" required>
-            <Input value={permissionSubject} onChange={setPermissionSubject} />
-          </Form.Item>
-          <Form.Item label="Actions" required>
-            <Select mode="multiple" value={permissionActions} onChange={setPermissionActions}>
-              <Select.Option value="pull">pull</Select.Option>
-              <Select.Option value="push">push</Select.Option>
-              <Select.Option value="delete">delete</Select.Option>
-              <Select.Option value="scan">scan</Select.Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-      <Modal
-        visible={pullSecretVisible}
-        title="创建 Pull Secret"
-        onCancel={() => {
-          setPullSecretVisible(false)
-          resetPullSecretForm()
-        }}
-        onOk={submitPullSecret}
-        confirmLoading={createPullSecret.isPending}
-      >
-        <Form layout="vertical">
-          <Form.Item label="操作模式" required>
-            <Radio.Group value={pullSecretMode} onChange={setPullSecretMode}>
-              <Radio value="create-only">仅创建 Pull Secret</Radio>
-              <Radio value="kubernetes-apply">创建并应用到 Kubernetes Namespace</Radio>
-            </Radio.Group>
-          </Form.Item>
-          <Form.Item label="名称" required>
-            <Input value={pullSecretName} onChange={setPullSecretName} />
-          </Form.Item>
-          <Form.Item
-            label="Namespace"
-            required={pullSecretMode === 'kubernetes-apply'}
+    <>
+      <ListPageFrame
+        header={
+          <ListPageHeader
+            iconClassName="icon-moxing"
+            title="镜像仓库"
+            subtitle="推送入库 · 扫描摘要 · 四类实例共用选 Tag"
             extra={
-              pullSecretMode === 'create-only'
-                ? '仅创建模式下可选，用于记录目标命名空间'
-                : '将 dockerconfigjson Secret 注入该命名空间'
+              <Button type="primary" onClick={() => setGuideVisible(true)}>
+                推送镜像说明
+              </Button>
             }
-          >
+          />
+        }
+        toolbar={
+          <ListToolbar
+            filters={
+              <Space wrap>
+                <ToolbarSearch
+                  fields={[{ value: "keyword", label: "关键词" }]}
+                  field="keyword"
+                  value={keyword}
+                  onFieldChange={() => undefined}
+                  onChange={setKeyword}
+                  placeholder="搜索镜像名 / Tag / 项目"
+                />
+                <Select
+                  value={purpose}
+                  onChange={setPurpose}
+                  className="w-[140px]"
+                  options={[
+                    { value: "all", label: "全部用途" },
+                    ...Object.entries(PURPOSE_LABELS).map(([value, label]) => ({
+                      value,
+                      label,
+                    })),
+                  ]}
+                />
+                <Select
+                  value={project}
+                  onChange={setProject}
+                  className="w-[160px]"
+                  options={[
+                    { value: "all", label: "全部项目" },
+                    ...(projects.data ?? []).map((item) => ({
+                      value: item.name,
+                      label: item.name,
+                    })),
+                  ]}
+                />
+              </Space>
+            }
+            tools={
+              <ToolbarIconButton
+                iconClassName="icon-refresh-1"
+                label="刷新"
+                spinning={images.isFetching}
+                onClick={() => void images.refetch()}
+              />
+            }
+          />
+        }
+      >
+        <DataTable
+          rows={filteredItems.slice((page - 1) * pageSize, page * pageSize)}
+          rowKey={(item) => `${item.project}/${item.repository}:${item.tag}`}
+          columns={columns}
+          selectable={false}
+          loading={images.isLoading}
+          error={
+            images.error
+              ? getErrorMessage(images.error, "镜像列表加载失败")
+              : null
+          }
+          onRetry={() => void images.refetch()}
+          preserveTableOnEmpty
+          emptyIconClassName="icon-moxing"
+          emptyText={
+            keyword || purpose !== "all" || project !== "all"
+              ? "没有符合条件的镜像"
+              : "还没有镜像：按推送说明 docker push 入库后，再去创建实例"
+          }
+          tableLabel="镜像仓库列表"
+          renderRowActions={(item) => (
+            <ListRowActions>
+              <ListRowActionButton
+                onClick={() =>
+                  copyText(
+                    item.pull_command || `docker pull ${item.image}`,
+                    "拉取命令已复制",
+                  )
+                }
+              >
+                拉取命令
+              </ListRowActionButton>
+              <ListRowActionButton onClick={() => goCreate(item)}>
+                去创建
+              </ListRowActionButton>
+              <ListRowActionButton
+                status="danger"
+                onClick={() =>
+                  Modal.confirm({
+                    title: "删除镜像 Tag",
+                    content: `确定删除 ${item.repository}:${item.tag}？被实例引用时平台会拒绝删除。`,
+                    onOk: () => deleteTag.mutateAsync(item),
+                  })
+                }
+              >
+                删除
+              </ListRowActionButton>
+            </ListRowActions>
+          )}
+          pagination={{
+            page,
+            pageSize,
+            total: filteredItems.length,
+            onPageChange: setPage,
+            onPageSizeChange: (next) => {
+              setPageSize(next);
+              setPage(1);
+            },
+          }}
+        />
+      </ListPageFrame>
+      <Modal
+        visible={guideVisible}
+        title="推送镜像说明"
+        footer={null}
+        onCancel={() => setGuideVisible(false)}
+        style={{ width: 720 }}
+      >
+        <Typography.Paragraph type="secondary">
+          镜像通过 docker push
+          入库，不支持网页上传。项目由平台按当前租户自动创建，Console
+          不展示或下发凭据明文。
+        </Typography.Paragraph>
+        <Form layout="vertical">
+          <Form.Item label="项目" required>
+            <Select
+              value={guideProject}
+              onChange={setGuideProject}
+              options={(projects.data ?? []).map((item) => ({
+                value: item.name,
+                label: item.name,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item label="仓库路径">
             <Input
-              value={pullSecretNamespace}
-              onChange={setPullSecretNamespace}
-              placeholder={pullSecretMode === 'kubernetes-apply' ? '例如 default' : '可选'}
+              value={guideRepository}
+              onChange={setGuideRepository}
+              placeholder="例如 demo/app"
             />
           </Form.Item>
         </Form>
+        {guide.isLoading ? (
+          <Typography.Text type="secondary">正在获取推送说明…</Typography.Text>
+        ) : guide.isError ? (
+          <Typography.Text type="error">
+            {getErrorMessage(guide.error, "推送说明加载失败")}
+          </Typography.Text>
+        ) : guide.data ? (
+          <Space direction="vertical" className="w-full">
+            {guide.data.commands.map((item) => (
+              <div
+                key={item.label}
+                className="rounded border border-[var(--color-border-2)] p-3"
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <Typography.Text className="font-medium">
+                    {item.label}
+                  </Typography.Text>
+                  <Button
+                    size="mini"
+                    type="text"
+                    onClick={() => copyText(item.command, "命令已复制")}
+                  >
+                    复制
+                  </Button>
+                </div>
+                <Typography.Text code className="break-all">
+                  {item.command}
+                </Typography.Text>
+              </div>
+            ))}
+          </Space>
+        ) : (
+          <Typography.Text type="secondary">
+            当前租户项目暂不可用，请刷新后重试。
+          </Typography.Text>
+        )}
       </Modal>
-      <Modal
-        visible={!!pullSecretApplyResult}
-        title="Pull Secret 已应用到 Kubernetes"
-        okText="关闭"
-        hideCancel
-        onOk={() => setPullSecretApplyResult(null)}
-        onCancel={() => setPullSecretApplyResult(null)}
-      >
-        <Descriptions
-          column={1}
-          data={[
-            { label: 'Project', value: pullSecretApplyResult?.project },
-            { label: 'Secret name', value: pullSecretApplyResult?.kubernetes_secret_name ?? pullSecretApplyResult?.name },
-            { label: 'Namespace', value: pullSecretApplyResult?.kubernetes_namespace },
-            { label: 'Secret type', value: K8S_DOCKER_CONFIG_SECRET_TYPE },
-          ]}
-        />
-      </Modal>
-      <Modal
-        visible={createVisible}
-        title="创建项目"
-        onCancel={() => setCreateVisible(false)}
-        onOk={() => createProject.mutateAsync()}
-        confirmLoading={createProject.isPending}
-      >
-        <Form layout="vertical">
-          <Form.Item label="名称" required>
-            <Input value={projectName} onChange={setProjectName} placeholder="项目名称" />
-          </Form.Item>
-          <Form.Item label="公开项目">
-            <Switch checked={projectPublic} onChange={setProjectPublic} />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
-  )
+    </>
+  );
 }

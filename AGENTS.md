@@ -17,6 +17,7 @@
 - 实现 UI 与交互时优先使用 Arco Design React 组件；只有确认组件库无法满足需求时才允许自行实现，并在变更说明中记录原因。
 - 新增组件或样式前，先检索 `src/components/` 和同类页面是否已有符合需求的实现；已有实现应优先复用或扩展公共组件，不得复制为页面私有版本。
 - 资源创建模态框，以及包含动态列表、异步选项、字段联动或复杂校验的表单项，必须抽到 `src/components/<domain>/` 作为可复用组件；路由页面只负责页面级查询、状态编排与导航，不得长期内联或复制同类表单。
+- 创建、部署等表单默认使用单页表单；不得仅因产品原型展示了步骤结构就改为分步表单，只有用户明确指定分步流程时才允许使用 Steps/Wizard。
 - 页面或路由文件体积过大、包含可独立识别的复杂展示/交互区域时，必须按领域拆到 `src/components/<domain>/`；路由页面只保留页面级查询、状态编排、导航和组件组合，不得以单文件长期承载完整复杂页面。
 - 新建页面时必须先参考同类型的已有页面；若已有布局可复用或沿用，除非用户另有指定，应优先按照已有布局实现，例如列表页、带 Tab 的详情页。
 - 一般不改动页面 Layout，包括菜单栏、导航及相关壳层骨架；只有用户明确指定时才允许调整。
@@ -29,18 +30,18 @@
 
 ## GitNexus
 
-仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-8.19`。
+仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-8.24`。
 
 - 修改函数、类或方法前运行 upstream impact 分析。
 - HIGH/CRITICAL 风险必须先告知用户。
 - 完成后运行 `gitnexus detect-changes -r ani-console -s all`。
 - 查看接口、后端契约或执行流时，必须使用 GitNexus 索引 `ANI`（`-r ANI`）。
-- 查看产品原型、页面信息架构或交互布局时，必须使用 GitNexus 索引 `产品原型-8.19`（`-r 产品原型-8.19`）。
+- 查看产品原型、页面信息架构或交互布局时，必须使用 GitNexus 索引 `产品原型-8.24`（`-r 产品原型-8.24`）。
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ani-console** (1835 symbols, 4230 relationships, 142 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ani-console** (1803 symbols, 4316 relationships, 146 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
