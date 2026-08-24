@@ -1,5 +1,6 @@
 .vscode
 .cursor
+.claude
 .agents
 # codex sandbox
 .pnpm-store

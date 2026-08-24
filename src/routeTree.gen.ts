@@ -35,6 +35,7 @@ import { Route as AuthenticatedAuditIndexRouteImport } from './routes/_authentic
 import { Route as InstancesTerminalInstanceIdRouteImport } from './routes/instances/terminal/$instanceId'
 import { Route as InstancesConsoleInstanceIdRouteImport } from './routes/instances/console/$instanceId'
 import { Route as AuthenticatedVolumesVolumeIdRouteImport } from './routes/_authenticated/volumes/$volumeId'
+import { Route as AuthenticatedVectorStoresVectorStoreIdRouteImport } from './routes/_authenticated/vector-stores/$vectorStoreId'
 import { Route as AuthenticatedSettingsApiKeysRouteImport } from './routes/_authenticated/settings/api-keys'
 import { Route as AuthenticatedSecretsSecretIdRouteImport } from './routes/_authenticated/secrets/$secretId'
 import { Route as AuthenticatedObjectsBucketIdRouteImport } from './routes/_authenticated/objects/$bucketId'
@@ -220,6 +221,12 @@ const AuthenticatedVolumesVolumeIdRoute =
   AuthenticatedVolumesVolumeIdRouteImport.update({
     id: '/volumes/$volumeId',
     path: '/volumes/$volumeId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedVectorStoresVectorStoreIdRoute =
+  AuthenticatedVectorStoresVectorStoreIdRouteImport.update({
+    id: '/vector-stores/$vectorStoreId',
+    path: '/vector-stores/$vectorStoreId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedSettingsApiKeysRoute =
@@ -467,6 +474,7 @@ export interface FileRoutesByFullPath {
   '/objects/$bucketId': typeof AuthenticatedObjectsBucketIdRouteWithChildren
   '/secrets/$secretId': typeof AuthenticatedSecretsSecretIdRoute
   '/settings/api-keys': typeof AuthenticatedSettingsApiKeysRoute
+  '/vector-stores/$vectorStoreId': typeof AuthenticatedVectorStoresVectorStoreIdRoute
   '/volumes/$volumeId': typeof AuthenticatedVolumesVolumeIdRoute
   '/instances/console/$instanceId': typeof InstancesConsoleInstanceIdRoute
   '/instances/terminal/$instanceId': typeof InstancesTerminalInstanceIdRoute
@@ -530,6 +538,7 @@ export interface FileRoutesByTo {
   '/k8s-clusters/$clusterId': typeof AuthenticatedK8sClustersClusterIdRoute
   '/secrets/$secretId': typeof AuthenticatedSecretsSecretIdRoute
   '/settings/api-keys': typeof AuthenticatedSettingsApiKeysRoute
+  '/vector-stores/$vectorStoreId': typeof AuthenticatedVectorStoresVectorStoreIdRoute
   '/volumes/$volumeId': typeof AuthenticatedVolumesVolumeIdRoute
   '/instances/console/$instanceId': typeof InstancesConsoleInstanceIdRoute
   '/instances/terminal/$instanceId': typeof InstancesTerminalInstanceIdRoute
@@ -597,6 +606,7 @@ export interface FileRoutesById {
   '/_authenticated/objects/$bucketId': typeof AuthenticatedObjectsBucketIdRouteWithChildren
   '/_authenticated/secrets/$secretId': typeof AuthenticatedSecretsSecretIdRoute
   '/_authenticated/settings/api-keys': typeof AuthenticatedSettingsApiKeysRoute
+  '/_authenticated/vector-stores/$vectorStoreId': typeof AuthenticatedVectorStoresVectorStoreIdRoute
   '/_authenticated/volumes/$volumeId': typeof AuthenticatedVolumesVolumeIdRoute
   '/instances/console/$instanceId': typeof InstancesConsoleInstanceIdRoute
   '/instances/terminal/$instanceId': typeof InstancesTerminalInstanceIdRoute
@@ -664,6 +674,7 @@ export interface FileRouteTypes {
     | '/objects/$bucketId'
     | '/secrets/$secretId'
     | '/settings/api-keys'
+    | '/vector-stores/$vectorStoreId'
     | '/volumes/$volumeId'
     | '/instances/console/$instanceId'
     | '/instances/terminal/$instanceId'
@@ -727,6 +738,7 @@ export interface FileRouteTypes {
     | '/k8s-clusters/$clusterId'
     | '/secrets/$secretId'
     | '/settings/api-keys'
+    | '/vector-stores/$vectorStoreId'
     | '/volumes/$volumeId'
     | '/instances/console/$instanceId'
     | '/instances/terminal/$instanceId'
@@ -793,6 +805,7 @@ export interface FileRouteTypes {
     | '/_authenticated/objects/$bucketId'
     | '/_authenticated/secrets/$secretId'
     | '/_authenticated/settings/api-keys'
+    | '/_authenticated/vector-stores/$vectorStoreId'
     | '/_authenticated/volumes/$volumeId'
     | '/instances/console/$instanceId'
     | '/instances/terminal/$instanceId'
@@ -1026,6 +1039,13 @@ declare module '@tanstack/react-router' {
       path: '/volumes/$volumeId'
       fullPath: '/volumes/$volumeId'
       preLoaderRoute: typeof AuthenticatedVolumesVolumeIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/vector-stores/$vectorStoreId': {
+      id: '/_authenticated/vector-stores/$vectorStoreId'
+      path: '/vector-stores/$vectorStoreId'
+      fullPath: '/vector-stores/$vectorStoreId'
+      preLoaderRoute: typeof AuthenticatedVectorStoresVectorStoreIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings/api-keys': {
@@ -1431,6 +1451,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedObjectsBucketIdRoute: typeof AuthenticatedObjectsBucketIdRouteWithChildren
   AuthenticatedSecretsSecretIdRoute: typeof AuthenticatedSecretsSecretIdRoute
   AuthenticatedSettingsApiKeysRoute: typeof AuthenticatedSettingsApiKeysRoute
+  AuthenticatedVectorStoresVectorStoreIdRoute: typeof AuthenticatedVectorStoresVectorStoreIdRoute
   AuthenticatedVolumesVolumeIdRoute: typeof AuthenticatedVolumesVolumeIdRoute
   AuthenticatedAuditIndexRoute: typeof AuthenticatedAuditIndexRoute
   AuthenticatedBareMetalIndexRoute: typeof AuthenticatedBareMetalIndexRoute
@@ -1488,6 +1509,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedObjectsBucketIdRouteWithChildren,
   AuthenticatedSecretsSecretIdRoute: AuthenticatedSecretsSecretIdRoute,
   AuthenticatedSettingsApiKeysRoute: AuthenticatedSettingsApiKeysRoute,
+  AuthenticatedVectorStoresVectorStoreIdRoute:
+    AuthenticatedVectorStoresVectorStoreIdRoute,
   AuthenticatedVolumesVolumeIdRoute: AuthenticatedVolumesVolumeIdRoute,
   AuthenticatedAuditIndexRoute: AuthenticatedAuditIndexRoute,
   AuthenticatedBareMetalIndexRoute: AuthenticatedBareMetalIndexRoute,

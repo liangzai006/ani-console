@@ -1,336 +1,65 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Button,
-  Descriptions,
-  Drawer,
-  Empty,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Select,
-  Space,
-  Spin,
-  Tabs,
-} from '@arco-design/web-react'
-import { useEffect, useState } from 'react'
+import { Modal } from '@arco-design/web-react'
+import { useEffect, useMemo, useState } from 'react'
 import { coreApi } from '@/api/client'
-import { PageHeader } from '@/components/shell/AppShell'
-import { StatusTag } from '@/components/shell/StatusTag'
-import { CursorTable } from '@/components/tables/CursorTable'
-import { ApiErrorAlert } from '@/components/feedback/ApiErrorAlert'
-import { newIdempotencyKey } from '@/lib/idempotency'
 import { showApiError } from '@/api/helpers'
-import { listOrThrow } from '@/lib/api-list'
-import { formatDateTime } from '@/lib/format'
 import type { components } from '@/api/core-schema'
+import { CreateVectorStoreModal } from '@/components/storage/CreateVectorStoreModal'
+import { DataTable, ListNameCell, ListPageFrame, ListPageHeader, ListRowActionButton, ListRowActions, ListToolbar, StatusTabs, ToolbarButton, ToolbarIconButton, ToolbarSearch, type ListColumn } from '@/components/pagebase'
+import { StatusTag } from '@/components/shell/StatusTag'
+import { listOrThrow } from '@/lib/api-list'
+import { getErrorMessage } from '@/lib/errors'
+import { formatDateTime } from '@/lib/format'
 
 type VectorStore = components['schemas']['VectorStore']
-type SearchHit = components['schemas']['VectorStoreSearchHit']
-type VectorMetric = components['schemas']['CreateVectorStoreRequest']['metric']
+type StatusFilter = 'all' | 'ready' | 'pending' | 'failed'
+type SearchField = 'name' | 'id'
 
-function defaultSearchVector(dimension: number): string {
-  const size = Math.max(1, Math.floor(dimension))
-  return Array.from({ length: size }, (_, index) => ((index + 1) / 10).toFixed(1)).join(',')
-}
-
-function parseSearchVector(raw: string): number[] {
-  const trimmed = raw.trim()
-  if (!trimmed) return []
-  return trimmed.split(',').map((value) => Number.parseFloat(value.trim()))
-}
-
-export const Route = createFileRoute('/_authenticated/vector-stores/')({
-  component: VectorStoresPage,
-})
+export const Route = createFileRoute('/_authenticated/vector-stores/')({ component: VectorStoresPage })
 
 function VectorStoresPage() {
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [createVisible, setCreateVisible] = useState(false)
-  const [name, setName] = useState('')
-  const [dimension, setDimension] = useState(128)
-  const [metric, setMetric] = useState<VectorMetric>('cosine')
-  const [detailId, setDetailId] = useState<string | null>(null)
-  const [searchVector, setSearchVector] = useState('')
-  const [topK, setTopK] = useState(10)
-  const [filterJson, setFilterJson] = useState('{}')
-  const [documentsJson, setDocumentsJson] = useState('[\n  {\n    "content": "",\n    "metadata": {},\n    "id": ""\n  }\n]')
-
-  const list = useQuery({
-    queryKey: ['vector-stores'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/vector-stores', { params: { query: { limit: 50 } } })),
-  })
-
-  const detail = useQuery({
-    queryKey: ['vector-store', detailId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET('/vector-stores/{vector_store_id}', {
-        params: { path: { vector_store_id: detailId! } },
-      })
-      if (error) throw error
-      return data
-    },
-    enabled: !!detailId,
-  })
-
-  const create = useMutation({
-    mutationFn: async () => {
-      const { error } = await coreApi.POST('/vector-stores', {
-        body: { name, dimension, metric, idempotency_key: newIdempotencyKey() },
-      })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setCreateVisible(false)
-      setName('')
-      setDimension(128)
-      setMetric('cosine')
-      qc.invalidateQueries({ queryKey: ['vector-stores'] })
-    },
-    onError: (e) => showApiError(e),
-  })
-
+  const [status, setStatus] = useState<StatusFilter>('all')
+  const [searchField, setSearchField] = useState<SearchField>('name')
+  const [searchText, setSearchText] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const stores = useQuery({ queryKey: ['vector-stores'], queryFn: () => listOrThrow(() => coreApi.GET('/vector-stores', { params: { query: { limit: 100 } } })) })
   const remove = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await coreApi.DELETE('/vector-stores/{vector_store_id}', {
-        params: { path: { vector_store_id: id } },
-      })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      if (detailId) setDetailId(null)
-      qc.invalidateQueries({ queryKey: ['vector-stores'] })
-    },
-    onError: (e) => showApiError(e),
+    mutationFn: async (item: VectorStore) => { const { error } = await coreApi.DELETE('/vector-stores/{vector_store_id}', { params: { path: { vector_store_id: item.id } } }); if (error) throw error },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['vector-stores'] }),
+    onError: (error) => showApiError(error),
   })
-
-  const search = useMutation({
-    mutationFn: async () => {
-      const dimension = detail.data?.dimension
-      const vector = parseSearchVector(searchVector)
-      if (vector.some((value) => Number.isNaN(value))) {
-        throw new Error('向量必须为逗号分隔的数字')
-      }
-      if (dimension != null && vector.length !== dimension) {
-        throw new Error(`向量维度必须为 ${dimension}，当前为 ${vector.length}`)
-      }
-      const parsedFilter = filterJson.trim() ? JSON.parse(filterJson) : undefined
-      const { data, error } = await coreApi.POST('/vector-stores/{vector_store_id}/search', {
-        params: { path: { vector_store_id: detailId! } },
-        body: { vector, top_k: topK, filter: parsedFilter, idempotency_key: newIdempotencyKey() },
-      })
-      if (error) throw error
-      return data
-    },
-    onError: (e) => showApiError(e),
-  })
-
-  const insertDoc = useMutation({
-    mutationFn: async () => {
-      const documents = JSON.parse(documentsJson)
-      if (!Array.isArray(documents) || documents.length === 0) {
-        throw new Error('documents 必须是非空 JSON 数组')
-      }
-      const { error } = await coreApi.POST('/vector-stores/{vector_store_id}/documents', {
-        params: { path: { vector_store_id: detailId! } },
-        body: {
-          documents,
-          idempotency_key: newIdempotencyKey(),
-        },
-      })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setDocumentsJson('[\n  {\n    "content": "",\n    "metadata": {},\n    "id": ""\n  }\n]')
-    },
-    onError: (e) => showApiError(e),
-  })
-
-  const items = (list.data?.items ?? []) as VectorStore[]
-  const searchHits = (search.data?.items ?? []) as SearchHit[]
-  const detailRecord = detail.data
-
-  useEffect(() => {
-    if (!detailRecord?.dimension) return
-    setSearchVector(defaultSearchVector(detailRecord.dimension))
-    search.reset()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset search state when switching stores
-  }, [detailRecord?.id, detailRecord?.dimension])
-
-  const confirmDelete = (row: VectorStore) => {
-    Modal.confirm({
-      title: '删除向量库',
-      content: `确定删除「${row.name ?? row.id}」？此操作不可恢复。`,
-      onOk: () => remove.mutateAsync(row.id),
-    })
-  }
-
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title="向量存储"
-        subtitle="Milvus 向量库"
-        extra={
-          <Button type="primary" onClick={() => setCreateVisible(true)}>
-            创建
-          </Button>
-        }
-      />
-      <CursorTable<VectorStore>
-        columns={[
-          {
-            title: '名称',
-            render: (_, r) => (
-              <Button type="text" onClick={() => setDetailId(r.id)}>
-                {r.name ?? r.id}
-              </Button>
-            ),
-          },
-          { title: '维度', dataIndex: 'dimension' },
-          { title: '度量', dataIndex: 'metric' },
-          { title: '状态', render: (_, r) => <StatusTag status={r.state} /> },
-          { title: '创建时间', render: (_, r) => formatDateTime(r.created_at) },
-          {
-            title: '操作',
-            render: (_, r) => (
-              <Button type="text" status="danger" onClick={() => confirmDelete(r)}>
-                删除
-              </Button>
-            ),
-          },
-        ]}
-        data={{ items, next_cursor: list.data?.next_cursor }}
-        loading={list.isLoading}
-        error={list.error}
-        rowKey="id"
-        emptyDescription="暂无向量库，点击右上角创建"
-      />
-      <Drawer
-        width={560}
-        visible={!!detailId}
-        title={`向量库详情 · ${detailRecord?.name ?? detailId ?? ''}`}
-        footer={null}
-        onCancel={() => {
-          setDetailId(null)
-          search.reset()
-          setSearchVector('')
-          setTopK(10)
-          setFilterJson('{}')
-          setDocumentsJson('[\n  {\n    "content": "",\n    "metadata": {},\n    "id": ""\n  }\n]')
-        }}
-      >
-        {detail.isLoading && !detailRecord ? (
-          <div className="flex justify-center py-12">
-            <Spin />
-          </div>
-        ) : null}
-        {detail.isError ? <ApiErrorAlert error={detail.error} /> : null}
-        {detailRecord ? (
-          <div className="space-y-4">
-            <Descriptions
-              column={{ xs: 1, sm: 2 }}
-              data={[
-                { label: 'ID', value: detailRecord.id },
-                { label: '维度', value: String(detailRecord.dimension) },
-                { label: '度量', value: detailRecord.metric },
-                { label: '状态', value: <StatusTag status={detailRecord.state} /> },
-                { label: '创建时间', value: formatDateTime(detailRecord.created_at) },
-                { label: '更新时间', value: formatDateTime(detailRecord.updated_at) },
-              ]}
-            />
-            <Tabs>
-              <Tabs.TabPane key="search" title="检索测试">
-                <div className="space-y-4">
-                  <Space wrap className="w-full">
-                    <Input
-                      value={searchVector}
-                      onChange={setSearchVector}
-                      placeholder={
-                        detailRecord?.dimension
-                          ? `向量（逗号分隔，需 ${detailRecord.dimension} 维）`
-                          : '向量（逗号分隔）'
-                      }
-                      className="min-w-[240px] flex-1"
-                    />
-                    <InputNumber
-                      value={topK}
-                      min={1}
-                      max={100}
-                      precision={0}
-                      onChange={(value) => setTopK(Number(value ?? 10))}
-                    />
-                    <Button type="primary" loading={search.isPending} onClick={() => search.mutateAsync()}>
-                      搜索
-                    </Button>
-                  </Space>
-                  <Input.TextArea
-                    value={filterJson}
-                    onChange={setFilterJson}
-                    placeholder='过滤条件 JSON，例如 {"tenant":"demo"}'
-                    autoSize={{ minRows: 2, maxRows: 4 }}
-                  />
-                  {search.isIdle && !search.data ? (
-                    <Empty description="输入向量后点击搜索" />
-                  ) : (
-                    <CursorTable<SearchHit>
-                      columns={[
-                        { title: 'ID', dataIndex: 'id' },
-                        { title: '得分', dataIndex: 'score' },
-                        {
-                          title: '元数据',
-                          render: (_, r) => JSON.stringify(r.metadata ?? {}),
-                        },
-                      ]}
-                      data={{ items: searchHits }}
-                      loading={search.isPending}
-                      error={search.error}
-                      rowKey="id"
-                      emptyDescription="无检索结果"
-                    />
-                  )}
-                </div>
-              </Tabs.TabPane>
-              <Tabs.TabPane key="docs" title="插入文档">
-                <div className="space-y-4">
-                  <Input.TextArea
-                    value={documentsJson}
-                    onChange={setDocumentsJson}
-                    placeholder='Documents JSON，例如 [{"content":"hello","metadata":{"source":"manual"},"id":"doc-1"}]'
-                    autoSize={{ minRows: 8, maxRows: 14 }}
-                  />
-                  <Button type="primary" loading={insertDoc.isPending} onClick={() => insertDoc.mutateAsync()}>
-                    批量插入
-                  </Button>
-                </div>
-              </Tabs.TabPane>
-            </Tabs>
-          </div>
-        ) : null}
-      </Drawer>
-      <Modal
-        visible={createVisible}
-        title="创建向量库"
-        onCancel={() => setCreateVisible(false)}
-        onOk={() => create.mutateAsync()}
-        confirmLoading={create.isPending}
-      >
-        <Form layout="vertical">
-          <Form.Item label="名称" required>
-            <Input value={name} onChange={setName} />
-          </Form.Item>
-          <Form.Item label="维度" required>
-            <InputNumber value={dimension} min={1} precision={0} onChange={(value) => setDimension(Number(value ?? 128))} />
-          </Form.Item>
-          <Form.Item label="度量" required>
-            <Select value={metric} onChange={setMetric}>
-              <Select.Option value="cosine">cosine</Select.Option>
-              <Select.Option value="l2">l2</Select.Option>
-              <Select.Option value="ip">ip</Select.Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
-  )
+  const items = (stores.data?.items ?? []) as VectorStore[]
+  const counts = useMemo(() => ({ all: items.length, ready: items.filter((item) => item.state === 'ready').length, pending: items.filter((item) => item.state === 'pending').length, failed: items.filter((item) => item.state === 'failed').length }), [items])
+  const filteredItems = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase()
+    return items.filter((item) => (status === 'all' || item.state === status) && (!keyword || String(item[searchField]).toLowerCase().includes(keyword)))
+  }, [items, searchField, searchText, status])
+  const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize)
+  useEffect(() => setPage(1), [searchField, searchText, status])
+  const columns: Array<ListColumn<VectorStore>> = [
+    { key: 'name', title: '名称 / ID', minWidth: 240, render: (item) => <ListNameCell name={<Link to="/vector-stores/$vectorStoreId" params={{ vectorStoreId: item.id }}>{item.name}</Link>} id={item.id} /> },
+    { key: 'state', title: '状态', width: 120, render: (item) => <StatusTag status={item.state} /> },
+    { key: 'dimension', title: '向量维度', width: 120, render: (item) => item.dimension },
+    { key: 'metric', title: '距离度量', width: 140, render: (item) => item.metric.toUpperCase() },
+    { key: 'createdAt', title: '创建时间', minWidth: 190, render: (item) => formatDateTime(item.created_at) },
+  ]
+  return <>
+    <ListPageFrame
+      header={<ListPageHeader iconClassName="icon-xiangliang" title="向量存储" subtitle="管理用于语义检索和 AI 应用的向量数据" extra={<ToolbarButton variant="primary" iconClassName="icon-add-1" onClick={() => setCreateVisible(true)}>创建向量存储</ToolbarButton>} />}
+      tabs={<StatusTabs value={status} onChange={setStatus} items={[{ value: 'all', label: '全部', count: counts.all }, { value: 'ready', label: '就绪', count: counts.ready }, { value: 'pending', label: '创建中', count: counts.pending }, { value: 'failed', label: '异常', count: counts.failed }]} />}
+      toolbar={<ListToolbar filters={<ToolbarSearch fields={[{ value: 'name', label: '名称' }, { value: 'id', label: 'ID' }]} field={searchField} value={searchText} onFieldChange={setSearchField} onChange={setSearchText} />} tools={<ToolbarIconButton iconClassName="icon-refresh-1" label="刷新" spinning={stores.isFetching} onClick={() => void stores.refetch()} />} />}
+    >
+      <DataTable rows={pagedItems} rowKey={(item) => item.id} columns={columns} selectable={false} loading={stores.isLoading}
+        error={stores.error ? getErrorMessage(stores.error, '向量存储列表加载失败') : null} onRetry={() => void stores.refetch()}
+        emptyIconClassName="icon-xiangliang" emptyText={searchText || status !== 'all' ? '没有符合条件的向量存储' : '还没有向量存储，点击「创建向量存储」开始'} tableLabel="向量存储列表" preserveTableOnEmpty
+        renderRowActions={(item) => <ListRowActions><ListRowActionButton onClick={() => navigate({ to: '/vector-stores/$vectorStoreId', params: { vectorStoreId: item.id } })}>详情</ListRowActionButton><ListRowActionButton status="danger" onClick={() => Modal.confirm({ title: '删除向量存储', content: `确定删除「${item.name}」？其中的向量数据将不可恢复。`, okButtonProps: { status: 'danger' }, onOk: () => remove.mutateAsync(item) })}>删除</ListRowActionButton></ListRowActions>}
+        pagination={{ page, pageSize, total: filteredItems.length, onPageChange: setPage, onPageSizeChange: (next) => { setPageSize(next); setPage(1) } }} />
+    </ListPageFrame>
+    <CreateVectorStoreModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
+  </>
 }
