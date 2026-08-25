@@ -1,11 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
 import { CreateFilesystemModal } from "@/components/storage/CreateFilesystemModal";
+import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
+import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
 import {
   DataTable,
   ListNameCell,
@@ -37,6 +44,9 @@ function FilesystemsPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
+  const [expandTarget, setExpandTarget] = useState<Filesystem | null>(null);
+  const [mountTargetFilesystem, setMountTargetFilesystem] =
+    useState<Filesystem | null>(null);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
@@ -80,6 +90,26 @@ function FilesystemsPage() {
     (page - 1) * pageSize,
     page * pageSize,
   );
+  const mountTargetQueries = useQueries({
+    queries: pagedItems.map((item) => ({
+      queryKey: ["filesystem-mounts", item.id, "count"],
+      queryFn: () =>
+        listOrThrow(() =>
+          coreApi.GET("/filesystems/{filesystem_id}/mount-targets", {
+            params: {
+              path: { filesystem_id: item.id },
+              query: { limit: 1 },
+            },
+          }),
+        ),
+    })),
+  });
+  const mountTargetCounts = new Map(
+    pagedItems.map((item, index) => [
+      item.id,
+      mountTargetQueries[index]?.data?.total,
+    ]),
+  );
   useEffect(() => setPage(1), [searchField, searchText, status]);
   const columns: Array<ListColumn<Filesystem>> = [
     {
@@ -107,22 +137,33 @@ function FilesystemsPage() {
       render: (item) => <StatusTag status={item.state} />,
     },
     {
+      key: "size",
+      title: "容量",
+      width: 120,
+      render: (item) => `${item.size_gib} GiB`,
+    },
+    {
       key: "protocol",
       title: "协议",
       width: 110,
       render: (item) => item.protocol.toUpperCase(),
     },
     {
-      key: "size",
-      title: "容量 (GiB)",
+      key: "performanceMode",
+      title: "性能模式",
       width: 120,
-      render: (item) => item.size_gib,
+      render: (item) =>
+        item.performance_mode === "standard"
+          ? "标准型"
+          : item.performance_mode === "throughput"
+            ? "吞吐型"
+            : "—",
     },
     {
-      key: "endpoint",
-      title: "挂载端点",
-      minWidth: 220,
-      render: (item) => item.endpoint ?? "—",
+      key: "mountTargetCount",
+      title: "挂载目标数",
+      width: 130,
+      render: (item) => mountTargetCounts.get(item.id) ?? "—",
     },
     {
       key: "createdAt",
@@ -218,6 +259,14 @@ function FilesystemsPage() {
               >
                 详情
               </ListRowActionButton>
+              <ListRowActionButton onClick={() => setExpandTarget(item)}>
+                扩容
+              </ListRowActionButton>
+              <ListRowActionButton
+                onClick={() => setMountTargetFilesystem(item)}
+              >
+                添加挂载目标
+              </ListRowActionButton>
               <ListRowActionButton
                 status="danger"
                 onClick={() =>
@@ -248,6 +297,16 @@ function FilesystemsPage() {
       <CreateFilesystemModal
         visible={createVisible}
         onCancel={() => setCreateVisible(false)}
+      />
+      <ExpandFilesystemModal
+        visible={Boolean(expandTarget)}
+        filesystem={expandTarget}
+        onCancel={() => setExpandTarget(null)}
+      />
+      <CreateFilesystemMountTargetModal
+        visible={Boolean(mountTargetFilesystem)}
+        filesystemId={mountTargetFilesystem?.id ?? ""}
+        onCancel={() => setMountTargetFilesystem(null)}
       />
     </>
   );

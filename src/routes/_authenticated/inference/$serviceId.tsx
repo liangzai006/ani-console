@@ -10,6 +10,7 @@ import {
   Space,
   Spin,
   Table,
+  Tooltip,
   Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -203,6 +204,19 @@ function InferenceDetailPage() {
     </Space>
   );
 
+  const statusDetail = [item.status_reason, item.status_message]
+    .filter(Boolean)
+    .join("：");
+  const serviceStatus = statusDetail ? (
+    <Tooltip content={statusDetail}>
+      <span className="inline-flex">
+        <AiServiceStatusTag status={item.status} />
+      </span>
+    </Tooltip>
+  ) : (
+    <AiServiceStatusTag status={item.status} />
+  );
+
   return (
     <>
       <DetailPageFrame
@@ -212,7 +226,7 @@ function InferenceDetailPage() {
           { label: item.name },
         ]}
         title={item.name}
-        status={<AiServiceStatusTag status={item.status} />}
+        status={serviceStatus}
         icon={<AliIcon name="tuili" size={28} />}
         headerItems={[
           { label: "推理服务 ID", value: item.id },
@@ -232,10 +246,8 @@ function InferenceDetailPage() {
               { label: "名称", value: item.name },
               {
                 label: "状态",
-                value: <AiServiceStatusTag status={item.status} />,
+                value: serviceStatus,
               },
-              { label: "状态原因", value: item.status_reason ?? "—" },
-              { label: "状态说明", value: item.status_message ?? "—" },
               { label: "模型版本", value: item.model },
               { label: "模型版本 ID", value: item.model_version_id ?? "—" },
               { label: "服务模型名", value: item.served_model_name || "—" },

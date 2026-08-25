@@ -109,15 +109,33 @@ function VectorStoresPage() {
     },
     {
       key: "dimension",
-      title: "向量维度",
+      title: "维度",
       width: 120,
       render: (item) => item.dimension,
     },
     {
       key: "metric",
-      title: "距离度量",
-      width: 140,
+      title: "度量",
+      width: 120,
       render: (item) => item.metric.toUpperCase(),
+    },
+    {
+      key: "embeddingModel",
+      title: "Embedding 模型",
+      minWidth: 180,
+      render: (item) => item.embedding_model || "—",
+    },
+    {
+      key: "vectorCount",
+      title: "向量数",
+      width: 120,
+      render: (item) => item.vector_count ?? 0,
+    },
+    {
+      key: "knowledgeBase",
+      title: "关联知识库",
+      minWidth: 180,
+      render: (item) => item.knowledge_base_ref?.name || "未关联",
     },
     {
       key: "createdAt",
