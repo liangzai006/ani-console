@@ -195,7 +195,7 @@ interface ErrorContent { headers: Record<string, unknown>; content: { 'applicati
 
 export interface operations {
   listKnowledgeBases: {
-    parameters: { query?: { limit?: number; cursor?: string }; header?: never; path?: never; cookie?: never }
+    parameters: { query?: { limit?: number; cursor?: string; status?: string; name?: string; id?: string }; header?: never; path?: never; cookie?: never }
     responses: { 200: { headers: Record<string, unknown>; content: { 'application/json': { items: components['schemas']['KnowledgeBase'][]; total: number; next_cursor?: string | null } } } }
   }
   createKnowledgeBase: {

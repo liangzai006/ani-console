@@ -46,12 +46,30 @@ export function useCursorPaginatedQuery<T>({
 
       for (let currentPage = startPage; currentPage <= page; currentPage += 1) {
         result = await fetchPage({ cursor, limit: pageSize });
-        const nextCursor = result.next_cursor || undefined;
-        if (nextCursor === cursor) throw new Error("列表接口返回了重复分页游标");
-        pageCursors.current.set(currentPage + 1, nextCursor);
-        if (currentPage < page && !nextCursor) {
-          return { items: [], total: result.total, next_cursor: null };
+        const nextCursor =
+          typeof result.next_cursor === "string"
+            ? result.next_cursor.trim() || undefined
+            : undefined;
+        if (nextCursor && nextCursor === cursor) {
+          throw new Error("列表接口返回了重复分页游标");
         }
+
+        const reachedEnd = result.items.length < pageSize || !nextCursor;
+        if (reachedEnd) {
+          const actualTotal = (currentPage - 1) * pageSize + result.items.length;
+          result = {
+            ...result,
+            total: Math.min(result.total, actualTotal),
+            next_cursor: null,
+          };
+          pageCursors.current.delete(currentPage + 1);
+          if (currentPage < page) {
+            return { items: [], total: result.total, next_cursor: null };
+          }
+          break;
+        }
+
+        pageCursors.current.set(currentPage + 1, nextCursor);
         cursor = nextCursor;
       }
 

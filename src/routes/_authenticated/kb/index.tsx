@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
 import { showApiError } from "@/api/helpers";
@@ -49,10 +49,21 @@ function KnowledgeBasesPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<KnowledgeBase>({
-    queryKey: ["knowledge-bases"],
+    queryKey: ["knowledge-bases", { status, searchField, searchText }],
+    cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
+      const keyword = searchText.trim();
+      // TODO: 待后端联调确认 status/name/id 查询参数及筛选后 total 的最终契约。
       const { data, error } = await servicesApi.GET("/knowledge-bases", {
-        params: { query: { limit, cursor } },
+        params: {
+          query: {
+            limit,
+            cursor,
+            status: status === "all" ? undefined : status,
+            name: searchField === "name" && keyword ? keyword : undefined,
+            id: searchField === "id" && keyword ? keyword : undefined,
+          },
+        },
       });
       if (error || !data) throw error ?? new Error("知识库列表未返回结果");
       return data;
@@ -72,28 +83,7 @@ function KnowledgeBasesPage() {
     onError: (error) => showApiError(error, "删除知识库失败"),
   });
   const items = query.data?.items ?? [];
-  const counts = useMemo(
-    () => ({
-      all: items.length,
-      active: items.filter((item) => item.status === "active").length,
-      rebuilding: items.filter((item) => item.status === "rebuilding").length,
-    }),
-    [items],
-  );
-  const filtered = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter(
-      (item) =>
-        (status === "all" || item.status === status) &&
-        (!keyword || item[searchField].toLowerCase().includes(keyword)),
-    );
-  }, [items, searchField, searchText, status]);
-  const paged = filtered;
-  const paginationTotal =
-    status === "all" && !searchText.trim()
-      ? (query.data?.total ?? filtered.length)
-      : filtered.length;
-  useEffect(() => setPage(1), [searchField, searchText, status]);
+  const paginationTotal = query.data?.total ?? items.length;
   const columns: Array<ListColumn<KnowledgeBase>> = [
     {
       key: "name",
@@ -167,14 +157,16 @@ function KnowledgeBasesPage() {
         tabs={
           <StatusTabs
             value={status}
-            onChange={setStatus}
+            onChange={(value) => {
+              resetPagination();
+              setStatus(value);
+            }}
             items={[
-              { value: "all", label: "全部", count: counts.all },
-              { value: "active", label: "活跃", count: counts.active },
+              { value: "all", label: "全部" },
+              { value: "active", label: "活跃" },
               {
                 value: "rebuilding",
                 label: "重建中",
-                count: counts.rebuilding,
               },
             ]}
           />
@@ -189,8 +181,14 @@ function KnowledgeBasesPage() {
                 ]}
                 field={searchField}
                 value={searchText}
-                onFieldChange={setSearchField}
-                onChange={setSearchText}
+                onFieldChange={(value) => {
+                  resetPagination();
+                  setSearchField(value);
+                }}
+                onChange={(value) => {
+                  resetPagination();
+                  setSearchText(value);
+                }}
               />
             }
             tools={
@@ -205,7 +203,7 @@ function KnowledgeBasesPage() {
         }
       >
         <DataTable
-          rows={paged}
+          rows={items}
           rowKey={(item) => item.id}
           columns={columns}
           selectable={false}

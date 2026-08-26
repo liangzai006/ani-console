@@ -111,12 +111,6 @@ export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
       if (error || !data) throw error ?? new Error("文档列表未返回结果");
       return data;
     },
-    refetchInterval: (data) =>
-      data?.items.some((item) =>
-        ["pending", "parsing", "indexing"].includes(item.parse_status),
-      )
-        ? 3000
-        : false,
   });
   const upload = useMutation({
     mutationFn: async (file: File) => {
