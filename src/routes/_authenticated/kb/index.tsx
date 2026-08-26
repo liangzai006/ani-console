@@ -19,8 +19,8 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
-} from "@/components/pagebase";
-import { StatusTag } from "@/components/shell/StatusTag";
+} from "@/components/common";
+import { StatusTag } from "@/components/common/StatusTag";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";

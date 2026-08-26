@@ -1,4 +1,4 @@
-import type { ListSortDirection } from '@/components/pagebase'
+import type { ListSortDirection } from '@/components/common'
 
 export type VmInstanceStatus = 'running' | 'stopped' | 'error'
 export type VmInstanceStatusFilter = 'all' | VmInstanceStatus

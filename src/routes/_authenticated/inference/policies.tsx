@@ -14,7 +14,7 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
-} from "@/components/pagebase";
+} from "@/components/common";
 import {
   inferencePolicyItems,
   type InferencePolicyItem,

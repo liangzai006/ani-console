@@ -13,10 +13,10 @@ import {
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import { DetailPageFrame } from "@/components/detailbase";
-import { ApiErrorAlert } from "@/components/feedback/ApiErrorAlert";
-import { AliIcon } from "@/components/icons/AliIcon";
-import { StatusTag } from "@/components/shell/StatusTag";
+import { DetailPageFrame } from "@/components/common";
+import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
+import { AliIcon } from "@/components/common/AliIcon";
+import { StatusTag } from "@/components/common/StatusTag";
 import { VectorStoreWorkbench } from "@/components/storage/VectorStoreWorkbench";
 import { formatDateTime } from "@/lib/format";
 

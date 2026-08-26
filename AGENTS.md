@@ -22,6 +22,8 @@
 - 新建页面时必须先参考同类型的已有页面；若已有布局可复用或沿用，除非用户另有指定，应优先按照已有布局实现，例如列表页、带 Tab 的详情页。
 - 一般不改动页面 Layout，包括菜单栏、导航及相关壳层骨架；只有用户明确指定时才允许调整。
 - 页面与路由同放在 `src/routes/`；共享组件放在 `src/components/`。
+- `src/components/` 必须按 page scope 组织，每个组件使用独立目录：`src/components/<scope>/<ComponentName>/index.tsx`；组件私有样式放在同目录的 `index.css`、`index.less`、`index.module.css` 或 `index.module.less`；子组件使用 `src/components/<scope>/<ComponentName>/<SubComponentName>/index.tsx`。禁止在 scope 目录直接平铺 `<ComponentName>.tsx` 或 `<ComponentName>.module.css`。
+- 跨页面、跨领域复用的通用组件必须归入独立的 `common` scope，即 `src/components/common/<ComponentName>/index.tsx`；业务领域组件保留在对应 page scope。scope 级 `index.ts` 仅允许作为导出清单，不得承载组件实现。
 - Core API 统一通过 `src/api/client.ts` 的 `coreApi` 调用。
 - POST 及有副作用的 PUT/PATCH 必须携带 `idempotency_key`。
 - 不修改冻结设计规范正文。

@@ -16,7 +16,7 @@ import {
   ToolbarSearch,
   type ListColumn,
   type ListSortDirection,
-} from '@/components/pagebase'
+} from '@/components/common'
 import { vmInstanceDataSource } from './data-source'
 import type {
   VmInstance,

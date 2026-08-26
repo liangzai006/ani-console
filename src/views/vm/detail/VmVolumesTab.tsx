@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@arco-design/web-react'
 import { useNavigate } from '@tanstack/react-router'
-import { CursorTable } from '@/components/tables/CursorTable'
+import { CursorTable } from '@/components/common/CursorTable'
 import { formatBytes } from '@/lib/format'
 import { vmDetailDataSource } from './data-source'
 import styles from './detail.module.css'

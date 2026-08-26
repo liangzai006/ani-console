@@ -26,6 +26,7 @@
 
 | 日期 | 事项 |
 |------|------|
+| 2026-08-26 | 统一 `src/components` 组件目录规范并完成现有组件迁移：业务组件采用 `<scope>/<ComponentName>/index.tsx`，组件私有样式采用同目录 `index.module.css`，子组件预留 `<SubComponentName>/index.tsx` 层级；跨页面、跨领域组件集中到独立 `common` scope，共享样式使用明确命名的样式目录，scope 级 `index.ts` 仅作为导出清单。同步更新 `AGENTS.md` 与工程约定，保持组件导出名和行为不变并修复全部引用路径。TypeScript `tsc -p tsconfig.app.json --noEmit`、`git diff --check` 与 GitNexus 变更检测通过。 |
 | 2026-08-26 | 完善知识库创建与详情体验：创建时暂时固定 Embedding 模型为 `bge-m3`；详情页移除概览 Tab，接入关联向量存储、文档上传/解析/删除及元数据展示，并将类型、大小、分块数收拢到文件名同行。问答区基于 assistant-ui 接入同步/流式查询、页面内多会话、TopK、停止/复制/错误状态、Markdown 安全渲染与引用展示；“查看本库全部引用”入口暂时隐藏，待后端接口就绪后恢复。同步 Services 类型、依赖及锁文件。 |
 | 2026-08-26 | 抽取 `useCursorPaginatedQuery` 统一适配数字分页器与后端游标分页，知识库列表和文档列表均按 `limit/cursor/total/next_cursor` 按需请求，不再连续拉取全部数据；修复接口返回记录被前端状态过滤的问题，并统一页大小切换、刷新、上传和删除后的分页重置及重复游标保护。 |
 | 2026-08-26 | 文件存储详情新增“权限”Tab，按 `产品原型-8.25` 展示访问规则和默认目录权限；ANI 尚未开放 NFS export / POSIX ACL 接口，因此保持契约空态并禁用新增、编辑操作。 |

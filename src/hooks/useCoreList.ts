@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { coreApi } from '@/api/client'
-import type { CursorPage } from '@/components/tables/CursorTable'
+import type { CursorPage } from '@/components/common/CursorTable'
 
 export function useCoreListQuery<T>(
   key: string,

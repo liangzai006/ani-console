@@ -3,9 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, Descriptions, Spin, Tooltip } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { PageHeader } from "@/components/shell/AppShell";
-import { StatusTag } from "@/components/shell/StatusTag";
-import { ApiErrorAlert } from "@/components/feedback/ApiErrorAlert";
-import { CursorTable } from "@/components/tables/CursorTable";
+import { StatusTag } from "@/components/common/StatusTag";
+import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
+import { CursorTable } from "@/components/common/CursorTable";
 import { formatDateTime } from "@/lib/format";
 
 export const Route = createFileRoute(

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
-import { Ipv4CidrInput } from '@/components/forms/Ipv4CidrInput'
+import { Ipv4CidrInput } from '@/components/common/Ipv4CidrInput'
 import {
   DataTable,
   ListNameCell,
@@ -19,8 +19,8 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
-} from '@/components/pagebase'
-import { StatusTag } from '@/components/shell/StatusTag'
+} from '@/components/common'
+import { StatusTag } from '@/components/common/StatusTag'
 import { formatDateTime } from '@/lib/format'
 import { getErrorMessage } from '@/lib/errors'
 import { newIdempotencyKey } from '@/lib/idempotency'

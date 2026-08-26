@@ -1,5 +1,5 @@
 import type { components } from '@/api/core-schema'
-import type { ListSortDirection } from '@/components/pagebase'
+import type { ListSortDirection } from '@/components/common'
 
 export type ContainerInstanceRecord = components['schemas']['InstanceRecord']
 export type ContainerInstanceStatus = ContainerInstanceRecord['state']

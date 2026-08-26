@@ -9,8 +9,8 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
-import { DetailPageFrame } from "@/components/detailbase";
-import { AliIcon } from "@/components/icons/AliIcon";
+import { DetailPageFrame } from "@/components/common";
+import { AliIcon } from "@/components/common/AliIcon";
 import {
   inferenceServiceItems,
   modelCatalogItems,

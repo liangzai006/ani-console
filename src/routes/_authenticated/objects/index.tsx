@@ -16,7 +16,7 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
-} from '@/components/pagebase'
+} from '@/components/common'
 import { listOrThrow } from '@/lib/api-list'
 import { getErrorMessage } from '@/lib/errors'
 import { formatBytes, formatDateTime } from '@/lib/format'

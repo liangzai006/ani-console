@@ -16,8 +16,8 @@ import {
   ToolbarSearch,
   type ListColumn,
   type ListSortDirection,
-} from '@/components/pagebase'
-import { StatusTag } from '@/components/shell/StatusTag'
+} from '@/components/common'
+import { StatusTag } from '@/components/common/StatusTag'
 import { getErrorMessage } from '@/lib/errors'
 import { formatDateTime } from '@/lib/format'
 import { containerInstanceDataSource } from './data-source'

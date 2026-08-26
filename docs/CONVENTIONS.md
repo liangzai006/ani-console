@@ -3,8 +3,9 @@
 ## 目录
 
 - `src/routes/`：TanStack Router 路由与页面，必须同文件。
-- `src/components/`：跨页面共享组件。
-- 资源创建模态框统一放在 `src/components/<domain>/`，通过 `visible`、`onCancel`、成功回调及必要的上下文默认值暴露复用接口，避免绑定具体路由。
+- `src/components/`：按 page scope 组织的组件目录。组件必须使用 `src/components/<scope>/<ComponentName>/index.tsx`；私有样式使用同目录的 `index.css`、`index.less`、`index.module.css` 或 `index.module.less`；子组件使用 `src/components/<scope>/<ComponentName>/<SubComponentName>/index.tsx`。禁止在 scope 目录直接平铺组件或组件样式文件。
+- 跨页面、跨领域复用的通用组件统一放在 `src/components/common/<ComponentName>/index.tsx`；业务组件放在对应 page scope。scope 级 `index.ts` 仅作为导出清单，不承载组件实现。
+- 资源创建模态框统一放在 `src/components/<domain>/<ComponentName>/index.tsx`，通过 `visible`、`onCancel`、成功回调及必要的上下文默认值暴露复用接口，避免绑定具体路由。
 - `src/api/`：`coreApi` 与后端类型快照。
 - `src/stores/`：客户端状态。
 - `src/lib/`、`src/hooks/`：共享逻辑。
@@ -17,7 +18,7 @@
 - 颜色与状态：Arco Token。
 - 动态规则、联动选择器、异步选项、复杂校验等表单项必须拆为领域共享组件；路由页面负责页面级数据和交互编排，不复制字段结构与校验逻辑。
 - 创建、部署等表单默认使用单页表单；除非用户明确指定，不得把原型中的步骤说明直接实现为 Steps/Wizard 分步表单。
-- 页面或路由文件体积过大、包含可独立识别的复杂展示或交互区域时，必须拆为 `src/components/<domain>/` 下的领域组件；路由页面仅保留页面级查询、状态编排、导航和组件组合。
+- 页面或路由文件体积过大、包含可独立识别的复杂展示或交互区域时，必须拆为 `src/components/<domain>/<ComponentName>/index.tsx` 形式的领域组件；路由页面仅保留页面级查询、状态编排、导航和组件组合。
 - Tailwind 仅用于布局。
 - 列表必须覆盖 loading、empty、error。
 - 危险操作必须二次确认。

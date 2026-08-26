@@ -24,7 +24,7 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
-} from "@/components/pagebase";
+} from "@/components/common";
 import { getErrorMessage } from "@/lib/errors";
 import { formatBytes, formatDateTime } from "@/lib/format";
 

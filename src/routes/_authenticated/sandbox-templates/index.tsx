@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, Tag } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
-import { CursorTable } from '@/components/tables/CursorTable'
+import { CursorTable } from '@/components/common/CursorTable'
 import type { components } from '@/api/core-schema'
 
 export const Route = createFileRoute('/_authenticated/sandbox-templates/')({

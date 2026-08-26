@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { coreApi } from '@/api/client'
 import { newIdempotencyKey } from '@/lib/idempotency'
 import { PageHeader } from '@/components/shell/AppShell'
-import { CursorTable } from '@/components/tables/CursorTable'
+import { CursorTable } from '@/components/common/CursorTable'
 import {
   DataTable,
   ListPageFrame,
@@ -17,12 +17,12 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
-} from '@/components/pagebase'
-import { StatusTag } from '@/components/shell/StatusTag'
+} from '@/components/common'
+import { StatusTag } from '@/components/common/StatusTag'
 import { formatDateTime } from '@/lib/format'
 import { getErrorMessage } from '@/lib/errors'
-import { AsyncTaskPoller } from '@/components/feedback/AsyncTaskPoller'
-import { Ipv4CidrInput } from '@/components/forms/Ipv4CidrInput'
+import { AsyncTaskPoller } from '@/components/common/AsyncTaskPoller'
+import { Ipv4CidrInput } from '@/components/common/Ipv4CidrInput'
 import { listOrThrow } from '@/lib/api-list'
 import { optionalIpv4WithinCidrError, subnetFixedOctets, suggestGatewayIp } from '@/lib/validators'
 import { getInstanceDisplayIp, getInstanceNetworkValue } from '@/lib/instance-network'

@@ -14,14 +14,14 @@ import {
 } from '@arco-design/web-react'
 import { useEffect, useMemo, useState } from 'react'
 import { coreApi } from '@/api/client'
-import { DetailPageFrame } from '@/components/detailbase'
-import { AliIcon } from '@/components/icons/AliIcon'
-import { StatusTag } from '@/components/shell/StatusTag'
-import { CursorTable } from '@/components/tables/CursorTable'
-import { ApiErrorAlert } from '@/components/feedback/ApiErrorAlert'
+import { DetailPageFrame } from '@/components/common'
+import { AliIcon } from '@/components/common/AliIcon'
+import { StatusTag } from '@/components/common/StatusTag'
+import { CursorTable } from '@/components/common/CursorTable'
+import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
 import { newIdempotencyKey } from '@/lib/idempotency'
 import { showApiError } from '@/api/helpers'
-import { AsyncTaskPoller } from '@/components/feedback/AsyncTaskPoller'
+import { AsyncTaskPoller } from '@/components/common/AsyncTaskPoller'
 import { listOrThrow } from '@/lib/api-list'
 import { formatDateTime } from '@/lib/format'
 import {
@@ -37,7 +37,7 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
-} from '@/components/pagebase'
+} from '@/components/common'
 import {
   getMockCluster,
   getMockNodePools,
