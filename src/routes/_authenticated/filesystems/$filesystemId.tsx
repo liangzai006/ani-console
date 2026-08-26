@@ -20,6 +20,7 @@ import { AliIcon } from "@/components/icons/AliIcon";
 import { StatusTag } from "@/components/shell/StatusTag";
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
+import { FilesystemPermissionsTab } from "@/components/storage/FilesystemPermissionsTab";
 import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
 
@@ -249,7 +250,7 @@ function FilesystemDetailPage() {
           {
             key: "permissions",
             label: "权限",
-            content: unavailable("权限内容待定"),
+            content: <FilesystemPermissionsTab />,
           },
           {
             key: "events",

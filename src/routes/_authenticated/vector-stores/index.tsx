@@ -149,7 +149,7 @@ function VectorStoresPage() {
       <ListPageFrame
         header={
           <ListPageHeader
-            iconClassName="icon-xiangliang"
+            iconClassName="icon-xiangliangcunchu"
             title="向量存储"
             subtitle="管理用于语义检索和 AI 应用的向量数据"
             extra={
@@ -211,7 +211,7 @@ function VectorStoresPage() {
               : null
           }
           onRetry={() => void stores.refetch()}
-          emptyIconClassName="icon-xiangliang"
+          emptyIconClassName="icon-xiangliangcunchu"
           emptyText={
             searchText || status !== "all"
               ? "没有符合条件的向量存储"

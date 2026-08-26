@@ -20,6 +20,12 @@ export interface paths {
   '/knowledge-bases/{kb_id}/query': {
     post: operations['queryKnowledgeBase']
   }
+  '/knowledge-bases/{kb_id}/query/stream': {
+    get: operations['streamQueryKnowledgeBase']
+  }
+  '/knowledge-bases/{kb_id}/citations': {
+    get: operations['listKnowledgeBaseCitations']
+  }
   '/inference-services': {
     get: operations['listInferenceServices']
     post: operations['createInferenceService']
@@ -66,6 +72,7 @@ export interface components {
       parse_status: 'pending' | 'parsing' | 'indexing' | 'ready' | 'failed'
       chunk_count?: number
       error_message?: string | null
+      custom_metadata?: string | Record<string, unknown> | null
       created_at: string
       parsed_at?: string | null
     }
@@ -75,6 +82,20 @@ export interface components {
       session_id?: string
       input_tokens?: number
       output_tokens?: number
+    }
+    KBCitation: {
+      id: string
+      kb_id: string
+      doc_id: string
+      file_name: string
+      page?: number | null
+      content: string
+      score?: number | null
+      created_at: string
+    }
+    KBCitationListResponse: {
+      items: components['schemas']['KBCitation'][]
+      next_cursor?: string | null
     }
     DocumentUploadURLResponse: { doc_id: string; upload_url: string; storage_path: string }
     InferenceServiceAccelerator: {
@@ -174,8 +195,8 @@ interface ErrorContent { headers: Record<string, unknown>; content: { 'applicati
 
 export interface operations {
   listKnowledgeBases: {
-    parameters: { query?: never; header?: never; path?: never; cookie?: never }
-    responses: { 200: { headers: Record<string, unknown>; content: { 'application/json': { items?: components['schemas']['KnowledgeBase'][] } } } }
+    parameters: { query?: { limit?: number; cursor?: string }; header?: never; path?: never; cookie?: never }
+    responses: { 200: { headers: Record<string, unknown>; content: { 'application/json': { items: components['schemas']['KnowledgeBase'][]; total: number; next_cursor?: string | null } } } }
   }
   createKnowledgeBase: {
     parameters: { query?: never; header?: never; path?: never; cookie?: never }
@@ -191,8 +212,8 @@ export interface operations {
     responses: { 204: { headers: Record<string, unknown>; content?: never }; 404: ErrorContent }
   }
   listKnowledgeBaseDocuments: {
-    parameters: { query?: never; header?: never; path: { kb_id: string }; cookie?: never }
-    responses: { 200: { headers: Record<string, unknown>; content: { 'application/json': { items?: components['schemas']['KBDocument'][] } } } }
+    parameters: { query?: { limit?: number; cursor?: string; parse_status?: string }; header?: never; path: { kb_id: string }; cookie?: never }
+    responses: { 200: { headers: Record<string, unknown>; content: { 'application/json': { items: components['schemas']['KBDocument'][]; total: number; next_cursor?: string | null } } } }
   }
   getDocumentUploadURL: {
     parameters: { query?: never; header?: never; path: { kb_id: string }; cookie?: never }
@@ -212,6 +233,14 @@ export interface operations {
     parameters: { query?: never; header?: never; path: { kb_id: string }; cookie?: never }
     requestBody: { content: { 'application/json': { question: string; idempotency_key: string; session_id?: string; top_k?: number; score_threshold?: number } } }
     responses: { 200: { headers: Record<string, unknown>; content: { 'application/json': components['schemas']['KBQueryResponse'] } }; 400: ErrorContent; 404: ErrorContent }
+  }
+  streamQueryKnowledgeBase: {
+    parameters: { query: { question: string; session_id?: string; top_k?: number }; header?: never; path: { kb_id: string }; cookie?: never }
+    responses: { 200: { headers: Record<string, unknown>; content: { 'text/event-stream': string } }; 400: ErrorContent; 401: ErrorContent; 404: ErrorContent }
+  }
+  listKnowledgeBaseCitations: {
+    parameters: { query?: { limit?: number; cursor?: string }; header?: never; path: { kb_id: string }; cookie?: never }
+    responses: { 200: { headers: Record<string, unknown>; content: { 'application/json': components['schemas']['KBCitationListResponse'] } }; 401: ErrorContent; 403: ErrorContent; 404: ErrorContent }
   }
   listInferenceServices: {
     parameters: { query?: never; header?: never; path?: never; cookie?: never }

@@ -13,6 +13,9 @@ import { newIdempotencyKey } from "@/lib/idempotency";
 
 type KnowledgeBase = components["schemas"]["KnowledgeBase"];
 
+// TODO: 后端支持按传入模型确定实际 Embedding 能力与向量维度后，恢复为真实模型选择。
+const FIXED_EMBEDDING_MODEL = "bge-m3";
+
 export function CreateKnowledgeBaseModal({
   visible,
   onCancel,
@@ -28,7 +31,6 @@ export function CreateKnowledgeBaseModal({
     mutationFn: async (values: {
       name: string;
       description?: string;
-      embedding_model?: string;
       chunk_size: number;
       top_k: number;
       score_threshold: number;
@@ -38,7 +40,7 @@ export function CreateKnowledgeBaseModal({
           ...values,
           name: values.name.trim(),
           description: values.description?.trim() || undefined,
-          embedding_model: values.embedding_model?.trim() || undefined,
+          embedding_model: FIXED_EMBEDDING_MODEL,
           idempotency_key: newIdempotencyKey(),
         },
       });
@@ -66,7 +68,12 @@ export function CreateKnowledgeBaseModal({
       <Form
         form={form}
         layout="vertical"
-        initialValues={{ chunk_size: 1024, top_k: 5, score_threshold: 0.3 }}
+        initialValues={{
+          embedding_model: FIXED_EMBEDDING_MODEL,
+          chunk_size: 1024,
+          top_k: 5,
+          score_threshold: 0.3,
+        }}
       >
         <Form.Item
           label="名称"
@@ -88,9 +95,9 @@ export function CreateKnowledgeBaseModal({
         <Form.Item
           label="Embedding 模型"
           field="embedding_model"
-          tooltip="不填写时使用后端默认模型"
+          tooltip="当前由后端固定使用，后续开放模型选择"
         >
-          <Input placeholder="例如：bge-m3" />
+          <Input disabled />
         </Form.Item>
         <div className="grid grid-cols-3 gap-4">
           <Form.Item

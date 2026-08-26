@@ -1,26 +1,25 @@
 import {
   Button,
+  Empty,
+  List,
   Message,
   Modal,
+  Pagination,
   Space,
   Tag,
+  Tooltip,
   Typography,
   Upload,
 } from "@arco-design/web-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
 import { showApiError } from "@/api/helpers";
-import {
-  DataTable,
-  ListRowActionButton,
-  ListRowActions,
-  type ListColumn,
-} from "@/components/pagebase";
-import { getErrorMessage } from "@/lib/errors";
+import { ApiErrorAlert } from "@/components/feedback/ApiErrorAlert";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";
+import styles from "./KnowledgeDocumentsPanel.module.css";
 
 type KBDocument = components["schemas"]["KBDocument"];
 const allowedTypes = ["pdf", "docx", "xlsx", "pptx", "md", "txt"] as const;
@@ -30,6 +29,56 @@ function formatBytes(value?: number) {
   if (value < 1024) return `${value} B`;
   if (value < 1024 ** 2) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / 1024 ** 2).toFixed(1)} MB`;
+}
+
+function metadataEntries(value: KBDocument["custom_metadata"]) {
+  if (value == null || value === "") return [];
+  let metadata: unknown = value;
+  if (typeof value === "string") {
+    try {
+      metadata = JSON.parse(value) as unknown;
+    } catch {
+      return [["metadata", value]] as const;
+    }
+  }
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return [["metadata", String(metadata)]] as const;
+  }
+  return Object.entries(metadata).map(([key, item]) => [
+    key,
+    typeof item === "string" ? item : JSON.stringify(item),
+  ] as const);
+}
+
+function statusTag(document: KBDocument) {
+  const tag = (
+    <Tag
+      color={
+        document.parse_status === "ready"
+          ? "green"
+          : document.parse_status === "failed"
+            ? "red"
+            : "blue"
+      }
+    >
+      {
+        (
+          {
+            pending: "待上传",
+            parsing: "解析中",
+            indexing: "索引中",
+            ready: "可检索",
+            failed: "失败",
+          } as const
+        )[document.parse_status]
+      }
+    </Tag>
+  );
+  return document.error_message ? (
+    <Tooltip content={document.error_message}>{tag}</Tooltip>
+  ) : (
+    tag
+  );
 }
 
 async function sha256(file: File) {
@@ -44,20 +93,26 @@ async function sha256(file: File) {
 
 export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
   const qc = useQueryClient();
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const documents = useQuery({
+  const {
+    query: documents,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    resetPagination,
+  } = useCursorPaginatedQuery<KBDocument>({
     queryKey: ["knowledge-base-documents", kbId],
-    queryFn: async () => {
+    cursorScope: kbId,
+    fetchPage: async ({ cursor, limit }) => {
       const { data, error } = await servicesApi.GET(
         "/knowledge-bases/{kb_id}/documents",
-        { params: { path: { kb_id: kbId } } },
+        { params: { path: { kb_id: kbId }, query: { limit, cursor } } },
       );
-      if (error) throw error;
+      if (error || !data) throw error ?? new Error("文档列表未返回结果");
       return data;
     },
-    refetchInterval: (query) =>
-      query.state.data?.items?.some((item) =>
+    refetchInterval: (data) =>
+      data?.items.some((item) =>
         ["pending", "parsing", "indexing"].includes(item.parse_status),
       )
         ? 3000
@@ -105,6 +160,7 @@ export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
     },
     onSuccess: () => {
       Message.success("文档已上传，正在解析");
+      resetPagination();
       qc.invalidateQueries({ queryKey: ["knowledge-base-documents", kbId] });
       qc.invalidateQueries({ queryKey: ["knowledge-base", kbId] });
     },
@@ -120,78 +176,13 @@ export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
     },
     onSuccess: () => {
       Message.success("文档已删除");
+      resetPagination();
       qc.invalidateQueries({ queryKey: ["knowledge-base-documents", kbId] });
       qc.invalidateQueries({ queryKey: ["knowledge-base", kbId] });
     },
     onError: (error) => showApiError(error, "删除文档失败"),
   });
   const rows = documents.data?.items ?? [];
-  const pagedRows = rows.slice((page - 1) * pageSize, page * pageSize);
-  const columns: Array<ListColumn<KBDocument>> = [
-    {
-      key: "name",
-      title: "文件名",
-      minWidth: 240,
-      render: (item) => (
-        <Space direction="vertical" size={2}>
-          <Typography.Text>{item.file_name}</Typography.Text>
-          <Typography.Text type="secondary">{item.id}</Typography.Text>
-        </Space>
-      ),
-    },
-    {
-      key: "type",
-      title: "类型",
-      width: 100,
-      render: (item) => item.file_type?.toUpperCase() || "—",
-    },
-    {
-      key: "size",
-      title: "大小",
-      width: 110,
-      render: (item) => formatBytes(item.file_size_bytes),
-    },
-    {
-      key: "status",
-      title: "解析状态",
-      width: 130,
-      render: (item) => (
-        <Tag
-          color={
-            item.parse_status === "ready"
-              ? "green"
-              : item.parse_status === "failed"
-                ? "red"
-                : "blue"
-          }
-        >
-          {
-            (
-              {
-                pending: "待上传",
-                parsing: "解析中",
-                indexing: "索引中",
-                ready: "可检索",
-                failed: "失败",
-              } as const
-            )[item.parse_status]
-          }
-        </Tag>
-      ),
-    },
-    {
-      key: "chunks",
-      title: "分块数",
-      width: 100,
-      render: (item) => item.chunk_count ?? "—",
-    },
-    {
-      key: "created",
-      title: "上传时间",
-      minWidth: 180,
-      render: (item) => formatDateTime(item.created_at),
-    },
-  ];
   return (
     <Space direction="vertical" size={16} className="w-full">
       <div className="flex items-center justify-between">
@@ -206,49 +197,79 @@ export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
           </Button>
         </Upload>
       </div>
-      <DataTable
-        rows={pagedRows}
-        rowKey={(item) => item.id}
-        columns={columns}
-        selectable={false}
+      {documents.error ? (
+        <Space direction="vertical" size={8} className="w-full">
+          <ApiErrorAlert error={documents.error} title="文档列表加载失败" />
+          <Button onClick={() => void documents.refetch()}>重试</Button>
+        </Space>
+      ) : null}
+      <List
+        bordered
         loading={documents.isLoading}
-        error={
-          documents.error
-            ? getErrorMessage(documents.error, "文档列表加载失败")
-            : null
-        }
-        onRetry={() => void documents.refetch()}
-        emptyText="还没有文档，上传后可进行解析和问答"
-        tableLabel="知识库文档列表"
-        preserveTableOnEmpty
-        pagination={{
-          page,
-          pageSize,
-          total: rows.length,
-          onPageChange: setPage,
-          onPageSizeChange: (next) => {
-            setPageSize(next);
-            setPage(1);
-          },
+        dataSource={documents.error ? [] : rows}
+        noDataElement={<Empty description="还没有文档，上传后可进行解析和问答" />}
+        render={(item: KBDocument) => {
+          const metadata = metadataEntries(item.custom_metadata);
+          return (
+            <List.Item key={item.id} className={styles.documentItem}>
+              <div className={styles.documentMainRow}>
+                <div className={styles.documentIdentity}>
+                  <Typography.Text bold>{item.file_name}</Typography.Text>
+                  <Typography.Text type="secondary" className={styles.documentSummary}>
+                    {item.file_type?.toUpperCase() || "未知类型"} · {formatBytes(item.file_size_bytes)} · {item.chunk_count ?? 0} 个分块
+                  </Typography.Text>
+                </div>
+                <div className={styles.documentActions}>
+                  {statusTag(item)}
+                  <Typography.Text type="secondary">
+                    {formatDateTime(item.created_at)}
+                  </Typography.Text>
+                  <Button
+                    type="text"
+                    size="small"
+                    status="danger"
+                    loading={remove.isPending && remove.variables?.id === item.id}
+                    onClick={() =>
+                      Modal.confirm({
+                        title: "删除文档",
+                        content: `确定删除「${item.file_name}」？`,
+                        okButtonProps: { status: "danger" },
+                        onOk: () => remove.mutateAsync(item),
+                      })
+                    }
+                  >
+                    删除
+                  </Button>
+                </div>
+              </div>
+              <div className={styles.metadataRow}>
+                {metadata.length ? (
+                  metadata.map(([key, value]) => (
+                    <Tag key={key} className={styles.metadataTag}>
+                      {key}：{value}
+                    </Tag>
+                  ))
+                ) : (
+                  <Typography.Text type="secondary">暂无自定义元数据</Typography.Text>
+                )}
+              </div>
+            </List.Item>
+          );
         }}
-        renderRowActions={(item) => (
-          <ListRowActions>
-            <ListRowActionButton
-              status="danger"
-              onClick={() =>
-                Modal.confirm({
-                  title: "删除文档",
-                  content: `确定删除「${item.file_name}」？`,
-                  okButtonProps: { status: "danger" },
-                  onOk: () => remove.mutateAsync(item),
-                })
-              }
-            >
-              删除
-            </ListRowActionButton>
-          </ListRowActions>
-        )}
       />
+      {(documents.data?.total ?? 0) > pageSize ? (
+        <div className={styles.pagination}>
+          <Pagination
+            current={page}
+            pageSize={pageSize}
+            total={documents.data?.total ?? 0}
+            sizeCanChange
+            showTotal
+            onChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
+      ) : null}
     </Space>
   );
 }

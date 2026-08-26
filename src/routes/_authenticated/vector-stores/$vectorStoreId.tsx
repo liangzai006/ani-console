@@ -87,7 +87,7 @@ function VectorStoreDetailPage() {
       ]}
       title={store.name}
       status={storeStatus}
-      icon={<AliIcon name="xiangliang" size={28} />}
+      icon={<AliIcon name="xiangliangcunchu" size={28} />}
       headerItems={[
         { label: "向量存储 ID", value: store.id },
         { label: "维度", value: store.dimension },

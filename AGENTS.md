@@ -30,18 +30,18 @@
 
 ## GitNexus
 
-仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-8.24`。
+仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-8.25`。
 
 - 修改函数、类或方法前运行 upstream impact 分析。
 - HIGH/CRITICAL 风险必须先告知用户。
 - 完成后运行 `gitnexus detect-changes -r ani-console -s all`。
 - 查看接口、后端契约或执行流时，必须使用 GitNexus 索引 `ANI`（`-r ANI`）。
-- 查看产品原型、页面信息架构或交互布局时，必须使用 GitNexus 索引 `产品原型-8.24`（`-r 产品原型-8.24`）。
+- 查看产品原型、页面信息架构或交互布局时，必须使用 GitNexus 索引 `产品原型-8.25`（`-r 产品原型-8.25`）。
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ani-console** (1803 symbols, 4316 relationships, 146 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ani-console** (1816 symbols, 4363 relationships, 147 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 

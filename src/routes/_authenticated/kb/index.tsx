@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
 import { servicesApi } from "@/api/services-client";
@@ -21,6 +21,7 @@ import {
   type ListColumn,
 } from "@/components/pagebase";
 import { StatusTag } from "@/components/shell/StatusTag";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 
@@ -39,13 +40,21 @@ function KnowledgeBasesPage() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const query = useQuery({
+  const {
+    query,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    resetPagination,
+    refresh,
+  } = useCursorPaginatedQuery<KnowledgeBase>({
     queryKey: ["knowledge-bases"],
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/knowledge-bases");
-      if (error) throw error;
+    fetchPage: async ({ cursor, limit }) => {
+      const { data, error } = await servicesApi.GET("/knowledge-bases", {
+        params: { query: { limit, cursor } },
+      });
+      if (error || !data) throw error ?? new Error("知识库列表未返回结果");
       return data;
     },
   });
@@ -56,12 +65,13 @@ function KnowledgeBasesPage() {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["knowledge-bases"] }),
+    onSuccess: () => {
+      resetPagination();
+      void qc.invalidateQueries({ queryKey: ["knowledge-bases"] });
+    },
     onError: (error) => showApiError(error, "删除知识库失败"),
   });
-  const items = (query.data?.items ?? []).filter(
-    (item) => item.status !== "deleted",
-  );
+  const items = query.data?.items ?? [];
   const counts = useMemo(
     () => ({
       all: items.length,
@@ -78,7 +88,11 @@ function KnowledgeBasesPage() {
         (!keyword || item[searchField].toLowerCase().includes(keyword)),
     );
   }, [items, searchField, searchText, status]);
-  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const paged = filtered;
+  const paginationTotal =
+    status === "all" && !searchText.trim()
+      ? (query.data?.total ?? filtered.length)
+      : filtered.length;
   useEffect(() => setPage(1), [searchField, searchText, status]);
   const columns: Array<ListColumn<KnowledgeBase>> = [
     {
@@ -184,7 +198,7 @@ function KnowledgeBasesPage() {
                 iconClassName="icon-refresh-1"
                 label="刷新"
                 spinning={query.isFetching}
-                onClick={() => void query.refetch()}
+                onClick={refresh}
               />
             }
           />
@@ -252,12 +266,9 @@ function KnowledgeBasesPage() {
           pagination={{
             page,
             pageSize,
-            total: filtered.length,
+            total: paginationTotal,
             onPageChange: setPage,
-            onPageSizeChange: (next) => {
-              setPageSize(next);
-              setPage(1);
-            },
+            onPageSizeChange: setPageSize,
           }}
         />
       </ListPageFrame>
