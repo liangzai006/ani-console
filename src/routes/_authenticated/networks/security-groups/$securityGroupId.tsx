@@ -1,6 +1,7 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, Empty, List, Modal, Space, Spin, Table, Tag, Typography } from '@arco-design/web-react'
+import { Button, Card, Empty, List, Modal, Space, Spin, Tag, Typography } from '@arco-design/web-react'
 import { useState } from 'react'
 import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
@@ -189,10 +190,10 @@ function SecurityGroupDetailPage() {
             添加规则
           </Button>
         </div>
-        <Table<SecurityGroupRuleResource>
+        <DataTable<SecurityGroupRuleResource>
           loading={rules.isLoading}
           columns={[
-            { title: '优先级', dataIndex: 'priority', width: 100 },
+            { title: '优先级', dataIndex: 'priority' },
             { title: '协议', render: (_, rule) => (rule.protocol === 'all' ? '全部' : rule.protocol.toUpperCase()) },
             { title: '端口范围', dataIndex: 'port_range' },
             { title: direction === 'ingress' ? '来源 CIDR' : '目标 CIDR', dataIndex: 'cidr' },
@@ -205,7 +206,6 @@ function SecurityGroupDetailPage() {
             { title: '描述', render: (_, rule) => rule.description || '—' },
             {
               title: '操作',
-              width: 140,
               render: (_, rule) => (
                 <Space>
                   <Button type="text" size="mini" onClick={() => setRuleEditor({ direction, rule })}>
@@ -231,7 +231,6 @@ function SecurityGroupDetailPage() {
             },
           ]}
           data={directionRules}
-          rowKey="id"
           pagination={false}
           noDataElement={<Empty description={`暂无${direction === 'ingress' ? '入站' : '出站'}规则`} />}
         />

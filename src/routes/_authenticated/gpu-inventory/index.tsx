@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Card, Grid, Spin } from '@arco-design/web-react'
+import { Card, Empty, Grid, Spin } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { CorePieChart } from '@/components/common/CorePieChart'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { PageHeader } from '@/components/shell/AppShell'
-import { CursorTable } from '@/components/common/CursorTable'
+import { DataTable } from '@/components/common/DataTable'
 import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
 import { StatusTag } from '@/components/common/StatusTag'
 import type { components } from '@/api/core-schema'
@@ -93,18 +93,19 @@ function GpuInventoryPage() {
           </Card>
         </Grid.Col>
       </Grid.Row>
-      <CursorTable<GpuRecord>
+      <DataTable<GpuRecord>
         columns={[
           { title: '节点', dataIndex: 'node_name' },
           { title: '型号', dataIndex: 'gpu_type' },
           { title: '索引', dataIndex: 'gpu_index' },
-          { title: '状态', render: (_, r) => <StatusTag status={r.status} /> },
+          { title: '状态', width: 120, render: (_, r) => <StatusTag status={r.status} /> },
         ]}
-        data={{ items }}
+        data={list.error ? [] : items}
         loading={list.isLoading}
-        error={list.error}
-        rowKey={(r) => r.id}
-        emptyDescription="暂无 GPU 设备数据"
+        pagination={false}
+        noDataElement={
+          list.error ? <ApiErrorAlert error={list.error} /> : <Empty description="暂无 GPU 设备数据" />
+        }
       />
     </div>
   )

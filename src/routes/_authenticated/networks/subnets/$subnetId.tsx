@@ -1,6 +1,7 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, Button, Card, Empty, List, Modal, Space, Spin, Table, Tag, Typography } from '@arco-design/web-react'
+import { Alert, Button, Card, Empty, List, Modal, Space, Spin, Tag, Typography } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
@@ -161,7 +162,7 @@ function SubnetDetailPage() {
           key: 'routes', label: '路由', content: (
             <Space direction="vertical" size={12} className="w-full">
               <Alert type="info" showIcon={false} content="本 VPC 路由表。系统默认路由不可删；自定义路由也可在侧栏「路由」维护。" />
-              {routes.error ? <ApiErrorAlert error={routes.error} /> : <Table<SubnetRouteRow>
+              {routes.error ? <ApiErrorAlert error={routes.error} /> : <DataTable<SubnetRouteRow>
                 columns={[
                   { title: '目标网段', dataIndex: 'destinationCidr' },
                   { title: '下一跳类型', dataIndex: 'nextHopType' },
@@ -172,7 +173,6 @@ function SubnetDetailPage() {
                 ]}
                 data={routeRows}
                 loading={routes.isLoading}
-                rowKey="id"
                 pagination={false}
               />}
             </Space>

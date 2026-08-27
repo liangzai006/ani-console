@@ -36,14 +36,16 @@
 
 - 修改函数、类或方法前运行 upstream impact 分析。
 - HIGH/CRITICAL 风险必须先告知用户。
-- 完成后运行 `gitnexus detect-changes -r ani-console -s all`。
-- 查看接口、后端契约或执行流时，必须使用 GitNexus 索引 `ANI`（`-r ANI`）。
-- 查看产品原型、页面信息架构或交互布局时，必须使用 GitNexus 索引 `产品原型-8.25`（`-r 产品原型-8.25`）。
+- GitNexus 查询必须使用当前会话已接入的 GitNexus 工具（如 `query`、`context`、`impact`、`detect_changes`），不得改用仓库索引目录下的 CLI 或 `.gitnexus/run.cjs` 作为查询替代。
+- 完成后使用已接入的 `detect_changes({ repo: "ani-console", scope: "all" })` 工具检查变更。
+- 查看接口、后端契约或执行流时，必须使用已接入的 GitNexus 工具查询索引 `ANI`（`repo: "ANI"`）。
+- 查看产品原型、页面信息架构或交互布局时，必须使用已接入的 GitNexus 工具查询索引 `产品原型-8.25`（`repo: "产品原型-8.25"`）。
+- 文档指定的仓库或索引不可用、未建立或无法访问时，不得根据前端代码、训练数据或经验猜测接口契约、后端行为、产品原型和交互布局；必须立即停止相关判断并提示用户建立或恢复对应索引，待索引可用后再继续。
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ani-console** (1905 symbols, 4510 relationships, 155 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ani-console** (1917 symbols, 4567 relationships, 155 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 

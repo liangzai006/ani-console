@@ -1,0 +1,158 @@
+.listDataTable {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.listDataTable > :global(.arco-spin),
+.listDataTable > :global(.arco-spin) > :global(.arco-spin-children) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.listDataTable :global(.arco-table-container) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.listDataTable :global(.arco-table-content-scroll) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.listDataTable :global(.arco-table-header) {
+  flex: 0 0 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.listDataTable :global(.arco-table-body) {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.listDataTable :global(.arco-table-pagination) {
+  flex: 0 0 auto;
+}
+
+.listDataTable :global(.arco-table-th) {
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--list-table-divider);
+  background: var(--list-primary-header);
+  color: var(--list-text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 39px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.listDataTable :global(.arco-table-td) {
+  box-sizing: border-box;
+  height: 56px;
+  max-width: 300px;
+  overflow: hidden;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--list-table-divider);
+  color: var(--list-text);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listDataTable
+  :global(.arco-table-tbody .arco-table-tr:last-child .arco-table-td) {
+  border-bottom: 0;
+}
+
+.listDataTable :global(.arco-table-tbody .arco-table-tr:hover) {
+  background: rgba(0, 121, 211, 0.04);
+}
+
+.listNameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.listName {
+  width: fit-content;
+  color: var(--list-primary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.listName :global(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.listName :global(a:hover) {
+  color: var(--list-primary-hover);
+  text-decoration: none;
+}
+
+.listNameId {
+  color: var(--list-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.tableState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-height: 220px;
+  color: var(--list-text-secondary);
+}
+
+.emptyIcon {
+  color: var(--list-text-tertiary);
+  font-size: 48px !important;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.rowActionButton {
+  height: 28px;
+  padding: 0 4px;
+  color: var(--list-primary);
+  white-space: nowrap;
+}
+
+.rowActionButton:hover {
+  background: var(--list-primary-soft);
+  color: var(--list-primary-hover);
+}

@@ -1,12 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-  useMutation,
-  useQueries,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
@@ -14,7 +9,7 @@ import { CreateFilesystemModal } from "@/components/storage/CreateFilesystemModa
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
 import {
-  DataTable,
+  ListDataTable,
   ListNameCell,
   ListPageFrame,
   ListPageHeader,
@@ -28,8 +23,9 @@ import {
   type ListColumn,
 } from "@/components/common";
 import { StatusTag } from "@/components/common/StatusTag";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { listOrThrow } from "@/lib/api-list";
-import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 
 type Filesystem = components["schemas"]["StorageFilesystem"];
@@ -41,7 +37,6 @@ export const Route = createFileRoute("/_authenticated/filesystems/")({
 });
 
 function FilesystemsPage() {
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
   const [expandTarget, setExpandTarget] = useState<Filesystem | null>(null);
@@ -50,14 +45,24 @@ function FilesystemsPage() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const filesystems = useQuery({
+  const {
+    query: filesystems,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    resetPagination,
+    refresh,
+  } = useCursorPaginatedQuery<Filesystem>({
     queryKey: ["filesystems"],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/filesystems", { params: { query: { limit: 100 } } }),
-      ),
+    cursorScope: `${status}:${searchField}:${searchText.trim()}`,
+    fetchPage: async ({ cursor, limit }) => {
+      const { data, error } = await coreApi.GET("/filesystems", {
+        params: { query: { limit, cursor } },
+      });
+      if (error || !data) throw error ?? new Error("文件存储列表未返回结果");
+      return data;
+    },
   });
   const remove = useMutation({
     mutationFn: async (item: Filesystem) => {
@@ -66,7 +71,10 @@ function FilesystemsPage() {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["filesystems"] }),
+    onSuccess: () => {
+      resetPagination();
+      void qc.invalidateQueries({ queryKey: ["filesystems"] });
+    },
     onError: (error) => showApiError(error),
   });
   const items = (filesystems.data?.items ?? []) as Filesystem[];
@@ -86,12 +94,15 @@ function FilesystemsPage() {
         (!keyword || String(item[searchField]).toLowerCase().includes(keyword)),
     );
   }, [items, searchField, searchText, status]);
-  const pagedItems = filteredItems.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
+  const paginationTotal = filesystems.data?.total ?? filteredItems.length;
+  useListErrorNotification({
+    id: "filesystems-list",
+    title: "文件存储列表加载失败",
+    error: filesystems.error,
+    onRetry: () => void filesystems.refetch(),
+  });
   const mountTargetQueries = useQueries({
-    queries: pagedItems.map((item) => ({
+    queries: filteredItems.map((item) => ({
       queryKey: ["filesystem-mounts", item.id, "count"],
       queryFn: () =>
         listOrThrow(() =>
@@ -105,18 +116,16 @@ function FilesystemsPage() {
     })),
   });
   const mountTargetCounts = new Map(
-    pagedItems.map((item, index) => [
+    filteredItems.map((item, index) => [
       item.id,
       mountTargetQueries[index]?.data?.total,
     ]),
   );
-  useEffect(() => setPage(1), [searchField, searchText, status]);
   const columns: Array<ListColumn<Filesystem>> = [
     {
       key: "name",
       title: "名称 / ID",
-      minWidth: 240,
-      render: (item) => (
+      render: (_, item) => (
         <ListNameCell
           name={
             <Link
@@ -134,25 +143,22 @@ function FilesystemsPage() {
       key: "state",
       title: "状态",
       width: 120,
-      render: (item) => <StatusTag status={item.state} />,
+      render: (_, item) => <StatusTag status={item.state} />,
     },
     {
       key: "size",
       title: "容量",
-      width: 120,
-      render: (item) => `${item.size_gib} GiB`,
+      render: (_, item) => `${item.size_gib} GiB`,
     },
     {
       key: "protocol",
       title: "协议",
-      width: 110,
-      render: (item) => item.protocol.toUpperCase(),
+      render: (_, item) => item.protocol.toUpperCase(),
     },
     {
       key: "performanceMode",
       title: "性能模式",
-      width: 120,
-      render: (item) =>
+      render: (_, item) =>
         item.performance_mode === "standard"
           ? "标准型"
           : item.performance_mode === "throughput"
@@ -162,14 +168,12 @@ function FilesystemsPage() {
     {
       key: "mountTargetCount",
       title: "挂载目标数",
-      width: 130,
-      render: (item) => mountTargetCounts.get(item.id) ?? "—",
+      render: (_, item) => mountTargetCounts.get(item.id) ?? "—",
     },
     {
       key: "createdAt",
       title: "创建时间",
-      minWidth: 190,
-      render: (item) => formatDateTime(item.created_at),
+      render: (_, item) => formatDateTime(item.created_at),
     },
   ];
   return (
@@ -221,24 +225,48 @@ function FilesystemsPage() {
                 iconClassName="icon-refresh-1"
                 label="刷新"
                 spinning={filesystems.isFetching}
-                onClick={() => void filesystems.refetch()}
+                onClick={refresh}
               />
             }
           />
         }
       >
-        <DataTable
-          rows={pagedItems}
-          rowKey={(item) => item.id}
-          columns={columns}
-          selectable={false}
+        <ListDataTable
+          data={filteredItems}
+          columns={[
+            ...columns,
+            {
+              key: "__actions",
+              title: "操作",
+              fixed: "right",
+              render: (_value, item) => (
+                <ListRowActions>
+                  <ListRowActionButton onClick={() => setExpandTarget(item)}>
+                    扩容
+                  </ListRowActionButton>
+                  <ListRowActionButton
+                    onClick={() => setMountTargetFilesystem(item)}
+                  >
+                    添加挂载目标
+                  </ListRowActionButton>
+                  <ListRowActionButton
+                    status="danger"
+                    onClick={() =>
+                      Modal.confirm({
+                        title: "删除文件存储",
+                        content: `确定删除「${item.name}」？请先确认没有实例正在使用该文件系统。`,
+                        okButtonProps: { status: "danger" },
+                        onOk: () => remove.mutateAsync(item),
+                      })
+                    }
+                  >
+                    删除
+                  </ListRowActionButton>
+                </ListRowActions>
+              ),
+            },
+          ]}
           loading={filesystems.isLoading}
-          error={
-            filesystems.error
-              ? getErrorMessage(filesystems.error, "文件存储列表加载失败")
-              : null
-          }
-          onRetry={() => void filesystems.refetch()}
           emptyIconClassName="icon-wenjiancunchu"
           emptyText={
             searchText || status !== "all"
@@ -247,50 +275,12 @@ function FilesystemsPage() {
           }
           tableLabel="文件存储列表"
           preserveTableOnEmpty
-          renderRowActions={(item) => (
-            <ListRowActions>
-              <ListRowActionButton
-                onClick={() =>
-                  navigate({
-                    to: "/filesystems/$filesystemId",
-                    params: { filesystemId: item.id },
-                  })
-                }
-              >
-                详情
-              </ListRowActionButton>
-              <ListRowActionButton onClick={() => setExpandTarget(item)}>
-                扩容
-              </ListRowActionButton>
-              <ListRowActionButton
-                onClick={() => setMountTargetFilesystem(item)}
-              >
-                添加挂载目标
-              </ListRowActionButton>
-              <ListRowActionButton
-                status="danger"
-                onClick={() =>
-                  Modal.confirm({
-                    title: "删除文件存储",
-                    content: `确定删除「${item.name}」？请先确认没有实例正在使用该文件系统。`,
-                    okButtonProps: { status: "danger" },
-                    onOk: () => remove.mutateAsync(item),
-                  })
-                }
-              >
-                删除
-              </ListRowActionButton>
-            </ListRowActions>
-          )}
           pagination={{
             page,
             pageSize,
-            total: filteredItems.length,
+            total: paginationTotal,
             onPageChange: setPage,
-            onPageSizeChange: (next) => {
-              setPageSize(next);
-              setPage(1);
-            },
+            onPageSizeChange: setPageSize,
           }}
         />
       </ListPageFrame>

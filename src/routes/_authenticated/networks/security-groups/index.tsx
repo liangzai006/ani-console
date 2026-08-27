@@ -1,13 +1,13 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Modal, Select } from '@arco-design/web-react'
-import { useEffect, useMemo, useState } from 'react'
-import { coreApi } from '@/api/client'
-import { showApiError } from '@/api/helpers'
-import type { components } from '@/api/core-schema'
-import { CreateSecurityGroupModal } from '@/components/network/CreateSecurityGroupModal'
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Modal, Select } from "@arco-design/web-react";
+import { useMemo, useState } from "react";
+import { coreApi } from "@/api/client";
+import { showApiError } from "@/api/helpers";
+import type { components } from "@/api/core-schema";
+import { CreateSecurityGroupModal } from "@/components/network/CreateSecurityGroupModal";
 import {
-  DataTable,
+  ListDataTable,
   ListNameCell,
   ListPageFrame,
   ListPageHeader,
@@ -19,51 +19,75 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
-} from '@/components/common'
-import { listOrThrow } from '@/lib/api-list'
-import { getErrorMessage } from '@/lib/errors'
-import { formatDateTime } from '@/lib/format'
-import { newIdempotencyKey } from '@/lib/idempotency'
+} from "@/components/common";
+import { listOrThrow } from "@/lib/api-list";
+import { formatDateTime } from "@/lib/format";
+import { newIdempotencyKey } from "@/lib/idempotency";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type SecurityGroup = components['schemas']['NetworkSecurityGroup']
-type Vpc = components['schemas']['NetworkVPC']
-type StatusFilter = 'all' | 'available'
-type SearchField = 'name' | 'id'
+type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
+type Vpc = components["schemas"]["NetworkVPC"];
+type StatusFilter = "all" | "available";
+type SearchField = "name" | "id";
 
-export const Route = createFileRoute('/_authenticated/networks/security-groups/')({ component: SecurityGroupsPage })
+export const Route = createFileRoute(
+  "/_authenticated/networks/security-groups/",
+)({ component: SecurityGroupsPage });
 
 function SecurityGroupsPage() {
-  const navigate = useNavigate()
-  const [createVisible, setCreateVisible] = useState(false)
-  const [status, setStatus] = useState<StatusFilter>('all')
-  const [searchField, setSearchField] = useState<SearchField>('name')
-  const [searchText, setSearchText] = useState('')
-  const [filterVpcId, setFilterVpcId] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const securityGroups = useQuery({
-    queryKey: ['network-security-groups'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/networks/security-groups', { params: { query: { limit: 100 } } })),
-  })
+  const [createVisible, setCreateVisible] = useState(false);
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [searchField, setSearchField] = useState<SearchField>("name");
+  const [searchText, setSearchText] = useState("");
+  const [filterVpcId, setFilterVpcId] = useState("");
+  const {
+    query: securityGroups,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    resetPagination,
+    refresh,
+  } = useCursorPaginatedQuery<SecurityGroup>({
+    queryKey: ["network-security-groups"],
+    cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
+    fetchPage: async ({ cursor, limit }) => {
+      const { data, error } = await coreApi.GET("/networks/security-groups", {
+        params: { query: { limit, cursor } },
+      });
+      if (error || !data) throw error ?? new Error("安全组列表未返回结果");
+      return data;
+    },
+  });
   const vpcs = useQuery({
-    queryKey: ['network-vpcs', 'security-group-create'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/networks/vpcs', { params: { query: { limit: 100 } } })),
-  })
+    queryKey: ["network-vpcs", "security-group-create"],
+    queryFn: () =>
+      listOrThrow(() =>
+        coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } }),
+      ),
+  });
 
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   const deleteSecurityGroup = useMutation({
     mutationFn: async (item: SecurityGroup) => {
-      const { error } = await coreApi.DELETE('/networks/security-groups/{security_group_id}', {
-        params: { path: { security_group_id: item.id } },
-      })
-      if (error) throw error
+      const { error } = await coreApi.DELETE(
+        "/networks/security-groups/{security_group_id}",
+        {
+          params: { path: { security_group_id: item.id } },
+        },
+      );
+      if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['network-security-groups'] }),
+    onSuccess: () => {
+      resetPagination();
+      qc.invalidateQueries({ queryKey: ["network-security-groups"] });
+    },
     onError: (error) => showApiError(error),
-  })
+  });
   const copySecurityGroup = useMutation({
     mutationFn: async (item: SecurityGroup) => {
-      const { error } = await coreApi.POST('/networks/security-groups', {
+      const { error } = await coreApi.POST("/networks/security-groups", {
         body: {
           name: `${item.name}-copy`,
           vpc_id: item.vpc_id,
@@ -71,43 +95,59 @@ function SecurityGroupsPage() {
           rules: item.rules,
           idempotency_key: newIdempotencyKey(),
         },
-      })
-      if (error) throw error
+      });
+      if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['network-security-groups'] }),
+    onSuccess: () => {
+      resetPagination();
+      qc.invalidateQueries({ queryKey: ["network-security-groups"] });
+    },
     onError: (error) => showApiError(error),
-  })
+  });
 
-  const items = (securityGroups.data?.items ?? []) as SecurityGroup[]
+  const items = (securityGroups.data?.items ?? []) as SecurityGroup[];
   const vpcNames = useMemo(
-    () => new Map(((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => [vpc.id, vpc.name])),
+    () =>
+      new Map(
+        ((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => [vpc.id, vpc.name]),
+      ),
     [vpcs.data?.items],
-  )
+  );
   const statusCounts = useMemo(
-    () => ({ all: items.length, available: items.filter((item) => item.state === 'available').length }),
+    () => ({
+      all: items.length,
+      available: items.filter((item) => item.state === "available").length,
+    }),
     [items],
-  )
+  );
   const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase()
+    const keyword = searchText.trim().toLowerCase();
     return items.filter(
       (item) =>
-        (status === 'all' || item.state === status) &&
+        (status === "all" || item.state === status) &&
         (!filterVpcId || item.vpc_id === filterVpcId) &&
         (!keyword || item[searchField].toLowerCase().includes(keyword)),
-    )
-  }, [filterVpcId, items, searchField, searchText, status])
-  const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize)
-  useEffect(() => setPage(1), [filterVpcId, searchField, searchText, status])
+    );
+  }, [filterVpcId, items, searchField, searchText, status]);
+  const paginationTotal = securityGroups.data?.total ?? filteredItems.length;
+  useListErrorNotification({
+    id: "security-groups-list",
+    title: "安全组列表加载失败",
+    error: securityGroups.error,
+    onRetry: refresh,
+  });
 
   const columns: Array<ListColumn<SecurityGroup>> = [
     {
-      key: 'name',
-      title: '名称 / ID',
-      minWidth: 240,
-      render: (item) => (
+      key: "name",
+      title: "名称 / ID",
+      render: (_, item) => (
         <ListNameCell
           name={
-            <Link to="/networks/security-groups/$securityGroupId" params={{ securityGroupId: item.id }}>
+            <Link
+              to="/networks/security-groups/$securityGroupId"
+              params={{ securityGroupId: item.id }}
+            >
               {item.name}
             </Link>
           }
@@ -116,22 +156,33 @@ function SecurityGroupsPage() {
       ),
     },
     {
-      key: 'vpc',
-      title: 'VPC',
-      minWidth: 180,
-      render: (item) =>
+      key: "vpc",
+      title: "VPC",
+      render: (_, item) =>
         item.vpc_id ? (
           <Link to="/networks/vpcs/$vpcId" params={{ vpcId: item.vpc_id }}>
             {vpcNames.get(item.vpc_id) ?? item.vpc_id}
           </Link>
         ) : (
-          '—'
+          "—"
         ),
     },
-    { key: 'rules', title: '规则数', width: 110, render: (item) => item.rule_count ?? item.rules.length },
-    { key: 'instances', title: '关联实例', width: 120, render: (item) => item.bound_instance_count ?? 0 },
-    { key: 'createdAt', title: '创建时间', minWidth: 190, render: (item) => formatDateTime(item.created_at) },
-  ]
+    {
+      key: "rules",
+      title: "规则数",
+      render: (_, item) => item.rule_count ?? item.rules.length,
+    },
+    {
+      key: "instances",
+      title: "关联实例",
+      render: (_, item) => item.bound_instance_count ?? 0,
+    },
+    {
+      key: "createdAt",
+      title: "创建时间",
+      render: (_, item) => formatDateTime(item.created_at),
+    },
+  ];
 
   return (
     <>
@@ -142,7 +193,11 @@ function SecurityGroupsPage() {
             title="安全组"
             subtitle="通过入方向和出方向规则控制实例网络访问"
             extra={
-              <ToolbarButton variant="primary" iconClassName="icon-add-1" onClick={() => setCreateVisible(true)}>
+              <ToolbarButton
+                variant="primary"
+                iconClassName="icon-add-1"
+                onClick={() => setCreateVisible(true)}
+              >
                 创建安全组
               </ToolbarButton>
             }
@@ -153,8 +208,12 @@ function SecurityGroupsPage() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: 'all', label: '全部', count: statusCounts.all },
-              { value: 'available', label: '可用', count: statusCounts.available },
+              { value: "all", label: "全部", count: statusCounts.all },
+              {
+                value: "available",
+                label: "可用",
+                count: statusCounts.available,
+              },
             ]}
           />
         }
@@ -164,8 +223,8 @@ function SecurityGroupsPage() {
               <div className="flex flex-wrap gap-3">
                 <ToolbarSearch
                   fields={[
-                    { value: 'name', label: '名称' },
-                    { value: 'id', label: 'ID' },
+                    { value: "name", label: "名称" },
+                    { value: "id", label: "ID" },
                   ]}
                   field={searchField}
                   value={searchText}
@@ -194,68 +253,70 @@ function SecurityGroupsPage() {
                 iconClassName="icon-refresh-1"
                 label="刷新"
                 spinning={securityGroups.isFetching || vpcs.isFetching}
-                onClick={() => void Promise.all([securityGroups.refetch(), vpcs.refetch()])}
+                onClick={() => {
+                  refresh();
+                  void vpcs.refetch();
+                }}
               />
             }
           />
         }
       >
-        <DataTable
-          rows={pagedItems}
-          rowKey={(item) => item.id}
-          columns={columns}
-          selectable={false}
+        <ListDataTable
+          data={filteredItems}
+          columns={[
+            ...columns,
+            {
+              key: "__actions",
+              title: "操作",
+              fixed: "right",
+              render: (_value, item) => (
+                <ListRowActions>
+                  <ListRowActionButton
+                    loading={copySecurityGroup.isPending}
+                    onClick={() => copySecurityGroup.mutate(item)}
+                  >
+                    复制
+                  </ListRowActionButton>
+                  <ListRowActionButton
+                    status="danger"
+                    onClick={() =>
+                      Modal.confirm({
+                        title: "删除安全组",
+                        content: `确定删除「${item.name}」？安全组被实例使用时无法删除，请先解除关联。`,
+                        okButtonProps: { status: "danger" },
+                        onOk: () => deleteSecurityGroup.mutateAsync(item),
+                      })
+                    }
+                  >
+                    删除
+                  </ListRowActionButton>
+                </ListRowActions>
+              ),
+            },
+          ]}
           loading={securityGroups.isLoading}
-          error={securityGroups.error ? getErrorMessage(securityGroups.error, '安全组列表加载失败') : null}
-          onRetry={() => void securityGroups.refetch()}
           emptyIconClassName="icon-anquanzu"
           emptyText={
-            searchText || filterVpcId || status !== 'all'
-              ? '没有符合条件的安全组'
-              : '还没有安全组，点击「创建安全组」开始'
+            searchText || filterVpcId || status !== "all"
+              ? "没有符合条件的安全组"
+              : "还没有安全组，点击「创建安全组」开始"
           }
           tableLabel="安全组列表"
           preserveTableOnEmpty
-          renderRowActions={(item) => (
-            <ListRowActions>
-              <ListRowActionButton
-                onClick={() =>
-                  navigate({ to: '/networks/security-groups/$securityGroupId', params: { securityGroupId: item.id } })
-                }
-              >
-                详情
-              </ListRowActionButton>
-              <ListRowActionButton loading={copySecurityGroup.isPending} onClick={() => copySecurityGroup.mutate(item)}>
-                复制
-              </ListRowActionButton>
-              <ListRowActionButton
-                status="danger"
-                onClick={() =>
-                  Modal.confirm({
-                    title: '删除安全组',
-                    content: `确定删除「${item.name}」？安全组被实例使用时无法删除，请先解除关联。`,
-                    okButtonProps: { status: 'danger' },
-                    onOk: () => deleteSecurityGroup.mutateAsync(item),
-                  })
-                }
-              >
-                删除
-              </ListRowActionButton>
-            </ListRowActions>
-          )}
           pagination={{
             page,
             pageSize,
-            total: filteredItems.length,
+            total: paginationTotal,
             onPageChange: setPage,
-            onPageSizeChange: (next) => {
-              setPageSize(next)
-              setPage(1)
-            },
+            onPageSizeChange: setPageSize,
           }}
         />
       </ListPageFrame>
-      <CreateSecurityGroupModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
+      <CreateSecurityGroupModal
+        visible={createVisible}
+        onCancel={() => setCreateVisible(false)}
+      />
     </>
-  )
+  );
 }

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import styles from '../PageBaseStyles/index.module.css'
+import styles from './index.module.css'
 
 export type ListPageTitleProps = {
   iconClassName: string

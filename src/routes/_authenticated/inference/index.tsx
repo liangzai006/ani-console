@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Message, Modal, Select, Space } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -8,7 +8,7 @@ import { showApiError } from "@/api/helpers";
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
-  DataTable,
+  ListDataTable,
   ListNameCell,
   ListPageFrame,
   ListPageHeader,
@@ -21,9 +21,9 @@ import {
   ToolbarSearch,
   type ListColumn,
 } from "@/components/common";
-import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type InferenceService = components["schemas"]["InferenceService"];
 type StatusFilter = "all" | "running" | "deploying" | "stopped" | "failed";
@@ -34,7 +34,6 @@ export const Route = createFileRoute("/_authenticated/inference/")({
 });
 
 function InferencePage() {
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -91,6 +90,12 @@ function InferencePage() {
     onError: (error) => showApiError(error),
   });
   const items = services.data?.items ?? [];
+  useListErrorNotification({
+    id: "inference-services-list",
+    title: "推理服务列表加载失败",
+    error: services.error,
+    onRetry: () => void services.refetch(),
+  });
   const counts = useMemo(
     () => ({
       all: items.length,
@@ -135,8 +140,7 @@ function InferencePage() {
     {
       key: "name",
       title: "名称 / ID",
-      minWidth: 240,
-      render: (item) => (
+      render: (_, item) => (
         <ListNameCell
           name={
             <Link to="/inference/$serviceId" params={{ serviceId: item.id }}>
@@ -150,20 +154,18 @@ function InferencePage() {
     {
       key: "status",
       title: "状态",
-      width: 110,
-      render: (item) => <AiServiceStatusTag status={item.status} />,
+      width: 120,
+      render: (_, item) => <AiServiceStatusTag status={item.status} />,
     },
     {
       key: "model",
       title: "模型版本",
-      minWidth: 220,
-      render: (item) => item.model,
+      render: (_, item) => item.model,
     },
     {
       key: "resources",
       title: "资源规格",
-      minWidth: 190,
-      render: (item) =>
+      render: (_, item) =>
         item.resources
           ? `${item.resources.cpu} CPU / ${item.resources.memory}${item.resources.accelerator ? ` / ${item.resources.accelerator.spec_id} × ${item.resources.accelerator.count_per_replica}` : ""}`
           : "—",
@@ -171,14 +173,12 @@ function InferencePage() {
     {
       key: "replicas",
       title: "副本",
-      width: 110,
-      render: (item) => `${item.ready_replicas} / ${item.replicas}`,
+      render: (_, item) => `${item.ready_replicas} / ${item.replicas}`,
     },
     {
       key: "placement",
       title: "部署模式",
-      width: 120,
-      render: (item) =>
+      render: (_, item) =>
         ({ auto: "自动", single_node: "单节点", multi_node: "多节点" })[
           item.placement_mode
         ] ?? item.placement_mode,
@@ -186,8 +186,7 @@ function InferencePage() {
     {
       key: "createdAt",
       title: "创建时间",
-      minWidth: 180,
-      render: (item) => formatDateTime(item.created_at),
+      render: (_, item) => formatDateTime(item.created_at),
     },
   ];
   return (
@@ -258,18 +257,59 @@ function InferencePage() {
           />
         }
       >
-        <DataTable
-          rows={filteredItems.slice((page - 1) * pageSize, page * pageSize)}
-          rowKey={(item) => item.id}
-          columns={columns}
-          selectable={false}
+        <ListDataTable
+          data={filteredItems.slice((page - 1) * pageSize, page * pageSize)}
+          columns={[
+            ...columns,
+            {
+              key: "__actions",
+              title: "操作",
+              fixed: "right",
+              render: (_value, item) => (
+                <ListRowActions>
+                  {item.status === "running" ? (
+                    <ListRowActionButton
+                      onClick={() => lifecycle.mutate({ item, action: "stop" })}
+                    >
+                      停止
+                    </ListRowActionButton>
+                  ) : null}
+                  {item.status === "stopped" ? (
+                    <ListRowActionButton
+                      onClick={() =>
+                        lifecycle.mutate({ item, action: "start" })
+                      }
+                    >
+                      启动
+                    </ListRowActionButton>
+                  ) : null}
+                  {item.status === "failed" ? (
+                    <ListRowActionButton
+                      onClick={() =>
+                        lifecycle.mutate({ item, action: "restart" })
+                      }
+                    >
+                      重启
+                    </ListRowActionButton>
+                  ) : null}
+                  <ListRowActionButton
+                    status="danger"
+                    onClick={() =>
+                      Modal.confirm({
+                        title: "删除推理服务",
+                        content: `确定删除「${item.name}」？删除请求提交后将异步停止并清理该服务。`,
+                        okButtonProps: { status: "danger" },
+                        onOk: () => remove.mutateAsync(item),
+                      })
+                    }
+                  >
+                    删除
+                  </ListRowActionButton>
+                </ListRowActions>
+              ),
+            },
+          ]}
           loading={services.isLoading}
-          error={
-            services.error
-              ? getErrorMessage(services.error, "推理服务列表加载失败")
-              : null
-          }
-          onRetry={() => void services.refetch()}
           pagination={{
             page,
             pageSize,
@@ -288,54 +328,6 @@ function InferencePage() {
               : "还没有推理服务，可从模型仓库一键部署"
           }
           tableLabel="推理服务列表"
-          renderRowActions={(item) => (
-            <ListRowActions>
-              <ListRowActionButton
-                onClick={() =>
-                  navigate({
-                    to: "/inference/$serviceId",
-                    params: { serviceId: item.id },
-                  })
-                }
-              >
-                详情
-              </ListRowActionButton>
-              {item.status === "running" ? (
-                <ListRowActionButton
-                  onClick={() => lifecycle.mutate({ item, action: "stop" })}
-                >
-                  停止
-                </ListRowActionButton>
-              ) : null}
-              {item.status === "stopped" ? (
-                <ListRowActionButton
-                  onClick={() => lifecycle.mutate({ item, action: "start" })}
-                >
-                  启动
-                </ListRowActionButton>
-              ) : null}
-              {item.status === "failed" ? (
-                <ListRowActionButton
-                  onClick={() => lifecycle.mutate({ item, action: "restart" })}
-                >
-                  重启
-                </ListRowActionButton>
-              ) : null}
-              <ListRowActionButton
-                status="danger"
-                onClick={() =>
-                  Modal.confirm({
-                    title: "删除推理服务",
-                    content: `确定删除「${item.name}」？删除请求提交后将异步停止并清理该服务。`,
-                    okButtonProps: { status: "danger" },
-                    onOk: () => remove.mutateAsync(item),
-                  })
-                }
-              >
-                删除
-              </ListRowActionButton>
-            </ListRowActions>
-          )}
         />
       </ListPageFrame>
       <CreateInferenceServiceModal

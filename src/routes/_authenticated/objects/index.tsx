@@ -1,11 +1,11 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
-import { coreApi } from '@/api/client'
-import type { components } from '@/api/core-schema'
-import { CreateBucketModal } from '@/components/storage/CreateBucketModal'
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Tooltip } from "@arco-design/web-react";
+import { useMemo, useState } from "react";
+import { coreApi } from "@/api/client";
+import type { components } from "@/api/core-schema";
+import { CreateBucketModal } from "@/components/storage/CreateBucketModal";
 import {
-  DataTable,
+  ListDataTable,
   ListNameCell,
   ListPageFrame,
   ListPageHeader,
@@ -16,43 +16,62 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
-} from '@/components/common'
-import { listOrThrow } from '@/lib/api-list'
-import { getErrorMessage } from '@/lib/errors'
-import { formatBytes, formatDateTime } from '@/lib/format'
+} from "@/components/common";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { formatBytes, formatDateTime } from "@/lib/format";
 
-type Bucket = components['schemas']['StorageBucketRecord']
-type SearchField = 'name' | 'id'
+type Bucket = components["schemas"]["StorageBucketRecord"];
+type SearchField = "name" | "id";
 
-export const Route = createFileRoute('/_authenticated/objects/')({ component: ObjectsPage })
+export const Route = createFileRoute("/_authenticated/objects/")({
+  component: ObjectsPage,
+});
 
 function ObjectsPage() {
-  const navigate = useNavigate()
-  const [createVisible, setCreateVisible] = useState(false)
-  const [searchField, setSearchField] = useState<SearchField>('name')
-  const [searchText, setSearchText] = useState('')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const buckets = useQuery({
-    queryKey: ['buckets'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/buckets', { params: { query: { limit: 100 } } })),
-  })
-  const items = (buckets.data?.items ?? []) as Bucket[]
+  const navigate = useNavigate();
+  const [createVisible, setCreateVisible] = useState(false);
+  const [searchField, setSearchField] = useState<SearchField>("name");
+  const [searchText, setSearchText] = useState("");
+  const {
+    query: buckets,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    refresh,
+  } = useCursorPaginatedQuery<Bucket>({
+    queryKey: ["buckets"],
+    cursorScope: `${searchField}:${searchText.trim()}`,
+    fetchPage: async ({ cursor, limit }) => {
+      const { data, error } = await coreApi.GET("/buckets", {
+        params: { query: { limit, cursor } },
+      });
+      if (error || !data) throw error ?? new Error("对象存储桶列表未返回结果");
+      return data;
+    },
+  });
+  const items = (buckets.data?.items ?? []) as Bucket[];
   const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase()
+    const keyword = searchText.trim().toLowerCase();
     return items.filter(
-      (item) => !keyword || String(item[searchField]).toLowerCase().includes(keyword),
-    )
-  }, [items, searchField, searchText])
-  const pagedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize)
-  useEffect(() => setPage(1), [searchField, searchText])
+      (item) =>
+        !keyword || String(item[searchField]).toLowerCase().includes(keyword),
+    );
+  }, [items, searchField, searchText]);
+  const paginationTotal = buckets.data?.total ?? filteredItems.length;
+  useListErrorNotification({
+    id: "buckets-list",
+    title: "对象存储桶列表加载失败",
+    error: buckets.error,
+    onRetry: refresh,
+  });
 
   const columns: Array<ListColumn<Bucket>> = [
     {
-      key: 'name',
-      title: '名称 / ID',
-      minWidth: 240,
-      render: (item) => (
+      key: "name",
+      title: "名称 / ID",
+      render: (_, item) => (
         <ListNameCell
           name={
             <Link to="/objects/$bucketId" params={{ bucketId: item.id }}>
@@ -64,22 +83,37 @@ function ObjectsPage() {
       ),
     },
     {
-      key: 'acl',
-      title: '权限',
-      width: 120,
-      render: (item) => (item.acl === 'tenant_read' ? '租户内读' : '私有'),
+      key: "acl",
+      title: "权限",
+      render: (_, item) => (item.acl === "tenant_read" ? "租户内读" : "私有"),
     },
     {
-      key: 'storageClass',
-      title: '存储类型',
-      width: 120,
-      render: (item) => (item.storage_class === 'infrequent_access' ? '低频' : '标准'),
+      key: "storageClass",
+      title: "存储类型",
+      render: (_, item) =>
+        item.storage_class === "infrequent_access" ? "低频" : "标准",
     },
-    { key: 'region', title: 'Region', minWidth: 140, render: (item) => item.region ?? '—' },
-    { key: 'objectCount', title: '对象数', width: 110, render: (item) => item.object_count ?? 0 },
-    { key: 'sizeBytes', title: '总大小', minWidth: 130, render: (item) => formatBytes(item.size_bytes) },
-    { key: 'createdAt', title: '创建时间', minWidth: 190, render: (item) => formatDateTime(item.created_at) },
-  ]
+    {
+      key: "region",
+      title: "Region",
+      render: (_, item) => item.region ?? "—",
+    },
+    {
+      key: "objectCount",
+      title: "对象数",
+      render: (_, item) => item.object_count ?? 0,
+    },
+    {
+      key: "sizeBytes",
+      title: "总大小",
+      render: (_, item) => formatBytes(item.size_bytes),
+    },
+    {
+      key: "createdAt",
+      title: "创建时间",
+      render: (_, item) => formatDateTime(item.created_at),
+    },
+  ];
 
   return (
     <>
@@ -90,7 +124,11 @@ function ObjectsPage() {
             title="对象存储"
             subtitle="S3 兼容存储桶，用于保存非结构化对象数据"
             extra={
-              <ToolbarButton variant="primary" iconClassName="icon-add-1" onClick={() => setCreateVisible(true)}>
+              <ToolbarButton
+                variant="primary"
+                iconClassName="icon-add-1"
+                onClick={() => setCreateVisible(true)}
+              >
                 创建存储桶
               </ToolbarButton>
             }
@@ -101,8 +139,8 @@ function ObjectsPage() {
             filters={
               <ToolbarSearch
                 fields={[
-                  { value: 'name', label: '名称' },
-                  { value: 'id', label: 'ID' },
+                  { value: "name", label: "名称" },
+                  { value: "id", label: "ID" },
                 ]}
                 field={searchField}
                 value={searchText}
@@ -115,46 +153,88 @@ function ObjectsPage() {
                 iconClassName="icon-refresh-1"
                 label="刷新"
                 spinning={buckets.isFetching}
-                onClick={() => void buckets.refetch()}
+                onClick={refresh}
               />
             }
           />
         }
       >
-        <DataTable
-          rows={pagedItems}
-          rowKey={(item) => item.id}
-          columns={columns}
-          selectable={false}
+        <ListDataTable
+          data={filteredItems}
+          columns={[
+            ...columns,
+            {
+              key: "__actions",
+              title: "操作",
+              fixed: "right",
+              render: (_value, item) => (
+                <ListRowActions>
+                  <ListRowActionButton
+                    onClick={() =>
+                      navigate({
+                        to: "/objects/$bucketId",
+                        params: { bucketId: item.id },
+                        search: { tab: "objects" },
+                      })
+                    }
+                  >
+                    浏览器
+                  </ListRowActionButton>
+                  <ListRowActionButton
+                    onClick={() =>
+                      navigate({
+                        to: "/objects/$bucketId",
+                        params: { bucketId: item.id },
+                        search: { tab: "objects", action: "upload" },
+                      })
+                    }
+                  >
+                    上传
+                  </ListRowActionButton>
+                  <ListRowActionButton
+                    onClick={() =>
+                      navigate({
+                        to: "/objects/$bucketId",
+                        params: { bucketId: item.id },
+                        search: { tab: "permissions" },
+                      })
+                    }
+                  >
+                    改权限
+                  </ListRowActionButton>
+                  <Tooltip content="ANI 当前未提供删除存储桶接口">
+                    <span>
+                      <ListRowActionButton status="danger" disabled>
+                        删除
+                      </ListRowActionButton>
+                    </span>
+                  </Tooltip>
+                </ListRowActions>
+              ),
+            },
+          ]}
           loading={buckets.isLoading}
-          error={buckets.error ? getErrorMessage(buckets.error, '对象存储桶列表加载失败') : null}
-          onRetry={() => void buckets.refetch()}
           emptyIconClassName="icon-duixiangcunchu1"
-          emptyText={searchText ? '没有符合条件的存储桶' : '还没有存储桶，点击「创建存储桶」开始'}
+          emptyText={
+            searchText
+              ? "没有符合条件的存储桶"
+              : "还没有存储桶，点击「创建存储桶」开始"
+          }
           tableLabel="对象存储桶列表"
           preserveTableOnEmpty
-          renderRowActions={(item) => (
-            <ListRowActions>
-              <ListRowActionButton
-                onClick={() => navigate({ to: '/objects/$bucketId', params: { bucketId: item.id } })}
-              >
-                详情
-              </ListRowActionButton>
-            </ListRowActions>
-          )}
           pagination={{
             page,
             pageSize,
-            total: filteredItems.length,
+            total: paginationTotal,
             onPageChange: setPage,
-            onPageSizeChange: (next) => {
-              setPageSize(next)
-              setPage(1)
-            },
+            onPageSizeChange: setPageSize,
           }}
         />
       </ListPageFrame>
-      <CreateBucketModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
+      <CreateBucketModal
+        visible={createVisible}
+        onCancel={() => setCreateVisible(false)}
+      />
     </>
-  )
+  );
 }

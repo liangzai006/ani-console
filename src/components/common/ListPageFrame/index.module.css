@@ -1,0 +1,116 @@
+.page {
+  --list-primary: #0079d3;
+  --list-primary-hover: #006cbd;
+  --list-primary-active: #0060ac;
+  --list-primary-soft: rgba(0, 121, 211, 0.08);
+  --list-primary-header: #f2f8fd;
+  --list-text: rgba(0, 0, 0, 0.9);
+  --list-text-secondary: rgba(0, 0, 0, 0.6);
+  --list-text-tertiary: rgba(0, 0, 0, 0.4);
+  --list-text-disabled: rgba(0, 0, 0, 0.26);
+  --list-border: #dcdcdc;
+  --list-divider: #e7e7e7;
+  --list-table-divider: #e5e6eb;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: calc(100vh - 88px);
+  min-height: 600px;
+  color: var(--list-text);
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.pageHeader {
+  position: relative;
+  display: flex;
+  flex: 0 0 80px;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 16px;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 73, 128, 0.05);
+}
+
+.pageHeader::before {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  width: 5px;
+  height: 32px;
+  background: var(--list-primary);
+  content: '';
+}
+
+.pageHeaderIcon {
+  display: flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 16px;
+  color: var(--list-primary);
+  line-height: 1;
+}
+
+.pageHeaderIcon :global(.iconfont) {
+  font-size: 28px;
+}
+
+.pageHeaderTitleArea {
+  min-width: 0;
+  margin-left: 16px;
+}
+
+.pageHeaderTitle {
+  margin: 0;
+  color: var(--list-text);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+}
+
+.pageHeaderSubtitle {
+  overflow: hidden;
+  margin: 4px 0 0;
+  color: var(--list-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pageHeaderExtra {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 24px;
+}
+
+.contentPanel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 16px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+@media (max-width: 980px) {
+  .page {
+    height: auto;
+    min-height: calc(100vh - 88px);
+  }
+
+  .contentPanel {
+    min-height: 600px;
+  }
+
+  .pageHeaderSubtitle {
+    max-width: 55vw;
+  }
+}

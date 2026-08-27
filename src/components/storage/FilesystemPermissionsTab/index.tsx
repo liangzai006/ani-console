@@ -1,13 +1,5 @@
-import {
-  Alert,
-  Button,
-  Descriptions,
-  Empty,
-  Space,
-  Table,
-  Tooltip,
-  Typography,
-} from "@arco-design/web-react";
+import { DataTable } from '@/components/common/DataTable'
+import { Alert, Button, Descriptions, Empty, Space, Tooltip, Typography } from "@arco-design/web-react"
 
 type FilesystemAccessRule = {
   id: string;
@@ -44,16 +36,15 @@ export function FilesystemPermissionsTab() {
             </span>
           </Tooltip>
         </div>
-        <Table<FilesystemAccessRule>
+        <DataTable<FilesystemAccessRule>
           columns={[
-            { title: "授权网段", dataIndex: "cidr", width: 200 },
-            { title: "读写权限", dataIndex: "access", width: 130 },
-            { title: "用户权限", dataIndex: "squash", width: 180 },
+            { title: "授权网段", dataIndex: "cidr" },
+            { title: "读写权限", dataIndex: "access" },
+            { title: "用户权限", dataIndex: "squash" },
             { title: "描述", dataIndex: "description" },
-            { title: "操作", width: 120, render: () => "—" },
+            { title: "操作", render: () => "—" },
           ]}
           data={rules}
-          rowKey="id"
           pagination={false}
           noDataElement={
             <Empty description="暂无可展示的访问规则；Core API 开放后可在此配置授权网段" />

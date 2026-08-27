@@ -1,15 +1,7 @@
+import { DataTable } from '@/components/common/DataTable'
 import { useMutation } from "@tanstack/react-query";
 import {
-  Alert,
-  Button,
-  Empty,
-  Form,
-  Input,
-  InputNumber,
-  Space,
-  Table,
-  Typography,
-} from "@arco-design/web-react";
+  Alert, Button, Empty, Form, Input, InputNumber, Space, Typography } from "@arco-design/web-react"
 import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
@@ -101,7 +93,7 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
         </Button>
       </Form>
       {search.data ? (
-        <Table<SearchHit>
+        <DataTable<SearchHit>
           columns={[
             { title: "文档 ID", dataIndex: "id" },
             { title: "得分", dataIndex: "score" },
@@ -115,7 +107,6 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
             },
           ]}
           data={hits}
-          rowKey="id"
           pagination={false}
           noDataElement={<Empty description="没有匹配的向量结果" />}
         />

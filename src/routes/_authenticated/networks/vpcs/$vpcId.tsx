@@ -1,6 +1,7 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, Empty, List, Modal, Space, Spin, Table, Tag, Typography } from '@arco-design/web-react'
+import { Button, Card, Empty, List, Modal, Space, Spin, Tag, Typography } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
@@ -230,16 +231,15 @@ function VpcDetailPage() {
           content: subnets.error ? (
             <ApiErrorAlert error={subnets.error} />
           ) : (
-            <Table<Subnet>
+            <DataTable<Subnet>
               columns={[
                 { title: '名称', dataIndex: 'name' },
                 { title: 'CIDR', dataIndex: 'cidr' },
                 { title: '网关', render: (_, item) => item.gateway ?? '—' },
-                { title: '状态', render: (_, item) => <StatusTag status={item.state} /> },
+                { title: '状态', width: 120, render: (_, item) => <StatusTag status={item.state} /> },
               ]}
               data={vpcSubnets}
               loading={subnets.isLoading}
-              rowKey="id"
               pagination={false}
               noDataElement="当前 VPC 暂无子网"
             />
@@ -251,7 +251,7 @@ function VpcDetailPage() {
           content: routes.error ? (
             <ApiErrorAlert error={routes.error} />
           ) : (
-            <Table<NetworkRoute>
+            <DataTable<NetworkRoute>
               columns={[
                 { title: '目标 CIDR', dataIndex: 'destination_cidr' },
                 { title: '下一跳类型', dataIndex: 'next_hop_type' },
@@ -260,7 +260,6 @@ function VpcDetailPage() {
               ]}
               data={vpcRoutes}
               loading={routes.isLoading}
-              rowKey="id"
               pagination={false}
               noDataElement={<Empty />}
             />

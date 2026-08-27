@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Button } from '@arco-design/web-react'
+import { Button, Empty } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
 import { StatusTag } from '@/components/common/StatusTag'
-import { CursorTable } from '@/components/common/CursorTable'
+import { DataTable } from '@/components/common/DataTable'
+import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
 import { formatDateTime } from '@/lib/format'
 import { Link } from '@tanstack/react-router'
 
@@ -42,10 +43,10 @@ function InstanceOperationsPage() {
           </Button>
         }
       />
-      <CursorTable<OpRow>
+      <DataTable<OpRow>
         columns={[
           { title: '操作', dataIndex: 'operation' },
-          { title: '状态', render: (_, r) => <StatusTag status={r.status} /> },
+          { title: '状态', width: 120, render: (_, r) => <StatusTag status={r.status} /> },
           { title: '时间', render: (_, r) => formatDateTime(r.created_at) },
           {
             title: '',
@@ -58,11 +59,10 @@ function InstanceOperationsPage() {
             ),
           },
         ]}
-        data={{ items }}
+        data={error ? [] : items}
         loading={isLoading}
-        error={error}
-        rowKey="id"
-        emptyDescription="暂无操作记录"
+        pagination={false}
+        noDataElement={error ? <ApiErrorAlert error={error} /> : <Empty description="暂无操作记录" />}
       />
     </>
   )

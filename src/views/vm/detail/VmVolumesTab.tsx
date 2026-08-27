@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button } from '@arco-design/web-react'
+import { Button, Empty } from '@arco-design/web-react'
 import { useNavigate } from '@tanstack/react-router'
-import { CursorTable } from '@/components/common/CursorTable'
+import { DataTable } from '@/components/common/DataTable'
+import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
 import { formatBytes } from '@/lib/format'
 import { vmDetailDataSource } from './data-source'
 import styles from './detail.module.css'
@@ -33,7 +34,7 @@ export function VmVolumesTab({ instanceId }: VmVolumesTabProps) {
           刷新
         </Button>
       </div>
-      <CursorTable
+      <DataTable
         columns={[
           {
             title: '名称',
@@ -66,11 +67,10 @@ export function VmVolumesTab({ instanceId }: VmVolumesTabProps) {
             ),
           },
         ]}
-        data={{ items: query.data ?? [] }}
+        data={query.error ? [] : query.data ?? []}
         loading={query.isLoading}
-        error={query.error}
-        rowKey="id"
-        emptyDescription="暂无云盘"
+        pagination={false}
+        noDataElement={query.error ? <ApiErrorAlert error={query.error} /> : <Empty description="暂无云盘" />}
       />
     </div>
   )

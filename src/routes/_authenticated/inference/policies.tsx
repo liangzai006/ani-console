@@ -1,9 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Message, Select, Space } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import {
-  DataTable,
+  ListDataTable,
   ListNameCell,
   ListPageFrame,
   ListPageHeader,
@@ -27,7 +27,6 @@ export const Route = createFileRoute("/_authenticated/inference/policies")({
 });
 
 function InferencePoliciesPage() {
-  const navigate = useNavigate();
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
   const [status, setStatus] = useState("all");
@@ -48,8 +47,7 @@ function InferencePoliciesPage() {
     {
       key: "name",
       title: "策略名称",
-      minWidth: 240,
-      render: (item) => (
+      render: (_, item) => (
         <ListNameCell
           name={
             <Link
@@ -66,26 +64,23 @@ function InferencePoliciesPage() {
     {
       key: "status",
       title: "状态",
-      width: 110,
-      render: (item) => <AiServiceStatusTag status={item.status} />,
+      width: 120,
+      render: (_, item) => <AiServiceStatusTag status={item.status} />,
     },
     {
       key: "scope",
       title: "作用范围",
-      minWidth: 240,
-      render: (item) => item.scope,
+      render: (_, item) => item.scope,
     },
     {
       key: "rules",
       title: "限流规则",
-      minWidth: 190,
-      render: (item) => item.rules,
+      render: (_, item) => item.rules,
     },
     {
       key: "updatedAt",
       title: "更新时间",
-      minWidth: 170,
-      render: (item) => item.updatedAt,
+      render: (_, item) => item.updatedAt,
     },
   ];
   return (
@@ -158,11 +153,37 @@ function InferencePoliciesPage() {
         />
       }
     >
-      <DataTable
-        rows={filteredItems.slice((page - 1) * pageSize, page * pageSize)}
-        rowKey={(item) => item.id}
-        columns={columns}
-        selectable={false}
+      <ListDataTable
+        data={filteredItems.slice((page - 1) * pageSize, page * pageSize)}
+        columns={[
+          ...columns,
+          {
+            key: "__actions",
+            title: "操作",
+            fixed: "right",
+            render: (_value, item) => (
+              <ListRowActions>
+                <ListRowActionButton
+                  onClick={() =>
+                    Message.success(
+                      item.status === "enabled"
+                        ? "已停用（演示）"
+                        : "已启用（演示）",
+                    )
+                  }
+                >
+                  {item.status === "enabled" ? "停用" : "启用"}
+                </ListRowActionButton>
+                <ListRowActionButton
+                  status="danger"
+                  onClick={() => Message.warning("删除操作将在接口接入后启用")}
+                >
+                  删除
+                </ListRowActionButton>
+              </ListRowActions>
+            ),
+          },
+        ]}
         pagination={{
           page,
           pageSize,
@@ -177,37 +198,6 @@ function InferencePoliciesPage() {
         emptyIconClassName="icon-constraint"
         emptyText="还没有限流与访问策略"
         tableLabel="限流与访问策略列表"
-        renderRowActions={(item) => (
-          <ListRowActions>
-            <ListRowActionButton
-              onClick={() =>
-                navigate({
-                  to: "/inference/policies/$policyId",
-                  params: { policyId: item.id },
-                })
-              }
-            >
-              详情
-            </ListRowActionButton>
-            <ListRowActionButton
-              onClick={() =>
-                Message.success(
-                  item.status === "enabled"
-                    ? "已停用（演示）"
-                    : "已启用（演示）",
-                )
-              }
-            >
-              {item.status === "enabled" ? "停用" : "启用"}
-            </ListRowActionButton>
-            <ListRowActionButton
-              status="danger"
-              onClick={() => Message.warning("删除操作将在接口接入后启用")}
-            >
-              删除
-            </ListRowActionButton>
-          </ListRowActions>
-        )}
       />
     </ListPageFrame>
   );

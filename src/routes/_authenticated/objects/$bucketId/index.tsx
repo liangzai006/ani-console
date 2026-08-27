@@ -1,21 +1,9 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Button,
-  Descriptions,
-  Empty,
-  Input,
-  Message,
-  Modal,
-  Select,
-  Space,
-  Spin,
-  Table,
-  Tag,
-  Typography,
-  Upload,
-} from "@arco-design/web-react";
-import { useEffect, useState } from "react";
+  Button, Descriptions, Empty, Input, Message, Modal, Select, Space, Spin, Tag, Typography, Upload } from "@arco-design/web-react"
+import { useEffect, useRef, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
@@ -23,7 +11,6 @@ import { DetailPageFrame } from "@/components/common";
 import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
 import { AliIcon } from "@/components/common/AliIcon";
 import { CreateLifecycleRuleModal } from "@/components/storage/CreateLifecycleRuleModal";
-import { CreateObjectMetadataModal } from "@/components/storage/CreateObjectMetadataModal";
 import { ObjectBrowser } from "@/components/storage/ObjectBrowser";
 import { listOrThrow } from "@/lib/api-list";
 import { formatBytes, formatDateTime } from "@/lib/format";
@@ -49,9 +36,10 @@ async function fetchBucketById(bucketId: string): Promise<Bucket> {
 
 function BucketDetailPage() {
   const { bucketId } = Route.useParams();
+  const { tab, action } = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [objectVisible, setObjectVisible] = useState(false);
+  const uploadTriggerRef = useRef<HTMLButtonElement>(null);
   const [prefix, setPrefix] = useState("/");
   const [folderVisible, setFolderVisible] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -97,6 +85,20 @@ function BucketDetailPage() {
       setClassDraft(bucket.data.storage_class ?? "standard");
     }
   }, [bucket.data]);
+
+  useEffect(() => {
+    if (action !== "upload" || !bucket.data) return;
+    const frame = window.requestAnimationFrame(() => {
+      uploadTriggerRef.current?.click();
+      void navigate({
+        to: "/objects/$bucketId",
+        params: { bucketId },
+        search: { tab: "objects" },
+        replace: true,
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [action, bucket.data, bucketId, navigate]);
 
   const refreshBucket = () => {
     qc.invalidateQueries({ queryKey: ["bucket", bucketId] });
@@ -303,26 +305,26 @@ function BucketDetailPage() {
             ],
           },
         ]}
+        defaultTabKey={tab}
         tabs={[
           {
             key: "objects",
             label: "对象浏览器",
             extra: (
-              <Space>
-                <Upload
-                  showUploadList={false}
-                  customRequest={(opt) => {
-                    upload.mutate(opt.file as File);
-                  }}
+              <Upload
+                showUploadList={false}
+                customRequest={(opt) => {
+                  upload.mutate(opt.file as File);
+                }}
+              >
+                <Button
+                  ref={uploadTriggerRef}
+                  type="primary"
+                  loading={upload.isPending}
                 >
-                  <Button type="primary" loading={upload.isPending}>
-                    上传对象
-                  </Button>
-                </Upload>
-                <Button onClick={() => setObjectVisible(true)}>
-                  登记元数据
+                  上传对象
                 </Button>
-              </Space>
+              </Upload>
             ),
             content: bucketEntries.error ? (
               <ApiErrorAlert error={bucketEntries.error} />
@@ -415,7 +417,7 @@ function BucketDetailPage() {
                 {lifecycleRules.error ? (
                   <ApiErrorAlert error={lifecycleRules.error} />
                 ) : (
-                  <Table<LifecycleRule>
+                  <DataTable<LifecycleRule>
                     columns={[
                       { title: "名称", dataIndex: "name" },
                       {
@@ -425,16 +427,14 @@ function BucketDetailPage() {
                       {
                         title: "转低频天数",
                         dataIndex: "to_infrequent_days",
-                        width: 120,
                       },
                       {
                         title: "过期天数",
                         dataIndex: "expire_days",
-                        width: 120,
                       },
                       {
                         title: "状态",
-                        width: 100,
+                        width: 120,
                         render: (_, row) => (
                           <Tag color={row.enabled ? "green" : "gray"}>
                             {row.enabled ? "启用" : "停用"}
@@ -443,7 +443,6 @@ function BucketDetailPage() {
                       },
                       {
                         title: "操作",
-                        width: 160,
                         render: (_, row) => (
                           <Space>
                             <Button
@@ -477,7 +476,6 @@ function BucketDetailPage() {
                     ]}
                     data={ruleItems}
                     loading={lifecycleRules.isLoading}
-                    rowKey="id"
                     pagination={false}
                     noDataElement={
                       <Empty description="暂无生命周期规则，点击「添加规则」开始" />
@@ -600,12 +598,6 @@ function BucketDetailPage() {
           },
         ]}
         onBack={() => navigate({ to: "/objects" })}
-      />
-      <CreateObjectMetadataModal
-        visible={objectVisible}
-        bucketId={bucketId}
-        bucketName={bucketInfo.name}
-        onCancel={() => setObjectVisible(false)}
       />
       <Modal
         visible={folderVisible}

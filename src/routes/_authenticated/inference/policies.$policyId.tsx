@@ -1,13 +1,7 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
-  Button,
-  Card,
-  Empty,
-  Message,
-  Space,
-  Table,
-  Typography,
-} from "@arco-design/web-react";
+  Button, Card, Empty, Message, Space, Typography } from "@arco-design/web-react"
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import { DetailPageFrame } from "@/components/common";
 import { AliIcon } from "@/components/common/AliIcon";
@@ -113,11 +107,12 @@ function InferencePolicyDetailPage() {
           key: "related",
           label: "关联资源",
           content: (
-            <Table
+            <DataTable
               columns={[
                 { title: "推理服务", dataIndex: "name" },
                 {
                   title: "状态",
+                  width: 120,
                   render: (_, item) => (
                     <AiServiceStatusTag status={item.status} />
                   ),
@@ -125,7 +120,6 @@ function InferencePolicyDetailPage() {
                 { title: "模型版本", dataIndex: "modelVersion" },
               ]}
               data={relatedServices}
-              rowKey="id"
               pagination={false}
               noDataElement={
                 <Empty description="该策略当前作用于 API Key 或尚未关联推理服务" />
@@ -158,7 +152,7 @@ function InferencePolicyDetailPage() {
           key: "hits",
           label: "命中记录",
           content: (
-            <Table
+            <DataTable
               columns={[
                 { title: "时间", dataIndex: "time" },
                 { title: "作用对象", dataIndex: "target" },
@@ -181,7 +175,6 @@ function InferencePolicyDetailPage() {
                   result: "已排队",
                 },
               ]}
-              rowKey="id"
               pagination={false}
             />
           ),

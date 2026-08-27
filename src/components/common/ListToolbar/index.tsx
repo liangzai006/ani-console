@@ -1,6 +1,7 @@
 import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { Select } from '@arco-design/web-react'
-import styles from '../PageBaseStyles/index.module.css'
+import clsx from 'clsx'
+import styles from './index.module.css'
 
 type ListToolbarProps = {
   actions?: ReactNode
@@ -31,7 +32,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(f
     <button
       ref={ref}
       type="button"
-      className={`${styles.toolbarButton} ${styles[`toolbarButton_${variant}`]} ${className}`}
+      className={clsx(styles.toolbarButton, styles[`toolbarButton_${variant}`], className)}
       {...buttonProps}
     >
       {iconClassName ? <i className={`iconfont ${iconClassName}`} aria-hidden="true" /> : null}
@@ -56,7 +57,7 @@ export const ToolbarIconButton = forwardRef<HTMLButtonElement, ToolbarIconButton
       type="button"
       aria-label={label}
       title={label}
-      className={`${styles.toolbarIconButton} ${spinning ? styles.spinning : ''} ${className}`}
+      className={clsx(styles.toolbarIconButton, spinning && styles.spinning, className)}
       {...buttonProps}
     >
       <i className={`iconfont ${iconClassName}`} aria-hidden="true" />

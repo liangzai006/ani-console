@@ -1,15 +1,8 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert,
-  Button,
-  Empty,
-  Modal,
-  Space,
-  Spin,
-  Table,
-  Tooltip,
-} from "@arco-design/web-react";
+  Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react"
 import { coreApi } from "@/api/client";
 import { useState } from "react";
 import { showApiError } from "@/api/helpers";
@@ -195,17 +188,16 @@ function FilesystemDetailPage() {
             content: mounts.error ? (
               <ApiErrorAlert error={mounts.error} />
             ) : (
-              <Table<MountTarget>
+              <DataTable<MountTarget>
                 columns={[
-                  { title: "挂载目标 ID", dataIndex: "id", width: 220 },
+                  { title: "挂载目标 ID", dataIndex: "id" },
                   {
                     title: "状态",
-                    width: 110,
+                    width: 120,
                     render: (_, row) => <StatusTag status={row.status} />,
                   },
                   {
                     title: "VPC",
-                    width: 190,
                     render: (_, row) =>
                       row.vpc_id ? (
                         <Link
@@ -220,7 +212,6 @@ function FilesystemDetailPage() {
                   },
                   {
                     title: "子网",
-                    width: 190,
                     render: (_, row) => (
                       <Link
                         to="/networks/subnets/$subnetId"
@@ -230,16 +221,14 @@ function FilesystemDetailPage() {
                       </Link>
                     ),
                   },
-                  { title: "IP 地址", dataIndex: "ip_address", width: 150 },
+                  { title: "IP 地址", dataIndex: "ip_address" },
                   {
                     title: "创建时间",
-                    width: 180,
                     render: (_, row) => formatDateTime(row.created_at),
                   },
                 ]}
                 data={mountItems}
                 loading={mounts.isLoading}
-                rowKey="id"
                 pagination={false}
                 noDataElement={
                   <Empty description="暂无挂载目标，请创建挂载目标后获取访问地址" />

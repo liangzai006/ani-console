@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
+  Empty,
   Form,
   Input,
   InputNumber,
@@ -16,7 +17,8 @@ import {
 import { useRef, useState } from 'react'
 import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
-import { CursorTable } from '@/components/common/CursorTable'
+import { DataTable } from '@/components/common/DataTable'
+import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
 import { StatusTag } from '@/components/common/StatusTag'
 import { formatDateTime } from '@/lib/format'
 import { showApiError } from '@/api/helpers'
@@ -154,13 +156,14 @@ function ImagesPage() {
           </Button>
         }
       />
-      <CursorTable<ImageRecord>
+      <DataTable<ImageRecord>
         columns={[
           { title: '名称', render: (_, r) => r.name ?? r.id },
           { title: '格式', dataIndex: 'format' },
           { title: '容量 GiB', dataIndex: 'size_gib' },
           {
             title: '状态',
+            width: 120,
             render: (_, r) => (
               <Space direction="vertical" size={2}>
                 <StatusTag status={r.state} />
@@ -193,11 +196,12 @@ function ImagesPage() {
             ),
           },
         ]}
-        data={{ items, next_cursor: images.data?.next_cursor }}
+        data={images.error ? [] : items}
         loading={images.isLoading}
-        error={images.error}
-        rowKey="id"
-        emptyDescription="暂无可启动镜像"
+        pagination={false}
+        noDataElement={
+          images.error ? <ApiErrorAlert error={images.error} /> : <Empty description="暂无可启动镜像" />
+        }
       />
 
       <Modal

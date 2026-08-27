@@ -1,17 +1,8 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Button,
-  Card,
-  Descriptions,
-  Empty,
-  Message,
-  Modal,
-  Space,
-  Spin,
-  Tabs,
-  Table,
-} from '@arco-design/web-react'
+  Button, Card, Descriptions, Empty, Message, Modal, Space, Spin, Tabs } from '@arco-design/web-react'
 import { useState } from 'react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { coreApi } from '@/api/client'
@@ -279,7 +270,15 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
               return items.length === 0 ? (
                 <Empty description="暂无事件" />
               ) : (
-                <Table data={items} rowKey="id" pagination={false} />
+                <DataTable
+                  data={items}
+                  columns={Object.keys(items[0] ?? {}).map((key) => ({
+                    key,
+                    title: key,
+                    dataIndex: key,
+                  }))}
+                  pagination={false}
+                />
               )
             }}
           </TabQueryBody>
@@ -300,7 +299,15 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
               return items.length === 0 ? (
                 <Empty description="暂无安全事件" />
               ) : (
-                <Table data={items} rowKey="id" pagination={false} />
+                <DataTable
+                  data={items}
+                  columns={Object.keys(items[0] ?? {}).map((key) => ({
+                    key,
+                    title: key,
+                    dataIndex: key,
+                  }))}
+                  pagination={false}
+                />
               )
             }}
           </TabQueryBody>

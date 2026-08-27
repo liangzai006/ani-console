@@ -1,4 +1,5 @@
-import styles from '../PageBaseStyles/index.module.css'
+import clsx from 'clsx'
+import styles from './index.module.css'
 
 export type ListStatusTab<T extends string> = {
   value: T
@@ -29,7 +30,7 @@ export function StatusTabs<T extends string>({
             type="button"
             role="tab"
             aria-selected={active}
-            className={`${styles.statusTab} ${active ? styles.statusTabActive : ''}`}
+            className={clsx(styles.statusTab, active && styles.statusTabActive)}
             onClick={() => onChange(item.value)}
           >
             <span>{item.label}</span>

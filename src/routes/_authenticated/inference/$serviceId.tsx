@@ -1,18 +1,7 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
-  Alert,
-  Button,
-  Empty,
-  InputNumber,
-  Message,
-  Modal,
-  Select,
-  Space,
-  Spin,
-  Table,
-  Tooltip,
-  Typography,
-} from "@arco-design/web-react";
+  Alert, Button, Empty, InputNumber, Message, Modal, Select, Space, Spin, Tooltip, Typography } from "@arco-design/web-react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { components } from "@/api/services-schema";
@@ -297,7 +286,7 @@ function InferenceDetailPage() {
             key: "configuration",
             label: "运行配置",
             content: (
-              <Table
+              <DataTable
                 data={[
                   {
                     id: "resource",
@@ -320,7 +309,6 @@ function InferenceDetailPage() {
                     detail: item.model_version_id ?? "—",
                   },
                 ]}
-                rowKey="id"
                 pagination={false}
                 columns={[
                   { title: "类型", dataIndex: "type" },
@@ -364,7 +352,7 @@ function InferenceDetailPage() {
                 content={getErrorMessage(logs.error, "日志加载失败")}
               />
             ) : (
-              <Table<InferenceLog>
+              <DataTable<InferenceLog>
                 loading={logs.isLoading}
                 data={logs.data?.items ?? []}
                 rowKey={(row) =>
@@ -375,13 +363,11 @@ function InferenceDetailPage() {
                 columns={[
                   {
                     title: "时间",
-                    width: 190,
                     render: (_, row) => formatDateTime(row.timestamp),
                   },
-                  { title: "级别", width: 100, dataIndex: "level" },
+                  { title: "级别", dataIndex: "level" },
                   {
                     title: "容器",
-                    width: 160,
                     render: (_, row) => row.container ?? "—",
                   },
                   { title: "消息", dataIndex: "message" },
@@ -405,13 +391,12 @@ function InferenceDetailPage() {
                 <Spin />
               </div>
             ) : (
-              <Table
+              <DataTable
                 data={operation.data ? [operation.data] : []}
-                rowKey="id"
                 pagination={false}
                 columns={[
                   { title: "任务类型", dataIndex: "task_type" },
-                  { title: "状态", dataIndex: "status" },
+                  { title: "状态", width: 120, dataIndex: "status" },
                   { title: "进度", render: (_, row) => `${row.progress_pct}%` },
                   {
                     title: "创建时间",

@@ -1,15 +1,8 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert,
-  Button,
-  Empty,
-  Modal,
-  Space,
-  Spin,
-  Table,
-  Tooltip,
-} from "@arco-design/web-react";
+  Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react"
 import { useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
@@ -243,14 +236,13 @@ function VolumeDetailPage() {
               </Button>
             ) : undefined,
             content: (
-              <Table<MountedInstanceRow>
+              <DataTable<MountedInstanceRow>
                 columns={[
                   { title: "实例名称", dataIndex: "name" },
                   { title: "实例 ID", dataIndex: "id" },
                   { title: "实例类型", render: (_, row) => row.route || "—" },
                   {
                     title: "操作",
-                    width: 150,
                     render: () => (
                       <Space>
                         <Button
@@ -293,7 +285,6 @@ function VolumeDetailPage() {
                       ]
                     : []
                 }
-                rowKey="id"
                 pagination={false}
                 noDataElement={
                   <Empty description="该卷当前未挂载实例，点击右上角「挂载」开始" />
@@ -312,11 +303,12 @@ function VolumeDetailPage() {
             content: snapshots.error ? (
               <ApiErrorAlert error={snapshots.error} />
             ) : (
-              <Table<VolumeSnapshot>
+              <DataTable<VolumeSnapshot>
                 columns={[
                   { title: "名称", dataIndex: "name" },
                   {
                     title: "状态",
+                    width: 120,
                     render: (_, row) => <StatusTag status={row.status} />,
                   },
                   {
@@ -330,7 +322,6 @@ function VolumeDetailPage() {
                 ]}
                 data={snapshotItems}
                 loading={snapshots.isLoading}
-                rowKey="id"
                 pagination={false}
                 noDataElement={
                   <Empty description="暂无快照，点击右上角「创建快照」开始" />

@@ -26,6 +26,11 @@
 
 | 日期 | 事项 |
 |------|------|
+| 2026-08-27 | 统一列表表格基础设施。`DataTable` 收敛为 Arco Table 的薄封装，直接使用 `data`、默认 `rowKey="id"`、原生 `rowSelection` 和原始 `TableColumnProps`，移除 `tableColumns` 映射、自定义排序/操作列兼容、`CursorTable` 与 `SimpleResourceCrud`；新增页面级 `ListDataTable`，承接空态、样式及 Arco 原生加载、分页、固定表头和表体内横向滚动。列表列宽仅状态列固定 `120px`，操作列由页面固定右侧且不设默认宽度，普通表头左对齐；移除重复“详情”操作。原 `PageBaseStyles` 按职责拆入 `ListPageFrame`、`ListToolbar`、`StatusTabs` 和 `ListDataTable`，并使用 `clsx` 合并类名；列表错误统一由页面通过 Notification 包装层提示。 |
+| 2026-08-27 | 实例、K8s、向量/块/文件/对象存储、Registry、VPC、子网、安全组、路由和负载均衡主列表接入 `useCursorPaginatedQuery`，使用真实 `limit/cursor/total/next_cursor` 翻页，并统一刷新、页大小切换与删除后的游标重置；推理服务因接口无分页契约暂保留前端分页。模型仓库接口尚未就绪，最终状态为屏蔽 `/models` 查询、禁用刷新并展示明确空态，保留后续恢复入口。 |
+| 2026-08-27 | 补齐存储列表操作。块存储支持挂载、带风险确认的卸载、扩容、快照及删除；向量存储支持检索测试、重建索引、打开关联知识库和受约束删除，重建请求补齐 Core 类型并携带幂等键；对象存储提供浏览器、上传和权限跳转，存储桶删除因 ANI 无接口保持禁用，同时移除仅登记控制面记录的“登记元数据”入口与组件。 |
+| 2026-08-27 | 知识库文档上传入口迁至“文档与解析”Tab 操作区，并抽取 `KnowledgeDocumentUploadButton`，保留文件校验、SHA-256、幂等预留、对象直传和完成通知。 |
+| 2026-08-27 | 补充 GitNexus 使用规则，要求代码、ANI 接口与产品原型查询使用指定索引，索引不可用时停止推断。上述变更已通过 TypeScript `tsc -p tsconfig.app.json --noEmit` 与 `git diff --check`；GitNexus 全工作区变更检测因累计未提交改动报告 CRITICAL，共享列表组件影响符合预期；未运行 production build 或启动开发服务，页面交互由用户手动验证。 |
 | 2026-08-26 | 移除知识库文档列表每 3 秒自动刷新及基于解析状态的轮询判断；文档接口仅在页面查询、分页以及上传/删除后的主动失效刷新时请求，不再持续轮询。TypeScript `tsc -p tsconfig.app.json --noEmit` 与 `git diff --check` 通过。 |
 | 2026-08-26 | 知识库列表状态 Tab 与名称/ID 搜索改为接口筛选：请求携带 `status/name/id`，筛选条件进入查询键与游标作用域，切换时清空游标并回到第一页，列表及 `total` 完全使用接口响应，不再过滤当前页或展示局部状态计数。ANI 当前正式契约尚未声明这些参数，代码保留 TODO 待后端联调确认参数名及筛选后 `total`。TypeScript `tsc -p tsconfig.app.json --noEmit` 与 `git diff --check` 通过。 |
 | 2026-08-26 | 修复知识库问答 Markdown 有序/无序列表排版：在 Markdown 内容区覆盖消息气泡继承的 `white-space: pre-wrap`，恢复正常空白折叠并收敛列表项段落边距，避免序号或项目符号单独占行。TypeScript `tsc -p tsconfig.app.json --noEmit` 与 `git diff --check` 通过。 |

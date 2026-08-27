@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Tag } from '@arco-design/web-react'
+import { Button, Empty, Tag } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
-import { CursorTable } from '@/components/common/CursorTable'
+import { DataTable } from '@/components/common/DataTable'
+import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
 import type { components } from '@/api/core-schema'
 
 export const Route = createFileRoute('/_authenticated/sandbox-templates/')({
@@ -27,7 +28,7 @@ function SandboxTemplatesPage() {
   return (
     <>
       <PageHeader title="Sandbox 模板" subtitle="预置沙箱运行环境模板" />
-      <CursorTable<Row>
+      <DataTable<Row>
         columns={[
           { title: '名称', dataIndex: 'name' },
           { title: '镜像', dataIndex: 'image' },
@@ -51,11 +52,10 @@ function SandboxTemplatesPage() {
             ),
           },
         ]}
-        data={{ items, next_cursor: data?.next_cursor }}
+        data={error ? [] : items}
         loading={isLoading}
-        error={error}
-        rowKey="id"
-        emptyDescription="暂无 Sandbox 模板"
+        pagination={false}
+        noDataElement={error ? <ApiErrorAlert error={error} /> : <Empty description="暂无 Sandbox 模板" />}
       />
     </>
   )

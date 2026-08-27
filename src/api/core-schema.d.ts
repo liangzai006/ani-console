@@ -1148,6 +1148,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/vector-stores/{vector_store_id}/rebuild-index": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 重建向量存储索引 */
+    post: operations["rebuildVectorStoreIndex"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/vector-stores/{vector_store_id}/documents": {
     parameters: {
       query?: never;
@@ -6636,6 +6653,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["VectorStoreSearchResponse"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  rebuildVectorStoreIndex: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        vector_store_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          idempotency_key: string;
+        };
+      };
+    };
+    responses: {
+      /** @description 索引重建任务已提交 */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AsyncTask"];
         };
       };
       400: components["responses"]["BadRequest"];

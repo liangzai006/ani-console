@@ -11,6 +11,7 @@ import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
 import { AliIcon } from "@/components/common/AliIcon";
 import { KnowledgeChatPanel } from "@/components/knowledge/KnowledgeChatPanel";
 import { KnowledgeDocumentsPanel } from "@/components/knowledge/KnowledgeDocumentsPanel";
+import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeDocumentUploadButton";
 import { StatusTag } from "@/components/common/StatusTag";
 import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
@@ -151,6 +152,7 @@ function KnowledgeBaseDetailPage() {
                 <Link
                   to="/vector-stores/$vectorStoreId"
                   params={{ vectorStoreId: relatedVectorStore.id }}
+                  search={{ tab: undefined }}
                 >
                   {relatedVectorStore.name}
                 </Link>
@@ -166,6 +168,7 @@ function KnowledgeBaseDetailPage() {
           key: "documents",
           label: "文档与解析",
           content: <KnowledgeDocumentsPanel kbId={kbId} />,
+          extra: <KnowledgeDocumentUploadButton kbId={kbId} />,
         },
         {
           key: "chat",

@@ -1,5 +1,12 @@
-export { DataTable, ListNameCell, ListRowActionButton, ListRowActions } from "./DataTable";
-export type { ListColumn, ListPagination, ListSortDirection } from "./DataTable";
+export { DataTable } from "./DataTable";
+export type { DataTableProps, ListColumn, ListPagination } from "./DataTable";
+export {
+  ListDataTable,
+  ListNameCell,
+  ListRowActionButton,
+  ListRowActions,
+} from "./ListDataTable";
+export type { ListDataTableProps } from "./ListDataTable";
 export { ListPageFrame, ListPageHeader, ListPageTitle } from "./ListPageFrame";
 export type { ListPageTitleProps } from "./ListPageFrame";
 export {

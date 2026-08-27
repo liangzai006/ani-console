@@ -1,6 +1,7 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Empty, Modal, Spin, Table } from '@arco-design/web-react'
+import { Button, Empty, Modal, Spin } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
@@ -157,7 +158,7 @@ function LoadBalancerDetailPage() {
           key: 'listeners',
           label: '监听器',
           content: (
-            <Table<Listener>
+            <DataTable<Listener>
               columns={[
                 { title: '协议', render: (_, row) => row.protocol.toUpperCase() },
                 { title: '监听端口', dataIndex: 'port' },

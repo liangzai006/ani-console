@@ -1,15 +1,16 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
 import { CreateVolumeModal } from "@/components/storage/CreateVolumeModal";
 import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnapshotModal";
 import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
+import { AttachVolumeModal } from "@/components/storage/AttachVolumeModal";
 import {
-  DataTable,
+  ListDataTable,
   ListNameCell,
   ListPageFrame,
   ListPageHeader,
@@ -23,9 +24,10 @@ import {
   type ListColumn,
 } from "@/components/common";
 import { StatusTag } from "@/components/common/StatusTag";
-import { listOrThrow } from "@/lib/api-list";
-import { getErrorMessage } from "@/lib/errors";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
+import { newIdempotencyKey } from "@/lib/idempotency";
 
 type Volume = components["schemas"]["StorageVolume"];
 type StatusFilter = "all" | "available" | "mounted" | "failed";
@@ -36,22 +38,32 @@ export const Route = createFileRoute("/_authenticated/volumes/")({
 });
 
 function VolumesPage() {
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
+  const [attachTarget, setAttachTarget] = useState<Volume | null>(null);
   const [expandTarget, setExpandTarget] = useState<Volume | null>(null);
   const [snapshotTarget, setSnapshotTarget] = useState<Volume | null>(null);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const volumes = useQuery({
+  const {
+    query: volumes,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    resetPagination,
+    refresh,
+  } = useCursorPaginatedQuery<Volume>({
     queryKey: ["volumes"],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/volumes", { params: { query: { limit: 100 } } }),
-      ),
+    cursorScope: `${status}:${searchField}:${searchText.trim()}`,
+    fetchPage: async ({ cursor, limit }) => {
+      const { data, error } = await coreApi.GET("/volumes", {
+        params: { query: { limit, cursor } },
+      });
+      if (error || !data) throw error ?? new Error("块存储卷列表未返回结果");
+      return data;
+    },
   });
   const deleteVolume = useMutation({
     mutationFn: async (item: Volume) => {
@@ -60,7 +72,33 @@ function VolumesPage() {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["volumes"] }),
+    onSuccess: () => {
+      resetPagination();
+      void qc.invalidateQueries({ queryKey: ["volumes"] });
+    },
+    onError: (error) => showApiError(error),
+  });
+  const detachVolume = useMutation({
+    mutationFn: async (item: Volume) => {
+      if (!item.mount_instance_id) throw new Error("块存储卷未挂载实例");
+      const { error } = await coreApi.POST(
+        "/instances/{instance_id}/lifecycle",
+        {
+          params: { path: { instance_id: item.mount_instance_id } },
+          body: {
+            action: "detach_volume",
+            volume_id: item.id,
+            idempotency_key: newIdempotencyKey(),
+          },
+        },
+      );
+      if (error) throw error;
+    },
+    onSuccess: (_data, item) => {
+      void qc.invalidateQueries({ queryKey: ["instances"] });
+      void qc.invalidateQueries({ queryKey: ["volume", item.id] });
+      void qc.invalidateQueries({ queryKey: ["volumes"] });
+    },
     onError: (error) => showApiError(error),
   });
   const items = (volumes.data?.items ?? []) as Volume[];
@@ -91,18 +129,19 @@ function VolumesPage() {
       );
     });
   }, [items, searchField, searchText, status]);
-  const pagedItems = filteredItems.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
-  useEffect(() => setPage(1), [searchField, searchText, status]);
+  const paginationTotal = volumes.data?.total ?? filteredItems.length;
+  useListErrorNotification({
+    id: "volumes-list",
+    title: "块存储卷列表加载失败",
+    error: volumes.error,
+    onRetry: refresh,
+  });
 
   const columns: Array<ListColumn<Volume>> = [
     {
       key: "name",
       title: "名称 / ID",
-      minWidth: 240,
-      render: (item) => (
+      render: (_, item) => (
         <ListNameCell
           name={
             <Link to="/volumes/$volumeId" params={{ volumeId: item.id }}>
@@ -117,43 +156,37 @@ function VolumesPage() {
       key: "state",
       title: "状态",
       width: 120,
-      render: (item) => <StatusTag status={item.state} />,
+      render: (_, item) => <StatusTag status={item.state} />,
     },
     {
       key: "size",
       title: "容量 (GiB)",
-      width: 110,
-      render: (item) => item.size_gib,
+      render: (_, item) => item.size_gib,
     },
     {
       key: "storageClass",
       title: "类型",
-      minWidth: 150,
-      render: (item) => item.storage_class,
+      render: (_, item) => item.storage_class,
     },
     {
       key: "encrypted",
       title: "加密",
-      width: 90,
-      render: (item) => (item.encrypted ? "是" : "否"),
+      render: (_, item) => (item.encrypted ? "是" : "否"),
     },
     {
       key: "zone",
       title: "可用区",
-      minWidth: 120,
-      render: (item) => item.zone ?? "—",
+      render: (_, item) => item.zone ?? "—",
     },
     {
       key: "mountInstance",
       title: "挂载实例",
-      minWidth: 180,
-      render: (item) => item.mount_name ?? item.mount_instance_id ?? "—",
+      render: (_, item) => item.mount_name ?? item.mount_instance_id ?? "—",
     },
     {
       key: "createdAt",
       title: "创建时间",
-      minWidth: 190,
-      render: (item) => formatDateTime(item.created_at),
+      render: (_, item) => formatDateTime(item.created_at),
     },
   ];
 
@@ -215,24 +248,68 @@ function VolumesPage() {
                 iconClassName="icon-refresh-1"
                 label="刷新"
                 spinning={volumes.isFetching}
-                onClick={() => void volumes.refetch()}
+                onClick={refresh}
               />
             }
           />
         }
       >
-        <DataTable
-          rows={pagedItems}
-          rowKey={(item) => item.id}
-          columns={columns}
-          selectable={false}
+        <ListDataTable
+          data={filteredItems}
+          columns={[
+            ...columns,
+            {
+              key: "__actions",
+              title: "操作",
+              fixed: "right",
+              render: (_value, item) => (
+                <ListRowActions>
+                  {isMounted(item) ? (
+                    <ListRowActionButton
+                      loading={
+                        detachVolume.isPending &&
+                        detachVolume.variables?.id === item.id
+                      }
+                      onClick={() =>
+                        Modal.confirm({
+                          title: "卸载块存储卷",
+                          content: `确定从「${item.mount_name ?? item.mount_instance_id}」卸载「${item.name}」？请先确保实例内没有进程正在读写该卷。`,
+                          okButtonProps: { status: "danger" },
+                          onOk: () => detachVolume.mutateAsync(item),
+                        })
+                      }
+                    >
+                      卸载
+                    </ListRowActionButton>
+                  ) : (
+                    <ListRowActionButton onClick={() => setAttachTarget(item)}>
+                      挂载
+                    </ListRowActionButton>
+                  )}
+                  <ListRowActionButton onClick={() => setExpandTarget(item)}>
+                    扩容
+                  </ListRowActionButton>
+                  <ListRowActionButton onClick={() => setSnapshotTarget(item)}>
+                    创建快照
+                  </ListRowActionButton>
+                  <ListRowActionButton
+                    status="danger"
+                    onClick={() =>
+                      Modal.confirm({
+                        title: "删除块存储卷",
+                        content: `确定删除「${item.name}」？卷被实例挂载时无法删除。`,
+                        okButtonProps: { status: "danger" },
+                        onOk: () => deleteVolume.mutateAsync(item),
+                      })
+                    }
+                  >
+                    删除
+                  </ListRowActionButton>
+                </ListRowActions>
+              ),
+            },
+          ]}
           loading={volumes.isLoading}
-          error={
-            volumes.error
-              ? getErrorMessage(volumes.error, "块存储卷列表加载失败")
-              : null
-          }
-          onRetry={() => void volumes.refetch()}
           emptyIconClassName="icon-kuaicunchu"
           emptyText={
             searchText || status !== "all"
@@ -241,54 +318,23 @@ function VolumesPage() {
           }
           tableLabel="块存储卷列表"
           preserveTableOnEmpty
-          renderRowActions={(item) => (
-            <ListRowActions>
-              <ListRowActionButton
-                onClick={() =>
-                  navigate({
-                    to: "/volumes/$volumeId",
-                    params: { volumeId: item.id },
-                  })
-                }
-              >
-                详情
-              </ListRowActionButton>
-              <ListRowActionButton onClick={() => setExpandTarget(item)}>
-                扩容
-              </ListRowActionButton>
-              <ListRowActionButton onClick={() => setSnapshotTarget(item)}>
-                创建快照
-              </ListRowActionButton>
-              <ListRowActionButton
-                status="danger"
-                onClick={() =>
-                  Modal.confirm({
-                    title: "删除块存储卷",
-                    content: `确定删除「${item.name}」？卷被实例挂载时无法删除。`,
-                    okButtonProps: { status: "danger" },
-                    onOk: () => deleteVolume.mutateAsync(item),
-                  })
-                }
-              >
-                删除
-              </ListRowActionButton>
-            </ListRowActions>
-          )}
           pagination={{
             page,
             pageSize,
-            total: filteredItems.length,
+            total: paginationTotal,
             onPageChange: setPage,
-            onPageSizeChange: (next) => {
-              setPageSize(next);
-              setPage(1);
-            },
+            onPageSizeChange: setPageSize,
           }}
         />
       </ListPageFrame>
       <CreateVolumeModal
         visible={createVisible}
         onCancel={() => setCreateVisible(false)}
+      />
+      <AttachVolumeModal
+        visible={Boolean(attachTarget)}
+        volumeId={attachTarget?.id ?? ""}
+        onCancel={() => setAttachTarget(null)}
       />
       <ExpandVolumeModal
         visible={Boolean(expandTarget)}

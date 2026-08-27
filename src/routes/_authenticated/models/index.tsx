@@ -1,13 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Message, Select, Space } from "@arco-design/web-react";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
+import { useMemo, useState } from "react";
 import type { components } from "@/api/core-schema";
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
-  DataTable,
+  ListDataTable,
   ListNameCell,
   ListPageFrame,
   ListPageHeader,
@@ -19,7 +17,6 @@ import {
   ToolbarSearch,
   type ListColumn,
 } from "@/components/common";
-import { getErrorMessage } from "@/lib/errors";
 import { formatBytes, formatDateTime } from "@/lib/format";
 
 type ModelCatalogItem = components["schemas"]["ModelCatalogItem"];
@@ -54,23 +51,8 @@ function ModelsPage() {
   const [task, setTask] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const models = useQuery({
-    queryKey: ["models"],
-    queryFn: async () => {
-      const items: ModelCatalogItem[] = [];
-      let cursor: string | undefined;
-      do {
-        const { data, error } = await coreApi.GET("/models", {
-          params: { query: { limit: 100, cursor } },
-        });
-        if (error) throw error;
-        items.push(...(data?.items ?? []));
-        cursor = data?.next_cursor ?? undefined;
-      } while (cursor);
-      return items;
-    },
-  });
-  const items = models.data ?? [];
+  // TODO: 模型仓库接口准备完成后恢复 useCursorPaginatedQuery 与 /models 请求。
+  const items: ModelCatalogItem[] = [];
   const counts = useMemo(
     () => ({
       all: items.length,
@@ -101,21 +83,20 @@ function ModelsPage() {
       );
     });
   }, [items, searchField, searchText, source, status, task]);
-  useEffect(() => setPage(1), [searchField, searchText, source, status, task]);
+  const paginationTotal = 0;
   const columns: Array<ListColumn<ModelCatalogItem>> = [
     {
       key: "name",
       title: "名称 / ID",
-      minWidth: 260,
-      render: (item) => (
+      render: (_, item) => (
         <ListNameCell name={item.display_name || item.name} id={item.id} />
       ),
     },
     {
       key: "status",
       title: "状态",
-      width: 110,
-      render: (item) => (
+      width: 120,
+      render: (_, item) => (
         <AiServiceStatusTag
           status={
             item.status === "ready"
@@ -132,36 +113,32 @@ function ModelsPage() {
     {
       key: "source",
       title: "来源",
-      width: 130,
-      render: (item) => SOURCE_LABELS[item.source] ?? item.source,
+      render: (_, item) => SOURCE_LABELS[item.source] ?? item.source,
     },
     {
       key: "task",
       title: "任务",
-      minWidth: 140,
-      render: (item) =>
+      render: (_, item) =>
         item.capabilities
           .map((capability) => CAPABILITY_LABELS[capability] ?? capability)
           .join("、") || "—",
     },
-    { key: "scale", title: "规模", width: 90, render: () => "—" },
+    { key: "scale", title: "规模", render: () => "—" },
     {
       key: "version",
       title: "最新版本",
-      width: 110,
-      render: (item) => item.versions[item.versions.length - 1]?.version ?? "—",
+      render: (_, item) =>
+        item.versions[item.versions.length - 1]?.version ?? "—",
     },
     {
       key: "size",
       title: "大小",
-      width: 100,
-      render: (item) => formatBytes(item.total_size_bytes),
+      render: (_, item) => formatBytes(item.total_size_bytes),
     },
     {
       key: "updatedAt",
       title: "更新时间",
-      minWidth: 170,
-      render: (item) => formatDateTime(item.updated_at),
+      render: (_, item) => formatDateTime(item.updated_at),
     },
   ];
   return (
@@ -230,56 +207,51 @@ function ModelsPage() {
             tools={
               <ToolbarIconButton
                 iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={models.isFetching}
-                onClick={() => void models.refetch()}
+                label="模型仓库接口尚未准备好"
+                disabled
               />
             }
           />
         }
       >
-        <DataTable
-          rows={filteredItems.slice((page - 1) * pageSize, page * pageSize)}
-          rowKey={(item) => item.id}
-          columns={columns}
-          selectable={false}
-          loading={models.isLoading}
-          error={
-            models.error
-              ? getErrorMessage(models.error, "模型仓库列表加载失败")
-              : null
-          }
-          onRetry={() => void models.refetch()}
+        <ListDataTable
+          data={filteredItems}
+          columns={[
+            ...columns,
+            {
+              key: "__actions",
+              title: "操作",
+              fixed: "right",
+              render: (_value, item) => (
+                <ListRowActions>
+                  <ListRowActionButton
+                    disabled={
+                      item.status !== "ready" || item.versions.length === 0
+                    }
+                    onClick={() => setDeployModel(item)}
+                  >
+                    一键部署
+                  </ListRowActionButton>
+                  <ListRowActionButton
+                    onClick={() => Message.success("已收藏")}
+                  >
+                    收藏
+                  </ListRowActionButton>
+                </ListRowActions>
+              ),
+            },
+          ]}
+          loading={false}
           preserveTableOnEmpty
           emptyIconClassName="icon-moxing"
-          emptyText={
-            searchText || source !== "all" || task !== "all" || status !== "all"
-              ? "没有符合条件的模型"
-              : "还没有模型，可导入或本地上传"
-          }
+          emptyText="模型仓库接口尚未准备好"
           tableLabel="模型仓库列表"
-          renderRowActions={(item) => (
-            <ListRowActions>
-              <ListRowActionButton
-                disabled={item.status !== "ready" || item.versions.length === 0}
-                onClick={() => setDeployModel(item)}
-              >
-                一键部署
-              </ListRowActionButton>
-              <ListRowActionButton onClick={() => Message.success("已收藏")}>
-                收藏
-              </ListRowActionButton>
-            </ListRowActions>
-          )}
           pagination={{
             page,
             pageSize,
-            total: filteredItems.length,
+            total: paginationTotal,
             onPageChange: setPage,
-            onPageSizeChange: (next) => {
-              setPageSize(next);
-              setPage(1);
-            },
+            onPageSizeChange: setPageSize,
           }}
         />
       </ListPageFrame>

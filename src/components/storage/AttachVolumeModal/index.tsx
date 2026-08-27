@@ -9,6 +9,7 @@ import { getErrorMessage } from '@/lib/errors'
 import { newIdempotencyKey } from '@/lib/idempotency'
 
 type Instance = components['schemas']['InstanceRecord']
+const attachableInstanceKinds = new Set<Instance['kind']>(['vm', 'container', 'gpu_container'])
 
 export function AttachVolumeModal({
   visible,
@@ -28,8 +29,8 @@ export function AttachVolumeModal({
     queryFn: () => listOrThrow(() => coreApi.GET('/instances', { params: { query: { limit: 100 } } })),
     enabled: visible,
   })
-  const instanceItems = ((instances.data?.items ?? []) as Instance[]).filter((item) =>
-    ['running', 'stopped'].includes(item.state),
+  const instanceItems = ((instances.data?.items ?? []) as Instance[]).filter(
+    (item) => attachableInstanceKinds.has(item.kind) && ['running', 'stopped'].includes(item.state),
   )
 
   useEffect(() => {
@@ -76,7 +77,7 @@ export function AttachVolumeModal({
             value={instanceId || undefined}
             onChange={setInstanceId}
             loading={instances.isLoading}
-            placeholder="请选择运行中或已停止的实例"
+            placeholder="请选择运行中或已停止的 VM、容器或 GPU 容器"
             showSearch
             filterOption={(inputValue, option) =>
               String(option.props.children).toLowerCase().includes(inputValue.toLowerCase())
@@ -98,7 +99,7 @@ export function AttachVolumeModal({
           />
         ) : null}
         {!instances.isLoading && !instances.error && instanceItems.length === 0 ? (
-          <Alert type="info" showIcon content="暂无可挂载的运行中或已停止实例" className="mb-4" />
+          <Alert type="info" showIcon content="暂无可挂载的运行中或已停止 VM、容器或 GPU 容器" className="mb-4" />
         ) : null}
         <Typography.Text type="secondary">挂载操作提交后，卷状态和关联实例会自动刷新。</Typography.Text>
       </Form>

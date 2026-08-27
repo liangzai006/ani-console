@@ -21,13 +21,23 @@ import { VectorStoreWorkbench } from "@/components/storage/VectorStoreWorkbench"
 import { formatDateTime } from "@/lib/format";
 
 type VectorStore = components["schemas"]["VectorStore"];
+const vectorStoreDetailTabKeys = ["index", "search", "related", "events"] as const;
+type VectorStoreDetailTabKey = (typeof vectorStoreDetailTabKeys)[number];
 
 export const Route = createFileRoute(
   "/_authenticated/vector-stores/$vectorStoreId",
-)({ component: VectorStoreDetailPage });
+)({
+  component: VectorStoreDetailPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: vectorStoreDetailTabKeys.includes(search.tab as VectorStoreDetailTabKey)
+      ? (search.tab as VectorStoreDetailTabKey)
+      : undefined,
+  }),
+});
 
 function VectorStoreDetailPage() {
   const { vectorStoreId } = Route.useParams();
+  const { tab } = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
@@ -222,6 +232,7 @@ function VectorStoreDetailPage() {
           ),
         },
       ]}
+      defaultTabKey={tab}
       onBack={() => navigate({ to: "/vector-stores" })}
     />
   );

@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Modal } from "@arco-design/web-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Message, Modal, Tooltip } from "@arco-design/web-react";
+import { useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
 import { CreateVectorStoreModal } from "@/components/storage/CreateVectorStoreModal";
 import {
-  DataTable,
+  ListDataTable,
   ListNameCell,
   ListPageFrame,
   ListPageHeader,
@@ -21,9 +21,10 @@ import {
   type ListColumn,
 } from "@/components/common";
 import { StatusTag } from "@/components/common/StatusTag";
-import { listOrThrow } from "@/lib/api-list";
-import { getErrorMessage } from "@/lib/errors";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
+import { newIdempotencyKey } from "@/lib/idempotency";
 
 type VectorStore = components["schemas"]["VectorStore"];
 type StatusFilter = "all" | "ready" | "pending";
@@ -34,20 +35,30 @@ export const Route = createFileRoute("/_authenticated/vector-stores/")({
 });
 
 function VectorStoresPage() {
-  const navigate = useNavigate();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const stores = useQuery({
+  const {
+    query: stores,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    resetPagination,
+    refresh,
+  } = useCursorPaginatedQuery<VectorStore>({
     queryKey: ["vector-stores"],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/vector-stores", { params: { query: { limit: 100 } } }),
-      ),
+    cursorScope: `${status}:${searchField}:${searchText.trim()}`,
+    fetchPage: async ({ cursor, limit }) => {
+      const { data, error } = await coreApi.GET("/vector-stores", {
+        params: { query: { limit, cursor } },
+      });
+      if (error || !data) throw error ?? new Error("向量存储列表未返回结果");
+      return data;
+    },
   });
   const remove = useMutation({
     mutationFn: async (item: VectorStore) => {
@@ -57,7 +68,28 @@ function VectorStoresPage() {
       );
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["vector-stores"] }),
+    onSuccess: () => {
+      resetPagination();
+      void qc.invalidateQueries({ queryKey: ["vector-stores"] });
+    },
+    onError: (error) => showApiError(error),
+  });
+  const rebuildIndex = useMutation({
+    mutationFn: async (item: VectorStore) => {
+      const { error } = await coreApi.POST(
+        "/vector-stores/{vector_store_id}/rebuild-index",
+        {
+          params: { path: { vector_store_id: item.id } },
+          body: { idempotency_key: newIdempotencyKey() },
+        },
+      );
+      if (error) throw error;
+    },
+    onSuccess: (_, item) => {
+      Message.success(`已提交「${item.name}」索引重建`);
+      void qc.invalidateQueries({ queryKey: ["vector-stores"] });
+      void qc.invalidateQueries({ queryKey: ["vector-store", item.id] });
+    },
     onError: (error) => showApiError(error),
   });
   const items = (stores.data?.items ?? []) as VectorStore[];
@@ -77,22 +109,24 @@ function VectorStoresPage() {
         (!keyword || String(item[searchField]).toLowerCase().includes(keyword)),
     );
   }, [items, searchField, searchText, status]);
-  const pagedItems = filteredItems.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
-  useEffect(() => setPage(1), [searchField, searchText, status]);
+  const paginationTotal = stores.data?.total ?? filteredItems.length;
+  useListErrorNotification({
+    id: "vector-stores-list",
+    title: "向量存储列表加载失败",
+    error: stores.error,
+    onRetry: refresh,
+  });
   const columns: Array<ListColumn<VectorStore>> = [
     {
       key: "name",
       title: "名称 / ID",
-      minWidth: 240,
-      render: (item) => (
+      render: (_, item) => (
         <ListNameCell
           name={
             <Link
               to="/vector-stores/$vectorStoreId"
               params={{ vectorStoreId: item.id }}
+              search={{ tab: undefined }}
             >
               {item.name}
             </Link>
@@ -105,43 +139,37 @@ function VectorStoresPage() {
       key: "state",
       title: "状态",
       width: 120,
-      render: (item) => <StatusTag status={item.state} />,
+      render: (_, item) => <StatusTag status={item.state} />,
     },
     {
       key: "dimension",
       title: "维度",
-      width: 120,
-      render: (item) => item.dimension,
+      render: (_, item) => item.dimension,
     },
     {
       key: "metric",
       title: "度量",
-      width: 120,
-      render: (item) => item.metric.toUpperCase(),
+      render: (_, item) => item.metric.toUpperCase(),
     },
     {
       key: "embeddingModel",
       title: "Embedding 模型",
-      minWidth: 180,
-      render: (item) => item.embedding_model || "—",
+      render: (_, item) => item.embedding_model || "—",
     },
     {
       key: "vectorCount",
       title: "向量数",
-      width: 120,
-      render: (item) => item.vector_count ?? 0,
+      render: (_, item) => item.vector_count ?? 0,
     },
     {
       key: "knowledgeBase",
       title: "关联知识库",
-      minWidth: 180,
-      render: (item) => item.knowledge_base_ref?.name || "未关联",
+      render: (_, item) => item.knowledge_base_ref?.name || "未关联",
     },
     {
       key: "createdAt",
       title: "创建时间",
-      minWidth: 190,
-      render: (item) => formatDateTime(item.created_at),
+      render: (_, item) => formatDateTime(item.created_at),
     },
   ];
   return (
@@ -193,24 +221,103 @@ function VectorStoresPage() {
                 iconClassName="icon-refresh-1"
                 label="刷新"
                 spinning={stores.isFetching}
-                onClick={() => void stores.refetch()}
+                onClick={refresh}
               />
             }
           />
         }
       >
-        <DataTable
-          rows={pagedItems}
-          rowKey={(item) => item.id}
-          columns={columns}
-          selectable={false}
+        <ListDataTable
+          data={filteredItems}
+          columns={[
+            ...columns,
+            {
+              key: "__actions",
+              title: "操作",
+              fixed: "right",
+              render: (_value, item) => (
+                <ListRowActions>
+                  <Tooltip
+                    content={item.state === "ready" ? undefined : "仅可用状态支持检索测试"}
+                  >
+                    <span>
+                      <ListRowActionButton
+                        disabled={item.state !== "ready"}
+                        onClick={() =>
+                          navigate({
+                            to: "/vector-stores/$vectorStoreId",
+                            params: { vectorStoreId: item.id },
+                            search: { tab: "search" },
+                          })
+                        }
+                      >
+                        检索测试
+                      </ListRowActionButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip
+                    content={item.state === "ready" ? undefined : "仅可用状态支持重建索引"}
+                  >
+                    <span>
+                      <ListRowActionButton
+                        disabled={item.state !== "ready"}
+                        loading={rebuildIndex.isPending && rebuildIndex.variables?.id === item.id}
+                        onClick={() =>
+                          Modal.confirm({
+                            title: "重建索引",
+                            content: `确定重建「${item.name}」的索引？重建期间检索能力可能暂时受影响。`,
+                            onOk: () => rebuildIndex.mutateAsync(item),
+                          })
+                        }
+                      >
+                        重建索引
+                      </ListRowActionButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip content={item.knowledge_base_ref ? undefined : "当前未关联知识库"}>
+                    <span>
+                      <ListRowActionButton
+                        disabled={!item.knowledge_base_ref}
+                        onClick={() => {
+                          if (!item.knowledge_base_ref) return;
+                          navigate({
+                            to: "/kb/$kbId",
+                            params: { kbId: item.knowledge_base_ref.id },
+                            search: { tab: "overview" },
+                          });
+                        }}
+                      >
+                        打开关联知识库
+                      </ListRowActionButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip
+                    content={
+                      item.knowledge_base_ref ? "请先解除知识库关联后再删除" : undefined
+                    }
+                  >
+                    <span>
+                      <ListRowActionButton
+                        status="danger"
+                        disabled={Boolean(item.knowledge_base_ref)}
+                        onClick={() =>
+                          Modal.confirm({
+                            title: "删除向量存储",
+                            content: `确定删除「${item.name}」？其中的向量数据将不可恢复。`,
+                            okButtonProps: { status: "danger" },
+                            onOk: () => remove.mutateAsync(item),
+                          })
+                        }
+                      >
+                        删除
+                      </ListRowActionButton>
+                    </span>
+                  </Tooltip>
+                </ListRowActions>
+              ),
+            },
+          ]}
           loading={stores.isLoading}
-          error={
-            stores.error
-              ? getErrorMessage(stores.error, "向量存储列表加载失败")
-              : null
-          }
-          onRetry={() => void stores.refetch()}
           emptyIconClassName="icon-xiangliangcunchu"
           emptyText={
             searchText || status !== "all"
@@ -219,42 +326,12 @@ function VectorStoresPage() {
           }
           tableLabel="向量存储列表"
           preserveTableOnEmpty
-          renderRowActions={(item) => (
-            <ListRowActions>
-              <ListRowActionButton
-                onClick={() =>
-                  navigate({
-                    to: "/vector-stores/$vectorStoreId",
-                    params: { vectorStoreId: item.id },
-                  })
-                }
-              >
-                详情
-              </ListRowActionButton>
-              <ListRowActionButton
-                status="danger"
-                onClick={() =>
-                  Modal.confirm({
-                    title: "删除向量存储",
-                    content: `确定删除「${item.name}」？其中的向量数据将不可恢复。`,
-                    okButtonProps: { status: "danger" },
-                    onOk: () => remove.mutateAsync(item),
-                  })
-                }
-              >
-                删除
-              </ListRowActionButton>
-            </ListRowActions>
-          )}
           pagination={{
             page,
             pageSize,
-            total: filteredItems.length,
+            total: paginationTotal,
             onPageChange: setPage,
-            onPageSizeChange: (next) => {
-              setPageSize(next);
-              setPage(1);
-            },
+            onPageSizeChange: setPageSize,
           }}
         />
       </ListPageFrame>

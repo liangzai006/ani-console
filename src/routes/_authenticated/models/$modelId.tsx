@@ -1,13 +1,7 @@
+import { DataTable } from '@/components/common/DataTable'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
-  Button,
-  Card,
-  Empty,
-  Message,
-  Space,
-  Table,
-  Typography,
-} from "@arco-design/web-react";
+  Button, Card, Empty, Message, Space, Typography } from "@arco-design/web-react"
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import { DetailPageFrame } from "@/components/common";
 import { AliIcon } from "@/components/common/AliIcon";
@@ -111,11 +105,12 @@ function ModelDetailPage() {
           key: "related",
           label: "关联资源",
           content: (
-            <Table
+            <DataTable
               columns={[
                 { title: "推理服务", dataIndex: "name" },
                 {
                   title: "状态",
+                  width: 120,
                   render: (_, item) => (
                     <AiServiceStatusTag status={item.status} />
                   ),
@@ -124,7 +119,6 @@ function ModelDetailPage() {
                 { title: "副本 / GPU", dataIndex: "replicas" },
               ]}
               data={relatedServices}
-              rowKey="id"
               pagination={false}
               noDataElement={<Empty description="暂无关联推理服务" />}
             />
@@ -158,7 +152,7 @@ function ModelDetailPage() {
           key: "history",
           label: "操作历史",
           content: (
-            <Table
+            <DataTable
               columns={[
                 { title: "操作", dataIndex: "action" },
                 { title: "结果", dataIndex: "result" },
@@ -178,7 +172,6 @@ function ModelDetailPage() {
                   time: model.updatedAt,
                 },
               ]}
-              rowKey="id"
               pagination={false}
             />
           ),

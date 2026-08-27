@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Card, Descriptions, Spin, Tooltip } from "@arco-design/web-react";
+import { Card, Descriptions, Empty, Spin, Tooltip } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { PageHeader } from "@/components/shell/AppShell";
 import { StatusTag } from "@/components/common/StatusTag";
 import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
-import { CursorTable } from "@/components/common/CursorTable";
+import { DataTable } from "@/components/common/DataTable";
 import { formatDateTime } from "@/lib/format";
 
 export const Route = createFileRoute(
@@ -70,11 +70,12 @@ function OperationDetailPage() {
         />
       </Card>
       <Card title="执行步骤">
-        <CursorTable
+        <DataTable
           columns={[
             { title: "步骤", dataIndex: "step_name" },
             {
               title: "状态",
+              width: 120,
               render: (_, r) => <StatusTag status={r.status} />,
             },
             {
@@ -87,9 +88,10 @@ function OperationDetailPage() {
             },
             { title: "信息", dataIndex: "message" },
           ]}
-          data={{ items: stepItems }}
+          data={stepItems}
           rowKey={(r) => `${r.step_name}-${r.started_at ?? ""}`}
-          emptyDescription="暂无步骤信息"
+          pagination={false}
+          noDataElement={<Empty description="暂无步骤信息" />}
         />
       </Card>
     </div>

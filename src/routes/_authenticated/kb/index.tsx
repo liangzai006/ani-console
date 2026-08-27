@@ -7,7 +7,7 @@ import type { components } from "@/api/services-schema";
 import { showApiError } from "@/api/helpers";
 import { CreateKnowledgeBaseModal } from "@/components/knowledge/CreateKnowledgeBaseModal";
 import {
-  DataTable,
+  ListDataTable,
   ListNameCell,
   ListPageFrame,
   ListPageHeader,
@@ -22,7 +22,7 @@ import {
 } from "@/components/common";
 import { StatusTag } from "@/components/common/StatusTag";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { getErrorMessage } from "@/lib/errors";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
 type KnowledgeBase = components["schemas"]["KnowledgeBase"];
@@ -84,12 +84,17 @@ function KnowledgeBasesPage() {
   });
   const items = query.data?.items ?? [];
   const paginationTotal = query.data?.total ?? items.length;
+  useListErrorNotification({
+    id: "knowledge-bases-list",
+    title: "知识库列表加载失败",
+    error: query.error,
+    onRetry: () => void query.refetch(),
+  });
   const columns: Array<ListColumn<KnowledgeBase>> = [
     {
       key: "name",
       title: "名称 / ID",
-      minWidth: 240,
-      render: (item) => (
+      render: (_, item) => (
         <ListNameCell
           name={
             <Link
@@ -108,31 +113,27 @@ function KnowledgeBasesPage() {
       key: "status",
       title: "状态",
       width: 120,
-      render: (item) => <StatusTag status={item.status} />,
+      render: (_, item) => <StatusTag status={item.status} />,
     },
     {
       key: "docs",
       title: "文档数",
-      width: 100,
-      render: (item) => item.doc_count ?? 0,
+      render: (_, item) => item.doc_count ?? 0,
     },
     {
       key: "model",
       title: "Embedding 模型",
-      minWidth: 180,
-      render: (item) => item.embedding_model || "—",
+      render: (_, item) => item.embedding_model || "—",
     },
     {
       key: "topk",
       title: "TopK",
-      width: 90,
-      render: (item) => item.top_k ?? "—",
+      render: (_, item) => item.top_k ?? "—",
     },
     {
       key: "created",
       title: "创建时间",
-      minWidth: 190,
-      render: (item) => formatDateTime(item.created_at),
+      render: (_, item) => formatDateTime(item.created_at),
     },
   ];
   return (
@@ -202,18 +203,45 @@ function KnowledgeBasesPage() {
           />
         }
       >
-        <DataTable
-          rows={items}
-          rowKey={(item) => item.id}
-          columns={columns}
-          selectable={false}
+        <ListDataTable
+          data={items}
+          columns={[
+            ...columns,
+            {
+              key: "__actions",
+              title: "操作",
+              fixed: "right",
+              render: (_value, item) => (
+                <ListRowActions>
+                  <ListRowActionButton
+                    onClick={() =>
+                      navigate({
+                        to: "/kb/$kbId",
+                        params: { kbId: item.id },
+                        search: { tab: "chat" },
+                      })
+                    }
+                  >
+                    问答
+                  </ListRowActionButton>
+                  <ListRowActionButton
+                    status="danger"
+                    onClick={() =>
+                      Modal.confirm({
+                        title: "删除知识库",
+                        content: `确定删除「${item.name}」？知识库及其文档将不可恢复。`,
+                        okButtonProps: { status: "danger" },
+                        onOk: () => remove.mutateAsync(item),
+                      })
+                    }
+                  >
+                    删除
+                  </ListRowActionButton>
+                </ListRowActions>
+              ),
+            },
+          ]}
           loading={query.isLoading}
-          error={
-            query.error
-              ? getErrorMessage(query.error, "知识库列表加载失败")
-              : null
-          }
-          onRetry={() => void query.refetch()}
           emptyIconClassName="icon-zhishiku"
           emptyText={
             searchText || status !== "all"
@@ -222,45 +250,6 @@ function KnowledgeBasesPage() {
           }
           tableLabel="知识库列表"
           preserveTableOnEmpty
-          renderRowActions={(item) => (
-            <ListRowActions>
-              <ListRowActionButton
-                onClick={() =>
-                  navigate({
-                    to: "/kb/$kbId",
-                    params: { kbId: item.id },
-                    search: { tab: "overview" },
-                  })
-                }
-              >
-                详情
-              </ListRowActionButton>
-              <ListRowActionButton
-                onClick={() =>
-                  navigate({
-                    to: "/kb/$kbId",
-                    params: { kbId: item.id },
-                    search: { tab: "chat" },
-                  })
-                }
-              >
-                问答
-              </ListRowActionButton>
-              <ListRowActionButton
-                status="danger"
-                onClick={() =>
-                  Modal.confirm({
-                    title: "删除知识库",
-                    content: `确定删除「${item.name}」？知识库及其文档将不可恢复。`,
-                    okButtonProps: { status: "danger" },
-                    onOk: () => remove.mutateAsync(item),
-                  })
-                }
-              >
-                删除
-              </ListRowActionButton>
-            </ListRowActions>
-          )}
           pagination={{
             page,
             pageSize,

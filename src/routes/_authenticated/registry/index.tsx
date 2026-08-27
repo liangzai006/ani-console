@@ -15,7 +15,7 @@ import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
 import {
-  DataTable,
+  ListDataTable,
   ListPageFrame,
   ListPageHeader,
   ListRowActionButton,
@@ -27,6 +27,8 @@ import {
 } from "@/components/common";
 import { getErrorMessage } from "@/lib/errors";
 import { formatBytes, formatDateTime } from "@/lib/format";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 export const Route = createFileRoute("/_authenticated/registry/")({
   component: RegistryPage,
@@ -88,8 +90,6 @@ function RegistryPage() {
   const [keyword, setKeyword] = useState("");
   const [purpose, setPurpose] = useState<"all" | RegistryPurpose>("all");
   const [project, setProject] = useState("all");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [guideVisible, setGuideVisible] = useState(false);
   const [guideProject, setGuideProject] = useState("");
   const [guideRepository, setGuideRepository] = useState("demo/app");
@@ -104,24 +104,28 @@ function RegistryPage() {
       return (data?.items ?? []) as RegistryProject[];
     },
   });
-  const images = useQuery({
+  const {
+    query: images,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    resetPagination,
+    refresh,
+  } = useCursorPaginatedQuery<RegistryImage>({
     queryKey: ["registry-images"],
-    queryFn: async () => {
+    cursorScope: `${keyword.trim()}:${project}:${purpose}`,
+    fetchPage: async ({ cursor, limit }) => {
       const request = coreApi.GET as unknown as (
         path: string,
         options: { params: { query: { limit: number; cursor?: string } } },
       ) => RegistryApiResponse<RegistryImageListResponse>;
-      const items: RegistryImage[] = [];
-      let cursor: string | undefined;
-      do {
-        const { data, error } = await request("/registry/images", {
-          params: { query: { limit: 100, cursor } },
-        });
-        if (error) throw error;
-        items.push(...(data?.items ?? []));
-        cursor = data?.next_cursor ?? undefined;
-      } while (cursor);
-      return items;
+      const { data, error } = await request("/registry/images", {
+        params: { query: { limit, cursor } },
+      });
+      if (error || !data)
+        throw error ?? new Error("Registry 镜像列表未返回结果");
+      return data;
     },
   });
   const guide = useQuery({
@@ -152,7 +156,6 @@ function RegistryPage() {
     if (!guideProject && projects.data?.[0])
       setGuideProject(projects.data[0].name);
   }, [guideProject, projects.data]);
-  useEffect(() => setPage(1), [keyword, project, purpose]);
 
   const deleteTag = useMutation({
     mutationFn: async (item: RegistryImage) => {
@@ -179,6 +182,7 @@ function RegistryPage() {
       if (error) throw error;
     },
     onSuccess: () => {
+      resetPagination();
       void qc.invalidateQueries({ queryKey: ["registry-images"] });
       Message.success("镜像 Tag 已删除");
     },
@@ -187,7 +191,7 @@ function RegistryPage() {
 
   const filteredItems = useMemo(() => {
     const query = keyword.trim().toLowerCase();
-    return (images.data ?? []).filter(
+    return (images.data?.items ?? []).filter(
       (item) =>
         (purpose === "all" || item.purpose === purpose) &&
         (project === "all" || item.project === project) &&
@@ -197,12 +201,18 @@ function RegistryPage() {
             .includes(query)),
     );
   }, [images.data, keyword, project, purpose]);
+  const paginationTotal = images.data?.total ?? filteredItems.length;
+  useListErrorNotification({
+    id: "registry-images-list",
+    title: "镜像列表加载失败",
+    error: images.error,
+    onRetry: refresh,
+  });
   const columns: Array<ListColumn<RegistryImage>> = [
     {
       key: "image",
       title: "镜像名",
-      minWidth: 240,
-      render: (item) => (
+      render: (_, item) => (
         <div>
           <Typography.Text className="block font-medium">
             {item.repository}
@@ -216,33 +226,28 @@ function RegistryPage() {
     {
       key: "purpose",
       title: "用途",
-      width: 110,
-      render: (item) => (item.purpose ? PURPOSE_LABELS[item.purpose] : "—"),
+      render: (_, item) => (item.purpose ? PURPOSE_LABELS[item.purpose] : "—"),
     },
     {
       key: "project",
       title: "项目",
-      minWidth: 130,
-      render: (item) => item.project,
+      render: (_, item) => item.project,
     },
-    { key: "tag", title: "Tag", minWidth: 120, render: (item) => item.tag },
+    { key: "tag", title: "Tag", render: (_, item) => item.tag },
     {
       key: "size",
       title: "大小",
-      width: 100,
-      render: (item) => formatBytes(item.size_bytes),
+      render: (_, item) => formatBytes(item.size_bytes),
     },
     {
       key: "pushedAt",
       title: "推送时间",
-      minWidth: 170,
-      render: (item) => formatDateTime(item.pushed_at),
+      render: (_, item) => formatDateTime(item.pushed_at),
     },
     {
       key: "scan",
       title: "漏洞摘要",
-      minWidth: 170,
-      render: (item) => scanSummary(item.scan_status),
+      render: (_, item) => scanSummary(item.scan_status),
     },
   ];
   const goCreate = (item: RegistryImage) => {
@@ -315,24 +320,53 @@ function RegistryPage() {
                 iconClassName="icon-refresh-1"
                 label="刷新"
                 spinning={images.isFetching}
-                onClick={() => void images.refetch()}
+                onClick={refresh}
               />
             }
           />
         }
       >
-        <DataTable
-          rows={filteredItems.slice((page - 1) * pageSize, page * pageSize)}
+        <ListDataTable
+          data={filteredItems}
           rowKey={(item) => `${item.project}/${item.repository}:${item.tag}`}
-          columns={columns}
-          selectable={false}
+          columns={[
+            ...columns,
+            {
+              key: "__actions",
+              title: "操作",
+              fixed: "right",
+              render: (_value, item) => (
+                <ListRowActions>
+                  <ListRowActionButton
+                    onClick={() =>
+                      copyText(
+                        item.pull_command || `docker pull ${item.image}`,
+                        "拉取命令已复制",
+                      )
+                    }
+                  >
+                    拉取命令
+                  </ListRowActionButton>
+                  <ListRowActionButton onClick={() => goCreate(item)}>
+                    去创建
+                  </ListRowActionButton>
+                  <ListRowActionButton
+                    status="danger"
+                    onClick={() =>
+                      Modal.confirm({
+                        title: "删除镜像 Tag",
+                        content: `确定删除 ${item.repository}:${item.tag}？被实例引用时平台会拒绝删除。`,
+                        onOk: () => deleteTag.mutateAsync(item),
+                      })
+                    }
+                  >
+                    删除
+                  </ListRowActionButton>
+                </ListRowActions>
+              ),
+            },
+          ]}
           loading={images.isLoading}
-          error={
-            images.error
-              ? getErrorMessage(images.error, "镜像列表加载失败")
-              : null
-          }
-          onRetry={() => void images.refetch()}
           preserveTableOnEmpty
           emptyIconClassName="icon-moxing"
           emptyText={
@@ -341,44 +375,12 @@ function RegistryPage() {
               : "还没有镜像：按推送说明 docker push 入库后，再去创建实例"
           }
           tableLabel="镜像仓库列表"
-          renderRowActions={(item) => (
-            <ListRowActions>
-              <ListRowActionButton
-                onClick={() =>
-                  copyText(
-                    item.pull_command || `docker pull ${item.image}`,
-                    "拉取命令已复制",
-                  )
-                }
-              >
-                拉取命令
-              </ListRowActionButton>
-              <ListRowActionButton onClick={() => goCreate(item)}>
-                去创建
-              </ListRowActionButton>
-              <ListRowActionButton
-                status="danger"
-                onClick={() =>
-                  Modal.confirm({
-                    title: "删除镜像 Tag",
-                    content: `确定删除 ${item.repository}:${item.tag}？被实例引用时平台会拒绝删除。`,
-                    onOk: () => deleteTag.mutateAsync(item),
-                  })
-                }
-              >
-                删除
-              </ListRowActionButton>
-            </ListRowActions>
-          )}
           pagination={{
             page,
             pageSize,
-            total: filteredItems.length,
+            total: paginationTotal,
             onPageChange: setPage,
-            onPageSizeChange: (next) => {
-              setPageSize(next);
-              setPage(1);
-            },
+            onPageSizeChange: setPageSize,
           }}
         />
       </ListPageFrame>
