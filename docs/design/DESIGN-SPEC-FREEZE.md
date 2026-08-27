@@ -39,10 +39,9 @@
 
 | 文档 | 说明 |
 |------|------|
-| `frontends/console/CONVENTIONS.md` | 工程约定（路由、测试、目录） |
-| `frontends/console/docs/CONSOLE-TASK-PLAN.md` | 任务进度与批次状态 |
-| `frontends/console/docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md` | 规范落地批次顺序 |
-| `frontends/console/docs/sprints/SPRINT-*.md` | 过程记录 |
+| `docs/CONVENTIONS.md` | 工程约定（路由、测试、目录） |
+| `docs/CONSOLE-TASK-PLAN.md` | 任务进度与批次状态 |
+| `docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md` | 规范落地批次顺序 |
 | `openapi/v1.yaml` | API 契约（与 UI 规范独立演进） |
 
 ---
@@ -58,8 +57,8 @@
 4. 产品设计规范-Arco组件与Token-2.0.md
 5. 产品设计规范-页面模板-2.0.md → 选定本页模板类型
 6. 产品设计规范-样式与Tailwind边界-2.0.md
-7. frontends/console/docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md → 确认当前批次
-8. frontends/console/CONVENTIONS.md
+7. docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md → 确认当前批次
+8. docs/CONVENTIONS.md
 ```
 
 ---
@@ -80,7 +79,7 @@
 
 ## 5. 规范落地批次
 
-存量页面须按 **[CONSOLE-SPEC-COMPLIANCE-BATCHES.md](./frontends/console/docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md)** 顺序分批改造，**不得跳批**、不得单页私自全库重风格。
+存量页面须按 **[CONSOLE-SPEC-COMPLIANCE-BATCHES.md](../CONSOLE-SPEC-COMPLIANCE-BATCHES.md)** 顺序分批改造，**不得跳批**、不得单页私自全库重风格。
 
 动态进度只写在 `CONSOLE-TASK-PLAN.md` 与对应 `SPRINT-SCB-*.md`，**不得**回写本冻结令或 2.0 规范正文。
 
@@ -91,9 +90,8 @@
 | 入口 | 路径 |
 |------|------|
 | Cursor 规则 | `.cursor/rules/design-spec-frozen.mdc` |
-| Console 工程约定 | `frontends/console/CONVENTIONS.md` §0 |
-| Console Agent 入口 | `frontends/console/CLAUDE.md` |
-| 任务计划 | `frontends/console/docs/CONSOLE-TASK-PLAN.md` |
+| Console 工程约定 | `docs/CONVENTIONS.md` §0 |
+| 任务计划 | `docs/CONSOLE-TASK-PLAN.md` |
 
 ---
 

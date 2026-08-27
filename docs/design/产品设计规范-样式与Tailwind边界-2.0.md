@@ -22,9 +22,9 @@
 | 全局样式入口 | `arco.css` + `src/styles/global.css`（Tailwind theme+utilities，**无 preflight**） | 第二套平行色板或 shadcn `components/ui` |
 | 图表 | ECharts（色板对齐 Arco 状态色） | 未评审的其他图表库 |
 
-**Console 已落地**：`frontends/console` 安装 `tailwindcss` + `@tailwindcss/vite`，`global.css` 仅引入 `theme` 与 `utilities`，不引入 `preflight`。
+**Console 已落地**：仓库根项目安装 `tailwindcss` + `@tailwindcss/vite`，`global.css` 仅引入 `theme` 与 `utilities`，不引入 `preflight`。
 
-工程依据：[UI规范-2.0.md](./UI规范-2.0.md)、[产品设计规范-Arco组件与Token-2.0.md](./产品设计规范-Arco组件与Token-2.0.md)、[frontends/console/README.md](./frontends/console/README.md)。
+工程依据：[UI规范-2.0.md](./UI规范-2.0.md)、[产品设计规范-Arco组件与Token-2.0.md](./产品设计规范-Arco组件与Token-2.0.md)、[README.md](../../README.md)。
 
 ---
 
@@ -91,7 +91,7 @@
 ## 5. Console 工程配置摘要
 
 ```text
-frontends/console/
+仓库根目录/
 ├── vite.config.ts          # @tailwindcss/vite 插件
 ├── src/main.tsx            # arco.css → global.css
 └── src/styles/global.css   # theme + utilities（无 preflight）
@@ -128,7 +128,7 @@ frontends/console/
 
 ## 8. 维护说明
 
-> **🔒 已冻结**：不得再编辑本节。工程适配见 `frontends/console/CONVENTIONS.md`。
+> **🔒 已冻结**：不得再编辑本节。工程适配见 `docs/CONVENTIONS.md`。
 
 - 新页面：Arco 组件优先；壳层布局可逐步用 Tailwind 替换冗长 `style={{}}`。
 - 若需 Tailwind 主题扩展：只允许映射到 Arco Token，不新增独立色板。
