@@ -1,10 +1,14 @@
-import { Breadcrumb, Button, Empty, List, Space, Spin, Tag, Typography } from '@arco-design/web-react'
+import { Breadcrumb, Button, Empty, Link, Space, Tag, Typography, type TableColumnProps } from '@arco-design/web-react'
 import { IconArrowLeft, IconFile, IconFolder } from '@arco-design/web-react/icon'
 import type { components } from '@/api/core-schema'
+import { DataTable } from '@/components/common/DataTable'
 import { formatBytes, formatDateTime } from '@/lib/format'
 import styles from './index.module.css'
 
 type BucketEntry = components['schemas']['StorageBucketObjectEntry']
+type BrowserEntry = BucketEntry & {
+  parentTarget?: string
+}
 
 type ObjectBrowserProps = {
   bucketName: string
@@ -47,6 +51,88 @@ export function ObjectBrowser({
 }: ObjectBrowserProps) {
   const segments = prefixSegments(prefix)
   const canGoUp = prefix !== '/'
+  const tableEntries: BrowserEntry[] = canGoUp
+    ? [
+        {
+          kind: 'prefix',
+          name: '..',
+          key: `__parent__:${prefix}`,
+          parentTarget: parentPrefix(prefix),
+        },
+        ...entries,
+      ]
+    : entries
+
+  const columns: Array<TableColumnProps<BrowserEntry>> = [
+    {
+      title: '名称',
+      render: (_, entry) => {
+        const isParent = Boolean(entry.parentTarget)
+        const canNavigate = isParent || entry.kind === 'prefix'
+        const target = entry.parentTarget ?? entry.key
+
+        return (
+          <button
+            type="button"
+            className={canNavigate ? styles.entryButton : styles.entryLabel}
+            onClick={canNavigate ? () => onNavigate(target) : undefined}
+            aria-label={isParent ? '返回上一级' : entry.kind === 'prefix' ? `进入文件夹 ${entry.name}` : undefined}
+          >
+            {isParent ? (
+              <IconArrowLeft className={styles.backIcon} />
+            ) : entry.kind === 'prefix' ? (
+              <IconFolder className={styles.folderIcon} />
+            ) : (
+              <IconFile className={styles.fileIcon} />
+            )}
+            <span className={styles.entryName}>{entry.name}</span>
+          </button>
+        )
+      },
+    },
+    {
+      title: '大小',
+      width: 100,
+      render: (_, entry) => (entry.size_bytes != null ? formatBytes(entry.size_bytes) : '—'),
+    },
+    {
+      title: '更新时间',
+      width: 180,
+      render: (_, entry) => (entry.updated_at ? formatDateTime(entry.updated_at) : '—'),
+    },
+    {
+      title: '存储类型',
+      width: 100,
+      render: (_, entry) =>
+        entry.kind === 'object' ? (entry.storage_class === 'infrequent_access' ? '低频' : '标准') : '—',
+    },
+    {
+      title: '操作',
+      width: 260,
+      fixed: 'right',
+      render: (_, entry) =>
+        entry.parentTarget ? null : (
+          <Space className={styles.actions}>
+            {entry.kind === 'object' ? (
+              <>
+                <Link type="text" className="text-nowrap" onClick={() => onCopyPath(entry)}>
+                  复制路径
+                </Link>
+                <Link type="text" className="text-nowrap" disabled={actionLoading} onClick={() => onDownload(entry)}>
+                  下载
+                </Link>
+                <Link type="text" className="text-nowrap" disabled={actionLoading} onClick={() => onCopyLink(entry)}>
+                  临时链接
+                </Link>
+              </>
+            ) : null}
+            <Link type="text" status="error"  onClick={() => onDelete(entry)}>
+              删除
+            </Link>
+          </Space>
+        ),
+    },
+  ]
 
   return (
     <div className={styles.browser}>
@@ -75,87 +161,17 @@ export function ObjectBrowser({
         </Space>
       </div>
 
-      <div className={styles.columns} aria-hidden="true">
-        <span>名称</span>
-        <span>大小</span>
-        <span>更新时间</span>
-        <span>存储类型</span>
-        <span>操作</span>
-      </div>
-
-      {loading ? (
-        <div className={styles.loading}>
-          <Spin />
-        </div>
-      ) : (
-        <>
-          {canGoUp ? (
-            <div className={`${styles.row} ${styles.parentRow}`}>
-              <button type="button" className={styles.entryButton} onClick={() => onNavigate(parentPrefix(prefix))}>
-                <IconArrowLeft className={styles.backIcon} />
-                <span className={styles.entryName}>..</span>
-              </button>
-              <span>—</span>
-              <span>—</span>
-              <span>—</span>
-              <span />
-            </div>
-          ) : null}
-          <List
-            className={styles.list}
-            bordered={false}
-            split
-            dataSource={entries}
-            noDataElement={<Empty description="当前文件夹暂无对象，可上传对象或新建文件夹" />}
-            render={(entry) => (
-              <List.Item key={entry.key} className={styles.item}>
-                <div className={styles.row}>
-                  <button
-                    type="button"
-                    className={entry.kind === 'prefix' ? styles.entryButton : styles.entryLabel}
-                    onClick={entry.kind === 'prefix' ? () => onNavigate(entry.key) : undefined}
-                    aria-label={entry.kind === 'prefix' ? `进入文件夹 ${entry.name}` : undefined}
-                  >
-                    {entry.kind === 'prefix' ? (
-                      <IconFolder className={styles.folderIcon} />
-                    ) : (
-                      <IconFile className={styles.fileIcon} />
-                    )}
-                    <span className={styles.entryName}>{entry.name}</span>
-                  </button>
-                  <span>{entry.size_bytes != null ? formatBytes(entry.size_bytes) : '—'}</span>
-                  <span>{entry.updated_at ? formatDateTime(entry.updated_at) : '—'}</span>
-                  <span>
-                    {entry.kind === 'object'
-                      ? entry.storage_class === 'infrequent_access'
-                        ? '低频'
-                        : '标准'
-                      : '—'}
-                  </span>
-                  <Space className={styles.actions}>
-                    {entry.kind === 'object' ? (
-                      <>
-                        <Button type="text" size="mini" onClick={() => onCopyPath(entry)}>
-                          复制路径
-                        </Button>
-                        <Button type="text" size="mini" loading={actionLoading} onClick={() => onDownload(entry)}>
-                          下载
-                        </Button>
-                        <Button type="text" size="mini" loading={actionLoading} onClick={() => onCopyLink(entry)}>
-                          临时链接
-                        </Button>
-                      </>
-                    ) : null}
-                    <Button type="text" size="mini" status="danger" onClick={() => onDelete(entry)}>
-                      删除
-                    </Button>
-                  </Space>
-                </div>
-              </List.Item>
-            )}
-          />
-        </>
-      )}
+      <DataTable<BrowserEntry>
+        className={styles.table}
+        tableLabel="对象浏览器"
+        rowKey={(entry) => entry.key}
+        columns={columns}
+        data={tableEntries}
+        loading={loading}
+        pagination={false}
+        scroll={{ x: 'max-content' }}
+        noDataElement={<Empty description="当前文件夹暂无对象，可上传对象或新建文件夹" />}
+      />
     </div>
   )
 }
