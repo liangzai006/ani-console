@@ -1,4 +1,0 @@
-interface:
-  display_name: "Development Record"
-  short_description: "Update development records after verified code changes."
-  default_prompt: "After finishing and verifying code changes, update the project development record."

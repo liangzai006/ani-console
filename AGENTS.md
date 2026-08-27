@@ -30,6 +30,14 @@
 - 当前快速迭代阶段不保留自动化测试资产；默认检查为 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测。Agent 不得运行 `pnpm run verify` 或 production build，也不得启动、重启或中断用户后台运行的 `pnpm dev`。
 - 不覆盖或清理用户已有的无关工作区改动。
 
+## 开发记录
+
+- 完成并验证实现、修复或测试后，必须在最终回复前更新项目开发记录。
+- Console 功能、API、网络、存储、工具链和验证规则的变化统一记录在 `docs/CONSOLE-TASK-PLAN.md`；设计规范批次状态记录在 `docs/CONSOLE-SPEC-COMPLIANCE-BATCHES.md`。
+- 记录应简短且事实准确，覆盖变更区域、用户可见行为、重要集成说明及已执行的验证，不粘贴冗长命令输出。
+- 不创建重复的记录文件；找不到合适记录位置时，在最终回复中说明。
+- 更新记录后，对记录文件运行 `git diff --check`，最终回复说明记录位置和验证结果。
+
 ## GitNexus
 
 仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-8.25`。

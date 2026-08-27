@@ -26,6 +26,7 @@
 
 | 日期 | 事项 |
 |------|------|
+| 2026-08-27 | 移除仓库私有 `.codex` 开发记录技能后，将必要约束收敛进根 `AGENTS.md`：完成并验证实现、修复或测试后须在最终回复前更新指定开发记录，记录应覆盖变更区域、用户可见行为、集成与验证信息，并对记录文件执行 `git diff --check`；不再引用已删除的技能路径。 |
 | 2026-08-27 | 统一列表表格基础设施。`DataTable` 收敛为 Arco Table 的薄封装，直接使用 `data`、默认 `rowKey="id"`、原生 `rowSelection` 和原始 `TableColumnProps`，移除 `tableColumns` 映射、自定义排序/操作列兼容、`CursorTable` 与 `SimpleResourceCrud`；新增页面级 `ListDataTable`，承接空态、样式及 Arco 原生加载、分页、固定表头和表体内横向滚动。列表列宽仅状态列固定 `120px`，操作列由页面固定右侧且不设默认宽度，普通表头左对齐；移除重复“详情”操作。原 `PageBaseStyles` 按职责拆入 `ListPageFrame`、`ListToolbar`、`StatusTabs` 和 `ListDataTable`，并使用 `clsx` 合并类名；列表错误统一由页面通过 Notification 包装层提示。 |
 | 2026-08-27 | 实例、K8s、向量/块/文件/对象存储、Registry、VPC、子网、安全组、路由和负载均衡主列表接入 `useCursorPaginatedQuery`，使用真实 `limit/cursor/total/next_cursor` 翻页，并统一刷新、页大小切换与删除后的游标重置；推理服务因接口无分页契约暂保留前端分页。模型仓库接口尚未就绪，最终状态为屏蔽 `/models` 查询、禁用刷新并展示明确空态，保留后续恢复入口。 |
 | 2026-08-27 | 补齐存储列表操作。块存储支持挂载、带风险确认的卸载、扩容、快照及删除；向量存储支持检索测试、重建索引、打开关联知识库和受约束删除，重建请求补齐 Core 类型并携带幂等键；对象存储提供浏览器、上传和权限跳转，存储桶删除因 ANI 无接口保持禁用，同时移除仅登记控制面记录的“登记元数据”入口与组件。 |
