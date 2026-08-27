@@ -8,7 +8,7 @@ export type HomeRoute =
   | "/instances/vm/create"
   | "/instances/container"
   | "/instances/container/create"
-  | "/instances/gpu/create"
+  | "/gpu-instances"
   | "/instances/sandbox/create"
   | "/k8s-clusters"
   | "/volumes"

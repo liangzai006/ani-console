@@ -241,7 +241,7 @@ const mockOverview: HomeOverviewData = {
       id: "create-gpu",
       name: "创建 GPU 容器",
       icon: "GPUrongqishili",
-      route: "/instances/gpu/create",
+      route: "/gpu-instances",
     },
     {
       id: "create-sandbox",

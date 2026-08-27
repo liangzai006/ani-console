@@ -23,7 +23,16 @@ export const menuItems: readonly MenuItem[] = [
     label: "计算",
     icon: <IconCloud />,
     children: [
-      { key: "/gpu-inventory", label: "GPU 算力管理", icon: <AliIcon name="GPU" /> },
+      {
+        key: "/compute/overview",
+        label: "我的资源概览",
+        icon: <IconDashboard />,
+      },
+      {
+        key: "/gpu-inventory",
+        label: "GPU 算力管理",
+        icon: <AliIcon name="GPU" />,
+      },
       {
         key: "compute-instances",
         label: "实例",
@@ -31,7 +40,7 @@ export const menuItems: readonly MenuItem[] = [
         children: [
           { key: "/instances/vm", label: "云主机 VM" },
           { key: "/instances/container", label: "容器实例" },
-          { key: "/instances/gpu", label: "GPU 容器实例" },
+          { key: "/gpu-instances", label: "GPU 容器实例" },
           { key: "/instances/sandbox", label: "Sandbox 实例" },
         ],
       },
@@ -48,10 +57,26 @@ export const menuItems: readonly MenuItem[] = [
     label: "网络",
     icon: <IconNav />,
     children: [
-      { key: "/networks/vpcs", label: "VPC", icon: <AliIcon name="VPCwangluo" /> },
-      { key: "/networks/subnets", label: "子网", icon: <AliIcon name="ziwang" /> },
-      { key: "/networks/security-groups", label: "安全组", icon: <AliIcon name="anquanzu" /> },
-      { key: "/networks/routes", label: "路由", icon: <AliIcon name="VPCluyouqi" /> },
+      {
+        key: "/networks/vpcs",
+        label: "VPC",
+        icon: <AliIcon name="VPCwangluo" />,
+      },
+      {
+        key: "/networks/subnets",
+        label: "子网",
+        icon: <AliIcon name="ziwang" />,
+      },
+      {
+        key: "/networks/security-groups",
+        label: "安全组",
+        icon: <AliIcon name="anquanzu" />,
+      },
+      {
+        key: "/networks/routes",
+        label: "路由",
+        icon: <AliIcon name="VPCluyouqi" />,
+      },
       {
         key: "/networks/load-balancers",
         label: "负载均衡",
@@ -65,9 +90,21 @@ export const menuItems: readonly MenuItem[] = [
     icon: <IconStorage />,
     children: [
       { key: "/volumes", label: "块存储", icon: <AliIcon name="kuaicunchu" /> },
-      { key: "/objects", label: "对象存储", icon: <AliIcon name="duixiangcunchu1" /> },
-      { key: "/filesystems", label: "文件存储", icon: <AliIcon name="wenjiancunchu" /> },
-      { key: "/vector-stores", label: "向量存储", icon: <AliIcon name="xiangliangcunchu" /> },
+      {
+        key: "/objects",
+        label: "对象存储",
+        icon: <AliIcon name="duixiangcunchu1" />,
+      },
+      {
+        key: "/filesystems",
+        label: "文件存储",
+        icon: <AliIcon name="wenjiancunchu" />,
+      },
+      {
+        key: "/vector-stores",
+        label: "向量存储",
+        icon: <AliIcon name="xiangliangcunchu" />,
+      },
     ],
   },
   {
@@ -93,13 +130,17 @@ export const menuItems: readonly MenuItem[] = [
     key: "knowledge",
     label: "知识库",
     icon: <IconMessage />,
-    children: [{ key: "/kb", label: "知识库管理", icon: <AliIcon name="zhishiku" /> }],
+    children: [
+      { key: "/kb", label: "知识库管理", icon: <AliIcon name="zhishiku" /> },
+    ],
   },
   {
     key: "registry",
     label: "镜像",
     icon: <IconFile />,
-    children: [{ key: "/registry", label: "镜像仓库", icon: <AliIcon name="Harbor" /> }],
+    children: [
+      { key: "/registry", label: "镜像仓库", icon: <AliIcon name="Harbor" /> },
+    ],
   },
 ] as const;
 

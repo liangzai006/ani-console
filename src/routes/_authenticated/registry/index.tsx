@@ -253,7 +253,7 @@ function RegistryPage() {
   const goCreate = (item: RegistryImage) => {
     const target =
       item.purpose === "gpu"
-        ? "/instances/gpu/create"
+        ? "/gpu-instances"
         : item.purpose === "sandbox"
           ? "/instances/sandbox/create"
           : item.purpose === "system"

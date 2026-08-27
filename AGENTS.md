@@ -2,7 +2,7 @@
 
 ## 项目定位
 
-本仓库只包含 ANI Console 前端。后端由独立的 ANI 仓库维护，接口以其 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
+本仓库只包含 ANI Console 前端。
 
 ## 开发入口
 
@@ -13,6 +13,7 @@
 
 ## 强制规则
 
+- 本仓库根目录已经代表产品原型中的 Console 范围；路由、页面、组件及其文件或目录不得再使用 `console`、`console-*`、`*Console` 等重复表达 Console 层级的命名，应直接按业务领域或资源命名。
 - UI 只使用 Arco Design React；颜色使用 Arco Token，Tailwind 仅负责布局。
 - 实现 UI 与交互时优先使用 Arco Design React 组件；只有确认组件库无法满足需求时才允许自行实现，并在变更说明中记录原因。
 - 新增组件或样式前，先检索 `src/components/` 和同类页面是否已有符合需求的实现；已有实现应优先复用或扩展公共组件，不得复制为页面私有版本。
@@ -24,6 +25,7 @@
 - 页面与路由同放在 `src/routes/`；共享组件放在 `src/components/`。
 - `src/components/` 必须按 page scope 组织，每个组件使用独立目录：`src/components/<scope>/<ComponentName>/index.tsx`；组件私有样式放在同目录的 `index.css`、`index.less`、`index.module.css` 或 `index.module.less`；子组件使用 `src/components/<scope>/<ComponentName>/<SubComponentName>/index.tsx`。禁止在 scope 目录直接平铺 `<ComponentName>.tsx` 或 `<ComponentName>.module.css`。
 - 跨页面、跨领域复用的通用组件必须归入独立的 `common` scope，即 `src/components/common/<ComponentName>/index.tsx`；业务领域组件保留在对应 page scope。scope 级 `index.ts` 仅允许作为导出清单，不得承载组件实现。
+- 后端由独立的 ANI 仓库维护；接口契约与后端行为以其 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
 - Core API 统一通过 `src/api/client.ts` 的 `coreApi` 调用。
 - POST 及有副作用的 PUT/PATCH 必须携带 `idempotency_key`。
 - 不修改冻结设计规范正文。

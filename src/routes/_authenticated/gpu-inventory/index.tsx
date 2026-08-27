@@ -6,8 +6,8 @@ import { CorePieChart } from '@/components/common/CorePieChart'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { PageHeader } from '@/components/shell/AppShell'
 import { DataTable } from '@/components/common/DataTable'
-import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
 import { StatusTag } from '@/components/common/StatusTag'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 import type { components } from '@/api/core-schema'
 
 export const Route = createFileRoute('/_authenticated/gpu-inventory/')({
@@ -45,6 +45,19 @@ function GpuInventoryPage() {
   const items = (list.data?.items ?? []) as GpuRecord[]
   const o = occ.data
 
+  useListErrorNotification({
+    id: 'gpu-inventory-list',
+    title: 'GPU 设备列表加载失败',
+    error: list.error,
+    onRetry: () => void list.refetch(),
+  })
+  useListErrorNotification({
+    id: 'gpu-inventory-occupancy',
+    title: 'GPU 占用数据加载失败',
+    error: occ.error,
+    onRetry: () => void occ.refetch(),
+  })
+
   const chart = {
     color: CHART_COLORS,
     series: [
@@ -61,12 +74,10 @@ function GpuInventoryPage() {
   }
 
   const summaryLoading = occ.isLoading
-  const summaryError = occ.error
 
   return (
     <div className="space-y-5">
       <PageHeader title="GPU 算力管理" subtitle="设备库存与占用分布" />
-      {summaryError ? <ApiErrorAlert error={summaryError} title="占用数据加载失败" /> : null}
       <Grid.Row gutter={16}>
         <Grid.Col xs={24} md={8}>
           {summaryLoading ? (
@@ -103,9 +114,7 @@ function GpuInventoryPage() {
         data={list.error ? [] : items}
         loading={list.isLoading}
         pagination={false}
-        noDataElement={
-          list.error ? <ApiErrorAlert error={list.error} /> : <Empty description="暂无 GPU 设备数据" />
-        }
+        noDataElement={<Empty description="暂无 GPU 设备数据" />}
       />
     </div>
   )

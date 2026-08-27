@@ -295,7 +295,6 @@ export const buildCreateInstanceBodyForTest = buildCreateInstanceBody;
 function createRouteForKind(kindFilter?: InstanceKind): string | null {
   if (kindFilter === "container") return "/instances/container/create";
   if (kindFilter === "vm") return "/instances/vm/create";
-  if (kindFilter === "gpu_container") return "/instances/gpu/create";
   if (kindFilter === "sandbox") return "/instances/sandbox/create";
   return null;
 }
@@ -595,14 +594,22 @@ export function InstancesListPage(props: InstancesListPageProps = {}) {
             render: (_, r) => getInstanceNetworkValue(r, "subnet_id"),
           },
           { title: "IP", render: (_, r) => getInstanceDisplayIp(r) },
-          { title: "状态", width: 120, render: (_, r) => <StatusTag status={r.state} /> },
+          {
+            title: "状态",
+            width: 120,
+            render: (_, r) => <StatusTag status={r.state} />,
+          },
           { title: "创建时间", render: (_, r) => formatDateTime(r.created_at) },
         ]}
         data={error ? [] : items}
         loading={isLoading}
         pagination={false}
         noDataElement={
-          error ? <ApiErrorAlert error={error} /> : <Empty description="暂无实例，点击右上角创建" />
+          error ? (
+            <ApiErrorAlert error={error} />
+          ) : (
+            <Empty description="暂无实例，点击右上角创建" />
+          )
         }
       />
       <Modal
