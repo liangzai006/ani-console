@@ -1,7 +1,9 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { Tooltip } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
+import { GpuInstanceActions } from "@/components/gpu-instances/GpuInstanceActions";
 import { GpuContainerCreateModal } from "@/components/gpu-instances/GpuContainerCreateModal";
 import {
   ListDataTable,
@@ -14,8 +16,8 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
+  StatusTag,
 } from "@/components/common";
-import { StatusTag } from "@/components/common/StatusTag";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
@@ -30,7 +32,6 @@ export const Route = createFileRoute("/_authenticated/gpu-instances/")({
 
 function GpuInstancesPage() {
   const [createVisible, setCreateVisible] = useState(false);
-  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
@@ -52,11 +53,9 @@ function GpuInstancesPage() {
     id: "gpu-container-list",
     title: "GPU 容器实例列表加载失败",
     error: query.error,
-    onRetry: refresh,
   });
   useEffect(() => {
     setPage(1);
-    setSelectedKeys([]);
   }, [searchField, searchText, status, setPage]);
 
   const allItems = ((query.data?.items ?? []) as Instance[]).filter(
@@ -115,7 +114,10 @@ function GpuInstancesPage() {
       render: (_, row) => (
         <ListNameCell
           name={
-            <Link to="/instances/$instanceId" params={{ instanceId: row.id }}>
+            <Link
+              to="/gpu-instances/$instanceId"
+              params={{ instanceId: row.id }}
+            >
               {row.name}
             </Link>
           }
@@ -127,7 +129,17 @@ function GpuInstancesPage() {
       key: "state",
       title: "状态",
       width: 120,
-      render: (_, row) => <StatusTag status={row.state} />,
+      render: (_, row) => {
+        const statusTag = <StatusTag status={row.state} />;
+
+        return row.reason ? (
+          <Tooltip content={row.reason}>
+            <span className="inline-flex">{statusTag}</span>
+          </Tooltip>
+        ) : (
+          statusTag
+        );
+      },
     },
     {
       key: "gpu",
@@ -135,7 +147,20 @@ function GpuInstancesPage() {
       render: (_, row) =>
         row.gpu?.model ? `${row.gpu.model} × ${row.gpu.count ?? 1}` : "—",
     },
-    { key: "image", title: "镜像", render: () => "—" },
+    {
+      key: "image",
+      title: "镜像",
+      width: 240,
+      render: (_, row) => {
+        const image = row.image?.ref ?? row.image?.name ?? row.image?.id ?? "—";
+
+        return (
+          <Tooltip content={image}>
+            <span className="block max-w-56 truncate">{image}</span>
+          </Tooltip>
+        );
+      },
+    },
     {
       key: "replicas",
       title: "副本",
@@ -154,6 +179,15 @@ function GpuInstancesPage() {
       key: "created",
       title: "创建时间",
       render: (_, row) => formatDateTime(row.created_at),
+    },
+    {
+      key: "actions",
+      title: "操作",
+      width: 320,
+      fixed: "right",
+      render: (_, row) => (
+        <GpuInstanceActions instance={row} onChanged={refresh} />
+      ),
     },
   ];
 
@@ -205,10 +239,6 @@ function GpuInstancesPage() {
         <ListDataTable
           data={items}
           columns={columns}
-          rowSelection={{
-            selectedRowKeys: selectedKeys,
-            onChange: (keys) => setSelectedKeys(keys.map(String)),
-          }}
           loading={query.isLoading}
           emptyIconClassName="icon-GPU"
           emptyText={
@@ -223,10 +253,7 @@ function GpuInstancesPage() {
             pageSize,
             total: query.data?.total ?? items.length,
             onPageChange: setPage,
-            onPageSizeChange: (size) => {
-              setPageSize(size);
-              setSelectedKeys([]);
-            },
+            onPageSizeChange: setPageSize,
           }}
         />
       </ListPageFrame>

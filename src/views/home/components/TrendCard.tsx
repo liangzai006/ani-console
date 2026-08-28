@@ -1,6 +1,6 @@
 import type { EChartsOption, LineSeriesOption } from 'echarts'
 import { useMemo, useState } from 'react'
-import { CoreLineBarChart } from '@/components/common/CoreLineBarChart'
+import { CoreLineBarChart } from '@/components/common'
 import type { HomeTimeRange, HomeTrendData } from '../types'
 import { PeriodSwitch } from './PeriodSwitch'
 import styles from '../home.module.css'

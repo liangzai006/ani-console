@@ -15,8 +15,8 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
+  StatusTag,
 } from "@/components/common";
-import { StatusTag } from "@/components/common/StatusTag";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { containerInstanceDataSource } from "./data-source";
@@ -118,7 +118,6 @@ export function ContainerInstancesPage({
     id: "container-instances-list-error",
     title: "容器实例加载失败",
     error: query.error,
-    onRetry: () => void query.refetch(),
   });
 
   const result = query.data ?? {

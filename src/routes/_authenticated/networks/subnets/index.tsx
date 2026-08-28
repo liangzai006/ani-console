@@ -5,8 +5,8 @@ import { useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import { Ipv4CidrInput } from "@/components/common/Ipv4CidrInput";
 import {
+  Ipv4CidrInput,
   ListDataTable,
   ListNameCell,
   ListPageFrame,
@@ -19,8 +19,8 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
+  StatusTag,
 } from "@/components/common";
-import { StatusTag } from "@/components/common/StatusTag";
 import { formatDateTime } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";
 import { listOrThrow } from "@/lib/api-list";
@@ -187,7 +187,6 @@ function SubnetsPage() {
     id: "subnets-list",
     title: "子网列表加载失败",
     error: subnets.error,
-    onRetry: refresh,
   });
 
   const columns: Array<ListColumn<Subnet>> = [

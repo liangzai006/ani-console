@@ -14,7 +14,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
 import { showApiError } from "@/api/helpers";
-import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
+import { ApiErrorAlert } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 import styles from "./index.module.css";

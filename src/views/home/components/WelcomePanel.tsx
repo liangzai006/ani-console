@@ -1,7 +1,7 @@
 import { Dropdown, Menu } from '@arco-design/web-react'
 import { IconDown, IconPlus } from '@arco-design/web-react/icon'
 import { Link } from '@tanstack/react-router'
-import { AliIcon } from '@/components/common/AliIcon'
+import { AliIcon } from '@/components/common'
 import type { HomeOverviewData } from '../types'
 import styles from '../home.module.css'
 

@@ -2430,6 +2430,8 @@ export interface components {
       id: string;
       tenant_id: string;
       name: string;
+      description?: string | null;
+      labels?: Record<string, string>;
       /** @enum {string} */
       kind:
         | "vm"
@@ -2466,13 +2468,65 @@ export interface components {
         | "failed"
         | "deleting"
         | "deleted";
-      /** @description 机器可读的状态原因码，如 InsufficientGPU */
-      state_reason?: string | null;
-      /** @description 人类可读的状态描述 */
-      state_message?: string | null;
+      /** @description 实例当前状态的原因或错误说明 */
+      reason?: string | null;
+      status?: string | null;
       /** @example kubernetes_rest */
       provider: string;
       dev_profile?: components["schemas"]["CoreDevProfileInfo"];
+      operation_id?: string | null;
+      image?: {
+        id?: string | null;
+        ref?: string | null;
+        digest?: string | null;
+        name?: string | null;
+        tag?: string | null;
+        purpose?: string | null;
+        architecture?: string | null;
+      } | null;
+      compute?: {
+        cpu?: string | number | null;
+        memory?: string | number | null;
+        spec_id?: string | null;
+        gpu_type?: string | null;
+        gpu_shares?: number | null;
+        gpu_mb_per_share?: number | null;
+        availability_zone?: string | null;
+        node_name?: string | null;
+      } | null;
+      network?: {
+        vpc_id?: string | null;
+        vpc_name?: string | null;
+        subnet_id?: string | null;
+        subnet_name?: string | null;
+        private_ip?: string | null;
+        security_groups?: {
+          id: string;
+          name?: string | null;
+        }[];
+        endpoints?: {
+          name?: string | null;
+          address: string;
+          protocol?: string | null;
+          port?: number | null;
+        }[];
+        load_balancer_refs?: string[];
+      } | null;
+      access?: {
+        ssh_available?: boolean;
+        console_available?: boolean;
+        exec_available?: boolean;
+        reason?: string | null;
+      } | null;
+      storage_attachments?: {
+        resource_type: string;
+        resource_id: string;
+        resource_name?: string | null;
+        mount_path?: string | null;
+        read_only?: boolean;
+        status?: string | null;
+        task_id?: string | null;
+      }[];
       /** @description 实例创建时选择的 ANI VPC ID；未指定网络时为空。 */
       vpc_id?: string | null;
       /** @description 实例创建时选择的 ANI Subnet ID；后端负责翻译为 provider 子网资源。 */
@@ -2592,12 +2646,18 @@ export interface components {
         | "start"
         | "stop"
         | "restart"
+        | "scale"
+        | "update_image"
         | "resize"
         | "rebuild"
         | "delete"
         | "snapshot"
         | "attach_volume"
         | "detach_volume"
+        | "attach_filesystem"
+        | "bind_secret"
+        | "change_security_groups"
+        | "set_termination_protection"
         | "rollback"
         | "console_session";
       /** @enum {string} */
@@ -2987,7 +3047,19 @@ export interface components {
         | "snapshot"
         | "attach_volume"
         | "detach_volume"
-        | "rollback";
+        | "attach_filesystem"
+        | "detach_filesystem"
+        | "rollback"
+        | "scale"
+        | "update_image"
+        | "bind_secret"
+        | "unbind_secret"
+        | "change_security_groups"
+        | "set_termination_protection"
+        | "pause"
+        | "resume"
+        | "extend"
+        | "touch_idle";
       idempotency_key: string;
       /** @description resize 时使用 */
       cpu?: string | null;
@@ -2995,10 +3067,38 @@ export interface components {
       memory?: string | null;
       /** @description snapshot 时指定快照名称；为空时由本地 profile 生成 */
       snapshot_name?: string | null;
+      /** @description rollback 时指定目标快照 */
+      snapshot_id?: string | null;
+      /** @description snapshot 时是否包含数据盘 */
+      include_data_disks?: boolean | null;
       /** @description rollback 时指定目标 revision；为空时回滚上一版本 */
       revision?: string | null;
       /** @description attach_volume/detach_volume 时使用 */
       volume_id?: string | null;
+      /** @description attach_filesystem/detach_filesystem 时使用 */
+      filesystem_id?: string | null;
+      /** @description 挂载卷、文件系统或文件型密钥时使用 */
+      mount_path?: string | null;
+      /** @description 挂载时是否只读 */
+      read_only?: boolean | null;
+      /** @description scale 时使用 */
+      replicas?: number | null;
+      /** @description update_image 时使用 */
+      image_id?: string | null;
+      /** @description update_image 发布策略 */
+      strategy?: string | null;
+      /** @description bind_secret/unbind_secret 时使用 */
+      secret_id?: string | null;
+      /** @description 密钥绑定类型 */
+      binding_type?: "env" | "file" | null;
+      /** @description 环境变量型密钥的变量名 */
+      env_name?: string | null;
+      /** @description change_security_groups 时使用 */
+      security_group_ids?: string[] | null;
+      /** @description set_termination_protection 时使用 */
+      enabled?: boolean | null;
+      /** @description extend/touch_idle 时使用 */
+      duration?: string | null;
     };
     InstanceLifecycleResponse: {
       instance: components["schemas"]["InstanceRecord"];

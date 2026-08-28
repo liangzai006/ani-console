@@ -1,9 +1,11 @@
-import { Button, Message, Modal, Space } from '@arco-design/web-react'
+import { Button, Message, Modal, Space, Tooltip } from '@arco-design/web-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { AliIcon } from '@/components/common/AliIcon'
-import { DetailPageFrame } from '@/components/common'
-import { StatusTag } from '@/components/common/StatusTag'
+import {
+  AliIcon,
+  DetailPageFrame,
+  StatusTag,
+} from '@/components/common'
 import { InstanceLogsPanel } from '@/components/instances/InstanceLogsPanel'
 import { formatDateTime } from '@/lib/format'
 import { getInstanceDisplayIp, getInstanceNetworkValue } from '@/lib/instance-network'
@@ -88,7 +90,17 @@ export function ContainerInstanceDetailPage({ instanceId }: { instanceId: string
       ]}
       icon={<AliIcon name="icon-rongqishili" size={28} />}
       title={detail.name}
-      status={<StatusTag status={detail.state} />}
+      status={
+        detail.reason ? (
+          <Tooltip content={detail.reason}>
+            <span className="inline-flex">
+              <StatusTag status={detail.state} />
+            </span>
+          </Tooltip>
+        ) : (
+          <StatusTag status={detail.state} />
+        )
+      }
       headerItems={[
         { label: '镜像', value: detail.container?.image ?? '—' },
         { label: '规格', value: nameValue },
@@ -155,7 +167,7 @@ export function ContainerInstanceDetailPage({ instanceId }: { instanceId: string
             { label: '实例 ID', value: detail.id },
             { label: 'Provider', value: detail.provider },
             { label: '节点', value: detail.node_name ?? '—' },
-            { label: '状态说明', value: detail.state_message ?? '—' },
+            { label: '状态说明', value: detail.reason ?? '—' },
             { label: '创建时间', value: formatDateTime(detail.created_at) },
             { label: '更新时间', value: formatDateTime(detail.updated_at) },
             {

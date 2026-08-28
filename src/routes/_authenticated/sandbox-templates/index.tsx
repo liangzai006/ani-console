@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, Empty, Tag } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
-import { DataTable } from '@/components/common/DataTable'
-import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
+import {
+  DataTable,
+  ApiErrorAlert,
+} from '@/components/common'
 import type { components } from '@/api/core-schema'
 
 export const Route = createFileRoute('/_authenticated/sandbox-templates/')({

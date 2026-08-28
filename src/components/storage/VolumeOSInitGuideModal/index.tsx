@@ -11,7 +11,7 @@ import {
 } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
-import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
+import { ApiErrorAlert } from "@/components/common";
 import { newIdempotencyKey } from "@/lib/idempotency";
 
 export function VolumeOSInitGuideModal({

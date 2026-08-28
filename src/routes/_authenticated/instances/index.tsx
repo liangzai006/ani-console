@@ -18,9 +18,9 @@ import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { newIdempotencyKey } from "@/lib/idempotency";
 import { PageHeader } from "@/components/shell/AppShell";
-import { DataTable } from "@/components/common/DataTable";
-import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
 import {
+  DataTable,
+  ApiErrorAlert,
   ListDataTable,
   ListPageFrame,
   ListPageHeader,
@@ -31,13 +31,13 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
+  StatusTag,
+  AsyncTaskPoller,
+  Ipv4CidrInput,
 } from "@/components/common";
-import { StatusTag } from "@/components/common/StatusTag";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-import { AsyncTaskPoller } from "@/components/common/AsyncTaskPoller";
-import { Ipv4CidrInput } from "@/components/common/Ipv4CidrInput";
 import { listOrThrow } from "@/lib/api-list";
 import {
   optionalIpv4WithinCidrError,
@@ -340,7 +340,6 @@ export function InstancesListPage(props: InstancesListPageProps = {}) {
     id: `instances-list:${kindFilter ?? "all"}`,
     title: `${title}列表加载失败`,
     error,
-    onRetry: refresh,
   });
 
   const items = ((data?.items ?? []) as Instance[]).filter(

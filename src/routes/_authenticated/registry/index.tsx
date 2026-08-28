@@ -206,7 +206,6 @@ function RegistryPage() {
     id: "registry-images-list",
     title: "镜像列表加载失败",
     error: images.error,
-    onRetry: refresh,
   });
   const columns: Array<ListColumn<RegistryImage>> = [
     {

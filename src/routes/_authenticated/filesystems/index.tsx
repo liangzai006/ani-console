@@ -21,8 +21,8 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
+  StatusTag,
 } from "@/components/common";
-import { StatusTag } from "@/components/common/StatusTag";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { listOrThrow } from "@/lib/api-list";
@@ -99,7 +99,6 @@ function FilesystemsPage() {
     id: "filesystems-list",
     title: "文件存储列表加载失败",
     error: filesystems.error,
-    onRetry: () => void filesystems.refetch(),
   });
   const mountTargetQueries = useQueries({
     queries: filteredItems.map((item) => ({

@@ -7,7 +7,7 @@ export type ContainerDetailInstance = {
   name: string
   kind: 'container'
   state: string | undefined
-  state_message?: string | null
+  reason?: string | null
   provider: string
   node_name?: string | null
   termination_protection: boolean

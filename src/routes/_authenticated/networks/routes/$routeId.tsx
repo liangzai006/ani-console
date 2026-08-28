@@ -4,10 +4,12 @@ import { Button, Card, Empty, List, Modal, Spin, Tag, Typography } from '@arco-d
 import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
-import { DetailPageFrame } from '@/components/common'
-import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
-import { AliIcon } from '@/components/common/AliIcon'
-import { StatusTag } from '@/components/common/StatusTag'
+import {
+  DetailPageFrame,
+  ApiErrorAlert,
+  AliIcon,
+  StatusTag,
+} from '@/components/common'
 import { formatDateTime } from '@/lib/format'
 
 type NetworkRoute = components['schemas']['NetworkRoute']

@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Empty } from '@arco-design/web-react'
 import { useNavigate } from '@tanstack/react-router'
-import { DataTable } from '@/components/common/DataTable'
-import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
+import {
+  DataTable,
+  ApiErrorAlert,
+} from '@/components/common'
 import { formatBytes } from '@/lib/format'
 import { vmDetailDataSource } from './data-source'
 import styles from './detail.module.css'

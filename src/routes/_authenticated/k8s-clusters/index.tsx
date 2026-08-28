@@ -14,19 +14,13 @@ import {
 } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
-import { DetailPageFrame } from "@/components/common";
-import { AliIcon } from "@/components/common/AliIcon";
-import { StatusTag } from "@/components/common/StatusTag";
-import { DataTable } from "@/components/common/DataTable";
-import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
-import { newIdempotencyKey } from "@/lib/idempotency";
-import { showApiError } from "@/api/helpers";
-import { AsyncTaskPoller } from "@/components/common/AsyncTaskPoller";
-import { listOrThrow } from "@/lib/api-list";
-import { formatDateTime } from "@/lib/format";
-import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import {
+  DetailPageFrame,
+  AliIcon,
+  StatusTag,
+  DataTable,
+  ApiErrorAlert,
+  AsyncTaskPoller,
   ListDataTable,
   ListNameCell,
   ListPageFrame,
@@ -40,6 +34,12 @@ import {
   ToolbarSearch,
   type ListColumn,
 } from "@/components/common";
+import { newIdempotencyKey } from "@/lib/idempotency";
+import { showApiError } from "@/api/helpers";
+import { listOrThrow } from "@/lib/api-list";
+import { formatDateTime } from "@/lib/format";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import {
   getMockCluster,
   getMockNodePools,
@@ -112,7 +112,6 @@ function ClusterList() {
     id: "k8s-clusters-list",
     title: "K8s 集群列表加载失败",
     error,
-    onRetry: refresh,
   });
 
   const createCluster = useMutation({

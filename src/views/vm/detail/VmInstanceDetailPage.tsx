@@ -1,9 +1,11 @@
 import { Button, Message, Progress, Space } from '@arco-design/web-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { AliIcon } from '@/components/common/AliIcon'
-import { DetailPageFrame } from '@/components/common'
-import { StatusTag } from '@/components/common/StatusTag'
+import {
+  AliIcon,
+  DetailPageFrame,
+  StatusTag,
+} from '@/components/common'
 import { formatDateTime } from '@/lib/format'
 import { vmDetailDataSource } from './data-source'
 import { VmMonitorTab } from './VmMonitorTab'

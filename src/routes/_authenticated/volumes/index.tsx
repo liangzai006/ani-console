@@ -22,8 +22,8 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
+  StatusTag,
 } from "@/components/common";
-import { StatusTag } from "@/components/common/StatusTag";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
@@ -134,7 +134,6 @@ function VolumesPage() {
     id: "volumes-list",
     title: "块存储卷列表加载失败",
     error: volumes.error,
-    onRetry: refresh,
   });
 
   const columns: Array<ListColumn<Volume>> = [

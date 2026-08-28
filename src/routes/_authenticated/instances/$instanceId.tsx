@@ -1,14 +1,16 @@
-import { DataTable } from '@/components/common/DataTable'
+import {
+  DataTable,
+  StatusTag,
+  ApiErrorAlert,
+} from '@/components/common'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Button, Card, Descriptions, Empty, Message, Modal, Space, Spin, Tabs } from '@arco-design/web-react'
-import { useState } from 'react'
+  Button, Card, Descriptions, Empty, Message, Modal, Space, Spin, Tabs, Tooltip } from '@arco-design/web-react'
+import { useEffect, useState } from 'react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
-import { StatusTag } from '@/components/common/StatusTag'
-import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
 import { InstanceLogsPanel } from '@/components/instances/InstanceLogsPanel'
 import { formatDateTime } from '@/lib/format'
 import { newIdempotencyKey } from '@/lib/idempotency'
@@ -119,6 +121,15 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
     enabled: false,
   })
 
+  useEffect(() => {
+    if (detail.data?.kind !== 'gpu_container') return
+    navigate({
+      to: '/gpu-instances/$instanceId',
+      params: { instanceId },
+      replace: true,
+    })
+  }, [detail.data?.kind, instanceId, navigate])
+
   const lifecycle = useMutation({
     mutationFn: async (action: 'start' | 'stop' | 'restart' | 'delete') => {
       const { error, response } = await coreApi.POST('/instances/{instance_id}/lifecycle', {
@@ -161,6 +172,14 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
   }
 
   if (detail.error) return <ApiErrorAlert error={detail.error} />
+
+  if (detail.data?.kind === 'gpu_container') {
+    return (
+      <div className="flex justify-center py-16">
+        <Spin />
+      </div>
+    )
+  }
 
   const inst = detail.data
   const isVmInstance = inst?.kind === 'vm'
@@ -212,7 +231,18 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
           data={[
             { label: 'ID', value: inst?.id },
             { label: '类型', value: inst?.kind },
-            { label: '状态', value: <StatusTag status={inst?.state} /> },
+            {
+              label: '状态',
+              value: inst?.reason ? (
+                <Tooltip content={inst.reason}>
+                  <span className="inline-flex">
+                    <StatusTag status={inst.state} />
+                  </span>
+                </Tooltip>
+              ) : (
+                <StatusTag status={inst?.state} />
+              ),
+            },
             { label: '创建', value: formatDateTime(inst?.created_at) },
             { label: '更新', value: formatDateTime(inst?.updated_at) },
           ]}
@@ -237,7 +267,7 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
                 { label: '子网', value: getInstanceNetworkValue(inst, 'subnet_id') },
                 { label: '内网 IP', value: getInstanceDisplayIp(inst) },
                 { label: '终止保护', value: inst?.termination_protection ? '已开启' : '未开启' },
-                { label: '状态说明', value: inst?.state_message ?? '—' },
+                { label: '状态说明', value: inst?.reason ?? '—' },
               ]}
             />
             {isSandboxInstance ? (

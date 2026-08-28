@@ -1,4 +1,4 @@
-import { DataTable } from '@/components/common/DataTable'
+import { DataTable } from '@/components/common'
 import { useMutation } from "@tanstack/react-query";
 import {
   Alert, Button, Empty, Form, Input, InputNumber, Space, Typography } from "@arco-design/web-react"

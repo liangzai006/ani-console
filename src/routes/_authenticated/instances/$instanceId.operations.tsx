@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, Empty } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
-import { StatusTag } from '@/components/common/StatusTag'
-import { DataTable } from '@/components/common/DataTable'
-import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
+import {
+  StatusTag,
+  DataTable,
+  ApiErrorAlert,
+} from '@/components/common'
 import { formatDateTime } from '@/lib/format'
 import { Link } from '@tanstack/react-router'
 

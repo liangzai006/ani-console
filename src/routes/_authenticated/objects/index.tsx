@@ -64,7 +64,6 @@ function ObjectsPage() {
     id: "buckets-list",
     title: "对象存储桶列表加载失败",
     error: buckets.error,
-    onRetry: refresh,
   });
 
   const columns: Array<ListColumn<Bucket>> = [

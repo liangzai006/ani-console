@@ -17,9 +17,11 @@ import {
 import { useRef, useState } from 'react'
 import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
-import { DataTable } from '@/components/common/DataTable'
-import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
-import { StatusTag } from '@/components/common/StatusTag'
+import {
+  DataTable,
+  ApiErrorAlert,
+  StatusTag,
+} from '@/components/common'
 import { formatDateTime } from '@/lib/format'
 import { showApiError } from '@/api/helpers'
 import { getErrorMessage } from '@/lib/errors'

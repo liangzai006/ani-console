@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Empty, Select, Space, Spin, Typography } from '@arco-design/web-react'
 import { coreApi, CORE_API_BASE } from '@/api/client'
-import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
+import { ApiErrorAlert } from '@/components/common'
 import { useAuthStore } from '@/stores/auth'
 import type { operations } from '@/api/core-schema'
 

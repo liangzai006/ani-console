@@ -1,4 +1,9 @@
-import { DataTable } from '@/components/common/DataTable'
+import {
+  DataTable,
+  DetailPageFrame,
+  ApiErrorAlert,
+  AliIcon,
+} from '@/components/common'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -7,9 +12,6 @@ import { useEffect, useRef, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import { DetailPageFrame } from "@/components/common";
-import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
-import { AliIcon } from "@/components/common/AliIcon";
 import { CreateLifecycleRuleModal } from "@/components/storage/CreateLifecycleRuleModal";
 import { ObjectBrowser } from "@/components/storage/ObjectBrowser";
 import { listOrThrow } from "@/lib/api-list";

@@ -94,7 +94,6 @@ function InferencePage() {
     id: "inference-services-list",
     title: "推理服务列表加载失败",
     error: services.error,
-    onRetry: () => void services.refetch(),
   });
   const counts = useMemo(
     () => ({

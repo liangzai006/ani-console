@@ -1,10 +1,12 @@
-import { DataTable } from '@/components/common/DataTable'
+import {
+  DataTable,
+  DetailPageFrame,
+  AliIcon,
+} from '@/components/common'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Button, Card, Empty, Message, Space, Typography } from "@arco-design/web-react"
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
-import { DetailPageFrame } from "@/components/common";
-import { AliIcon } from "@/components/common/AliIcon";
 import {
   inferenceServiceItems,
   modelCatalogItems,

@@ -19,8 +19,8 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
+  StatusTag,
 } from "@/components/common";
-import { StatusTag } from "@/components/common/StatusTag";
 import { listOrThrow } from "@/lib/api-list";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -108,7 +108,6 @@ function LoadBalancersPage() {
     id: "load-balancers-list",
     title: "负载均衡列表加载失败",
     error: loadBalancers.error,
-    onRetry: refresh,
   });
   const columns: Array<ListColumn<LoadBalancer>> = [
     {

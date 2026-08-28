@@ -5,8 +5,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { coreApi } from '@/api/client'
 import type { components } from '@/api/core-schema'
-import { FormPageFrame, type FormPageSection } from '@/components/common'
-import { Ipv4CidrInput } from '@/components/common/Ipv4CidrInput'
+import {
+  FormPageFrame,
+  type FormPageSection,
+  Ipv4CidrInput,
+} from '@/components/common'
 import { listOrThrow } from '@/lib/api-list'
 import { newIdempotencyKey } from '@/lib/idempotency'
 import { getInstanceActionErrorMessage } from '@/lib/sandbox-instance'

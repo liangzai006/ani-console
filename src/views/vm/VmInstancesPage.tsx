@@ -160,7 +160,6 @@ export function VmInstancesPage({
     id: "vm-instances-list-error",
     title: "云主机加载失败",
     error: query.error,
-    onRetry: () => void query.refetch(),
   });
 
   const result = query.data ?? {

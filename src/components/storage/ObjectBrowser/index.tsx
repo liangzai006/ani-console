@@ -1,7 +1,7 @@
 import { Breadcrumb, Button, Empty, Link, Space, Tag, Typography, type TableColumnProps } from '@arco-design/web-react'
 import { IconArrowLeft, IconFile, IconFolder } from '@arco-design/web-react/icon'
 import type { components } from '@/api/core-schema'
-import { DataTable } from '@/components/common/DataTable'
+import { DataTable } from '@/components/common'
 import { formatBytes, formatDateTime } from '@/lib/format'
 import styles from './index.module.css'
 

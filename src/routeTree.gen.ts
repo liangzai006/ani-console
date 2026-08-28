@@ -43,6 +43,7 @@ import { Route as AuthenticatedInstancesInstanceIdRouteImport } from './routes/_
 import { Route as AuthenticatedInstanceOperationsOperationIdRouteImport } from './routes/_authenticated/instance-operations/$operationId'
 import { Route as AuthenticatedInferencePoliciesRouteImport } from './routes/_authenticated/inference/policies'
 import { Route as AuthenticatedInferenceServiceIdRouteImport } from './routes/_authenticated/inference/$serviceId'
+import { Route as AuthenticatedGpuInstancesInstanceIdRouteImport } from './routes/_authenticated/gpu-instances/$instanceId'
 import { Route as AuthenticatedFilesystemsFilesystemIdRouteImport } from './routes/_authenticated/filesystems/$filesystemId'
 import { Route as AuthenticatedComputeOverviewRouteImport } from './routes/_authenticated/compute/overview'
 import { Route as AuthenticatedObjectsBucketIdIndexRouteImport } from './routes/_authenticated/objects/$bucketId/index'
@@ -263,6 +264,12 @@ const AuthenticatedInferenceServiceIdRoute =
     path: '/inference/$serviceId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedGpuInstancesInstanceIdRoute =
+  AuthenticatedGpuInstancesInstanceIdRouteImport.update({
+    id: '/gpu-instances/$instanceId',
+    path: '/gpu-instances/$instanceId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedFilesystemsFilesystemIdRoute =
   AuthenticatedFilesystemsFilesystemIdRouteImport.update({
     id: '/filesystems/$filesystemId',
@@ -409,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/login/': typeof LoginIndexRoute
   '/compute/overview': typeof AuthenticatedComputeOverviewRoute
   '/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
+  '/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
   '/inference/policies': typeof AuthenticatedInferencePoliciesRouteWithChildren
   '/instance-operations/$operationId': typeof AuthenticatedInstanceOperationsOperationIdRoute
@@ -466,6 +474,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginIndexRoute
   '/compute/overview': typeof AuthenticatedComputeOverviewRoute
   '/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
+  '/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
   '/inference/policies': typeof AuthenticatedInferencePoliciesRouteWithChildren
   '/instance-operations/$operationId': typeof AuthenticatedInstanceOperationsOperationIdRoute
@@ -525,6 +534,7 @@ export interface FileRoutesById {
   '/login/': typeof LoginIndexRoute
   '/_authenticated/compute/overview': typeof AuthenticatedComputeOverviewRoute
   '/_authenticated/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
+  '/_authenticated/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/_authenticated/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
   '/_authenticated/inference/policies': typeof AuthenticatedInferencePoliciesRouteWithChildren
   '/_authenticated/instance-operations/$operationId': typeof AuthenticatedInstanceOperationsOperationIdRoute
@@ -585,6 +595,7 @@ export interface FileRouteTypes {
     | '/login/'
     | '/compute/overview'
     | '/filesystems/$filesystemId'
+    | '/gpu-instances/$instanceId'
     | '/inference/$serviceId'
     | '/inference/policies'
     | '/instance-operations/$operationId'
@@ -642,6 +653,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/compute/overview'
     | '/filesystems/$filesystemId'
+    | '/gpu-instances/$instanceId'
     | '/inference/$serviceId'
     | '/inference/policies'
     | '/instance-operations/$operationId'
@@ -700,6 +712,7 @@ export interface FileRouteTypes {
     | '/login/'
     | '/_authenticated/compute/overview'
     | '/_authenticated/filesystems/$filesystemId'
+    | '/_authenticated/gpu-instances/$instanceId'
     | '/_authenticated/inference/$serviceId'
     | '/_authenticated/inference/policies'
     | '/_authenticated/instance-operations/$operationId'
@@ -999,6 +1012,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInferenceServiceIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/gpu-instances/$instanceId': {
+      id: '/_authenticated/gpu-instances/$instanceId'
+      path: '/gpu-instances/$instanceId'
+      fullPath: '/gpu-instances/$instanceId'
+      preLoaderRoute: typeof AuthenticatedGpuInstancesInstanceIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/filesystems/$filesystemId': {
       id: '/_authenticated/filesystems/$filesystemId'
       path: '/filesystems/$filesystemId'
@@ -1283,6 +1303,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedComputeOverviewRoute: typeof AuthenticatedComputeOverviewRoute
   AuthenticatedFilesystemsFilesystemIdRoute: typeof AuthenticatedFilesystemsFilesystemIdRoute
+  AuthenticatedGpuInstancesInstanceIdRoute: typeof AuthenticatedGpuInstancesInstanceIdRoute
   AuthenticatedInferenceServiceIdRoute: typeof AuthenticatedInferenceServiceIdRoute
   AuthenticatedInferencePoliciesRoute: typeof AuthenticatedInferencePoliciesRouteWithChildren
   AuthenticatedInstanceOperationsOperationIdRoute: typeof AuthenticatedInstanceOperationsOperationIdRoute
@@ -1327,6 +1348,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedComputeOverviewRoute: AuthenticatedComputeOverviewRoute,
   AuthenticatedFilesystemsFilesystemIdRoute:
     AuthenticatedFilesystemsFilesystemIdRoute,
+  AuthenticatedGpuInstancesInstanceIdRoute:
+    AuthenticatedGpuInstancesInstanceIdRoute,
   AuthenticatedInferenceServiceIdRoute: AuthenticatedInferenceServiceIdRoute,
   AuthenticatedInferencePoliciesRoute:
     AuthenticatedInferencePoliciesRouteWithChildren,

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Alert, Spin } from '@arco-design/web-react'
 import { useQuery } from '@tanstack/react-query'
 import { coreApi } from '@/api/client'
-import { StatusTag } from '@/components/common/StatusTag'
+import { StatusTag } from '../StatusTag'
 
 interface AsyncTaskPollerProps {
   taskId: string

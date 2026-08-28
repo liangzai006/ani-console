@@ -1,7 +1,7 @@
 import { Breadcrumb, Button, Tooltip } from '@arco-design/web-react'
 import { Link } from '@tanstack/react-router'
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import { AliIcon } from '@/components/common/AliIcon'
+import { AliIcon } from '../AliIcon'
 import styles from './index.module.css'
 import type { DetailBreadcrumbItem, DetailCard, DetailHeaderItems, DetailTab } from './types'
 

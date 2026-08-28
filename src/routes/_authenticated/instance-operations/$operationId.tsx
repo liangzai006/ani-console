@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, Descriptions, Empty, Spin, Tooltip } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { PageHeader } from "@/components/shell/AppShell";
-import { StatusTag } from "@/components/common/StatusTag";
-import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
-import { DataTable } from "@/components/common/DataTable";
+import {
+  StatusTag,
+  ApiErrorAlert,
+  DataTable,
+} from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 
 export const Route = createFileRoute(

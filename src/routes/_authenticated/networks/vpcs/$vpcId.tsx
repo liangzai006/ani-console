@@ -1,14 +1,16 @@
-import { DataTable } from '@/components/common/DataTable'
+import {
+  DataTable,
+  DetailPageFrame,
+  ApiErrorAlert,
+  AliIcon,
+  StatusTag,
+} from '@/components/common'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Card, Empty, List, Modal, Space, Spin, Tag, Typography } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
-import { DetailPageFrame } from '@/components/common'
-import { ApiErrorAlert } from '@/components/common/ApiErrorAlert'
-import { AliIcon } from '@/components/common/AliIcon'
-import { StatusTag } from '@/components/common/StatusTag'
 import { formatDateTime } from '@/lib/format'
 import { listOrThrow } from '@/lib/api-list'
 

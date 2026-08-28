@@ -1,6 +1,6 @@
 import { IconRight } from '@arco-design/web-react/icon'
 import { Link } from '@tanstack/react-router'
-import { AliIcon } from '@/components/common/AliIcon'
+import { AliIcon } from '@/components/common'
 import type { HomeSummaryCard } from '../types'
 import styles from '../home.module.css'
 

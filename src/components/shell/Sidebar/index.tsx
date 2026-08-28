@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Empty, Menu, Tooltip } from '@arco-design/web-react'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { AliIcon } from '@/components/common/AliIcon'
+import { AliIcon } from '@/components/common'
 import { matchSideMenuKey } from '@/lib/side-menu-match'
 import { isGroupItem, type MenuItem } from '@/lib/menu-items'
 

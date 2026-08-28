@@ -1,4 +1,10 @@
-import { DataTable } from '@/components/common/DataTable'
+import {
+  DataTable,
+  DetailPageFrame,
+  ApiErrorAlert,
+  AliIcon,
+  StatusTag,
+} from '@/components/common'
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -7,10 +13,6 @@ import { coreApi } from "@/api/client";
 import { useState } from "react";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import { DetailPageFrame } from "@/components/common";
-import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
-import { AliIcon } from "@/components/common/AliIcon";
-import { StatusTag } from "@/components/common/StatusTag";
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
 import { FilesystemPermissionsTab } from "@/components/storage/FilesystemPermissionsTab";

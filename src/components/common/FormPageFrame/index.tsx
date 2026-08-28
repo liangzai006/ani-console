@@ -1,6 +1,6 @@
 import { Breadcrumb, Button, Form, Space, Tooltip } from '@arco-design/web-react'
 import { Link } from '@tanstack/react-router'
-import { AliIcon } from '@/components/common/AliIcon'
+import { AliIcon } from '../AliIcon'
 import type { FormPageFrameProps } from './types'
 import styles from './index.module.css'
 

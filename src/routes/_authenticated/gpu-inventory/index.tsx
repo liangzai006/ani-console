@@ -2,11 +2,13 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Card, Empty, Grid, Spin } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
-import { CorePieChart } from '@/components/common/CorePieChart'
+import {
+  CorePieChart,
+  DataTable,
+  StatusTag,
+} from '@/components/common'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { PageHeader } from '@/components/shell/AppShell'
-import { DataTable } from '@/components/common/DataTable'
-import { StatusTag } from '@/components/common/StatusTag'
 import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 import type { components } from '@/api/core-schema'
 
@@ -49,13 +51,11 @@ function GpuInventoryPage() {
     id: 'gpu-inventory-list',
     title: 'GPU 设备列表加载失败',
     error: list.error,
-    onRetry: () => void list.refetch(),
   })
   useListErrorNotification({
     id: 'gpu-inventory-occupancy',
     title: 'GPU 占用数据加载失败',
     error: occ.error,
-    onRetry: () => void occ.refetch(),
   })
 
   const chart = {

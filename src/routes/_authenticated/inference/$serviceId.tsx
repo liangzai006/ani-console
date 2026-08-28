@@ -1,4 +1,8 @@
-import { DataTable } from '@/components/common/DataTable'
+import {
+  DataTable,
+  DetailPageFrame,
+  AliIcon,
+} from '@/components/common'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   Alert, Button, Empty, InputNumber, Message, Modal, Select, Space, Spin, Tooltip, Typography } from "@arco-design/web-react"
@@ -8,8 +12,6 @@ import type { components } from "@/api/services-schema";
 import { servicesApi } from "@/api/services-client";
 import { showApiError } from "@/api/helpers";
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
-import { DetailPageFrame } from "@/components/common";
-import { AliIcon } from "@/components/common/AliIcon";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";

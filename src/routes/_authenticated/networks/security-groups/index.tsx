@@ -134,7 +134,6 @@ function SecurityGroupsPage() {
     id: "security-groups-list",
     title: "安全组列表加载失败",
     error: securityGroups.error,
-    onRetry: refresh,
   });
 
   const columns: Array<ListColumn<SecurityGroup>> = [

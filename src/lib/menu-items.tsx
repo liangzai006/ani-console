@@ -7,7 +7,7 @@ import {
   IconNav,
   IconStorage,
 } from "@arco-design/web-react/icon";
-import { AliIcon } from "@/components/common/AliIcon";
+import { AliIcon } from "@/components/common";
 
 export interface MenuItem {
   key: string;

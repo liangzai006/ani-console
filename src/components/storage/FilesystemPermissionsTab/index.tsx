@@ -1,4 +1,4 @@
-import { DataTable } from '@/components/common/DataTable'
+import { DataTable } from '@/components/common'
 import { Alert, Button, Descriptions, Empty, Space, Tooltip, Typography } from "@arco-design/web-react"
 
 type FilesystemAccessRule = {

@@ -4,10 +4,12 @@ import { Button, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import { DetailPageFrame } from "@/components/common";
-import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
-import { AliIcon } from "@/components/common/AliIcon";
-import { StatusTag } from "@/components/common/StatusTag";
+import {
+  DetailPageFrame,
+  ApiErrorAlert,
+  AliIcon,
+  StatusTag,
+} from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";
 

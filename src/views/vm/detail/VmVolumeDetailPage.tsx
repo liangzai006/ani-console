@@ -1,8 +1,10 @@
 import { Spin } from '@arco-design/web-react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { AliIcon } from '@/components/common/AliIcon'
-import { DetailPageFrame } from '@/components/common'
+import {
+  AliIcon,
+  DetailPageFrame,
+} from '@/components/common'
 import { formatDateTime, formatBytes } from '@/lib/format'
 import { vmDetailDataSource } from './data-source'
 import { volumeUsageLabel } from './data-source'

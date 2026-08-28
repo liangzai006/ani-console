@@ -19,8 +19,8 @@ import {
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
+  StatusTag,
 } from "@/components/common";
-import { StatusTag } from "@/components/common/StatusTag";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
@@ -114,7 +114,6 @@ function VectorStoresPage() {
     id: "vector-stores-list",
     title: "向量存储列表加载失败",
     error: stores.error,
-    onRetry: refresh,
   });
   const columns: Array<ListColumn<VectorStore>> = [
     {

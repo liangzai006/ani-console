@@ -6,13 +6,15 @@ import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
 import type { components as coreComponents } from "@/api/core-schema";
 import { showApiError } from "@/api/helpers";
-import { DetailPageFrame } from "@/components/common";
-import { ApiErrorAlert } from "@/components/common/ApiErrorAlert";
-import { AliIcon } from "@/components/common/AliIcon";
+import {
+  DetailPageFrame,
+  ApiErrorAlert,
+  AliIcon,
+  StatusTag,
+} from "@/components/common";
 import { KnowledgeChatPanel } from "@/components/knowledge/KnowledgeChatPanel";
 import { KnowledgeDocumentsPanel } from "@/components/knowledge/KnowledgeDocumentsPanel";
 import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeDocumentUploadButton";
-import { StatusTag } from "@/components/common/StatusTag";
 import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
 

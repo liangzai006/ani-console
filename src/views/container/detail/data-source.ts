@@ -7,7 +7,7 @@ function buildDetail(record: Record<string, unknown>): ContainerDetailInstance |
     name: record.name as string,
     kind: 'container',
     state: record.state as string,
-    state_message: record.state_message as string | null,
+    reason: record.reason as string | null,
     provider: record.provider as string,
     node_name: record.node_name as string | null,
     termination_protection: record.termination_protection as boolean,

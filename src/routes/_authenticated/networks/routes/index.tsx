@@ -108,7 +108,6 @@ function NetworkRoutesPage() {
     id: "network-routes-list",
     title: "路由列表加载失败",
     error: routes.error,
-    onRetry: refresh,
   });
   const columns: Array<ListColumn<NetworkRoute>> = [
     {
