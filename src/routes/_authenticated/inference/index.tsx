@@ -1,5 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Message, Modal, Select, Space } from "@arco-design/web-react";
+import {
+  Dropdown,
+  InputNumber,
+  Menu,
+  Message,
+  Modal,
+  Select,
+  Space,
+  Typography,
+} from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import type { components } from "@/api/services-schema";
@@ -40,6 +49,8 @@ function InferencePage() {
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
   const [model, setModel] = useState("all");
+  const [resizeTarget, setResizeTarget] = useState<InferenceService>();
+  const [replicas, setReplicas] = useState(1);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const services = useQuery({
@@ -89,6 +100,25 @@ function InferencePage() {
     },
     onError: (error) => showApiError(error),
   });
+  const resize = useMutation({
+    mutationFn: async (item: InferenceService) => {
+      const { data, error } = await servicesApi.PATCH(
+        "/inference-services/{service_id}",
+        {
+          params: { path: { service_id: item.id } },
+          body: { idempotency_key: newIdempotencyKey(), replicas },
+        },
+      );
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      Message.success("变配操作已提交");
+      setResizeTarget(undefined);
+      void qc.invalidateQueries({ queryKey: ["inference-services"] });
+    },
+    onError: (error) => showApiError(error),
+  });
   const items = services.data?.items ?? [];
   useListErrorNotification({
     id: "inference-services-list",
@@ -117,23 +147,7 @@ function InferencePage() {
       })),
     [items],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter((item) => {
-      const matchesStatus =
-        status === "all" ||
-        (status === "deploying"
-          ? item.status === "pending" || item.status === "deploying"
-          : status === "stopped"
-            ? item.status === "stopping" || item.status === "stopped"
-            : item.status === status);
-      return (
-        matchesStatus &&
-        (model === "all" || item.model === model) &&
-        (!keyword || item[searchField].toLowerCase().includes(keyword))
-      );
-    });
-  }, [items, model, searchField, searchText, status]);
+  // TODO: /inference-services 暂不支持状态、模型与关键字查询，接口补齐后传递筛选状态。
   useEffect(() => setPage(1), [model, searchField, searchText, status]);
   const columns: Array<ListColumn<InferenceService>> = [
     {
@@ -154,7 +168,7 @@ function InferencePage() {
       key: "status",
       title: "状态",
       width: 120,
-      render: (_, item) => <AiServiceStatusTag status={item.status} />,
+      render: (_, item) => <AiServiceStatusTag status={item.status} raw />,
     },
     {
       key: "model",
@@ -162,25 +176,24 @@ function InferencePage() {
       render: (_, item) => item.model,
     },
     {
-      key: "resources",
-      title: "资源规格",
-      render: (_, item) =>
-        item.resources
-          ? `${item.resources.cpu} CPU / ${item.resources.memory}${item.resources.accelerator ? ` / ${item.resources.accelerator.spec_id} × ${item.resources.accelerator.count_per_replica}` : ""}`
-          : "—",
+      key: "engine",
+      title: "引擎",
+      render: (_, item) => item.engine?.command?.join(" ") || "—",
     },
     {
-      key: "replicas",
-      title: "副本",
-      render: (_, item) => `${item.ready_replicas} / ${item.replicas}`,
+      key: "replicasGpu",
+      title: "副本 / GPU",
+      render: (_, item) => {
+        const accelerator = item.resources?.accelerator;
+        const gpuType = item.gpu_type ?? accelerator?.spec_id;
+        const gpuCount = item.gpu_count_per_pod || accelerator?.count_per_replica;
+        return `${item.ready_replicas} / ${item.replicas} / ${gpuType && gpuCount ? `${gpuType} × ${gpuCount}` : "—"}`;
+      },
     },
     {
-      key: "placement",
-      title: "部署模式",
-      render: (_, item) =>
-        ({ auto: "自动", single_node: "单节点", multi_node: "多节点" })[
-          item.placement_mode
-        ] ?? item.placement_mode,
+      key: "invocationUrl",
+      title: "调用地址",
+      render: (_, item) => item.invocation_url ?? item.endpoint_url ?? "—",
     },
     {
       key: "createdAt",
@@ -257,7 +270,7 @@ function InferencePage() {
         }
       >
         <ListDataTable
-          data={filteredItems.slice((page - 1) * pageSize, page * pageSize)}
+          data={items.slice((page - 1) * pageSize, page * pageSize)}
           columns={[
             ...columns,
             {
@@ -268,51 +281,66 @@ function InferencePage() {
                 <ListRowActions>
                   {item.status === "running" ? (
                     <ListRowActionButton
+                      disabled={lifecycle.isPending}
                       onClick={() => lifecycle.mutate({ item, action: "stop" })}
                     >
                       停止
                     </ListRowActionButton>
-                  ) : null}
-                  {item.status === "stopped" ? (
+                  ) : (
                     <ListRowActionButton
-                      onClick={() =>
-                        lifecycle.mutate({ item, action: "start" })
-                      }
+                      disabled={item.status !== "stopped" || lifecycle.isPending}
+                      onClick={() => lifecycle.mutate({ item, action: "start" })}
                     >
                       启动
                     </ListRowActionButton>
-                  ) : null}
-                  {item.status === "failed" ? (
-                    <ListRowActionButton
-                      onClick={() =>
-                        lifecycle.mutate({ item, action: "restart" })
-                      }
-                    >
-                      重启
-                    </ListRowActionButton>
-                  ) : null}
-                  <ListRowActionButton
-                    status="danger"
-                    onClick={() =>
-                      Modal.confirm({
-                        title: "删除推理服务",
-                        content: `确定删除「${item.name}」？删除请求提交后将异步停止并清理该服务。`,
-                        okButtonProps: { status: "danger" },
-                        onOk: () => remove.mutateAsync(item),
-                      })
+                  )}
+                  <Dropdown
+                    trigger="click"
+                    position="br"
+                    droplist={
+                      <Menu
+                        onClickMenuItem={(key) => {
+                          if (key === "resize") {
+                            setReplicas(item.replicas);
+                            setResizeTarget(item);
+                            return;
+                          }
+                          if (key !== "delete") return;
+                          Modal.confirm({
+                            title: "删除推理服务",
+                            content: `确定删除「${item.name}」？删除请求提交后将异步停止并清理该服务。`,
+                            okButtonProps: { status: "danger" },
+                            onOk: () => remove.mutateAsync(item),
+                          });
+                        }}
+                      >
+                        <Menu.Item key="resize" disabled={item.status !== "running"}>
+                          变配
+                        </Menu.Item>
+                        <Menu.Item key="update-model-binding-policy" disabled>
+                          更新模型绑定策略
+                        </Menu.Item>
+                        <Menu.Item key="delete">删除</Menu.Item>
+                      </Menu>
                     }
                   >
-                    删除
-                  </ListRowActionButton>
+                    <ListRowActionButton disabled={lifecycle.isPending}>
+                      更多
+                      <i
+                        className="iconfont icon-down-chevron-small ml-1"
+                        aria-hidden="true"
+                      />
+                    </ListRowActionButton>
+                  </Dropdown>
                 </ListRowActions>
               ),
             },
           ]}
-          loading={services.isLoading}
+          loading={services.isFetching}
           pagination={{
             page,
             pageSize,
-            total: filteredItems.length,
+            total: items.length,
             onPageChange: setPage,
             onPageSizeChange: (next) => {
               setPageSize(next);
@@ -333,6 +361,28 @@ function InferencePage() {
         visible={createVisible}
         onCancel={() => setCreateVisible(false)}
       />
+      <Modal
+        visible={Boolean(resizeTarget)}
+        title={resizeTarget ? `变配 · ${resizeTarget.name}` : "变配"}
+        onCancel={() => setResizeTarget(undefined)}
+        onOk={() => (resizeTarget ? resize.mutateAsync(resizeTarget) : undefined)}
+        confirmLoading={resize.isPending}
+        unmountOnExit
+      >
+        <Space direction="vertical" size={12} className="w-full">
+          <Typography.Text>期望副本数</Typography.Text>
+          <InputNumber
+            value={replicas}
+            onChange={(value) => setReplicas(value ?? 1)}
+            min={1}
+            precision={0}
+            className="w-full"
+          />
+          <Typography.Text type="secondary">
+            当前后端变配接口仅支持调整副本数，操作将异步执行。
+          </Typography.Text>
+        </Space>
+      </Modal>
     </>
   );
 }

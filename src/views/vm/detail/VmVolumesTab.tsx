@@ -1,10 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Empty } from '@arco-design/web-react'
 import { useNavigate } from '@tanstack/react-router'
-import {
-  DataTable,
-  ApiErrorAlert,
-} from '@/components/common'
+import { DataTable } from '@/components/common'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 import { formatBytes } from '@/lib/format'
 import { vmDetailDataSource } from './data-source'
 import styles from './detail.module.css'
@@ -20,6 +18,11 @@ export function VmVolumesTab({ instanceId }: VmVolumesTabProps) {
   const query = useQuery({
     queryKey: ['vm-instance-volumes', instanceId],
     queryFn: () => vmDetailDataSource.listVolumes(instanceId),
+  })
+  useListErrorNotification({
+    id: `vm-volumes:${instanceId}`,
+    title: '云盘列表加载失败',
+    error: query.error,
   })
 
   const refresh = useMutation({
@@ -69,10 +72,10 @@ export function VmVolumesTab({ instanceId }: VmVolumesTabProps) {
             ),
           },
         ]}
-        data={query.error ? [] : query.data ?? []}
-        loading={query.isLoading}
+        data={query.data ?? []}
+        loading={query.isFetching}
         pagination={false}
-        noDataElement={query.error ? <ApiErrorAlert error={query.error} /> : <Empty description="暂无云盘" />}
+        noDataElement={<Empty description="暂无云盘" />}
       />
     </div>
   )

@@ -9,6 +9,7 @@ import { formatDateTime, formatBytes } from '@/lib/format'
 import { vmDetailDataSource } from './data-source'
 import { volumeUsageLabel } from './data-source'
 import styles from './detail.module.css'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 
 type VmVolumeDetailPageProps = {
   instanceId: string
@@ -21,6 +22,11 @@ export function VmVolumeDetailPage({ instanceId, volumeId }: VmVolumeDetailPageP
     queryKey: ['vm-volume-detail', instanceId, volumeId],
     queryFn: () => vmDetailDataSource.getVolumeDetail(instanceId, volumeId),
   })
+  useListErrorNotification({
+    id: `vm-volume-detail:${instanceId}:${volumeId}`,
+    title: '云盘详情加载失败',
+    error: query.error,
+  })
 
   if (query.isLoading && !query.data) {
     return (
@@ -31,11 +37,26 @@ export function VmVolumeDetailPage({ instanceId, volumeId }: VmVolumeDetailPageP
     )
   }
 
-  if (query.error) {
-    return <div className={styles.state}>云盘详情加载失败</div>
-  }
+  if (!query.data)
+    return (
+      <DetailPageFrame
+        breadcrumbs={[
+          { label: '云主机 VM', to: '/instances/vm' },
+          { label: instanceId, to: '/instances/vm/$instanceId', params: { instanceId } },
+          { label: volumeId },
+        ]}
+        title={volumeId}
+        icon={<AliIcon name="yunpan" size={28} />}
+        headerItems={[
+          { label: '云盘 ID', value: volumeId },
+          { label: '挂载点', value: '—' },
+          { label: '容量', value: '—' },
+        ]}
+        cards={[{ key: 'basic', title: '云盘信息', fields: [{ label: '云盘 ID', value: volumeId }] }]}
+      />
+    )
 
-  const volume = query.data!
+  const volume = query.data
 
   return (
     <DetailPageFrame

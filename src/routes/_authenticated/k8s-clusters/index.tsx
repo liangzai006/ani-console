@@ -19,7 +19,7 @@ import {
   AliIcon,
   StatusTag,
   DataTable,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AsyncTaskPoller,
   ListDataTable,
   ListNameCell,
@@ -107,7 +107,7 @@ function ClusterList() {
       };
     },
   });
-  const { data, isLoading, error } = clusters;
+  const { data, isFetching, error } = clusters;
   useListErrorNotification({
     id: "k8s-clusters-list",
     title: "K8s 集群列表加载失败",
@@ -194,17 +194,8 @@ function ClusterList() {
     }),
     [items],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter((item) => {
-      if (status !== "all" && item.state !== status) return false;
-      if (!keyword) return true;
-      return String(item[searchField] ?? "")
-        .toLowerCase()
-        .includes(keyword);
-    });
-  }, [items, searchField, searchText, status]);
-  const paginationTotal = data?.total ?? filteredItems.length;
+  // TODO: /k8s-clusters 暂不支持状态与关键字查询，接口补齐后传递 status/searchField/searchText。
+  const paginationTotal = data?.total ?? items.length;
 
   useEffect(() => {
     setPage(1);
@@ -313,7 +304,7 @@ function ClusterList() {
               <ToolbarIconButton
                 iconClassName="icon-refresh-1"
                 label="刷新"
-                spinning={isLoading}
+                spinning={isFetching}
                 onClick={refresh}
               />
             }
@@ -324,7 +315,7 @@ function ClusterList() {
           <AsyncTaskPoller taskId={taskId} onComplete={() => setTaskId(null)} />
         ) : null}
         <ListDataTable
-          data={filteredItems}
+          data={items}
           rowKey={(cluster) => cluster.id ?? cluster.name ?? ""}
           columns={[
             ...columns,
@@ -374,7 +365,7 @@ function ClusterList() {
             selectedRowKeys: selectedKeys,
             onChange: (keys) => setSelectedKeys(keys.map(String)),
           }}
-          loading={isLoading}
+          loading={isFetching}
           emptyIconClassName="icon-jiqun"
           emptyText={
             searchText || status !== "all"
@@ -470,6 +461,21 @@ export function ClusterDetail({
             }),
           ),
   });
+  useListErrorNotification({
+    id: `k8s-cluster-detail:${clusterId}`,
+    title: "K8s 集群加载失败",
+    error: detail.error,
+  });
+  useListErrorNotification({
+    id: `k8s-node-pools:${clusterId}`,
+    title: "节点池加载失败",
+    error: nodePools.error,
+  });
+  useListErrorNotification({
+    id: `k8s-workloads:${clusterId}`,
+    title: "工作负载加载失败",
+    error: workloads.error,
+  });
 
   const downloadKubeconfig = useMutation({
     mutationFn: async () => {
@@ -518,7 +524,15 @@ export function ClusterDetail({
     );
   }
 
-  if (detail.error) return <ApiErrorAlert error={detail.error} />;
+  if (!detail.data)
+    return (
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: "算力" }, { label: "K8s 集群" }, { label: clusterId }]}
+        title={clusterId}
+        idLabel="集群 ID"
+        idValue={clusterId}
+      />
+    );
 
   const c = detail.data;
   const poolItems = (nodePools.data?.items ?? []) as NodePool[];
@@ -543,16 +557,10 @@ export function ClusterDetail({
           { title: "规格", dataIndex: "instance_type" },
           { title: "状态", width: 120, render: (_, r) => <StatusTag status={r.state} /> },
         ]}
-        data={nodePools.error ? [] : poolItems}
+        data={poolItems}
         loading={nodePools.isLoading}
         pagination={false}
-        noDataElement={
-          nodePools.error ? (
-            <ApiErrorAlert error={nodePools.error} />
-          ) : (
-            <Empty description="暂无节点池，点击上方创建" />
-          )
-        }
+        noDataElement={<Empty description="暂无节点池，点击上方创建" />}
       />
     </div>
   );
@@ -571,19 +579,13 @@ export function ClusterDetail({
           render: (_, r) => <StatusTag status={String(r.status ?? "")} />,
         },
       ]}
-      data={workloads.error ? [] : workloadItems}
+      data={workloadItems}
       loading={workloads.isLoading}
       rowKey={(row) =>
         `${String(row.namespace ?? "")}/${String(row.kind ?? "")}/${String(row.name ?? "")}`
       }
       pagination={false}
-      noDataElement={
-        workloads.error ? (
-          <ApiErrorAlert error={workloads.error} />
-        ) : (
-          <Empty description="暂无工作负载" />
-        )
-      }
+      noDataElement={<Empty description="暂无工作负载" />}
     />
   );
 

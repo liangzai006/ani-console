@@ -1,7 +1,7 @@
 import {
   DataTable,
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
 } from '@/components/common'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -18,6 +18,7 @@ import { listOrThrow } from "@/lib/api-list";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";
 import { uploadStorageObjectFile } from "@/lib/object-upload";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type Bucket = components["schemas"]["StorageBucketRecord"];
 type BucketEntry = components["schemas"]["StorageBucketObjectEntry"];
@@ -57,6 +58,11 @@ function BucketDetailPage() {
     queryKey: ["bucket", bucketId],
     queryFn: () => fetchBucketById(bucketId),
   });
+  useListErrorNotification({
+    id: `bucket-detail:${bucketId}`,
+    title: "存储桶加载失败",
+    error: bucket.error,
+  });
   const bucketEntries = useQuery({
     queryKey: ["bucket-objects", bucketId, prefix],
     queryFn: () =>
@@ -79,6 +85,16 @@ function BucketDetailPage() {
         }),
       ),
     enabled: !!bucket.data,
+  });
+  useListErrorNotification({
+    id: `bucket-objects:${bucketId}:${prefix}`,
+    title: "对象列表加载失败",
+    error: bucketEntries.error,
+  });
+  useListErrorNotification({
+    id: `bucket-lifecycle-rules:${bucketId}`,
+    title: "生命周期规则加载失败",
+    error: lifecycleRules.error,
   });
 
   useEffect(() => {
@@ -236,11 +252,13 @@ function BucketDetailPage() {
         <Spin />
       </div>
     );
-  if (bucket.error || !bucket.data)
+  if (!bucket.data)
     return (
-      <ApiErrorAlert
-        error={bucket.error ?? new Error("存储桶不存在或无权访问")}
-        title="存储桶加载失败"
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: "存储" }, { label: "对象存储", to: "/objects" }, { label: bucketId }]}
+        title={bucketId}
+        idLabel="存储桶 ID"
+        idValue={bucketId}
       />
     );
 
@@ -328,9 +346,7 @@ function BucketDetailPage() {
                 </Button>
               </Upload>
             ),
-            content: bucketEntries.error ? (
-              <ApiErrorAlert error={bucketEntries.error} />
-            ) : (
+            content: (
               <ObjectBrowser
                 bucketName={bucketInfo.name}
                 prefix={prefix}
@@ -416,10 +432,7 @@ function BucketDetailPage() {
                     添加规则
                   </Button>
                 </div>
-                {lifecycleRules.error ? (
-                  <ApiErrorAlert error={lifecycleRules.error} />
-                ) : (
-                  <DataTable<LifecycleRule>
+                <DataTable<LifecycleRule>
                     columns={[
                       { title: "名称", dataIndex: "name" },
                       {
@@ -483,7 +496,6 @@ function BucketDetailPage() {
                       <Empty description="暂无生命周期规则，点击「添加规则」开始" />
                     }
                   />
-                )}
               </Space>
             ),
           },

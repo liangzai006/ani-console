@@ -20,7 +20,6 @@ import { newIdempotencyKey } from "@/lib/idempotency";
 import { PageHeader } from "@/components/shell/AppShell";
 import {
   DataTable,
-  ApiErrorAlert,
   ListDataTable,
   ListPageFrame,
   ListPageHeader,
@@ -71,8 +70,6 @@ type InstanceSearchField = "name" | "id";
 const VM_BOOT_IMAGE = "quay.io/kubevirt/cirros-container-disk-demo:v1.2.0";
 const CONTAINER_IMAGE = "dockerproxy.net/library/nginx:1.27-alpine";
 const SANDBOX_IMAGE = "docker.changqingyun.cn/mirror/busybox:latest";
-const INSTANCE_LIST_POLL_MS = 5000;
-
 type InstanceFormState = {
   name: string;
   kind: InstanceKind;
@@ -333,39 +330,18 @@ export function InstancesListPage(props: InstancesListPageProps = {}) {
       if (error || !data) throw error ?? new Error("实例列表未返回结果");
       return data;
     },
-    refetchInterval: INSTANCE_LIST_POLL_MS,
   });
-  const { data, isLoading, isFetching, error } = instances;
+  const { data, isFetching, error } = instances;
   useListErrorNotification({
     id: `instances-list:${kindFilter ?? "all"}`,
     title: `${title}列表加载失败`,
     error,
   });
 
-  const items = ((data?.items ?? []) as Instance[]).filter(
-    (item) => item.state !== "deleted",
-  );
+  const items = (data?.items ?? []) as Instance[];
   const prototypeTable =
     kindFilter === "gpu_container" || kindFilter === "sandbox";
-  const normalizedSearch = searchText.trim().toLowerCase();
-  const matchesStatus = (item: Instance) => {
-    if (statusFilter === "all") return true;
-    if (statusFilter === "deploying") {
-      return (
-        item.state === "pending" ||
-        item.state === "provisioning" ||
-        item.state === "starting"
-      );
-    }
-    if (statusFilter === "failed") return item.state === "failed";
-    return item.state === statusFilter;
-  };
-  const filteredItems = items.filter((item) => {
-    if (!matchesStatus(item)) return false;
-    if (!normalizedSearch) return true;
-    const value = searchField === "id" ? item.id : (item.name ?? "");
-    return value.toLowerCase().includes(normalizedSearch);
-  });
+  // TODO: /instances 暂不支持状态与关键字查询，接口补齐后传递 statusFilter/searchField/searchText。
   const statusTabs = [
     { value: "all" as const, label: "全部", count: items.length },
     {
@@ -444,7 +420,7 @@ export function InstancesListPage(props: InstancesListPageProps = {}) {
       render: (_, row) => formatDateTime(row.created_at),
     },
   ];
-  const paginationTotal = data?.total ?? filteredItems.length;
+  const paginationTotal = data?.total ?? items.length;
   const createRoute = createRouteForKind(kindFilter);
   const openCreate = () => {
     if (createRoute) {
@@ -455,13 +431,13 @@ export function InstancesListPage(props: InstancesListPageProps = {}) {
   };
   const prototypeDataTable = (
     <ListDataTable
-      data={filteredItems}
+      data={items}
       columns={prototypeColumns}
       rowSelection={{
         selectedRowKeys: selectedKeys,
         onChange: (keys) => setSelectedKeys(keys.map(String)),
       }}
-      loading={isLoading}
+      loading={isFetching}
       emptyIconClassName={
         kindFilter === "sandbox" ? "icon-Sandbox" : "icon-GPU"
       }
@@ -600,16 +576,10 @@ export function InstancesListPage(props: InstancesListPageProps = {}) {
           },
           { title: "创建时间", render: (_, r) => formatDateTime(r.created_at) },
         ]}
-        data={error ? [] : items}
-        loading={isLoading}
+        data={items}
+        loading={isFetching}
         pagination={false}
-        noDataElement={
-          error ? (
-            <ApiErrorAlert error={error} />
-          ) : (
-            <Empty description="暂无实例，点击右上角创建" />
-          )
-        }
+        noDataElement={<Empty description="暂无实例，点击右上角创建" />}
       />
       <Modal
         visible={visible}

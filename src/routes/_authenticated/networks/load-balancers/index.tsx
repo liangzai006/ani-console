@@ -94,16 +94,8 @@ function LoadBalancersPage() {
     }),
     [items],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter((item) => {
-      if (status === "running" && item.state !== "available") return false;
-      if (status === "error" && item.state !== "failed") return false;
-      if (vpcId && item.vpc_id !== vpcId) return false;
-      return !keyword || item[searchField].toLowerCase().includes(keyword);
-    });
-  }, [items, searchField, searchText, status, vpcId]);
-  const paginationTotal = loadBalancers.data?.total ?? filteredItems.length;
+  // TODO: /networks/load-balancers 暂不支持状态、VPC 与关键字查询，接口补齐后传递筛选状态。
+  const paginationTotal = loadBalancers.data?.total ?? items.length;
   useListErrorNotification({
     id: "load-balancers-list",
     title: "负载均衡列表加载失败",
@@ -230,7 +222,7 @@ function LoadBalancersPage() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           columns={[
             ...columns,
             {
@@ -287,7 +279,7 @@ function LoadBalancersPage() {
               ),
             },
           ]}
-          loading={loadBalancers.isLoading}
+          loading={loadBalancers.isFetching || vpcs.isFetching}
           emptyIconClassName="icon-fuzaijunhengqi"
           emptyText={
             searchText || vpcId || status !== "all"

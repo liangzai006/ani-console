@@ -1,13 +1,12 @@
-import { Button, Empty, Tooltip } from "@arco-design/web-react";
+import { Empty, Tooltip } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
 import {
-  ApiErrorAlert,
   DataTable,
   StatusTag,
 } from "@/components/common";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
 type InstanceOperation = components["schemas"]["InstanceOperation"];
@@ -34,7 +33,6 @@ const OPERATION_LABELS: Record<string, string> = {
 };
 
 export function GpuInstanceOperations({ instanceId }: { instanceId: string }) {
-  const navigate = useNavigate();
   const operations = useQuery({
     queryKey: ["gpu-instance-operations", instanceId],
     queryFn: async () => {
@@ -52,10 +50,12 @@ export function GpuInstanceOperations({ instanceId }: { instanceId: string }) {
       }
       return (data.items ?? []) as InstanceOperation[];
     },
-    refetchInterval: 10000,
   });
-
-  if (operations.error) return <ApiErrorAlert error={operations.error} />;
+  useListErrorNotification({
+    id: `gpu-instance-operations:${instanceId}`,
+    title: "操作历史加载失败",
+    error: operations.error,
+  });
 
   return (
     <DataTable<InstanceOperation>
@@ -94,24 +94,6 @@ export function GpuInstanceOperations({ instanceId }: { instanceId: string }) {
           title: "创建时间",
           width: 180,
           render: (_, operation) => formatDateTime(operation.created_at),
-        },
-        {
-          title: "操作",
-          width: 90,
-          render: (_, operation) => (
-            <Button
-              type="text"
-              size="mini"
-              onClick={() =>
-                navigate({
-                  to: "/instance-operations/$operationId",
-                  params: { operationId: operation.id },
-                })
-              }
-            >
-              详情
-            </Button>
-          ),
         },
       ]}
     />

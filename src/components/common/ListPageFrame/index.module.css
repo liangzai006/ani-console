@@ -95,7 +95,7 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  padding: 0 16px;
+  padding: 16px;
   border-radius: 6px;
   background: #fff;
 }

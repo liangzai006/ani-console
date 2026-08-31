@@ -1,7 +1,7 @@
 import {
   DataTable,
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
   StatusTag,
 } from '@/components/common'
@@ -13,6 +13,7 @@ import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
 import { formatDateTime } from '@/lib/format'
 import { listOrThrow } from '@/lib/api-list'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 
 type Subnet = components['schemas']['NetworkSubnet']
 type Vpc = components['schemas']['NetworkVPC']
@@ -64,6 +65,10 @@ function SubnetDetailPage() {
     queryFn: () => listOrThrow(() => coreApi.GET('/networks/routes', { params: { query: { vpc_id: detail.data!.vpc_id, limit: 100 } } })),
     enabled: Boolean(detail.data?.vpc_id),
   })
+  useListErrorNotification({ id: `subnet-detail:${subnetId}`, title: '子网加载失败', error: detail.error })
+  useListErrorNotification({ id: `subnet-vpc:${subnetId}`, title: 'VPC 加载失败', error: vpc.error })
+  useListErrorNotification({ id: `subnet-instances:${subnetId}`, title: '关联实例加载失败', error: instances.error })
+  useListErrorNotification({ id: `subnet-routes:${subnetId}`, title: '路由加载失败', error: routes.error })
   const deleteSubnet = useMutation({
     mutationFn: async () => {
       const { error } = await coreApi.DELETE('/networks/subnets/{subnet_id}', {
@@ -79,7 +84,15 @@ function SubnetDetailPage() {
   })
 
   if (detail.isLoading && !detail.data) return <div className="flex justify-center py-20"><Spin /></div>
-  if (detail.error || !detail.data) return <ApiErrorAlert error={detail.error ?? new Error('子网不存在或无权访问')} title="子网加载失败" />
+  if (!detail.data)
+    return (
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: '网络' }, { label: '子网', to: '/networks/subnets' }, { label: subnetId }]}
+        title={subnetId}
+        idLabel="子网 ID"
+        idValue={subnetId}
+      />
+    )
 
   const subnet = detail.data as Subnet
   const parentVpc = vpc.data as Vpc | undefined
@@ -148,7 +161,6 @@ function SubnetDetailPage() {
           key: 'related', label: '关联资源', content: (
             <Space direction="vertical" size={12} className="w-full">
               <Typography.Text>共 <Typography.Text bold>{relatedResources.length}</Typography.Text> 个关联对象</Typography.Text>
-              {instances.error ? <ApiErrorAlert error={instances.error} /> : null}
               <Card title={`关联资源 ${relatedResources.length}`} size="small">
                 <List
                   loading={instances.isLoading}
@@ -164,7 +176,7 @@ function SubnetDetailPage() {
           key: 'routes', label: '路由', content: (
             <Space direction="vertical" size={12} className="w-full">
               <Alert type="info" showIcon={false} content="本 VPC 路由表。系统默认路由不可删；自定义路由也可在侧栏「路由」维护。" />
-              {routes.error ? <ApiErrorAlert error={routes.error} /> : <DataTable<SubnetRouteRow>
+              <DataTable<SubnetRouteRow>
                 columns={[
                   { title: '目标网段', dataIndex: 'destinationCidr' },
                   { title: '下一跳类型', dataIndex: 'nextHopType' },
@@ -176,7 +188,7 @@ function SubnetDetailPage() {
                 data={routeRows}
                 loading={routes.isLoading}
                 pagination={false}
-              />}
+              />
             </Space>
           ),
         },

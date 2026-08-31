@@ -1,7 +1,7 @@
 import { Empty, Input } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { coreApi } from "@/api/client";
-import { ApiErrorAlert } from "@/components/common";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 export function GpuInstanceLogs({ instanceId }: { instanceId: string }) {
   const logs = useQuery({
@@ -20,10 +20,12 @@ export function GpuInstanceLogs({ instanceId }: { instanceId: string }) {
       if (error) throw error;
       return data ?? "";
     },
-    refetchInterval: 10000,
   });
-
-  if (logs.error) return <ApiErrorAlert error={logs.error} />;
+  useListErrorNotification({
+    id: `gpu-instance-logs:${instanceId}`,
+    title: "日志加载失败",
+    error: logs.error,
+  });
   if (!logs.data) return <Empty description="暂无日志" />;
 
   return (

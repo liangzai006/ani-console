@@ -151,14 +151,8 @@ function VpcList() {
     }),
     [items],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter((item) => {
-      if (status !== "all" && item.state !== status) return false;
-      return !keyword || item[searchField].toLowerCase().includes(keyword);
-    });
-  }, [items, searchField, searchText, status]);
-  const paginationTotal = vpcs.data?.total ?? filteredItems.length;
+  // TODO: /networks/vpcs 暂不支持状态与关键字查询，接口补齐后传递 status/searchField/searchText。
+  const paginationTotal = vpcs.data?.total ?? items.length;
   useListErrorNotification({
     id: "vpcs-list",
     title: "VPC 列表加载失败",
@@ -274,7 +268,7 @@ function VpcList() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           columns={[
             ...columns,
             {
@@ -300,7 +294,7 @@ function VpcList() {
               ),
             },
           ]}
-          loading={vpcs.isLoading}
+          loading={vpcs.isFetching}
           emptyIconClassName="icon-VPCwangluo"
           emptyText={
             searchText || status !== "all"

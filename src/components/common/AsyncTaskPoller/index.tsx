@@ -21,11 +21,6 @@ export function AsyncTaskPoller({ taskId, onComplete }: AsyncTaskPollerProps) {
       if (error) throw error
       return data
     },
-    refetchInterval: (q) => {
-      const status = q.state.data?.status
-      if (!status || ['completed', 'failed', 'cancelled', 'dead_letter'].includes(status)) return false
-      return 2000
-    },
     enabled: !!taskId && !done,
   })
 

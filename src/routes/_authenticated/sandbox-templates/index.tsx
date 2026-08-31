@@ -3,10 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Button, Empty, Tag } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
-import {
-  DataTable,
-  ApiErrorAlert,
-} from '@/components/common'
+import { DataTable } from '@/components/common'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 import type { components } from '@/api/core-schema'
 
 export const Route = createFileRoute('/_authenticated/sandbox-templates/')({
@@ -22,6 +20,11 @@ function SandboxTemplatesPage() {
       if (error) throw error
       return data
     },
+  })
+  useListErrorNotification({
+    id: 'sandbox-templates-list',
+    title: 'Sandbox 模板加载失败',
+    error,
   })
 
   type Row = components['schemas']['SandboxTemplate'] & { kind?: string }
@@ -54,10 +57,10 @@ function SandboxTemplatesPage() {
             ),
           },
         ]}
-        data={error ? [] : items}
+        data={items}
         loading={isLoading}
         pagination={false}
-        noDataElement={error ? <ApiErrorAlert error={error} /> : <Empty description="暂无 Sandbox 模板" />}
+        noDataElement={<Empty description="暂无 Sandbox 模板" />}
       />
     </>
   )

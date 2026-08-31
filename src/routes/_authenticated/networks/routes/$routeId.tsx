@@ -6,11 +6,12 @@ import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
 import {
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
   StatusTag,
 } from '@/components/common'
 import { formatDateTime } from '@/lib/format'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 
 type NetworkRoute = components['schemas']['NetworkRoute']
 type Vpc = components['schemas']['NetworkVPC']
@@ -56,6 +57,9 @@ function NetworkRouteDetailPage() {
     enabled: detail.data?.next_hop_type === 'instance' && Boolean(detail.data?.next_hop_id),
     retry: false,
   })
+  useListErrorNotification({ id: `network-route-detail:${routeId}`, title: '路由加载失败', error: detail.error })
+  useListErrorNotification({ id: `network-route-vpc:${routeId}`, title: 'VPC 加载失败', error: vpc.error })
+  useListErrorNotification({ id: `network-route-instance:${routeId}`, title: '下一跳实例加载失败', error: instance.error })
   const deleteRoute = useMutation({
     mutationFn: async (_: undefined) => {
       const { error } = await coreApi.DELETE('/networks/routes/{route_id}', { params: { path: { route_id: routeId } } })
@@ -74,8 +78,15 @@ function NetworkRouteDetailPage() {
         <Spin />
       </div>
     )
-  if (detail.error || !detail.data)
-    return <ApiErrorAlert error={detail.error ?? new Error('路由不存在或无权访问')} title="路由加载失败" />
+  if (!detail.data)
+    return (
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: '网络' }, { label: '路由', to: '/networks/routes' }, { label: routeId }]}
+        title={routeId}
+        idLabel="路由 ID"
+        idValue={routeId}
+      />
+    )
   const item = detail.data as NetworkRoute
   const parentVpc = vpc.data as Vpc | undefined
   const nextHopInstance = instance.data as Instance | undefined
@@ -162,7 +173,6 @@ function NetworkRouteDetailPage() {
               <Typography.Text>
                 共 <Typography.Text bold>{relatedResources.length}</Typography.Text> 个可确认的关联对象
               </Typography.Text>
-              {vpc.error || instance.error ? <ApiErrorAlert error={vpc.error ?? instance.error} /> : null}
               <Card title={`关联资源 ${relatedResources.length}`} size="small">
                 <List<RelatedResource>
                   loading={vpc.isLoading || instance.isLoading}

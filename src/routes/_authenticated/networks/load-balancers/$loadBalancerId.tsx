@@ -1,7 +1,7 @@
 import {
   DataTable,
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
   StatusTag,
 } from '@/components/common'
@@ -12,6 +12,7 @@ import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
 import { formatDateTime } from '@/lib/format'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 
 type LoadBalancer = components['schemas']['NetworkLoadBalancer']
 type Listener = components['schemas']['NetworkLoadBalancerListener']
@@ -58,6 +59,9 @@ function LoadBalancerDetailPage() {
     },
     enabled: Boolean(detail.data?.subnet_id),
   })
+  useListErrorNotification({ id: `load-balancer-detail:${loadBalancerId}`, title: '负载均衡加载失败', error: detail.error })
+  useListErrorNotification({ id: `load-balancer-vpc:${loadBalancerId}`, title: 'VPC 加载失败', error: vpc.error })
+  useListErrorNotification({ id: `load-balancer-subnet:${loadBalancerId}`, title: '子网加载失败', error: subnet.error })
   const remove = useMutation({
     mutationFn: async (_: undefined) => {
       const { error } = await coreApi.DELETE('/networks/load-balancers/{load_balancer_id}', {
@@ -77,8 +81,15 @@ function LoadBalancerDetailPage() {
         <Spin />
       </div>
     )
-  if (detail.error || !detail.data)
-    return <ApiErrorAlert error={detail.error ?? new Error('负载均衡不存在或无权访问')} title="负载均衡加载失败" />
+  if (!detail.data)
+    return (
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: '网络' }, { label: '负载均衡', to: '/networks/load-balancers' }, { label: loadBalancerId }]}
+        title={loadBalancerId}
+        idLabel="负载均衡 ID"
+        idValue={loadBalancerId}
+      />
+    )
   const item = detail.data as LoadBalancer
   const parentVpc = vpc.data as Vpc | undefined
   const parentSubnet = subnet.data as Subnet | undefined

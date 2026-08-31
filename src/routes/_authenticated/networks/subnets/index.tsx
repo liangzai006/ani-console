@@ -1,6 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link as RouterLink,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Form, Input, Modal, Select } from "@arco-design/web-react";
+import { Form, Input, Link, Modal, Select } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
@@ -48,6 +52,7 @@ export const Route = createFileRoute("/_authenticated/networks/subnets/")({
 
 function SubnetsPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [createVisible, setCreateVisible] = useState(false);
   const [name, setName] = useState("");
   const [vpcId, setVpcId] = useState("");
@@ -78,7 +83,7 @@ function SubnetsPage() {
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
       const { data, error } = await coreApi.GET("/networks/subnets", {
-        params: { query: { limit, cursor } },
+        params: { query: { limit, cursor, vpc_id: filterVpcId || undefined } },
       });
       if (error || !data) throw error ?? new Error("子网列表未返回结果");
       return data;
@@ -173,16 +178,8 @@ function SubnetsPage() {
     }),
     [items],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter(
-      (item) =>
-        (status === "all" || item.state === status) &&
-        (!filterVpcId || item.vpc_id === filterVpcId) &&
-        (!keyword || item[searchField].toLowerCase().includes(keyword)),
-    );
-  }, [filterVpcId, items, searchField, searchText, status]);
-  const paginationTotal = subnets.data?.total ?? filteredItems.length;
+  // TODO: /networks/subnets 暂不支持状态与关键字查询，接口补齐后传递 status/searchField/searchText。
+  const paginationTotal = subnets.data?.total ?? items.length;
   useListErrorNotification({
     id: "subnets-list",
     title: "子网列表加载失败",
@@ -196,12 +193,12 @@ function SubnetsPage() {
       render: (_, subnet) => (
         <ListNameCell
           name={
-            <Link
+            <RouterLink
               to="/networks/subnets/$subnetId"
               params={{ subnetId: subnet.id }}
             >
               {subnet.name}
-            </Link>
+            </RouterLink>
           }
           id={subnet.id}
         />
@@ -217,7 +214,16 @@ function SubnetsPage() {
       key: "vpc",
       title: "VPC",
       render: (_, subnet) => (
-        <Link to="/networks/vpcs/$vpcId" params={{ vpcId: subnet.vpc_id }}>
+        <Link
+          href={`/networks/vpcs/${encodeURIComponent(subnet.vpc_id)}`}
+          onClick={(event) => {
+            event.preventDefault();
+            void navigate({
+              to: "/networks/vpcs/$vpcId",
+              params: { vpcId: subnet.vpc_id },
+            });
+          }}
+        >
           {vpcNames.get(subnet.vpc_id) ?? subnet.vpc_id}
         </Link>
       ),
@@ -324,7 +330,7 @@ function SubnetsPage() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           columns={[
             ...columns,
             {
@@ -350,7 +356,7 @@ function SubnetsPage() {
               ),
             },
           ]}
-          loading={subnets.isLoading}
+          loading={subnets.isFetching || vpcs.isFetching}
           emptyIconClassName="icon-VPCwangluo"
           emptyText={
             searchText || filterVpcId || status !== "all"

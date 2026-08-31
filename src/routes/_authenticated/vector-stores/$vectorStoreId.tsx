@@ -15,12 +15,13 @@ import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
 import {
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
   StatusTag,
 } from "@/components/common";
 import { VectorStoreWorkbench } from "@/components/storage/VectorStoreWorkbench";
 import { formatDateTime } from "@/lib/format";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type VectorStore = components["schemas"]["VectorStore"];
 const vectorStoreDetailTabKeys = ["index", "search", "related", "events"] as const;
@@ -53,6 +54,11 @@ function VectorStoreDetailPage() {
       return data;
     },
   });
+  useListErrorNotification({
+    id: `vector-store-detail:${vectorStoreId}`,
+    title: "向量存储加载失败",
+    error: detail.error,
+  });
   const remove = useMutation({
     mutationFn: async (_: undefined) => {
       const { error } = await coreApi.DELETE(
@@ -73,11 +79,13 @@ function VectorStoreDetailPage() {
         <Spin />
       </div>
     );
-  if (detail.error || !detail.data)
+  if (!detail.data)
     return (
-      <ApiErrorAlert
-        error={detail.error ?? new Error("向量存储不存在或无权访问")}
-        title="向量存储加载失败"
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: "存储" }, { label: "向量存储", to: "/vector-stores" }, { label: vectorStoreId }]}
+        title={vectorStoreId}
+        idLabel="向量存储 ID"
+        idValue={vectorStoreId}
       />
     );
   const store = detail.data as VectorStore;

@@ -452,7 +452,7 @@ export function VmInstancesPage({
           selectedRowKeys: selectedKeys,
           onChange: (keys) => setSelectedKeys(keys.map(String)),
         }}
-        loading={query.isLoading}
+        loading={query.isFetching}
         emptyIconClassName="icon-yunzhuji"
         emptyText={
           keyword || status !== "all"

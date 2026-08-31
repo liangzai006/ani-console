@@ -7,12 +7,11 @@ import {
   StatusTag,
 } from '@/components/common'
 import { InstanceLogsPanel } from '@/components/instances/InstanceLogsPanel'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 import { formatDateTime } from '@/lib/format'
 import { getInstanceDisplayIp, getInstanceNetworkValue } from '@/lib/instance-network'
 import { getInstanceActionErrorMessage } from '@/lib/sandbox-instance'
 import { containerDetailDataSource } from './data-source'
-
-const INSTANCE_DETAIL_POLL_MS = 3000
 
 function openTerminalWindow(instanceId: string) {
   const url = `/instances/terminal/${encodeURIComponent(instanceId)}`
@@ -30,8 +29,11 @@ export function ContainerInstanceDetailPage({ instanceId }: { instanceId: string
   const query = useQuery({
     queryKey: ['container-instance-detail', instanceId],
     queryFn: () => containerDetailDataSource.getDetail(instanceId),
-    refetchInterval: INSTANCE_DETAIL_POLL_MS,
-    refetchIntervalInBackground: false,
+  })
+  useListErrorNotification({
+    id: `container-instance-detail:${instanceId}`,
+    title: '容器实例详情加载失败',
+    error: query.error,
   })
 
   const lifecycle = useMutation({
@@ -64,14 +66,22 @@ export function ContainerInstanceDetailPage({ instanceId }: { instanceId: string
     return <div>正在加载容器实例详情...</div>
   }
 
-  if (query.error) {
-    return <div>容器实例详情加载失败</div>
-  }
+  if (!query.data)
+    return (
+      <DetailPageFrame
+        breadcrumbs={[{ label: '容器实例', to: '/instances/container' }, { label: instanceId }]}
+        title={instanceId}
+        icon={<AliIcon name="rongqishili" size={28} />}
+        headerItems={[
+          { label: '实例 ID', value: instanceId },
+          { label: '状态', value: '—' },
+          { label: '创建时间', value: '—' },
+        ]}
+        cards={[{ key: 'basic', title: '基本信息', fields: [{ label: '实例 ID', value: instanceId }] }]}
+      />
+    )
 
-  const detail = query.data!
-  if (!detail) {
-    return <div>容器实例不存在</div>
-  }
+  const detail = query.data
 
   const isRunning = detail.state === 'running'
   const canStart = !isRunning

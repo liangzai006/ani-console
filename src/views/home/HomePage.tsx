@@ -1,4 +1,4 @@
-import { Spin } from "@arco-design/web-react";
+import { Empty, Spin } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { SummaryOverview } from "./components/SummaryOverview";
 import { TasksPanel } from "./components/TasksPanel";
@@ -8,6 +8,7 @@ import { WelcomePanel } from "./components/WelcomePanel";
 import { homeOverviewDataSource } from "./data-source";
 import type { HomeOverviewDataSource } from "./types";
 import styles from "./home.module.css";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 export function HomePage({
   dataSource = homeOverviewDataSource,
@@ -17,6 +18,11 @@ export function HomePage({
   const query = useQuery({
     queryKey: ["home-overview"],
     queryFn: () => dataSource.getOverview(),
+  });
+  useListErrorNotification({
+    id: "home-overview",
+    title: "首页数据加载失败",
+    error: query.error,
   });
 
   if (query.isLoading) {
@@ -28,16 +34,12 @@ export function HomePage({
     );
   }
 
-  if (query.isError || !query.data) {
+  if (!query.data)
     return (
-      <div className={styles.pageState} role="alert">
-        <strong>首页数据加载失败</strong>
-        <button type="button" onClick={() => void query.refetch()}>
-          重新加载
-        </button>
-      </div>
+      <main className={styles.homePage}>
+        <Empty description="暂无首页数据" />
+      </main>
     );
-  }
 
   const data = query.data;
   return (

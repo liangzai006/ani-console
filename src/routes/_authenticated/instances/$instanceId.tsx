@@ -1,9 +1,5 @@
-import {
-  DataTable,
-  StatusTag,
-  ApiErrorAlert,
-} from '@/components/common'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { DataTable, StatusTag } from '@/components/common'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button, Card, Descriptions, Empty, Message, Modal, Space, Spin, Tabs, Tooltip } from '@arco-design/web-react'
@@ -12,6 +8,7 @@ import type { UseQueryResult } from '@tanstack/react-query'
 import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
 import { InstanceLogsPanel } from '@/components/instances/InstanceLogsPanel'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 import { formatDateTime } from '@/lib/format'
 import { newIdempotencyKey } from '@/lib/idempotency'
 import { getInstanceDisplayIp, getInstanceNetworkValue } from '@/lib/instance-network'
@@ -21,7 +18,12 @@ export const Route = createFileRoute('/_authenticated/instances/$instanceId')({
   component: InstanceDetailPage,
 })
 
-const INSTANCE_DETAIL_POLL_MS = 3000
+type InstanceOperation = {
+  id: string
+  operation?: string
+  status?: string
+  created_at?: string
+}
 
 function openTerminalWindow(instanceId: string) {
   const url = `/instances/terminal/${encodeURIComponent(instanceId)}`
@@ -44,12 +46,17 @@ function openConsoleWindow(instanceId: string) {
 function TabQueryBody<T>({
   query,
   emptyDescription,
+  notificationId,
+  errorTitle,
   children,
 }: {
   query: UseQueryResult<T>
   emptyDescription: string
+  notificationId: string
+  errorTitle: string
   children: (data: T) => React.ReactNode
 }) {
+  useListErrorNotification({ id: notificationId, title: errorTitle, error: query.error })
   if (query.isFetching && !query.data) {
     return (
       <div className="flex justify-center py-8">
@@ -57,7 +64,6 @@ function TabQueryBody<T>({
       </div>
     )
   }
-  if (query.isError) return <ApiErrorAlert error={query.error} />
   if (!query.data) return <Empty description={emptyDescription} />
   return <>{children(query.data)}</>
 }
@@ -81,8 +87,11 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
       if (error) throw error
       return data
     },
-    refetchInterval: INSTANCE_DETAIL_POLL_MS,
-    refetchIntervalInBackground: false,
+  })
+  useListErrorNotification({
+    id: `instance-detail:${instanceId}`,
+    title: '实例详情加载失败',
+    error: detail.error,
   })
 
   const events = useQuery({
@@ -113,6 +122,18 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
     queryKey: ['instance', instanceId, 'security'],
     queryFn: async () => {
       const { data, error } = await coreApi.GET('/instances/{instance_id}/security-events', {
+        params: { path: { instance_id: instanceId }, query: { limit: 50 } },
+      })
+      if (error) throw error
+      return data
+    },
+    enabled: false,
+  })
+
+  const operations = useQuery({
+    queryKey: ['instance', instanceId, 'operations'],
+    queryFn: async () => {
+      const { data, error } = await coreApi.GET('/instances/{instance_id}/operations', {
         params: { path: { instance_id: instanceId }, query: { limit: 50 } },
       })
       if (error) throw error
@@ -171,7 +192,13 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
     )
   }
 
-  if (detail.error) return <ApiErrorAlert error={detail.error} />
+  if (!detail.data)
+    return (
+      <div className="space-y-5">
+        <PageHeader title={instanceId} subtitle="实例详情" />
+        <Empty description="暂无实例详情数据" />
+      </div>
+    )
 
   if (detail.data?.kind === 'gpu_container') {
     return (
@@ -255,6 +282,7 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
           if (key === 'events') events.refetch()
           if (key === 'metrics') metrics.refetch()
           if (key === 'security') security.refetch()
+          if (key === 'ops') operations.refetch()
         }}
       >
         <Tabs.TabPane key="overview" title="概览">
@@ -294,7 +322,12 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
           <InstanceLogsPanel instanceId={instanceId} active={activeTab === 'logs'} />
         </Tabs.TabPane>
         <Tabs.TabPane key="events" title="事件">
-          <TabQueryBody query={events} emptyDescription="暂无事件">
+          <TabQueryBody
+            query={events}
+            emptyDescription="暂无事件"
+            notificationId={`instance-events:${instanceId}`}
+            errorTitle="事件加载失败"
+          >
             {(data) => {
               const items = (data as { items?: Record<string, unknown>[] })?.items ?? []
               return items.length === 0 ? (
@@ -314,7 +347,12 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
           </TabQueryBody>
         </Tabs.TabPane>
         <Tabs.TabPane key="metrics" title="指标">
-          <TabQueryBody query={metrics} emptyDescription="暂无指标">
+          <TabQueryBody
+            query={metrics}
+            emptyDescription="暂无指标"
+            notificationId={`instance-metrics:${instanceId}`}
+            errorTitle="指标加载失败"
+          >
             {(data) => (
               <pre className="overflow-auto rounded bg-[var(--color-fill-2)] p-3 text-xs">
                 {JSON.stringify(data, null, 2)}
@@ -323,7 +361,12 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
           </TabQueryBody>
         </Tabs.TabPane>
         <Tabs.TabPane key="security" title="安全事件">
-          <TabQueryBody query={security} emptyDescription="暂无安全事件">
+          <TabQueryBody
+            query={security}
+            emptyDescription="暂无安全事件"
+            notificationId={`instance-security-events:${instanceId}`}
+            errorTitle="安全事件加载失败"
+          >
             {(data) => {
               const items = (data as { items?: Record<string, unknown>[] })?.items ?? []
               return items.length === 0 ? (
@@ -343,9 +386,36 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
           </TabQueryBody>
         </Tabs.TabPane>
         <Tabs.TabPane key="ops" title="操作历史">
-          <Link to="/instances/$instanceId/operations" params={{ instanceId }}>
-            <Button type="outline">查看操作历史</Button>
-          </Link>
+          <TabQueryBody
+            query={operations}
+            emptyDescription="暂无操作历史"
+            notificationId={`instance-operations:${instanceId}`}
+            errorTitle="操作历史加载失败"
+          >
+            {(data) => {
+              const items = (data as { items?: InstanceOperation[] })?.items ?? []
+              return items.length === 0 ? (
+                <Empty description="暂无操作历史" />
+              ) : (
+                <DataTable<InstanceOperation>
+                  data={items}
+                  columns={[
+                    { title: '操作', dataIndex: 'operation' },
+                    {
+                      title: '状态',
+                      width: 120,
+                      render: (_, operation) => <StatusTag status={operation.status} />,
+                    },
+                    {
+                      title: '时间',
+                      render: (_, operation) => formatDateTime(operation.created_at),
+                    },
+                  ]}
+                  pagination={false}
+                />
+              )
+            }}
+          </TabQueryBody>
         </Tabs.TabPane>
       </Tabs>
     </div>

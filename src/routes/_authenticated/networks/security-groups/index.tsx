@@ -120,16 +120,8 @@ function SecurityGroupsPage() {
     }),
     [items],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter(
-      (item) =>
-        (status === "all" || item.state === status) &&
-        (!filterVpcId || item.vpc_id === filterVpcId) &&
-        (!keyword || item[searchField].toLowerCase().includes(keyword)),
-    );
-  }, [filterVpcId, items, searchField, searchText, status]);
-  const paginationTotal = securityGroups.data?.total ?? filteredItems.length;
+  // TODO: /networks/security-groups 暂不支持状态、VPC 与关键字查询，接口补齐后传递筛选状态。
+  const paginationTotal = securityGroups.data?.total ?? items.length;
   useListErrorNotification({
     id: "security-groups-list",
     title: "安全组列表加载失败",
@@ -262,7 +254,7 @@ function SecurityGroupsPage() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           columns={[
             ...columns,
             {
@@ -294,7 +286,7 @@ function SecurityGroupsPage() {
               ),
             },
           ]}
-          loading={securityGroups.isLoading}
+          loading={securityGroups.isFetching || vpcs.isFetching}
           emptyIconClassName="icon-anquanzu"
           emptyText={
             searchText || filterVpcId || status !== "all"

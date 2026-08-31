@@ -40,7 +40,6 @@ import { Route as AuthenticatedInstancesVmRouteImport } from './routes/_authenti
 import { Route as AuthenticatedInstancesSandboxRouteImport } from './routes/_authenticated/instances/sandbox'
 import { Route as AuthenticatedInstancesContainerRouteImport } from './routes/_authenticated/instances/container'
 import { Route as AuthenticatedInstancesInstanceIdRouteImport } from './routes/_authenticated/instances/$instanceId'
-import { Route as AuthenticatedInstanceOperationsOperationIdRouteImport } from './routes/_authenticated/instance-operations/$operationId'
 import { Route as AuthenticatedInferencePoliciesRouteImport } from './routes/_authenticated/inference/policies'
 import { Route as AuthenticatedInferenceServiceIdRouteImport } from './routes/_authenticated/inference/$serviceId'
 import { Route as AuthenticatedGpuInstancesInstanceIdRouteImport } from './routes/_authenticated/gpu-instances/$instanceId'
@@ -63,7 +62,6 @@ import { Route as AuthenticatedInstancesVmInstanceIdRouteImport } from './routes
 import { Route as AuthenticatedInstancesSandboxCreateRouteImport } from './routes/_authenticated/instances/sandbox/create'
 import { Route as AuthenticatedInstancesSandboxInstanceIdRouteImport } from './routes/_authenticated/instances/sandbox/$instanceId'
 import { Route as AuthenticatedInstancesContainerInstanceIdRouteImport } from './routes/_authenticated/instances/container/$instanceId'
-import { Route as AuthenticatedInstancesInstanceIdOperationsRouteImport } from './routes/_authenticated/instances/$instanceId.operations'
 import { Route as AuthenticatedInferencePoliciesPolicyIdRouteImport } from './routes/_authenticated/inference/policies.$policyId'
 import { Route as AuthenticatedInstancesContainerCreateRouteRouteImport } from './routes/_authenticated/instances/container/create/route'
 import { Route as AuthenticatedInstancesVmInstanceIdVolumesVolumeIdRouteImport } from './routes/_authenticated/instances/vm/$instanceId/volumes/$volumeId'
@@ -246,12 +244,6 @@ const AuthenticatedInstancesInstanceIdRoute =
     path: '/instances/$instanceId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedInstanceOperationsOperationIdRoute =
-  AuthenticatedInstanceOperationsOperationIdRouteImport.update({
-    id: '/instance-operations/$operationId',
-    path: '/instance-operations/$operationId',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedInferencePoliciesRoute =
   AuthenticatedInferencePoliciesRouteImport.update({
     id: '/inference/policies',
@@ -384,12 +376,6 @@ const AuthenticatedInstancesContainerInstanceIdRoute =
     path: '/$instanceId',
     getParentRoute: () => AuthenticatedInstancesContainerRoute,
   } as any)
-const AuthenticatedInstancesInstanceIdOperationsRoute =
-  AuthenticatedInstancesInstanceIdOperationsRouteImport.update({
-    id: '/operations',
-    path: '/operations',
-    getParentRoute: () => AuthenticatedInstancesInstanceIdRoute,
-  } as any)
 const AuthenticatedInferencePoliciesPolicyIdRoute =
   AuthenticatedInferencePoliciesPolicyIdRouteImport.update({
     id: '/$policyId',
@@ -419,8 +405,7 @@ export interface FileRoutesByFullPath {
   '/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
   '/inference/policies': typeof AuthenticatedInferencePoliciesRouteWithChildren
-  '/instance-operations/$operationId': typeof AuthenticatedInstanceOperationsOperationIdRoute
-  '/instances/$instanceId': typeof AuthenticatedInstancesInstanceIdRouteWithChildren
+  '/instances/$instanceId': typeof AuthenticatedInstancesInstanceIdRoute
   '/instances/container': typeof AuthenticatedInstancesContainerRouteWithChildren
   '/instances/sandbox': typeof AuthenticatedInstancesSandboxRouteWithChildren
   '/instances/vm': typeof AuthenticatedInstancesVmRouteWithChildren
@@ -448,7 +433,6 @@ export interface FileRoutesByFullPath {
   '/volumes': typeof AuthenticatedVolumesIndexRoute
   '/instances/container/create': typeof AuthenticatedInstancesContainerCreateRouteRoute
   '/inference/policies/$policyId': typeof AuthenticatedInferencePoliciesPolicyIdRoute
-  '/instances/$instanceId/operations': typeof AuthenticatedInstancesInstanceIdOperationsRoute
   '/instances/container/$instanceId': typeof AuthenticatedInstancesContainerInstanceIdRoute
   '/instances/sandbox/$instanceId': typeof AuthenticatedInstancesSandboxInstanceIdRoute
   '/instances/sandbox/create': typeof AuthenticatedInstancesSandboxCreateRoute
@@ -477,8 +461,7 @@ export interface FileRoutesByTo {
   '/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
   '/inference/policies': typeof AuthenticatedInferencePoliciesRouteWithChildren
-  '/instance-operations/$operationId': typeof AuthenticatedInstanceOperationsOperationIdRoute
-  '/instances/$instanceId': typeof AuthenticatedInstancesInstanceIdRouteWithChildren
+  '/instances/$instanceId': typeof AuthenticatedInstancesInstanceIdRoute
   '/instances/container': typeof AuthenticatedInstancesContainerRouteWithChildren
   '/instances/sandbox': typeof AuthenticatedInstancesSandboxRouteWithChildren
   '/instances/vm': typeof AuthenticatedInstancesVmRouteWithChildren
@@ -505,7 +488,6 @@ export interface FileRoutesByTo {
   '/volumes': typeof AuthenticatedVolumesIndexRoute
   '/instances/container/create': typeof AuthenticatedInstancesContainerCreateRouteRoute
   '/inference/policies/$policyId': typeof AuthenticatedInferencePoliciesPolicyIdRoute
-  '/instances/$instanceId/operations': typeof AuthenticatedInstancesInstanceIdOperationsRoute
   '/instances/container/$instanceId': typeof AuthenticatedInstancesContainerInstanceIdRoute
   '/instances/sandbox/$instanceId': typeof AuthenticatedInstancesSandboxInstanceIdRoute
   '/instances/sandbox/create': typeof AuthenticatedInstancesSandboxCreateRoute
@@ -537,8 +519,7 @@ export interface FileRoutesById {
   '/_authenticated/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/_authenticated/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
   '/_authenticated/inference/policies': typeof AuthenticatedInferencePoliciesRouteWithChildren
-  '/_authenticated/instance-operations/$operationId': typeof AuthenticatedInstanceOperationsOperationIdRoute
-  '/_authenticated/instances/$instanceId': typeof AuthenticatedInstancesInstanceIdRouteWithChildren
+  '/_authenticated/instances/$instanceId': typeof AuthenticatedInstancesInstanceIdRoute
   '/_authenticated/instances/container': typeof AuthenticatedInstancesContainerRouteWithChildren
   '/_authenticated/instances/sandbox': typeof AuthenticatedInstancesSandboxRouteWithChildren
   '/_authenticated/instances/vm': typeof AuthenticatedInstancesVmRouteWithChildren
@@ -566,7 +547,6 @@ export interface FileRoutesById {
   '/_authenticated/volumes/': typeof AuthenticatedVolumesIndexRoute
   '/_authenticated/instances/container/create': typeof AuthenticatedInstancesContainerCreateRouteRoute
   '/_authenticated/inference/policies/$policyId': typeof AuthenticatedInferencePoliciesPolicyIdRoute
-  '/_authenticated/instances/$instanceId/operations': typeof AuthenticatedInstancesInstanceIdOperationsRoute
   '/_authenticated/instances/container/$instanceId': typeof AuthenticatedInstancesContainerInstanceIdRoute
   '/_authenticated/instances/sandbox/$instanceId': typeof AuthenticatedInstancesSandboxInstanceIdRoute
   '/_authenticated/instances/sandbox/create': typeof AuthenticatedInstancesSandboxCreateRoute
@@ -598,7 +578,6 @@ export interface FileRouteTypes {
     | '/gpu-instances/$instanceId'
     | '/inference/$serviceId'
     | '/inference/policies'
-    | '/instance-operations/$operationId'
     | '/instances/$instanceId'
     | '/instances/container'
     | '/instances/sandbox'
@@ -627,7 +606,6 @@ export interface FileRouteTypes {
     | '/volumes'
     | '/instances/container/create'
     | '/inference/policies/$policyId'
-    | '/instances/$instanceId/operations'
     | '/instances/container/$instanceId'
     | '/instances/sandbox/$instanceId'
     | '/instances/sandbox/create'
@@ -656,7 +634,6 @@ export interface FileRouteTypes {
     | '/gpu-instances/$instanceId'
     | '/inference/$serviceId'
     | '/inference/policies'
-    | '/instance-operations/$operationId'
     | '/instances/$instanceId'
     | '/instances/container'
     | '/instances/sandbox'
@@ -684,7 +661,6 @@ export interface FileRouteTypes {
     | '/volumes'
     | '/instances/container/create'
     | '/inference/policies/$policyId'
-    | '/instances/$instanceId/operations'
     | '/instances/container/$instanceId'
     | '/instances/sandbox/$instanceId'
     | '/instances/sandbox/create'
@@ -715,7 +691,6 @@ export interface FileRouteTypes {
     | '/_authenticated/gpu-instances/$instanceId'
     | '/_authenticated/inference/$serviceId'
     | '/_authenticated/inference/policies'
-    | '/_authenticated/instance-operations/$operationId'
     | '/_authenticated/instances/$instanceId'
     | '/_authenticated/instances/container'
     | '/_authenticated/instances/sandbox'
@@ -744,7 +719,6 @@ export interface FileRouteTypes {
     | '/_authenticated/volumes/'
     | '/_authenticated/instances/container/create'
     | '/_authenticated/inference/policies/$policyId'
-    | '/_authenticated/instances/$instanceId/operations'
     | '/_authenticated/instances/container/$instanceId'
     | '/_authenticated/instances/sandbox/$instanceId'
     | '/_authenticated/instances/sandbox/create'
@@ -991,13 +965,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInstancesInstanceIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/instance-operations/$operationId': {
-      id: '/_authenticated/instance-operations/$operationId'
-      path: '/instance-operations/$operationId'
-      fullPath: '/instance-operations/$operationId'
-      preLoaderRoute: typeof AuthenticatedInstanceOperationsOperationIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/inference/policies': {
       id: '/_authenticated/inference/policies'
       path: '/inference/policies'
@@ -1152,13 +1119,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInstancesContainerInstanceIdRouteImport
       parentRoute: typeof AuthenticatedInstancesContainerRoute
     }
-    '/_authenticated/instances/$instanceId/operations': {
-      id: '/_authenticated/instances/$instanceId/operations'
-      path: '/operations'
-      fullPath: '/instances/$instanceId/operations'
-      preLoaderRoute: typeof AuthenticatedInstancesInstanceIdOperationsRouteImport
-      parentRoute: typeof AuthenticatedInstancesInstanceIdRoute
-    }
     '/_authenticated/inference/policies/$policyId': {
       id: '/_authenticated/inference/policies/$policyId'
       path: '/$policyId'
@@ -1196,21 +1156,6 @@ const AuthenticatedInferencePoliciesRouteChildren: AuthenticatedInferencePolicie
 const AuthenticatedInferencePoliciesRouteWithChildren =
   AuthenticatedInferencePoliciesRoute._addFileChildren(
     AuthenticatedInferencePoliciesRouteChildren,
-  )
-
-interface AuthenticatedInstancesInstanceIdRouteChildren {
-  AuthenticatedInstancesInstanceIdOperationsRoute: typeof AuthenticatedInstancesInstanceIdOperationsRoute
-}
-
-const AuthenticatedInstancesInstanceIdRouteChildren: AuthenticatedInstancesInstanceIdRouteChildren =
-  {
-    AuthenticatedInstancesInstanceIdOperationsRoute:
-      AuthenticatedInstancesInstanceIdOperationsRoute,
-  }
-
-const AuthenticatedInstancesInstanceIdRouteWithChildren =
-  AuthenticatedInstancesInstanceIdRoute._addFileChildren(
-    AuthenticatedInstancesInstanceIdRouteChildren,
   )
 
 interface AuthenticatedInstancesContainerRouteChildren {
@@ -1306,8 +1251,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedGpuInstancesInstanceIdRoute: typeof AuthenticatedGpuInstancesInstanceIdRoute
   AuthenticatedInferenceServiceIdRoute: typeof AuthenticatedInferenceServiceIdRoute
   AuthenticatedInferencePoliciesRoute: typeof AuthenticatedInferencePoliciesRouteWithChildren
-  AuthenticatedInstanceOperationsOperationIdRoute: typeof AuthenticatedInstanceOperationsOperationIdRoute
-  AuthenticatedInstancesInstanceIdRoute: typeof AuthenticatedInstancesInstanceIdRouteWithChildren
+  AuthenticatedInstancesInstanceIdRoute: typeof AuthenticatedInstancesInstanceIdRoute
   AuthenticatedInstancesContainerRoute: typeof AuthenticatedInstancesContainerRouteWithChildren
   AuthenticatedInstancesSandboxRoute: typeof AuthenticatedInstancesSandboxRouteWithChildren
   AuthenticatedInstancesVmRoute: typeof AuthenticatedInstancesVmRouteWithChildren
@@ -1353,10 +1297,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInferenceServiceIdRoute: AuthenticatedInferenceServiceIdRoute,
   AuthenticatedInferencePoliciesRoute:
     AuthenticatedInferencePoliciesRouteWithChildren,
-  AuthenticatedInstanceOperationsOperationIdRoute:
-    AuthenticatedInstanceOperationsOperationIdRoute,
-  AuthenticatedInstancesInstanceIdRoute:
-    AuthenticatedInstancesInstanceIdRouteWithChildren,
+  AuthenticatedInstancesInstanceIdRoute: AuthenticatedInstancesInstanceIdRoute,
   AuthenticatedInstancesContainerRoute:
     AuthenticatedInstancesContainerRouteWithChildren,
   AuthenticatedInstancesSandboxRoute:

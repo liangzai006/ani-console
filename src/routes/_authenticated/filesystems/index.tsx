@@ -86,22 +86,15 @@ function FilesystemsPage() {
     }),
     [items],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter(
-      (item) =>
-        (status === "all" || item.state === status) &&
-        (!keyword || String(item[searchField]).toLowerCase().includes(keyword)),
-    );
-  }, [items, searchField, searchText, status]);
-  const paginationTotal = filesystems.data?.total ?? filteredItems.length;
+  // TODO: /filesystems 暂不支持状态与关键字查询，接口补齐后传递 status/searchField/searchText。
+  const paginationTotal = filesystems.data?.total ?? items.length;
   useListErrorNotification({
     id: "filesystems-list",
     title: "文件存储列表加载失败",
     error: filesystems.error,
   });
   const mountTargetQueries = useQueries({
-    queries: filteredItems.map((item) => ({
+    queries: items.map((item) => ({
       queryKey: ["filesystem-mounts", item.id, "count"],
       queryFn: () =>
         listOrThrow(() =>
@@ -115,7 +108,7 @@ function FilesystemsPage() {
     })),
   });
   const mountTargetCounts = new Map(
-    filteredItems.map((item, index) => [
+    items.map((item, index) => [
       item.id,
       mountTargetQueries[index]?.data?.total,
     ]),
@@ -231,7 +224,7 @@ function FilesystemsPage() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           columns={[
             ...columns,
             {
@@ -265,7 +258,7 @@ function FilesystemsPage() {
               ),
             },
           ]}
-          loading={filesystems.isLoading}
+          loading={filesystems.isFetching}
           emptyIconClassName="icon-wenjiancunchu"
           emptyText={
             searchText || status !== "all"

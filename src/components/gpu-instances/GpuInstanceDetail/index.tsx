@@ -10,6 +10,7 @@ import {
   StatusTag,
 } from "@/components/common";
 import { GpuInstanceActions } from "@/components/gpu-instances/GpuInstanceActions";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { GpuInstanceConfiguration } from "./GpuInstanceConfiguration";
 import { GpuInstanceEvents } from "./GpuInstanceEvents";
@@ -47,7 +48,11 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
       }
       return data as Instance;
     },
-    refetchInterval: 5000,
+  });
+  useListErrorNotification({
+    id: `gpu-container-detail:${instanceId}`,
+    title: "GPU 容器实例加载失败",
+    error: detail.error,
   });
 
   if (detail.isLoading && !detail.data) {
@@ -58,11 +63,28 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
     );
   }
 
-  if (detail.error || !detail.data) {
+  if (!detail.data) {
     return (
-      <ApiErrorAlert
-        error={detail.error ?? new Error("GPU 容器实例不存在或无权访问")}
-        title="GPU 容器实例加载失败"
+      <DetailPageFrame
+        breadcrumbs={[
+          { label: "算力" },
+          { label: "GPU 容器实例", to: "/gpu-instances" },
+          { label: instanceId },
+        ]}
+        title={instanceId}
+        icon={<AliIcon name="GPUrongqishili" size={28} />}
+        headerItems={[
+          { label: "实例 ID", value: instanceId },
+          { label: "GPU", value: "—" },
+          { label: "创建时间", value: "—" },
+        ]}
+        cards={[
+          {
+            key: "basic",
+            title: "基本信息",
+            fields: [{ label: "实例 ID", value: instanceId }],
+          },
+        ]}
       />
     );
   }

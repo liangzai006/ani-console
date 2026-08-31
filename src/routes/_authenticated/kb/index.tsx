@@ -240,7 +240,7 @@ function KnowledgeBasesPage() {
               ),
             },
           ]}
-          loading={query.isLoading}
+          loading={query.isFetching}
           emptyIconClassName="icon-zhishiku"
           emptyText={
             searchText || status !== "all"

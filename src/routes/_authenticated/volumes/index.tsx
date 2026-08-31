@@ -114,22 +114,8 @@ function VolumesPage() {
     }),
     [items],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter((item) => {
-      if (
-        status === "available" &&
-        !(item.state === "available" && !isMounted(item))
-      )
-        return false;
-      if (status === "mounted" && !isMounted(item)) return false;
-      if (status === "failed" && item.state !== "failed") return false;
-      return (
-        !keyword || String(item[searchField]).toLowerCase().includes(keyword)
-      );
-    });
-  }, [items, searchField, searchText, status]);
-  const paginationTotal = volumes.data?.total ?? filteredItems.length;
+  // TODO: /volumes 暂不支持状态与关键字查询，接口补齐后传递 status/searchField/searchText。
+  const paginationTotal = volumes.data?.total ?? items.length;
   useListErrorNotification({
     id: "volumes-list",
     title: "块存储卷列表加载失败",
@@ -254,7 +240,7 @@ function VolumesPage() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           columns={[
             ...columns,
             {
@@ -308,7 +294,7 @@ function VolumesPage() {
               ),
             },
           ]}
-          loading={volumes.isLoading}
+          loading={volumes.isFetching}
           emptyIconClassName="icon-kuaicunchu"
           emptyText={
             searchText || status !== "all"

@@ -1,7 +1,7 @@
 import {
   DataTable,
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
   StatusTag,
 } from '@/components/common'
@@ -20,6 +20,7 @@ import { VolumeOSInitGuideModal } from "@/components/storage/VolumeOSInitGuideMo
 import { listOrThrow } from "@/lib/api-list";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type Volume = components["schemas"]["StorageVolume"];
 type VolumeSnapshot = components["schemas"]["VolumeSnapshotRecord"];
@@ -47,6 +48,11 @@ function VolumeDetailPage() {
       return data;
     },
   });
+  useListErrorNotification({
+    id: `volume-detail:${volumeId}`,
+    title: "块存储卷加载失败",
+    error: detail.error,
+  });
   const snapshots = useQuery({
     queryKey: ["volume-snapshots", volumeId],
     queryFn: () =>
@@ -55,6 +61,11 @@ function VolumeDetailPage() {
           params: { path: { volume_id: volumeId }, query: { limit: 100 } },
         }),
       ),
+  });
+  useListErrorNotification({
+    id: `volume-snapshots:${volumeId}`,
+    title: "快照列表加载失败",
+    error: snapshots.error,
   });
   const deleteVolume = useMutation({
     mutationFn: async (_: undefined) => {
@@ -98,11 +109,14 @@ function VolumeDetailPage() {
         <Spin />
       </div>
     );
-  if (detail.error || !detail.data)
+  if (!detail.data)
     return (
-      <ApiErrorAlert
-        error={detail.error ?? new Error("块存储卷不存在或无权访问")}
-        title="块存储卷加载失败"
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: "存储" }, { label: "块存储", to: "/volumes" }, { label: volumeId }]}
+        title={volumeId}
+        idLabel="卷 ID"
+        idValue={volumeId}
+        iconName="yunpan"
       />
     );
 
@@ -302,9 +316,7 @@ function VolumeDetailPage() {
                 创建快照
               </Button>
             ),
-            content: snapshots.error ? (
-              <ApiErrorAlert error={snapshots.error} />
-            ) : (
+            content: (
               <DataTable<VolumeSnapshot>
                 columns={[
                   { title: "名称", dataIndex: "name" },

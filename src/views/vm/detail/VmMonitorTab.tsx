@@ -1,5 +1,6 @@
 import { Progress, Spin } from '@arco-design/web-react'
 import { useQuery } from '@tanstack/react-query'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 import { vmDetailDataSource } from './data-source'
 import styles from './detail.module.css'
 
@@ -7,6 +8,11 @@ export function VmMonitorTab({ instanceId }: { instanceId: string }) {
   const query = useQuery({
     queryKey: ['vm-instance-monitor', instanceId],
     queryFn: () => vmDetailDataSource.getMonitor(instanceId),
+  })
+  useListErrorNotification({
+    id: `vm-monitor:${instanceId}`,
+    title: '监控数据加载失败',
+    error: query.error,
   })
 
   if (query.isLoading && !query.data) {
@@ -18,9 +24,7 @@ export function VmMonitorTab({ instanceId }: { instanceId: string }) {
     )
   }
 
-  if (query.isError || !query.data) {
-    return <div className={styles.state}>监控数据加载失败</div>
-  }
+  if (!query.data) return <div className={styles.state}>暂无监控数据</div>
 
   return (
     <div className={styles.monitorPanel}>

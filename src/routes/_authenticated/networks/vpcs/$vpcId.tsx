@@ -1,7 +1,7 @@
 import {
   DataTable,
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
   StatusTag,
 } from '@/components/common'
@@ -13,6 +13,7 @@ import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
 import { formatDateTime } from '@/lib/format'
 import { listOrThrow } from '@/lib/api-list'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 
 type Vpc = components['schemas']['NetworkVPC']
 type Subnet = components['schemas']['NetworkSubnet']
@@ -73,6 +74,12 @@ function VpcDetailPage() {
     queryKey: ['instances', 'vpc', vpcId],
     queryFn: () => listOrThrow(() => coreApi.GET('/instances', { params: { query: { limit: 100 } } })),
   })
+  useListErrorNotification({ id: `vpc-detail:${vpcId}`, title: 'VPC 加载失败', error: detail.error })
+  useListErrorNotification({ id: `vpc-subnets:${vpcId}`, title: '子网加载失败', error: subnets.error })
+  useListErrorNotification({ id: `vpc-routes:${vpcId}`, title: '路由加载失败', error: routes.error })
+  useListErrorNotification({ id: `vpc-security-groups:${vpcId}`, title: '安全组加载失败', error: securityGroups.error })
+  useListErrorNotification({ id: `vpc-load-balancers:${vpcId}`, title: '负载均衡加载失败', error: loadBalancers.error })
+  useListErrorNotification({ id: `vpc-instances:${vpcId}`, title: '关联实例加载失败', error: instances.error })
   const deleteVpc = useMutation({
     mutationFn: async () => {
       const { error } = await coreApi.DELETE('/networks/vpcs/{vpc_id}', {
@@ -94,9 +101,15 @@ function VpcDetailPage() {
       </div>
     )
   }
-  if (detail.error || !detail.data) {
-    return <ApiErrorAlert error={detail.error ?? new Error('VPC 不存在或无权访问')} title="VPC 加载失败" />
-  }
+  if (!detail.data)
+    return (
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: '网络' }, { label: 'VPC', to: '/networks/vpcs' }, { label: vpcId }]}
+        title={vpcId}
+        idLabel="VPC ID"
+        idValue={vpcId}
+      />
+    )
 
   const vpc = detail.data as Vpc
   const vpcSubnets = (subnets.data?.items ?? []) as Subnet[]
@@ -230,9 +243,7 @@ function VpcDetailPage() {
         {
           key: 'subnets',
           label: '子网',
-          content: subnets.error ? (
-            <ApiErrorAlert error={subnets.error} />
-          ) : (
+          content: (
             <DataTable<Subnet>
               columns={[
                 { title: '名称', dataIndex: 'name' },
@@ -250,9 +261,7 @@ function VpcDetailPage() {
         {
           key: 'routes',
           label: '路由',
-          content: routes.error ? (
-            <ApiErrorAlert error={routes.error} />
-          ) : (
+          content: (
             <DataTable<NetworkRoute>
               columns={[
                 { title: '目标 CIDR', dataIndex: 'destination_cidr' },
@@ -275,13 +284,6 @@ function VpcDetailPage() {
               <Typography.Text>
                 共 <Typography.Text bold>{relatedResources.length}</Typography.Text> 个关联对象
               </Typography.Text>
-              {subnets.error || securityGroups.error || routes.error || loadBalancers.error || instances.error ? (
-                <ApiErrorAlert
-                  error={
-                    subnets.error ?? securityGroups.error ?? routes.error ?? loadBalancers.error ?? instances.error
-                  }
-                />
-              ) : null}
               <Card title={`网络关联 ${networkRelatedResources.length}`} size="small">
                 <List
                   loading={relatedLoading}

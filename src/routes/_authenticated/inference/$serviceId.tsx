@@ -15,6 +15,7 @@ import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag"
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type LifecycleAction = "start" | "stop" | "restart";
 type InferenceLog = components["schemas"]["InferenceServiceLog"];
@@ -43,6 +44,11 @@ function InferenceDetailPage() {
       return data;
     },
   });
+  useListErrorNotification({
+    id: `inference-service-detail:${serviceId}`,
+    title: "推理服务详情加载失败",
+    error: service.error,
+  });
   const logs = useQuery({
     queryKey: ["inference-service-logs", serviceId, logLevel],
     queryFn: async () => {
@@ -66,11 +72,6 @@ function InferenceDetailPage() {
   const operation = useQuery({
     queryKey: ["inference-operation", operationId],
     enabled: Boolean(operationId),
-    refetchInterval: (query) =>
-      query.state.data?.status === "pending" ||
-      query.state.data?.status === "running"
-        ? 2000
-        : false,
     queryFn: async () => {
       const { data, error } = await servicesApi.GET(
         "/inference-operations/{operation_id}",
@@ -142,17 +143,18 @@ function InferenceDetailPage() {
         <Spin size={32} />
       </div>
     );
-  if (service.error || !service.data)
+  if (!service.data)
     return (
-      <Alert
-        type="error"
-        showIcon
-        content={getErrorMessage(service.error, "推理服务详情加载失败")}
-        action={
-          <Button size="small" onClick={() => void service.refetch()}>
-            重试
-          </Button>
-        }
+      <DetailPageFrame
+        breadcrumbs={[{ label: "AI" }, { label: "推理服务", to: "/inference" }, { label: serviceId }]}
+        title={serviceId}
+        icon={<AliIcon name="tuilifuwu" size={28} />}
+        headerItems={[
+          { label: "服务 ID", value: serviceId },
+          { label: "状态", value: "—" },
+          { label: "创建时间", value: "—" },
+        ]}
+        cards={[{ key: "basic", title: "基本信息", fields: [{ label: "服务 ID", value: serviceId }] }]}
       />
     );
   const item = service.data;
@@ -355,7 +357,7 @@ function InferenceDetailPage() {
               />
             ) : (
               <DataTable<InferenceLog>
-                loading={logs.isLoading}
+                loading={logs.isFetching}
                 data={logs.data?.items ?? []}
                 rowKey={(row) =>
                   `${row.timestamp}-${row.container}-${row.message}`

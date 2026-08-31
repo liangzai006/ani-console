@@ -2,7 +2,7 @@ import { Card, Empty, Grid, Progress, Statistic } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
-import { ApiErrorAlert } from "@/components/common";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatBytes, formatDateTime } from "@/lib/format";
 
 type Metrics = components["schemas"]["InstanceMetrics"];
@@ -32,10 +32,12 @@ export function GpuInstanceMetrics({
       if (error || !data) throw error ?? new Error("监控指标未返回结果");
       return data as Metrics;
     },
-    refetchInterval: 10000,
   });
-
-  if (metrics.error) return <ApiErrorAlert error={metrics.error} />;
+  useListErrorNotification({
+    id: `gpu-instance-metrics:${instanceId}:${gpuOnly ? "gpu" : "all"}`,
+    title: "监控指标加载失败",
+    error: metrics.error,
+  });
   if (!metrics.data) return <Empty description="暂无监控指标" />;
 
   const data = metrics.data;

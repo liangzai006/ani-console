@@ -101,15 +101,8 @@ function VectorStoresPage() {
     }),
     [items],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter(
-      (item) =>
-        (status === "all" || item.state === status) &&
-        (!keyword || String(item[searchField]).toLowerCase().includes(keyword)),
-    );
-  }, [items, searchField, searchText, status]);
-  const paginationTotal = stores.data?.total ?? filteredItems.length;
+  // TODO: /vector-stores 暂不支持状态与关键字查询，接口补齐后传递 status/searchField/searchText。
+  const paginationTotal = stores.data?.total ?? items.length;
   useListErrorNotification({
     id: "vector-stores-list",
     title: "向量存储列表加载失败",
@@ -227,7 +220,7 @@ function VectorStoresPage() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           columns={[
             ...columns,
             {
@@ -316,7 +309,7 @@ function VectorStoresPage() {
               ),
             },
           ]}
-          loading={stores.isLoading}
+          loading={stores.isFetching}
           emptyIconClassName="icon-xiangliangcunchu"
           emptyText={
             searchText || status !== "all"

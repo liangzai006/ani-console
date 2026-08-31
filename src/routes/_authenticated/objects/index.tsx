@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Tooltip } from "@arco-design/web-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { coreApi } from "@/api/client";
 import type { components } from "@/api/core-schema";
 import { CreateBucketModal } from "@/components/storage/CreateBucketModal";
@@ -52,14 +52,8 @@ function ObjectsPage() {
     },
   });
   const items = (buckets.data?.items ?? []) as Bucket[];
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter(
-      (item) =>
-        !keyword || String(item[searchField]).toLowerCase().includes(keyword),
-    );
-  }, [items, searchField, searchText]);
-  const paginationTotal = buckets.data?.total ?? filteredItems.length;
+  // TODO: /buckets 暂不支持关键字查询，接口补齐后传递 searchField/searchText。
+  const paginationTotal = buckets.data?.total ?? items.length;
   useListErrorNotification({
     id: "buckets-list",
     title: "对象存储桶列表加载失败",
@@ -159,7 +153,7 @@ function ObjectsPage() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           columns={[
             ...columns,
             {
@@ -212,7 +206,7 @@ function ObjectsPage() {
               ),
             },
           ]}
-          loading={buckets.isLoading}
+          loading={buckets.isFetching}
           emptyIconClassName="icon-duixiangcunchu1"
           emptyText={
             searchText

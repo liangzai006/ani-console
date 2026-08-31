@@ -1,7 +1,7 @@
 import {
   DataTable,
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
   StatusTag,
 } from '@/components/common'
@@ -18,6 +18,7 @@ import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModa
 import { FilesystemPermissionsTab } from "@/components/storage/FilesystemPermissionsTab";
 import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type Filesystem = components["schemas"]["StorageFilesystem"];
 type MountTarget = components["schemas"]["FilesystemMountTarget"];
@@ -43,6 +44,11 @@ function FilesystemDetailPage() {
       return data;
     },
   });
+  useListErrorNotification({
+    id: `filesystem-detail:${filesystemId}`,
+    title: "文件存储加载失败",
+    error: detail.error,
+  });
   const mounts = useQuery({
     queryKey: ["filesystem-mounts", filesystemId],
     queryFn: () =>
@@ -54,6 +60,11 @@ function FilesystemDetailPage() {
           },
         }),
       ),
+  });
+  useListErrorNotification({
+    id: `filesystem-mounts:${filesystemId}`,
+    title: "挂载目标加载失败",
+    error: mounts.error,
   });
   const remove = useMutation({
     mutationFn: async (_: undefined) => {
@@ -74,11 +85,14 @@ function FilesystemDetailPage() {
         <Spin />
       </div>
     );
-  if (detail.error || !detail.data)
+  if (!detail.data)
     return (
-      <ApiErrorAlert
-        error={detail.error ?? new Error("文件存储不存在或无权访问")}
-        title="文件存储加载失败"
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: "存储" }, { label: "文件存储", to: "/filesystems" }, { label: filesystemId }]}
+        title={filesystemId}
+        idLabel="文件系统 ID"
+        idValue={filesystemId}
+        iconName="wenjiancunchu"
       />
     );
 
@@ -187,9 +201,7 @@ function FilesystemDetailPage() {
                 创建挂载目标
               </Button>
             ),
-            content: mounts.error ? (
-              <ApiErrorAlert error={mounts.error} />
-            ) : (
+            content: (
               <DataTable<MountTarget>
                 columns={[
                   { title: "挂载目标 ID", dataIndex: "id" },

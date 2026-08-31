@@ -64,25 +64,7 @@ function ModelsPage() {
     }),
     [items],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter((item) => {
-      const matchesStatus =
-        status === "all" ||
-        (status === "available" && item.status === "ready") ||
-        (status === "importing" &&
-          (item.status === "pending" || item.status === "downloading")) ||
-        (status === "failed" && item.status === "error");
-      const searchValue =
-        searchField === "name" ? `${item.display_name} ${item.name}` : item.id;
-      return (
-        matchesStatus &&
-        (source === "all" || item.source === source) &&
-        (task === "all" || item.capabilities.includes(task)) &&
-        (!keyword || searchValue.toLowerCase().includes(keyword))
-      );
-    });
-  }, [items, searchField, searchText, source, status, task]);
+  // TODO: 模型仓库接口接入后传递 status/source/task/searchField/searchText，目前不做本地过滤。
   const paginationTotal = 0;
   const columns: Array<ListColumn<ModelCatalogItem>> = [
     {
@@ -215,7 +197,7 @@ function ModelsPage() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           columns={[
             ...columns,
             {

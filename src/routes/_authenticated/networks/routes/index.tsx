@@ -53,7 +53,9 @@ function NetworkRoutesPage() {
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
       const { data, error } = await coreApi.GET("/networks/routes", {
-        params: { query: { limit, cursor } },
+        params: {
+          query: { limit, cursor, vpc_id: filterVpcId || undefined },
+        },
       });
       if (error || !data) throw error ?? new Error("路由列表未返回结果");
       return data;
@@ -92,18 +94,8 @@ function NetworkRoutesPage() {
     () => ({ all: items.length, available: items.length }),
     [items.length],
   );
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return items.filter(
-      (item) =>
-        (!filterVpcId || item.vpc_id === filterVpcId) &&
-        (!keyword ||
-          String(item[searchField] ?? "")
-            .toLowerCase()
-            .includes(keyword)),
-    );
-  }, [filterVpcId, items, searchField, searchText]);
-  const paginationTotal = routes.data?.total ?? filteredItems.length;
+  // TODO: /networks/routes 暂不支持关键字查询，接口补齐后传递 searchField/searchText。
+  const paginationTotal = routes.data?.total ?? items.length;
   useListErrorNotification({
     id: "network-routes-list",
     title: "路由列表加载失败",
@@ -235,7 +227,7 @@ function NetworkRoutesPage() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           columns={[
             ...columns,
             {
@@ -261,7 +253,7 @@ function NetworkRoutesPage() {
               ),
             },
           ]}
-          loading={routes.isLoading}
+          loading={routes.isFetching || vpcs.isFetching}
           emptyIconClassName="icon-VPCluyouqi"
           emptyText={
             searchText || filterVpcId

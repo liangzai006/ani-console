@@ -10,6 +10,7 @@ import { formatDateTime } from '@/lib/format'
 import { vmDetailDataSource } from './data-source'
 import { VmMonitorTab } from './VmMonitorTab'
 import { VmVolumesTab } from './VmVolumesTab'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 import styles from './detail.module.css'
 
 type VmInstanceDetailPageProps = {
@@ -23,6 +24,11 @@ export function VmInstanceDetailPage({ instanceId }: VmInstanceDetailPageProps) 
   const query = useQuery({
     queryKey: ['vm-instance-detail', instanceId],
     queryFn: () => vmDetailDataSource.getDetail(instanceId),
+  })
+  useListErrorNotification({
+    id: `vm-instance-detail:${instanceId}`,
+    title: 'VM 详情加载失败',
+    error: query.error,
   })
 
   const power = useMutation({
@@ -48,11 +54,22 @@ export function VmInstanceDetailPage({ instanceId }: VmInstanceDetailPageProps) 
     )
   }
 
-  if (query.error) {
-    return <div className={styles.state}>VM 详情加载失败</div>
-  }
+  if (!query.data)
+    return (
+      <DetailPageFrame
+        breadcrumbs={[{ label: '云主机 VM', to: '/instances/vm' }, { label: instanceId }]}
+        title={instanceId}
+        icon={<AliIcon name="yunzhuji" size={28} />}
+        headerItems={[
+          { label: '实例 ID', value: instanceId },
+          { label: '状态', value: '—' },
+          { label: '创建时间', value: '—' },
+        ]}
+        cards={[{ key: 'basic', title: '基本信息', fields: [{ label: '实例 ID', value: instanceId }] }]}
+      />
+    )
 
-  const detail = query.data!
+  const detail = query.data
   const canStart = detail.status !== 'running'
   const canStop = detail.status === 'running'
   const canConsole = detail.status === 'running'

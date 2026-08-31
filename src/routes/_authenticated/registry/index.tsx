@@ -10,7 +10,7 @@ import {
   Space,
   Typography,
 } from "@arco-design/web-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
@@ -189,19 +189,9 @@ function RegistryPage() {
     onError: (error) => showApiError(error),
   });
 
-  const filteredItems = useMemo(() => {
-    const query = keyword.trim().toLowerCase();
-    return (images.data?.items ?? []).filter(
-      (item) =>
-        (purpose === "all" || item.purpose === purpose) &&
-        (project === "all" || item.project === project) &&
-        (!query ||
-          `${item.image} ${item.repository} ${item.tag} ${item.project}`
-            .toLowerCase()
-            .includes(query)),
-    );
-  }, [images.data, keyword, project, purpose]);
-  const paginationTotal = images.data?.total ?? filteredItems.length;
+  const items = images.data?.items ?? [];
+  // TODO: /registry/images 契约补齐后传递 keyword/project/purpose，目前不做本地过滤。
+  const paginationTotal = images.data?.total ?? items.length;
   useListErrorNotification({
     id: "registry-images-list",
     title: "镜像列表加载失败",
@@ -326,7 +316,7 @@ function RegistryPage() {
         }
       >
         <ListDataTable
-          data={filteredItems}
+          data={items}
           rowKey={(item) => `${item.project}/${item.repository}:${item.tag}`}
           columns={[
             ...columns,
@@ -365,7 +355,7 @@ function RegistryPage() {
               ),
             },
           ]}
-          loading={images.isLoading}
+          loading={images.isFetching}
           preserveTableOnEmpty
           emptyIconClassName="icon-moxing"
           emptyText={

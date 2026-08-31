@@ -17,7 +17,13 @@ const STATUS_META: Record<
   disabled: { label: "已停用", color: "gray" },
 };
 
-export function AiServiceStatusTag({ status }: { status: string }) {
+export function AiServiceStatusTag({
+  status,
+  raw = false,
+}: {
+  status: string;
+  raw?: boolean;
+}) {
   const meta = STATUS_META[status] ?? { label: status, color: "blue" as const };
-  return <Tag color={meta.color}>{meta.label}</Tag>;
+  return <Tag color={meta.color}>{raw ? status : meta.label}</Tag>;
 }

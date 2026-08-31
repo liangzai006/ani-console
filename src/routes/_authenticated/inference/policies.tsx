@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Message, Select, Space } from "@arco-design/web-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import {
   ListDataTable,
@@ -33,15 +33,7 @@ function InferencePoliciesPage() {
   const [scope, setScope] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const filteredItems = useMemo(() => {
-    const keyword = searchText.trim().toLowerCase();
-    return inferencePolicyItems.filter(
-      (item) =>
-        (status === "all" || item.status === status) &&
-        (scope === "all" || item.scope.startsWith(scope)) &&
-        (!keyword || item[searchField].toLowerCase().includes(keyword)),
-    );
-  }, [scope, searchField, searchText, status]);
+  // TODO: 推理策略列表接口接入后传递 status/scope/searchField/searchText，目前不做本地过滤。
   useEffect(() => setPage(1), [scope, searchField, searchText, status]);
   const columns: Array<ListColumn<InferencePolicyItem>> = [
     {
@@ -154,7 +146,10 @@ function InferencePoliciesPage() {
       }
     >
       <ListDataTable
-        data={filteredItems.slice((page - 1) * pageSize, page * pageSize)}
+        data={inferencePolicyItems.slice(
+          (page - 1) * pageSize,
+          page * pageSize,
+        )}
         columns={[
           ...columns,
           {
@@ -187,7 +182,7 @@ function InferencePoliciesPage() {
         pagination={{
           page,
           pageSize,
-          total: filteredItems.length,
+          total: inferencePolicyItems.length,
           onPageChange: setPage,
           onPageSizeChange: (next) => {
             setPageSize(next);

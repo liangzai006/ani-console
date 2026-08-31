@@ -13,7 +13,6 @@ type UseCursorPaginatedQueryOptions<T> = {
   initialPageSize?: number;
   enabled?: boolean;
   cursorScope?: unknown;
-  refetchInterval?: number | false | ((data?: CursorPage<T>) => number | false);
 };
 
 export function useCursorPaginatedQuery<T>({
@@ -22,7 +21,6 @@ export function useCursorPaginatedQuery<T>({
   initialPageSize = 10,
   enabled = true,
   cursorScope,
-  refetchInterval,
 }: UseCursorPaginatedQueryOptions<T>) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(initialPageSize);
@@ -75,10 +73,6 @@ export function useCursorPaginatedQuery<T>({
 
       return result ?? { items: [], total: 0, next_cursor: null };
     },
-    refetchInterval: (currentQuery) =>
-      typeof refetchInterval === "function"
-        ? refetchInterval(currentQuery.state.data)
-        : refetchInterval,
   });
 
   const setPageSize = useCallback((nextPageSize: number) => {

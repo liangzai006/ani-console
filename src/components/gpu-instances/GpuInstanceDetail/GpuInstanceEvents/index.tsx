@@ -2,10 +2,8 @@ import { Empty, Tag } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
-import {
-  ApiErrorAlert,
-  DataTable,
-} from "@/components/common";
+import { DataTable } from "@/components/common";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
 type InstanceEvent = components["schemas"]["InstanceEvent"];
@@ -26,10 +24,12 @@ export function GpuInstanceEvents({ instanceId }: { instanceId: string }) {
       if (error || !data) throw error ?? new Error("事件列表未返回结果");
       return data.items as InstanceEvent[];
     },
-    refetchInterval: 10000,
   });
-
-  if (events.error) return <ApiErrorAlert error={events.error} />;
+  useListErrorNotification({
+    id: `gpu-instance-events:${instanceId}`,
+    title: "事件加载失败",
+    error: events.error,
+  });
 
   return (
     <DataTable<InstanceEvent>

@@ -47,7 +47,6 @@ function GpuInstancesPage() {
           throw error ?? new Error("GPU 容器实例列表未返回结果");
         return data;
       },
-      refetchInterval: 5000,
     });
   useListErrorNotification({
     id: "gpu-container-list",
@@ -239,7 +238,7 @@ function GpuInstancesPage() {
         <ListDataTable
           data={items}
           columns={columns}
-          loading={query.isLoading}
+          loading={query.isFetching}
           emptyIconClassName="icon-GPU"
           emptyText={
             searchText || status !== "all"

@@ -19,9 +19,9 @@ import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
 import {
   DataTable,
-  ApiErrorAlert,
   StatusTag,
 } from '@/components/common'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 import { formatDateTime } from '@/lib/format'
 import { showApiError } from '@/api/helpers'
 import { getErrorMessage } from '@/lib/errors'
@@ -52,8 +52,6 @@ const defaultUploadForm: UploadFormState = {
   file: null,
 }
 
-const IMAGE_LIST_POLL_MS = 5000
-
 function formatBytes(bytes?: number): string | null {
   if (bytes == null || !Number.isFinite(bytes)) return null
   const gib = bytes / 1024 ** 3
@@ -75,13 +73,11 @@ function ImagesPage() {
       if (error) throw error
       return data
     },
-    refetchInterval: (query) => {
-      const items = (query.state.data?.items ?? []) as ImageRecord[]
-      const busy = items.some((item) =>
-        item.state === 'pending' || item.state === 'uploading' || item.state === 'processing',
-      )
-      return busy || progress !== null ? IMAGE_LIST_POLL_MS : false
-    },
+  })
+  useListErrorNotification({
+    id: 'images-list',
+    title: '镜像列表加载失败',
+    error: images.error,
   })
 
   const uploadIso = useMutation({
@@ -201,9 +197,7 @@ function ImagesPage() {
         data={images.error ? [] : items}
         loading={images.isLoading}
         pagination={false}
-        noDataElement={
-          images.error ? <ApiErrorAlert error={images.error} /> : <Empty description="暂无可启动镜像" />
-        }
+        noDataElement={<Empty description="暂无可启动镜像" />}
       />
 
       <Modal

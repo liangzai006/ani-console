@@ -1,7 +1,7 @@
 import {
   DataTable,
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
   StatusTag,
 } from '@/components/common'
@@ -15,6 +15,7 @@ import type { components } from '@/api/core-schema'
 import { SecurityGroupRuleModal, type SecurityGroupRuleResource } from '@/components/network/SecurityGroupRuleModal'
 import { formatDateTime } from '@/lib/format'
 import { listOrThrow } from '@/lib/api-list'
+import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 
 type SecurityGroup = components['schemas']['NetworkSecurityGroup']
 type SecurityGroupBinding = components['schemas']['NetworkSecurityGroupBinding']
@@ -85,6 +86,11 @@ function SecurityGroupDetailPage() {
     queryKey: ['instances', 'security-group-related'],
     queryFn: () => listOrThrow(() => coreApi.GET('/instances', { params: { query: { limit: 100 } } })),
   })
+  useListErrorNotification({ id: `security-group-detail:${securityGroupId}`, title: '安全组加载失败', error: detail.error })
+  useListErrorNotification({ id: `security-group-vpc:${securityGroupId}`, title: 'VPC 加载失败', error: vpc.error })
+  useListErrorNotification({ id: `security-group-bindings:${securityGroupId}`, title: '安全组绑定加载失败', error: bindings.error })
+  useListErrorNotification({ id: `security-group-rules:${securityGroupId}`, title: '安全组规则加载失败', error: rules.error })
+  useListErrorNotification({ id: `security-group-instances:${securityGroupId}`, title: '关联实例加载失败', error: instances.error })
   const deleteRule = useMutation({
     mutationFn: async (rule: SecurityGroupRuleResource) => {
       const { error } = await coreApi.DELETE('/networks/security-groups/{security_group_id}/rules/{rule_id}', {
@@ -119,8 +125,15 @@ function SecurityGroupDetailPage() {
         <Spin />
       </div>
     )
-  if (detail.error || !detail.data)
-    return <ApiErrorAlert error={detail.error ?? new Error('安全组不存在或无权访问')} title="安全组加载失败" />
+  if (!detail.data)
+    return (
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: '网络' }, { label: '安全组', to: '/networks/security-groups' }, { label: securityGroupId }]}
+        title={securityGroupId}
+        idLabel="安全组 ID"
+        idValue={securityGroupId}
+      />
+    )
 
   const securityGroup = detail.data as SecurityGroup
   const parentVpc = vpc.data as Vpc | undefined
@@ -302,9 +315,6 @@ function SecurityGroupDetailPage() {
                   </Typography.Text>{' '}
                   个关联对象
                 </Typography.Text>
-                {bindings.error || instances.error || vpc.error ? (
-                  <ApiErrorAlert error={bindings.error ?? instances.error ?? vpc.error} />
-                ) : null}
                 <Card title={`网络关联 ${networkRelatedResources.length}`} size="small">
                   {renderRelatedList(networkRelatedResources, '暂无网络关联资源')}
                 </Card>

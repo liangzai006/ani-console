@@ -25,6 +25,7 @@ export type { SearchField } from "./ListToolbar";
 export { StatusTabs } from "./StatusTabs";
 export type { ListStatusTab } from "./StatusTabs";
 export { DetailPageFrame } from "./DetailPageFrame";
+export { DetailPagePlaceholder } from "./DetailPagePlaceholder";
 export type {
   DetailBreadcrumbItem,
   DetailCard,

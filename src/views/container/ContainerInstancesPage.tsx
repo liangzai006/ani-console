@@ -28,7 +28,6 @@ import type {
 } from "./types";
 import styles from "./container.module.css";
 
-const TRANSITION_POLL_MS = 5000;
 const ALL_COLUMN_KEYS = [
   "name",
   "kind",
@@ -107,11 +106,6 @@ export function ContainerInstancesPage({
     queryFn: () =>
       dataSource.list({ status, searchField, keyword, page, pageSize }),
     placeholderData: (previous) => previous,
-    refetchInterval: (currentQuery) =>
-      currentQuery.state.data?.hasTransitioningInstances
-        ? TRANSITION_POLL_MS
-        : false,
-    refetchIntervalInBackground: false,
   });
 
   useListErrorNotification({
@@ -420,7 +414,7 @@ export function ContainerInstancesPage({
           selectedRowKeys: selectedKeys,
           onChange: (keys) => setSelectedKeys(keys.map(String)),
         }}
-        loading={query.isLoading}
+        loading={query.isFetching}
         emptyIconClassName="icon-rongqishili"
         emptyText={
           keyword || status !== "all"

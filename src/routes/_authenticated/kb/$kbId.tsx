@@ -8,7 +8,7 @@ import type { components as coreComponents } from "@/api/core-schema";
 import { showApiError } from "@/api/helpers";
 import {
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
   StatusTag,
 } from "@/components/common";
@@ -17,6 +17,7 @@ import { KnowledgeDocumentsPanel } from "@/components/knowledge/KnowledgeDocumen
 import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeDocumentUploadButton";
 import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type KnowledgeBase = components["schemas"]["KnowledgeBase"];
 type VectorStore = coreComponents["schemas"]["VectorStore"];
@@ -52,6 +53,11 @@ function KnowledgeBaseDetailPage() {
       return data;
     },
   });
+  useListErrorNotification({
+    id: `knowledge-base-detail:${kbId}`,
+    title: "知识库加载失败",
+    error: detail.error,
+  });
   const vectorStores = useQuery({
     queryKey: ["vector-stores", "knowledge-base", kbId],
     queryFn: () =>
@@ -80,11 +86,14 @@ function KnowledgeBaseDetailPage() {
         <Spin />
       </div>
     );
-  if (detail.error || !detail.data)
+  if (!detail.data)
     return (
-      <ApiErrorAlert
-        error={detail.error ?? new Error("知识库不存在或无权访问")}
-        title="知识库加载失败"
+      <DetailPagePlaceholder
+        breadcrumbs={[{ label: "知识库" }, { label: "知识库管理", to: "/kb" }, { label: kbId }]}
+        title={kbId}
+        idLabel="知识库 ID"
+        idValue={kbId}
+        iconName="zhishiku"
       />
     );
   const kb = detail.data as KnowledgeBase;

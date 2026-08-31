@@ -6,12 +6,13 @@ import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
 import {
   DetailPageFrame,
-  ApiErrorAlert,
+  DetailPagePlaceholder,
   AliIcon,
   StatusTag,
 } from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type StorageObject = components["schemas"]["StorageObject"];
 
@@ -34,6 +35,11 @@ function ObjectDetailPage() {
       if (error) throw error;
       return data;
     },
+  });
+  useListErrorNotification({
+    id: `object-detail:${objectId}`,
+    title: "对象加载失败",
+    error: detail.error,
   });
   const completeUpload = useMutation({
     mutationFn: async (_: undefined) => {
@@ -88,11 +94,18 @@ function ObjectDetailPage() {
         <Spin />
       </div>
     );
-  if (detail.error || !detail.data)
+  if (!detail.data)
     return (
-      <ApiErrorAlert
-        error={detail.error ?? new Error("对象不存在或无权访问")}
-        title="对象加载失败"
+      <DetailPagePlaceholder
+        breadcrumbs={[
+          { label: "存储" },
+          { label: "对象存储", to: "/objects" },
+          { label: bucketId, to: "/objects/$bucketId", params: { bucketId } },
+          { label: objectId },
+        ]}
+        title={objectId}
+        idLabel="对象 ID"
+        idValue={objectId}
       />
     );
 

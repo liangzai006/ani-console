@@ -64,8 +64,8 @@ export const ListRowActionButton = forwardRef<
       ref={ref}
       type="text"
       size="small"
-      className={styles.rowActionButton}
       {...buttonProps}
+      className={styles.rowActionButton}
     >
       {children}
     </Button>
