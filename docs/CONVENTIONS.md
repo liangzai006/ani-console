@@ -13,16 +13,10 @@
 
 ## UI
 
-- 组件库：`@arco-design/web-react`。
-- 图标：`@arco-design/web-react/icon`。
-- 颜色与状态：Arco Token。
+- UI 组件、样式降级顺序和交互底线统一遵循 [UI 开发约定](./UI-CONVENTIONS.md)。
 - 动态规则、联动选择器、异步选项、复杂校验等表单项必须拆为领域共享组件；路由页面负责页面级数据和交互编排，不复制字段结构与校验逻辑。
 - 创建、部署等表单默认使用单页表单；除非用户明确指定，不得把原型中的步骤说明直接实现为 Steps/Wizard 分步表单。
 - 页面或路由文件体积过大、包含可独立识别的复杂展示或交互区域时，必须拆为 `src/components/<domain>/<ComponentName>/index.tsx` 形式的领域组件；路由页面仅保留页面级查询、状态编排、导航和组件组合。
-- Tailwind 仅用于布局。
-- 列表必须覆盖 loading、empty、error。
-- 危险操作必须二次确认。
-- 冻结规范正文禁止修改。
 
 ## API
 
@@ -43,4 +37,4 @@ gitnexus detect-changes -r ani-console -s all
 
 ## 记录
 
-功能、工具链或验证规则变化后，在 [CONSOLE-TASK-PLAN.md](./CONSOLE-TASK-PLAN.md) 追加一条简短记录。
+功能、工具链或验证规则变化后，在 [PROJECT-STATUS.md](./PROJECT-STATUS.md) 追加一条简短记录。

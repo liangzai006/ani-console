@@ -10,6 +10,7 @@ import {
   Modal,
   Select,
 } from "@arco-design/web-react";
+import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { coreApi } from "@/api/client";
@@ -351,10 +352,7 @@ export function GpuInstanceActions({
         <Dropdown trigger="click" position="br" droplist={moreMenu}>
           <Button loading={lifecycle.isPending}>
             更多操作
-            <i
-              className="iconfont icon-down-chevron-small ml-1"
-              aria-hidden="true"
-            />
+            <IconDown className="ml-1 text-xs" />
           </Button>
         </Dropdown>
       )}
