@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import type { CSSProperties, HTMLAttributes } from 'react'
 
 export interface AliIconProps
@@ -24,7 +25,7 @@ export function AliIcon({
     <i
       {...props}
       aria-hidden={props['aria-hidden'] ?? (hasAccessibleName ? undefined : true)}
-      className={`iconfont ${iconClassName} ali-icon ${className}`.trim()}
+      className={clsx('iconfont', iconClassName, 'ali-icon', className)}
       data-icon-name={name}
       style={{ fontSize: size, color, ...style }}
     />

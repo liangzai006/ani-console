@@ -8,11 +8,11 @@ import type { components } from "@/api/core-schema";
 import {
   Ipv4CidrInput,
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -164,7 +164,7 @@ function VpcList() {
       key: "name",
       title: "名称 / ID",
       render: (_, vpc) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link to="/networks/vpcs/$vpcId" params={{ vpcId: vpc.id }}>
               {vpc.name}
@@ -276,8 +276,8 @@ function VpcList() {
               title: "操作",
               fixed: "right",
               render: (_value, vpc) => (
-                <ListRowActions>
-                  <ListRowActionButton
+                <DataTableRowActions>
+                  <DataTableRowActionButton
                     status="danger"
                     onClick={() =>
                       Modal.confirm({
@@ -289,8 +289,8 @@ function VpcList() {
                     }
                   >
                     删除
-                  </ListRowActionButton>
-                </ListRowActions>
+                  </DataTableRowActionButton>
+                </DataTableRowActions>
               ),
             },
           ]}

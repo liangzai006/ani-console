@@ -18,11 +18,11 @@ import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag"
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -154,7 +154,7 @@ function InferencePage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link to="/inference/$serviceId" params={{ serviceId: item.id }}>
               {item.name}
@@ -278,21 +278,21 @@ function InferencePage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
+                <DataTableRowActions>
                   {item.status === "running" ? (
-                    <ListRowActionButton
+                    <DataTableRowActionButton
                       disabled={lifecycle.isPending}
                       onClick={() => lifecycle.mutate({ item, action: "stop" })}
                     >
                       停止
-                    </ListRowActionButton>
+                    </DataTableRowActionButton>
                   ) : (
-                    <ListRowActionButton
+                    <DataTableRowActionButton
                       disabled={item.status !== "stopped" || lifecycle.isPending}
                       onClick={() => lifecycle.mutate({ item, action: "start" })}
                     >
                       启动
-                    </ListRowActionButton>
+                    </DataTableRowActionButton>
                   )}
                   <Dropdown
                     trigger="click"
@@ -324,15 +324,15 @@ function InferencePage() {
                       </Menu>
                     }
                   >
-                    <ListRowActionButton disabled={lifecycle.isPending}>
+                    <DataTableRowActionButton disabled={lifecycle.isPending}>
                       更多
                       <i
                         className="iconfont icon-down-chevron-small ml-1"
                         aria-hidden="true"
                       />
-                    </ListRowActionButton>
+                    </DataTableRowActionButton>
                   </Dropdown>
-                </ListRowActions>
+                </DataTableRowActions>
               ),
             },
           ]}

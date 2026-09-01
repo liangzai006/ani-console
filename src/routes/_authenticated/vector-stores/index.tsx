@@ -8,11 +8,11 @@ import type { components } from "@/api/core-schema";
 import { CreateVectorStoreModal } from "@/components/storage/CreateVectorStoreModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -113,7 +113,7 @@ function VectorStoresPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to="/vector-stores/$vectorStoreId"
@@ -228,12 +228,12 @@ function VectorStoresPage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
+                <DataTableRowActions>
                   <Tooltip
                     content={item.state === "ready" ? undefined : "仅可用状态支持检索测试"}
                   >
                     <span>
-                      <ListRowActionButton
+                      <DataTableRowActionButton
                         disabled={item.state !== "ready"}
                         onClick={() =>
                           navigate({
@@ -244,14 +244,14 @@ function VectorStoresPage() {
                         }
                       >
                         检索测试
-                      </ListRowActionButton>
+                      </DataTableRowActionButton>
                     </span>
                   </Tooltip>
                   <Tooltip
                     content={item.state === "ready" ? undefined : "仅可用状态支持重建索引"}
                   >
                     <span>
-                      <ListRowActionButton
+                      <DataTableRowActionButton
                         disabled={item.state !== "ready"}
                         loading={rebuildIndex.isPending && rebuildIndex.variables?.id === item.id}
                         onClick={() =>
@@ -263,12 +263,12 @@ function VectorStoresPage() {
                         }
                       >
                         重建索引
-                      </ListRowActionButton>
+                      </DataTableRowActionButton>
                     </span>
                   </Tooltip>
                   <Tooltip content={item.knowledge_base_ref ? undefined : "当前未关联知识库"}>
                     <span>
-                      <ListRowActionButton
+                      <DataTableRowActionButton
                         disabled={!item.knowledge_base_ref}
                         onClick={() => {
                           if (!item.knowledge_base_ref) return;
@@ -280,7 +280,7 @@ function VectorStoresPage() {
                         }}
                       >
                         打开关联知识库
-                      </ListRowActionButton>
+                      </DataTableRowActionButton>
                     </span>
                   </Tooltip>
                   <Tooltip
@@ -289,7 +289,7 @@ function VectorStoresPage() {
                     }
                   >
                     <span>
-                      <ListRowActionButton
+                      <DataTableRowActionButton
                         status="danger"
                         disabled={Boolean(item.knowledge_base_ref)}
                         onClick={() =>
@@ -302,10 +302,10 @@ function VectorStoresPage() {
                         }
                       >
                         删除
-                      </ListRowActionButton>
+                      </DataTableRowActionButton>
                     </span>
                   </Tooltip>
-                </ListRowActions>
+                </DataTableRowActions>
               ),
             },
           ]}

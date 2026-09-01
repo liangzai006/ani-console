@@ -1,14 +1,15 @@
 import { Dropdown, Menu, Message, Popover } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
+import clsx from "clsx";
 import { useEffect, useState } from "react";
 import {
   ListDataTable,
   ListPageFrame,
   ListPageHeader,
-  ListNameCell,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableNameCell,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -105,7 +106,7 @@ function ActionMenu({
 
 function StatusCell({ status }: { status: VmInstanceStatus }) {
   return (
-    <span className={`${styles.status} ${styles[`status_${status}`]}`}>
+    <span className={clsx(styles.status, styles[`status_${status}`])}>
       <span className={styles.statusDot} />
       <span>{STATUS_META[status].label}</span>
     </span>
@@ -115,7 +116,10 @@ function StatusCell({ status }: { status: VmInstanceStatus }) {
 function ProtectionCell({ enabled }: { enabled: boolean }) {
   return (
     <span
-      className={`${styles.protection} ${enabled ? styles.protectionOn : styles.protectionOff}`}
+      className={clsx(
+        styles.protection,
+        enabled ? styles.protectionOn : styles.protectionOff,
+      )}
     >
       <span className={styles.protectDot} />
       <span>{enabled ? "开启" : "关闭"}</span>
@@ -218,7 +222,7 @@ export function VmInstancesPage({
       key: "name",
       title: COLUMN_LABELS.name,
       render: (_, row) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to="/instances/vm/$instanceId"
@@ -415,8 +419,8 @@ export function VmInstancesPage({
             title: "操作",
             fixed: "right",
             render: (_value, row) => (
-              <ListRowActions>
-                <ListRowActionButton
+              <DataTableRowActions>
+                <DataTableRowActionButton
                   onClick={() =>
                     changePowerState(
                       [row],
@@ -425,7 +429,7 @@ export function VmInstancesPage({
                   }
                 >
                   {row.status === "running" ? "停止" : "启动"}
-                </ListRowActionButton>
+                </DataTableRowActionButton>
                 <Dropdown
                   trigger="click"
                   position="br"
@@ -436,15 +440,19 @@ export function VmInstancesPage({
                     />
                   }
                 >
-                  <ListRowActionButton>
+                  <DataTableRowActionButton>
                     更多
                     <i
-                      className={`iconfont icon-down-chevron-small ${styles.moreMenuIcon}`}
+                      className={clsx(
+                        "iconfont",
+                        "icon-down-chevron-small",
+                        styles.moreMenuIcon,
+                      )}
                       aria-hidden="true"
                     />
-                  </ListRowActionButton>
+                  </DataTableRowActionButton>
                 </Dropdown>
-              </ListRowActions>
+              </DataTableRowActions>
             ),
           },
         ]}

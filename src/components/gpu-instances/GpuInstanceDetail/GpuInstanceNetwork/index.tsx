@@ -1,82 +1,108 @@
-import { Descriptions, Empty, Space, Typography } from "@arco-design/web-react";
+import { Empty, Space, Typography } from "@arco-design/web-react";
 import type { components } from "@/api/core-schema";
 import { DataTable } from "@/components/common";
 
 type Instance = components["schemas"]["InstanceRecord"];
-type Endpoint = NonNullable<
-  NonNullable<Instance["network"]>["endpoints"]
->[number];
+type ImageRow = {
+  key: string;
+  name: string;
+};
+type SecurityRow = {
+  key: string;
+  type: string;
+  name: string;
+};
 
-function joinedValues(values: Array<string | null | undefined>) {
-  const available = values.filter((value): value is string => Boolean(value));
-  return available.length ? available.join(" / ") : "—";
+function resourceLabel(name?: string | null, id?: string | null) {
+  if (name && id && name !== id) return `${name} · ${id}`;
+  return name ?? id ?? "—";
 }
 
 export function GpuInstanceNetwork({ instance }: { instance: Instance }) {
-  const endpoints = instance.network?.endpoints ?? [];
-  const securityGroups = instance.network?.security_groups ?? [];
+  const network = instance.network;
+  const vpcId = network?.vpc_id ?? instance.vpc_id;
+  const subnetId = network?.subnet_id ?? instance.subnet_id;
+  const imageName =
+    instance.image?.ref ??
+    instance.image?.name ??
+    instance.image?.id ??
+    "";
+  const images: ImageRow[] = imageName
+    ? [{ key: instance.image?.id ?? imageName, name: imageName }]
+    : [];
+  const sshKeyRef = instance.ssh?.key_ref;
+  const secretRefs = Array.from(
+    new Set(
+      (instance.resource_refs ?? []).filter(
+        (reference) =>
+          /secret|key|credential/i.test(reference) && reference !== sshKeyRef,
+      ),
+    ),
+  );
+  const securityAssociations: SecurityRow[] = [
+    ...(network?.security_groups ?? []).map((group) => ({
+      key: `security-group:${group.id}`,
+      type: "安全组",
+      name: group.name ?? group.id,
+    })),
+    ...(sshKeyRef
+      ? [{ key: `ssh-key:${sshKeyRef}`, type: "SSH 密钥", name: sshKeyRef }]
+      : []),
+    ...secretRefs.map((reference) => ({
+      key: `secret:${reference}`,
+      type: "绑定密钥",
+      name: reference,
+    })),
+  ];
 
   return (
-    <Space direction="vertical" size={16} className="w-full">
-      <Descriptions
-        column={2}
-        data={[
-          {
-            label: "VPC",
-            value: joinedValues([
-              instance.network?.vpc_name,
-              instance.network?.vpc_id ?? instance.vpc_id,
-            ]),
-          },
-          {
-            label: "子网",
-            value: joinedValues([
-              instance.network?.subnet_name,
-              instance.network?.subnet_id ?? instance.subnet_id,
-            ]),
-          },
-          {
-            label: "私网 IP",
-            value: instance.network?.private_ip ?? instance.private_ip ?? "—",
-          },
-          { label: "访问地址", value: instance.endpoint ?? "—" },
-          {
-            label: "安全组",
-            value: securityGroups.length
-              ? securityGroups.map((group) => group.name ?? group.id).join("、")
-              : "—",
-          },
-          {
-            label: "负载均衡引用",
-            value: instance.network?.load_balancer_refs?.length
-              ? instance.network.load_balancer_refs.join("、")
-              : "—",
-          },
-        ]}
-      />
-      <Typography.Title heading={6}>访问端点</Typography.Title>
-      <DataTable<Endpoint>
-        data={endpoints}
-        rowKey={(endpoint) =>
-          `${endpoint.name ?? "endpoint"}:${endpoint.address}:${endpoint.port ?? ""}`
-        }
-        pagination={false}
-        noDataElement={<Empty description="暂无访问端点" />}
-        columns={[
-          { title: "名称", render: (_, endpoint) => endpoint.name ?? "—" },
-          { title: "地址", dataIndex: "address" },
-          {
-            title: "协议",
-            width: 120,
-            render: (_, endpoint) => endpoint.protocol ?? "—",
-          },
-          {
-            title: "端口",
-            width: 100,
-            render: (_, endpoint) => endpoint.port ?? "—",
-          },
-        ]}
-      />
+    <Space direction="vertical" size={24} className="w-full">
+      <section>
+        <Typography.Title heading={6}>网络配置</Typography.Title>
+        <DataTable
+          data={[
+            {
+              type: "VPC",
+              name: resourceLabel(network?.vpc_name, vpcId),
+            },
+            {
+              type: "子网",
+              name: resourceLabel(network?.subnet_name, subnetId),
+            },
+          ]}
+          rowKey="type"
+          pagination={false}
+          columns={[
+            { title: "类型", dataIndex: "type", width: 140 },
+            { title: "资源", dataIndex: "name" },
+          ]}
+        />
+      </section>
+
+      <section>
+        <Typography.Title heading={6}>镜像关联</Typography.Title>
+        <DataTable<ImageRow>
+          data={images}
+          rowKey="key"
+          pagination={false}
+          noDataElement={<Empty description="暂无关联镜像" />}
+          columns={[{ title: "镜像", dataIndex: "name" }]}
+        />
+      </section>
+
+      <section>
+        <Typography.Title heading={6}>安全关联</Typography.Title>
+        <DataTable<SecurityRow>
+          data={securityAssociations}
+          rowKey="key"
+          pagination={false}
+          noDataElement={<Empty description="暂无安全关联" />}
+          columns={[
+            { title: "关联类型", dataIndex: "type", width: 160 },
+            { title: "关联对象", dataIndex: "name" },
+          ]}
+        />
+      </section>
     </Space>
   );
 }

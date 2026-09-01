@@ -4,14 +4,14 @@ export { ApiErrorAlert } from "./ApiErrorAlert";
 export { AsyncTaskPoller } from "./AsyncTaskPoller";
 export { CoreLineBarChart } from "./CoreLineBarChart";
 export { CorePieChart } from "./CorePieChart";
-export { DataTable } from "./DataTable";
-export type { DataTableProps, ListColumn, ListPagination } from "./DataTable";
 export {
-  ListDataTable,
-  ListNameCell,
-  ListRowActionButton,
-  ListRowActions,
-} from "./ListDataTable";
+  DataTable,
+  DataTableNameCell,
+  DataTableRowActionButton,
+  DataTableRowActions,
+} from "./DataTable";
+export type { DataTableProps, ListColumn, ListPagination } from "./DataTable";
+export { ListDataTable } from "./ListDataTable";
 export type { ListDataTableProps } from "./ListDataTable";
 export { ListPageFrame, ListPageHeader, ListPageTitle } from "./ListPageFrame";
 export type { ListPageTitleProps } from "./ListPageFrame";

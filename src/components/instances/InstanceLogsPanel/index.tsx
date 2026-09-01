@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Button, Empty, Select, Space, Spin, Typography } from '@arco-design/web-react'
+import { Alert, Button, Empty, Input, Select, Space, Spin, Typography } from '@arco-design/web-react'
 import { coreApi, CORE_API_BASE } from '@/api/client'
 import { ApiErrorAlert } from '@/components/common'
 import { useAuthStore } from '@/stores/auth'
@@ -133,6 +133,8 @@ export function InstanceLogsPanel({
   container?: string
 }) {
   const [level, setLevel] = useState<LogLevel>('info')
+  const [keyword, setKeyword] = useState('')
+  const [refreshVersion, setRefreshVersion] = useState(0)
   const [logs, setLogs] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<unknown>(null)
@@ -176,7 +178,7 @@ export function InstanceLogsPanel({
     return () => {
       cancelled = true
     }
-  }, [active, instanceId, level])
+  }, [active, instanceId, level, refreshVersion])
 
   useEffect(() => {
     if (!active || !liveEnabled) {
@@ -228,6 +230,14 @@ export function InstanceLogsPanel({
     shouldAutoScrollRef.current = distanceToBottom <= AUTO_SCROLL_THRESHOLD_PX
   }
 
+  const normalizedKeyword = keyword.trim().toLowerCase()
+  const visibleLogs = normalizedKeyword
+    ? logs
+        .split(/\r?\n/)
+        .filter((line) => line.toLowerCase().includes(normalizedKeyword))
+        .join('\n')
+    : logs
+
   if (!active) return <Empty description="打开日志 Tab 后加载实时日志" />
 
   return (
@@ -241,8 +251,18 @@ export function InstanceLogsPanel({
             </Select.Option>
           ))}
         </Select>
+        <Input
+          value={keyword}
+          allowClear
+          placeholder="搜索日志关键词"
+          style={{ width: 240 }}
+          onChange={setKeyword}
+        />
+        <Button loading={loading} onClick={() => setRefreshVersion((version) => version + 1)}>
+          拉取日志
+        </Button>
         <Button type={liveEnabled ? 'secondary' : 'primary'} onClick={() => setLiveEnabled((enabled) => !enabled)}>
-          {liveEnabled ? '停止实时' : '开启实时'}
+          {liveEnabled ? '停止跟随' : '开启跟随'}
         </Button>
         <Typography.Text type="secondary">
           {streamStatus === 'connected' ? '实时日志已连接' : null}
@@ -264,9 +284,13 @@ export function InstanceLogsPanel({
           <div className="py-8">
             <Empty description="暂无日志" />
           </div>
+        ) : visibleLogs.length === 0 ? (
+          <div className="py-8">
+            <Empty description="没有匹配的日志" />
+          </div>
         ) : (
           <pre className="m-0 whitespace-pre-wrap break-words bg-[var(--color-fill-1)] p-3 font-mono text-xs leading-5 text-[var(--color-text-1)]">
-            {logs}
+            {visibleLogs}
           </pre>
         )}
       </div>

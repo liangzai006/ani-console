@@ -1,5 +1,5 @@
-import { Empty } from "@arco-design/web-react";
+import { InstanceTerminal } from "@/components/instances/InstanceTerminal";
 
-export function GpuInstanceTerminal() {
-  return <Empty description="终端功能暂未开放" />;
+export function GpuInstanceTerminal({ instanceId }: { instanceId: string }) {
+  return <InstanceTerminal instanceId={instanceId} height={520} />;
 }

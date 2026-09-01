@@ -8,11 +8,11 @@ import { showApiError } from "@/api/helpers";
 import { CreateKnowledgeBaseModal } from "@/components/knowledge/CreateKnowledgeBaseModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -94,7 +94,7 @@ function KnowledgeBasesPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to="/kb/$kbId"
@@ -211,8 +211,8 @@ function KnowledgeBasesPage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
-                  <ListRowActionButton
+                <DataTableRowActions>
+                  <DataTableRowActionButton
                     onClick={() =>
                       navigate({
                         to: "/kb/$kbId",
@@ -222,8 +222,8 @@ function KnowledgeBasesPage() {
                     }
                   >
                     问答
-                  </ListRowActionButton>
-                  <ListRowActionButton
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton
                     status="danger"
                     onClick={() =>
                       Modal.confirm({
@@ -235,8 +235,8 @@ function KnowledgeBasesPage() {
                     }
                   >
                     删除
-                  </ListRowActionButton>
-                </ListRowActions>
+                  </DataTableRowActionButton>
+                </DataTableRowActions>
               ),
             },
           ]}

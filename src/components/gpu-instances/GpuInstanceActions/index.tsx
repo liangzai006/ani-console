@@ -9,17 +9,23 @@ import {
   Message,
   Modal,
   Select,
+  Space,
 } from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { coreApi } from "@/api/client";
 import type { components } from "@/api/core-schema";
-import { ListRowActionButton, ListRowActions } from "@/components/common";
+import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
+import { GpuRegistryImageSelect } from "@/components/gpu-instances/GpuRegistryImageSelect";
+import { listOrThrow } from "@/lib/api-list";
+import { getErrorMessage } from "@/lib/errors";
 import { newIdempotencyKey } from "@/lib/idempotency";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
 type Instance = components["schemas"]["InstanceRecord"];
+type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
+type Secret = components["schemas"]["Secret"];
 type LifecycleRequest = components["schemas"]["InstanceLifecycleRequest"];
 type LifecycleAction = LifecycleRequest["action"];
 type FormAction =
@@ -46,7 +52,7 @@ type ActionFormValues = {
   secret_id?: string;
   binding_type?: "env" | "file";
   env_name?: string;
-  security_group_ids?: string;
+  security_group_ids?: string[];
 };
 
 const ACTION_TITLES: Record<FormAction, string> = {
@@ -134,10 +140,7 @@ function buildLifecycleBody(
     case "change_security_groups":
       return {
         ...base,
-        security_group_ids: (values.security_group_ids ?? "")
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean),
+        security_group_ids: values.security_group_ids ?? [],
       };
   }
 }
@@ -149,13 +152,39 @@ export function GpuInstanceActions({
 }: {
   instance: Instance;
   onChanged: () => void;
-  display?: "row" | "menu";
+  display?: "row" | "menu" | "release" | "configuration";
 }) {
   const [form] = Form.useForm<ActionFormValues>();
   const [formAction, setFormAction] = useState<FormAction>();
   const [bindingType, setBindingType] = useState<"env" | "file">("env");
   const busy = BUSY_STATES.has(instance.state);
-
+  const terminalAvailable =
+    instance.state === "running" && instance.access?.exec_available !== false;
+  const instanceVpcId = instance.network?.vpc_id ?? instance.vpc_id;
+  const securityGroups = useQuery({
+    queryKey: ["network-security-groups", "gpu-instance-change", instanceVpcId],
+    queryFn: () =>
+      listOrThrow(() =>
+        coreApi.GET("/networks/security-groups", {
+          params: { query: { limit: 100 } },
+        }),
+      ),
+    enabled: formAction === "change_security_groups",
+  });
+  const availableSecurityGroups = (
+    (securityGroups.data?.items ?? []) as SecurityGroup[]
+  ).filter((group) => !instanceVpcId || group.vpc_id === instanceVpcId);
+  const secrets = useQuery({
+    queryKey: ["secrets", "gpu-instance-bind"],
+    queryFn: () =>
+      listOrThrow(() =>
+        coreApi.GET("/secrets", { params: { query: { limit: 100 } } }),
+      ),
+    enabled: formAction === "bind_secret",
+  });
+  const availableSecrets = ((secrets.data?.items ?? []) as Secret[]).filter(
+    (secret) => secret.id && secret.state !== "deleted",
+  );
   const lifecycle = useMutation({
     mutationFn: async (body: LifecycleRequest) => {
       const { error, response } = await coreApi.POST(
@@ -201,6 +230,10 @@ export function GpuInstanceActions({
       replicas: instance.container?.replicas ?? 1,
       binding_type: "env",
       read_only: false,
+      security_group_ids:
+        action === "change_security_groups"
+          ? (instance.network?.security_groups ?? []).map((group) => group.id)
+          : undefined,
     });
     setFormAction(action);
   };
@@ -214,7 +247,10 @@ export function GpuInstanceActions({
       openActionForm("scale");
       return;
     }
-    if (action === "terminal") return;
+    if (action === "terminal") {
+      openTerminalWindow(instance.id);
+      return;
+    }
     if (action === "copy_endpoint") {
       if (!instance.endpoint) return;
       try {
@@ -262,7 +298,7 @@ export function GpuInstanceActions({
           <Menu.Item key="scale" disabled={busy || lifecycle.isPending}>
             扩缩容
           </Menu.Item>
-          <Menu.Item key="terminal" disabled>
+          <Menu.Item key="terminal" disabled={!terminalAvailable}>
             打开终端
           </Menu.Item>
         </>
@@ -313,41 +349,72 @@ export function GpuInstanceActions({
   return (
     <>
       {display === "row" ? (
-        <ListRowActions>
-          <ListRowActionButton
+        <DataTableRowActions>
+          <DataTableRowActionButton
             disabled={instance.state !== "running" || lifecycle.isPending}
             onClick={() => submitSimpleAction("stop")}
           >
             停止
-          </ListRowActionButton>
-          <ListRowActionButton
+          </DataTableRowActionButton>
+          <DataTableRowActionButton
             disabled={instance.state !== "running" || lifecycle.isPending}
             onClick={() => submitSimpleAction("restart")}
           >
             重启
-          </ListRowActionButton>
-          <ListRowActionButton
+          </DataTableRowActionButton>
+          <DataTableRowActionButton
             disabled={busy || lifecycle.isPending}
             onClick={() => openActionForm("scale")}
           >
             扩缩容
-          </ListRowActionButton>
-          <ListRowActionButton
-            disabled={instance.state !== "running"}
+          </DataTableRowActionButton>
+          <DataTableRowActionButton
+            disabled={!terminalAvailable}
             onClick={() => openTerminalWindow(instance.id)}
           >
             终端
-          </ListRowActionButton>
+          </DataTableRowActionButton>
           <Dropdown trigger="click" position="br" droplist={moreMenu}>
-            <ListRowActionButton disabled={lifecycle.isPending}>
+            <DataTableRowActionButton disabled={lifecycle.isPending}>
               更多
               <i
                 className="iconfont icon-down-chevron-small ml-1"
                 aria-hidden="true"
               />
-            </ListRowActionButton>
+            </DataTableRowActionButton>
           </Dropdown>
-        </ListRowActions>
+        </DataTableRowActions>
+      ) : display === "release" ? (
+        <Space>
+          <Button
+            size="small"
+            disabled={busy || lifecycle.isPending}
+            onClick={() => openActionForm("update_image")}
+          >
+            更新镜像
+          </Button>
+          <Button
+            size="small"
+            disabled={instance.state !== "stopped" || lifecycle.isPending}
+            onClick={() =>
+              Modal.confirm({
+                title: "回滚上一版",
+                content: `确定将「${instance.name}」回滚到上一修订版本？`,
+                onOk: () => submitSimpleAction("rollback"),
+              })
+            }
+          >
+            回滚上一版
+          </Button>
+        </Space>
+      ) : display === "configuration" ? (
+        <Button
+          size="small"
+          disabled={busy || lifecycle.isPending}
+          onClick={() => openActionForm("bind_secret")}
+        >
+          绑定密钥
+        </Button>
       ) : (
         <Dropdown trigger="click" position="br" droplist={moreMenu}>
           <Button loading={lifecycle.isPending}>
@@ -385,13 +452,7 @@ export function GpuInstanceActions({
             </Form.Item>
           ) : null}
           {formAction === "update_image" ? (
-            <Form.Item
-              field="image_id"
-              label="镜像 ID"
-              rules={[{ required: true, message: "请输入镜像 ID" }]}
-            >
-              <Input placeholder="请输入 Registry 镜像 ID" />
-            </Form.Item>
+            <GpuRegistryImageSelect field="image_id" enabled />
           ) : null}
           {formAction === "resize" ? (
             <>
@@ -439,8 +500,7 @@ export function GpuInstanceActions({
             </Form.Item>
           ) : null}
           {formAction === "attach_volume" ||
-          formAction === "attach_filesystem" ||
-          (formAction === "bind_secret" && bindingType === "file") ? (
+          formAction === "attach_filesystem" ? (
             <Form.Item
               field="mount_path"
               label="挂载路径"
@@ -459,15 +519,29 @@ export function GpuInstanceActions({
             <>
               <Form.Item
                 field="secret_id"
-                label="密钥 ID"
-                rules={[{ required: true, message: "请输入密钥 ID" }]}
+                label="密钥"
+                extra={
+                  secrets.error
+                    ? getErrorMessage(secrets.error, "密钥列表加载失败")
+                    : undefined
+                }
+                rules={[{ required: true, message: "请选择密钥" }]}
               >
-                <Input placeholder="请输入密钥 ID" />
+                <Select
+                  loading={secrets.isLoading}
+                  placeholder="请选择已创建的密钥"
+                  showSearch
+                  allowClear
+                  options={availableSecrets.map((secret) => ({
+                    label: secret.name ?? secret.id ?? "未命名密钥",
+                    value: secret.id!,
+                  }))}
+                />
               </Form.Item>
               <Form.Item
                 field="binding_type"
                 label="绑定方式"
-                rules={[{ required: true }]}
+                rules={[{ required: true, message: "请选择绑定方式" }]}
               >
                 <Select
                   options={[
@@ -477,6 +551,15 @@ export function GpuInstanceActions({
                   onChange={setBindingType}
                 />
               </Form.Item>
+              {bindingType === "file" ? (
+                <Form.Item
+                  field="mount_path"
+                  label="挂载路径"
+                  rules={[{ required: true, message: "请输入挂载路径" }]}
+                >
+                  <Input placeholder="例如 /data" />
+                </Form.Item>
+              ) : null}
               {bindingType === "env" ? (
                 <Form.Item
                   field="env_name"
@@ -491,10 +574,31 @@ export function GpuInstanceActions({
           {formAction === "change_security_groups" ? (
             <Form.Item
               field="security_group_ids"
-              label="安全组 ID"
-              extra="多个安全组 ID 使用英文逗号分隔；留空表示解除全部安全组。"
+              label="安全组"
+              extra={
+                securityGroups.error
+                  ? getErrorMessage(securityGroups.error, "安全组列表加载失败")
+                  : "可多选；清空选择表示解除全部安全组。"
+              }
             >
-              <Input placeholder="sg-1, sg-2" />
+              <Select
+                mode="multiple"
+                loading={securityGroups.isLoading}
+                placeholder="请选择当前 VPC 下的安全组"
+                showSearch
+                allowClear
+                filterOption={(inputValue, option) =>
+                  String(option.props.children)
+                    .toLowerCase()
+                    .includes(inputValue.toLowerCase())
+                }
+              >
+                {availableSecurityGroups.map((group) => (
+                  <Select.Option key={group.id} value={group.id}>
+                    {group.name} · {group.id}
+                  </Select.Option>
+                ))}
+              </Select>
             </Form.Item>
           ) : null}
         </Form>

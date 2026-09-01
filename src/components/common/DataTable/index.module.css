@@ -1,0 +1,48 @@
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  width: fit-content;
+  color: var(--list-primary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.name :global(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.name :global(a:hover) {
+  color: var(--list-primary-hover);
+  text-decoration: none;
+}
+
+.nameId {
+  color: var(--list-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.rowActionButton {
+  height: 28px;
+  padding: 0 4px;
+  color: var(--list-primary);
+  white-space: nowrap;
+}
+
+.rowActionButton:hover {
+  background: var(--list-primary-soft);
+  color: var(--list-primary-hover);
+}

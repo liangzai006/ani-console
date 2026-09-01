@@ -8,11 +8,11 @@ import type { components } from "@/api/core-schema";
 import { CreateRouteModal } from "@/components/network/CreateRouteModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -106,7 +106,7 @@ function NetworkRoutesPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link to="/networks/routes/$routeId" params={{ routeId: item.id }}>
               {item.description?.trim() || item.destination_cidr}
@@ -235,8 +235,8 @@ function NetworkRoutesPage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
-                  <ListRowActionButton
+                <DataTableRowActions>
+                  <DataTableRowActionButton
                     status="danger"
                     onClick={() =>
                       Modal.confirm({
@@ -248,8 +248,8 @@ function NetworkRoutesPage() {
                     }
                   >
                     删除
-                  </ListRowActionButton>
-                </ListRowActions>
+                  </DataTableRowActionButton>
+                </DataTableRowActions>
               ),
             },
           ]}

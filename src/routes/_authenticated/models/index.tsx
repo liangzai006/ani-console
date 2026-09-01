@@ -6,11 +6,11 @@ import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag"
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarIconButton,
@@ -71,7 +71,7 @@ function ModelsPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <ListNameCell name={item.display_name || item.name} id={item.id} />
+        <DataTableNameCell name={item.display_name || item.name} id={item.id} />
       ),
     },
     {
@@ -205,21 +205,21 @@ function ModelsPage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
-                  <ListRowActionButton
+                <DataTableRowActions>
+                  <DataTableRowActionButton
                     disabled={
                       item.status !== "ready" || item.versions.length === 0
                     }
                     onClick={() => setDeployModel(item)}
                   >
                     一键部署
-                  </ListRowActionButton>
-                  <ListRowActionButton
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton
                     onClick={() => Message.success("已收藏")}
                   >
                     收藏
-                  </ListRowActionButton>
-                </ListRowActions>
+                  </DataTableRowActionButton>
+                </DataTableRowActions>
               ),
             },
           ]}

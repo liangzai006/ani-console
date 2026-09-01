@@ -7,7 +7,7 @@ import { GpuInstanceActions } from "@/components/gpu-instances/GpuInstanceAction
 import { GpuContainerCreateModal } from "@/components/gpu-instances/GpuContainerCreateModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
   ListToolbar,
@@ -111,7 +111,7 @@ function GpuInstancesPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, row) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to="/gpu-instances/$instanceId"

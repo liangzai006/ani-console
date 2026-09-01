@@ -35,7 +35,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(f
       className={clsx(styles.toolbarButton, styles[`toolbarButton_${variant}`], className)}
       {...buttonProps}
     >
-      {iconClassName ? <i className={`iconfont ${iconClassName}`} aria-hidden="true" /> : null}
+      {iconClassName ? <i className={clsx('iconfont', iconClassName)} aria-hidden="true" /> : null}
       {children}
     </button>
   )
@@ -60,7 +60,7 @@ export const ToolbarIconButton = forwardRef<HTMLButtonElement, ToolbarIconButton
       className={clsx(styles.toolbarIconButton, spinning && styles.spinning, className)}
       {...buttonProps}
     >
-      <i className={`iconfont ${iconClassName}`} aria-hidden="true" />
+      <i className={clsx('iconfont', iconClassName)} aria-hidden="true" />
     </button>
   )
 })

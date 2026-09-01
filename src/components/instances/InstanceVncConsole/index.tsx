@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import RFB from '@novnc/novnc'
 import { Alert, Button, Radio, Spin, Tag } from '@arco-design/web-react'
+import clsx from 'clsx'
 import { coreApi } from '@/api/client'
 import { getErrorMessage } from '@/lib/errors'
 import { newIdempotencyKey } from '@/lib/idempotency'
@@ -155,7 +156,12 @@ export function InstanceVncConsole({
           <Alert type="error" content={errorText} />
         </div>
       ) : null}
-      <div className={`relative min-h-0 flex-1 ${viewMode === 'native' ? 'overflow-auto' : 'overflow-hidden'}`}>
+      <div
+        className={clsx(
+          'relative min-h-0 flex-1',
+          viewMode === 'native' ? 'overflow-auto' : 'overflow-hidden',
+        )}
+      >
         {status === 'connecting' ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0b0e16]/80">
             <Spin />

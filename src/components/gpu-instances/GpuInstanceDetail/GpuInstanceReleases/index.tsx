@@ -10,26 +10,42 @@ type Release = NonNullable<
 
 export function GpuInstanceReleases({ instance }: { instance: Instance }) {
   const releases = instance.container?.history ?? [];
+  const rolloutLabels: Record<string, string> = {
+    pending: "待发布",
+    progressing: "发布中",
+    healthy: "健康",
+    degraded: "异常",
+    rolled_back: "已回滚",
+  };
+  const rolloutStatus = instance.container?.rollout_status;
+  const image =
+    instance.image?.ref ??
+    instance.image?.name ??
+    instance.image?.id ??
+    "—";
 
   return (
     <Space direction="vertical" size={16} className="w-full">
       <Descriptions
-        column={3}
+        column={1}
         data={[
           {
-            label: "发布状态",
-            value: instance.container?.rollout_status ?? "—",
-          },
-          {
-            label: "当前修订版本",
+            label: "当前修订",
             value: instance.container?.revision ?? "—",
           },
           {
-            label: "副本",
+            label: "发布状态",
+            value: rolloutStatus
+              ? (rolloutLabels[rolloutStatus] ?? rolloutStatus)
+              : "—",
+          },
+          {
+            label: "就绪副本",
             value: instance.container
               ? `${instance.container.ready_replicas} / ${instance.container.replicas}`
               : "—",
           },
+          { label: "镜像", value: image },
         ]}
       />
       <Typography.Title heading={6}>发布历史</Typography.Title>

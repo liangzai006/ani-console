@@ -1,5 +1,6 @@
 import { IconCheckCircle, IconClockCircle, IconCloseCircle, IconRight } from '@arco-design/web-react/icon'
 import { Link } from '@tanstack/react-router'
+import clsx from 'clsx'
 import { useMemo, useState } from 'react'
 import type { HomeTask, HomeTaskFilter } from '../types'
 import styles from '../home.module.css'
@@ -13,7 +14,7 @@ export function TasksPanel({ items }: { items: HomeTask[] }) {
   )
 
   return (
-    <section className={`${styles.panel} ${styles.taskPanel}`} data-testid="tasks-panel">
+    <section className={clsx(styles.panel, styles.taskPanel)} data-testid="tasks-panel">
       <header className={styles.panelHeader}>
         <h2>任务中心</h2>
         <Link to="/instances/vm" className={styles.viewAllLink}>
@@ -26,7 +27,7 @@ export function TasksPanel({ items }: { items: HomeTask[] }) {
           type="button"
           role="tab"
           aria-selected={filter === 'done'}
-          className={`${styles.tabButton} ${filter === 'done' ? styles.tabButtonActive : ''}`}
+          className={clsx(styles.tabButton, filter === 'done' && styles.tabButtonActive)}
           onClick={() => setFilter('done')}
         >
           已完成
@@ -35,7 +36,7 @@ export function TasksPanel({ items }: { items: HomeTask[] }) {
           type="button"
           role="tab"
           aria-selected={filter === 'current'}
-          className={`${styles.tabButton} ${filter === 'current' ? styles.tabButtonActive : ''}`}
+          className={clsx(styles.tabButton, filter === 'current' && styles.tabButtonActive)}
           onClick={() => setFilter('current')}
         >
           当前任务 {currentCount}
@@ -45,7 +46,7 @@ export function TasksPanel({ items }: { items: HomeTask[] }) {
       <div className={styles.taskList}>
         {visibleItems.map((item) => (
           <button key={item.id} type="button" className={styles.taskItem}>
-            <span className={`${styles.taskIcon} ${styles[`taskIcon_${item.status}`]}`}>
+            <span className={clsx(styles.taskIcon, styles[`taskIcon_${item.status}`])}>
               {item.status === 'done' ? <IconCheckCircle /> : null}
               {item.status === 'failed' ? <IconCloseCircle /> : null}
               {item.status === 'current' ? <IconClockCircle /> : null}

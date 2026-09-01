@@ -1,9 +1,12 @@
-import type { ReactNode } from "react";
+import { forwardRef, type ReactNode } from "react";
 import {
+  Button,
   Table,
+  type ButtonProps,
   type TableColumnProps,
   type TableProps,
 } from "@arco-design/web-react";
+import styles from "./index.module.css";
 
 export type ListColumn<T> = TableColumnProps<T>;
 
@@ -83,8 +86,44 @@ export function DataTable<T>({
       }
       border={false}
       hover
-      scroll={scroll}
+      scroll={{ x: "max-content", ...scroll }}
       rowSelection={rowSelection}
     />
   );
 }
+
+export function DataTableRowActions({ children }: { children: ReactNode }) {
+  return <div className={styles.rowActions}>{children}</div>;
+}
+
+export function DataTableNameCell({
+  name,
+  id,
+}: {
+  name: ReactNode;
+  id: ReactNode;
+}) {
+  return (
+    <div className={styles.nameCell}>
+      <span className={styles.name}>{name}</span>
+      <span className={styles.nameId}>{id}</span>
+    </div>
+  );
+}
+
+export const DataTableRowActionButton = forwardRef<
+  HTMLButtonElement,
+  ButtonProps & { children: ReactNode }
+>(function DataTableRowActionButton({ children, ...buttonProps }, ref) {
+  return (
+    <Button
+      ref={ref}
+      type="text"
+      size="small"
+      {...buttonProps}
+      className={styles.rowActionButton}
+    >
+      {children}
+    </Button>
+  );
+});

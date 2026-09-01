@@ -1,5 +1,6 @@
 import { Breadcrumb, Button, Tooltip } from '@arco-design/web-react'
 import { Link } from '@tanstack/react-router'
+import clsx from 'clsx'
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { AliIcon } from '../AliIcon'
 import styles from './index.module.css'
@@ -128,19 +129,17 @@ export function DetailPageFrame({
       </section>
 
       <div
-        className={[
+        className={clsx(
           styles.workspace,
           hasTabs ? styles.workspaceSplit : styles.workspaceSingle,
-          leftCollapsed ? styles.workspaceCollapsed : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
+          leftCollapsed && styles.workspaceCollapsed,
+        )}
         style={workspaceStyle}
         data-testid="detail-workspace"
         data-left-collapsed={leftCollapsed}
       >
         <aside
-          className={[styles.leftPane, leftCollapsed ? styles.leftPaneCollapsed : ''].filter(Boolean).join(' ')}
+          className={clsx(styles.leftPane, leftCollapsed && styles.leftPaneCollapsed)}
           aria-label="详情信息"
           data-testid="detail-left-pane"
         >
@@ -151,9 +150,10 @@ export function DetailPageFrame({
               return (
                 <section
                   key={card.key}
-                  className={[styles.card, !isCollapsed && expandedCardCount === 1 ? styles.cardFill : '']
-                    .filter(Boolean)
-                    .join(' ')}
+                  className={clsx(
+                    styles.card,
+                    !isCollapsed && expandedCardCount === 1 && styles.cardFill,
+                  )}
                 >
                   <button
                     type="button"
@@ -176,7 +176,7 @@ export function DetailPageFrame({
                       {card.fields.map((field, index) => (
                         <div key={`${card.key}-${index}`} className={styles.fieldRow}>
                           <div className={styles.fieldLabel}>{field.label}</div>
-                          <div className={[styles.fieldValue, field.valueClassName ?? ''].filter(Boolean).join(' ')}>
+                          <div className={clsx(styles.fieldValue, field.valueClassName)}>
                             {field.value ?? '—'}
                           </div>
                         </div>
@@ -216,7 +216,7 @@ export function DetailPageFrame({
                     role="tab"
                     aria-selected={active}
                     aria-controls={`detail-tab-panel-${tab.key}`}
-                    className={[styles.tabButton, active ? styles.tabButtonActive : ''].filter(Boolean).join(' ')}
+                    className={clsx(styles.tabButton, active && styles.tabButtonActive)}
                     onClick={() => setActiveTabKey(tab.key)}
                   >
                     {tab.label}

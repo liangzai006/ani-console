@@ -23,7 +23,7 @@ import {
   ListDataTable,
   ListPageFrame,
   ListPageHeader,
-  ListNameCell,
+  DataTableNameCell,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -375,7 +375,7 @@ export function InstancesListPage(props: InstancesListPageProps = {}) {
       key: "name",
       title: "名称 / ID",
       render: (_, row) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to={

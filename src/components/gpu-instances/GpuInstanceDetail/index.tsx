@@ -1,6 +1,7 @@
-import { Space, Spin, Tooltip } from "@arco-design/web-react";
+import { Button, Space, Spin, Tag, Tooltip } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
 import {
@@ -19,10 +20,21 @@ import { GpuInstanceMetrics } from "./GpuInstanceMetrics";
 import { GpuInstanceNetwork } from "./GpuInstanceNetwork";
 import { GpuInstanceOperations } from "./GpuInstanceOperations";
 import { GpuInstanceReleases } from "./GpuInstanceReleases";
-import { GpuInstanceStorage } from "./GpuInstanceStorage";
+import {
+  GpuInstanceStorage,
+  type MountKind,
+} from "./GpuInstanceStorage";
 import { GpuInstanceTerminal } from "./GpuInstanceTerminal";
 
 type Instance = components["schemas"]["InstanceRecord"];
+
+const BUSY_STATES = new Set([
+  "pending",
+  "provisioning",
+  "starting",
+  "stopping",
+  "deleting",
+]);
 
 function imageLabel(instance: Instance) {
   return (
@@ -37,6 +49,7 @@ function gpuLabel(instance: Instance) {
 
 export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
   const navigate = useNavigate();
+  const [mountKind, setMountKind] = useState<MountKind>();
   const detail = useQuery({
     queryKey: ["gpu-instance", instanceId],
     queryFn: async () => {
@@ -90,6 +103,7 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
   }
 
   const instance = detail.data;
+  const busy = BUSY_STATES.has(instance.state);
   if (instance.kind !== "gpu_container") {
     return (
       <ApiErrorAlert
@@ -100,7 +114,114 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
   }
 
   const nodeName = instance.compute?.node_name ?? instance.node_name ?? "—";
-  const privateIp = instance.network?.private_ip ?? instance.private_ip ?? "—";
+  const gpuModel = instance.gpu?.model ?? instance.compute?.gpu_type;
+  const gpuCount = instance.gpu?.count ?? 1;
+  const cpu = instance.compute?.cpu;
+  const memory = instance.compute?.memory;
+  const cpuMemory =
+    cpu != null || memory != null
+      ? `${cpu != null ? `${String(cpu).replace(/C$/i, "")}C` : "—"}${
+          memory != null
+            ? String(memory).replace(/Gi$/i, "G").replace(/^\s+/, "")
+            : "—"
+        }`
+      : "—";
+  const rolloutLabels: Record<string, string> = {
+    pending: "待发布",
+    progressing: "发布中",
+    healthy: "健康",
+    degraded: "异常",
+    rolled_back: "已回滚",
+  };
+  const workloadIdentity = instance.workload_identity;
+  const workloadIdentityLabel = workloadIdentity?.active
+    ? [workloadIdentity.key_prefix, ...(workloadIdentity.scopes ?? [])]
+        .filter(Boolean)
+        .join(" · ") || "—"
+    : "—";
+  const securityGroups = instance.network?.security_groups ?? [];
+  const loadBalancerRefs = instance.network?.load_balancer_refs ?? [];
+  const relatedItems: Array<{
+    key: string;
+    kind: string;
+    name: string;
+    id?: string;
+  }> = [];
+  const relatedKeys = new Set<string>();
+  const addRelated = (item: (typeof relatedItems)[number]) => {
+    if (relatedKeys.has(item.key)) return;
+    relatedKeys.add(item.key);
+    relatedItems.push(item);
+  };
+  if (instance.network?.vpc_id ?? instance.vpc_id) {
+    const id = String(instance.network?.vpc_id ?? instance.vpc_id);
+    addRelated({
+      key: `vpc/${id}`,
+      kind: "VPC",
+      name: instance.network?.vpc_name ?? id,
+      id,
+    });
+  }
+  if (instance.network?.subnet_id ?? instance.subnet_id) {
+    const id = String(instance.network?.subnet_id ?? instance.subnet_id);
+    addRelated({
+      key: `subnet/${id}`,
+      kind: "子网",
+      name: instance.network?.subnet_name ?? id,
+      id,
+    });
+  }
+  securityGroups.forEach((group) =>
+    addRelated({
+      key: `security-group/${group.id}`,
+      kind: "安全组",
+      name: group.name ?? group.id,
+      id: group.id,
+    }),
+  );
+  (instance.volumes ?? []).forEach((volume) => {
+    const id = volume.source_ref?.replace(/^volume\//, "");
+    addRelated({
+      key: volume.source_ref ?? `volume/${volume.name}`,
+      kind: "云盘",
+      name: volume.name,
+      id,
+    });
+  });
+  (instance.storage_attachments ?? []).forEach((attachment) => {
+    const isFilesystem = attachment.resource_type === "filesystem";
+    addRelated({
+      key: `${attachment.resource_type}/${attachment.resource_id}`,
+      kind: isFilesystem ? "文件存储" : attachment.resource_type,
+      name: attachment.resource_name ?? attachment.resource_id,
+      id: attachment.resource_id,
+    });
+  });
+  if (instance.image?.id) {
+    addRelated({
+      key: `image/${instance.image.id}`,
+      kind: "镜像",
+      name: imageLabel(instance),
+      id: instance.image.id,
+    });
+  }
+  (instance.resource_refs ?? [])
+    .filter((reference) => /secret|key|credential/i.test(reference))
+    .forEach((reference) =>
+      addRelated({
+        key: reference,
+        kind: "密钥",
+        name: reference,
+      }),
+    );
+  loadBalancerRefs.forEach((reference) =>
+    addRelated({
+      key: `load-balancer/${reference}`,
+      kind: "负载均衡",
+      name: reference,
+      id: reference,
+    }),
+  );
 
   return (
     <DetailPageFrame
@@ -142,20 +263,26 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
           title: "基本信息",
           fields: [
             { label: "ID", value: instance.id },
-            { label: "名称", value: instance.name },
-            { label: "状态", value: <StatusTag status={instance.state} /> },
-            { label: "运行节点", value: nodeName },
-            { label: "私网 IP", value: privateIp },
-            { label: "Provider", value: instance.provider },
-            { label: "创建时间", value: formatDateTime(instance.created_at) },
-            { label: "更新时间", value: formatDateTime(instance.updated_at) },
-          ],
-        },
-        {
-          key: "runtime-summary",
-          title: "运行摘要",
-          fields: [
+            {
+              label: "状态",
+              value: (
+                <Space wrap size={4}>
+                  <StatusTag status={instance.state} />
+                  {instance.termination_protection ? (
+                    <Tag color="orange">终止保护</Tag>
+                  ) : null}
+                </Space>
+              ),
+            },
+            {
+              label: "规格",
+              value: gpuModel ? `${gpuCount}×${gpuModel}` : "—",
+            },
             { label: "镜像", value: imageLabel(instance) },
+            { label: "Provider", value: instance.provider },
+            { label: "节点", value: nodeName },
+            { label: "CPU / 内存", value: cpuMemory },
+            { label: "GPU", value: gpuLabel(instance) },
             {
               label: "副本",
               value: instance.container
@@ -163,32 +290,114 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
                 : "—",
             },
             {
-              label: "发布状态",
-              value: instance.container?.rollout_status ?? "—",
+              label: "修订 / 发布",
+              value: instance.container
+                ? [
+                    instance.container.revision,
+                    instance.container.rollout_status
+                      ? (rolloutLabels[instance.container.rollout_status] ??
+                        instance.container.rollout_status)
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "—"
+                : "—",
             },
             {
-              label: "修订版本",
-              value: instance.container?.revision ?? "—",
+              label: "Workload Identity",
+              value: workloadIdentityLabel,
             },
-            { label: "CPU", value: instance.compute?.cpu ?? "—" },
-            { label: "内存", value: instance.compute?.memory ?? "—" },
-            { label: "GPU", value: gpuLabel(instance) },
-            { label: "私网 IP", value: privateIp },
+            {
+              label: "负载均衡",
+              value: loadBalancerRefs.length
+                ? loadBalancerRefs.join("、")
+                : "—",
+            },
+            {
+              label: "调用地址",
+              value: instance.endpoint ? (
+                <a
+                  href={instance.endpoint}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all text-[rgb(var(--link-6))]"
+                >
+                  {instance.endpoint}
+                </a>
+              ) : (
+                "—"
+              ),
+            },
+            {
+              label: "安全组",
+              value: securityGroups.length
+                ? securityGroups.map((group) => group.name ?? group.id).join("、")
+                : "—",
+            },
+            { label: "创建时间", value: formatDateTime(instance.created_at) },
+            {
+              label: "关联对象",
+              value: (
+                <span>
+                  <strong>{relatedItems.length}</strong> 个
+                </span>
+              ),
+            },
           ],
+        },
+        {
+          key: "related-summary",
+          title: "关联摘要",
+          fields: relatedItems.length
+            ? relatedItems.map((item) => ({
+                label: item.kind,
+                value: (
+                  <span className="block min-w-0 truncate" title={item.id ?? item.name}>
+                    {item.name}
+                    {item.id && item.id !== item.name ? ` · ${item.id}` : ""}
+                  </span>
+                ),
+              }))
+            : [{ label: "暂无关联对象", value: "—" }],
         },
       ]}
       tabs={[
         {
           key: "releases",
           label: "发布与回滚",
+          extra: (
+            <GpuInstanceActions
+              instance={instance}
+              display="release"
+              onChanged={() => detail.refetch()}
+            />
+          ),
           content: <GpuInstanceReleases instance={instance} />,
         },
         {
           key: "storage",
           label: "存储与挂载",
+          extra: (
+            <Space>
+              <Button
+                disabled={busy}
+                onClick={() => setMountKind("volume")}
+              >
+                挂载云盘
+              </Button>
+              <Button
+                disabled={busy}
+                onClick={() => setMountKind("filesystem")}
+              >
+                挂载 NFS
+              </Button>
+            </Space>
+          ),
           content: (
             <GpuInstanceStorage
               instance={instance}
+              mountKind={mountKind}
+              onMountKindChange={setMountKind}
               onChanged={() => detail.refetch()}
             />
           ),
@@ -196,12 +405,31 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
         {
           key: "configuration",
           label: "配置与密钥",
-          content: <GpuInstanceConfiguration instance={instance} />,
+          extra: (
+            <GpuInstanceActions
+              instance={instance}
+              display="configuration"
+              onChanged={() => detail.refetch()}
+            />
+          ),
+          content: (
+            <GpuInstanceConfiguration
+              instance={instance}
+              onChanged={() => detail.refetch()}
+            />
+          ),
         },
         {
           key: "gpu-metrics",
           label: "GPU 指标",
-          content: <GpuInstanceMetrics instanceId={instance.id} gpuOnly />,
+          content: (
+            <GpuInstanceMetrics
+              instanceId={instance.id}
+              gpuOnly
+              gpuModel={instance.gpu?.model ?? instance.compute?.gpu_type}
+              gpuCount={instance.gpu?.count}
+            />
+          ),
         },
         {
           key: "network",
@@ -226,7 +454,7 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
         {
           key: "terminal",
           label: "终端",
-          content: <GpuInstanceTerminal />,
+          content: <GpuInstanceTerminal instanceId={instance.id} />,
         },
         {
           key: "operations",

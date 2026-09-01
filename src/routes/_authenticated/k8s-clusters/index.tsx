@@ -22,11 +22,11 @@ import {
   DetailPagePlaceholder,
   AsyncTaskPoller,
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -207,7 +207,7 @@ function ClusterList() {
       key: "name",
       title: "名称 / ID",
       render: (_, cluster) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to="/k8s-clusters/$clusterId"
@@ -324,13 +324,13 @@ function ClusterList() {
               title: "操作",
               fixed: "right",
               render: (_value, cluster) => (
-                <ListRowActions>
-                  <ListRowActionButton
+                <DataTableRowActions>
+                  <DataTableRowActionButton
                     loading={downloadKubeconfig.isPending}
                     onClick={() => downloadKubeconfig.mutate(cluster)}
                   >
                     kubeconfig
-                  </ListRowActionButton>
+                  </DataTableRowActionButton>
                   <Dropdown
                     trigger="click"
                     position="br"
@@ -349,15 +349,15 @@ function ClusterList() {
                       </Menu>
                     }
                   >
-                    <ListRowActionButton>
+                    <DataTableRowActionButton>
                       更多
                       <i
                         className="iconfont icon-down-chevron-small"
                         aria-hidden="true"
                       />
-                    </ListRowActionButton>
+                    </DataTableRowActionButton>
                   </Dropdown>
-                </ListRowActions>
+                </DataTableRowActions>
               ),
             },
           ]}

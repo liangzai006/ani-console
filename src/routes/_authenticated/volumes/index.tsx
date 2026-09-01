@@ -11,11 +11,11 @@ import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
 import { AttachVolumeModal } from "@/components/storage/AttachVolumeModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -127,7 +127,7 @@ function VolumesPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link to="/volumes/$volumeId" params={{ volumeId: item.id }}>
               {item.name}
@@ -248,9 +248,9 @@ function VolumesPage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
+                <DataTableRowActions>
                   {isMounted(item) ? (
-                    <ListRowActionButton
+                    <DataTableRowActionButton
                       loading={
                         detachVolume.isPending &&
                         detachVolume.variables?.id === item.id
@@ -265,19 +265,19 @@ function VolumesPage() {
                       }
                     >
                       卸载
-                    </ListRowActionButton>
+                    </DataTableRowActionButton>
                   ) : (
-                    <ListRowActionButton onClick={() => setAttachTarget(item)}>
+                    <DataTableRowActionButton onClick={() => setAttachTarget(item)}>
                       挂载
-                    </ListRowActionButton>
+                    </DataTableRowActionButton>
                   )}
-                  <ListRowActionButton onClick={() => setExpandTarget(item)}>
+                  <DataTableRowActionButton onClick={() => setExpandTarget(item)}>
                     扩容
-                  </ListRowActionButton>
-                  <ListRowActionButton onClick={() => setSnapshotTarget(item)}>
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton onClick={() => setSnapshotTarget(item)}>
                     创建快照
-                  </ListRowActionButton>
-                  <ListRowActionButton
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton
                     status="danger"
                     onClick={() =>
                       Modal.confirm({
@@ -289,8 +289,8 @@ function VolumesPage() {
                     }
                   >
                     删除
-                  </ListRowActionButton>
-                </ListRowActions>
+                  </DataTableRowActionButton>
+                </DataTableRowActions>
               ),
             },
           ]}

@@ -8,11 +8,11 @@ import type { components } from "@/api/core-schema";
 import { CreateSecurityGroupModal } from "@/components/network/CreateSecurityGroupModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -133,7 +133,7 @@ function SecurityGroupsPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to="/networks/security-groups/$securityGroupId"
@@ -262,14 +262,14 @@ function SecurityGroupsPage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
-                  <ListRowActionButton
+                <DataTableRowActions>
+                  <DataTableRowActionButton
                     loading={copySecurityGroup.isPending}
                     onClick={() => copySecurityGroup.mutate(item)}
                   >
                     复制
-                  </ListRowActionButton>
-                  <ListRowActionButton
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton
                     status="danger"
                     onClick={() =>
                       Modal.confirm({
@@ -281,8 +281,8 @@ function SecurityGroupsPage() {
                     }
                   >
                     删除
-                  </ListRowActionButton>
-                </ListRowActions>
+                  </DataTableRowActionButton>
+                </DataTableRowActions>
               ),
             },
           ]}

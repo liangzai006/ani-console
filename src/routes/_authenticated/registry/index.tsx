@@ -18,8 +18,8 @@ import {
   ListDataTable,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   ToolbarIconButton,
   ToolbarSearch,
@@ -325,8 +325,8 @@ function RegistryPage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
-                  <ListRowActionButton
+                <DataTableRowActions>
+                  <DataTableRowActionButton
                     onClick={() =>
                       copyText(
                         item.pull_command || `docker pull ${item.image}`,
@@ -335,11 +335,11 @@ function RegistryPage() {
                     }
                   >
                     拉取命令
-                  </ListRowActionButton>
-                  <ListRowActionButton onClick={() => goCreate(item)}>
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton onClick={() => goCreate(item)}>
                     去创建
-                  </ListRowActionButton>
-                  <ListRowActionButton
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton
                     status="danger"
                     onClick={() =>
                       Modal.confirm({
@@ -350,8 +350,8 @@ function RegistryPage() {
                     }
                   >
                     删除
-                  </ListRowActionButton>
-                </ListRowActions>
+                  </DataTableRowActionButton>
+                </DataTableRowActions>
               ),
             },
           ]}

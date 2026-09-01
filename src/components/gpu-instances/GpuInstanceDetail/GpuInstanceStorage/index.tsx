@@ -1,6 +1,5 @@
 import {
   Alert,
-  Button,
   Checkbox,
   Empty,
   Form,
@@ -12,7 +11,7 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
 import {
@@ -33,7 +32,7 @@ type FilesystemAttachment = NonNullable<
 type StorageVolume = components["schemas"]["StorageVolume"];
 type StorageFilesystem = components["schemas"]["StorageFilesystem"];
 type FilesystemMountTarget = components["schemas"]["FilesystemMountTarget"];
-type MountKind = "volume" | "filesystem";
+export type MountKind = "volume" | "filesystem";
 
 type MountFormValues = {
   resourceId?: string;
@@ -41,29 +40,23 @@ type MountFormValues = {
   readOnly?: boolean;
 };
 
-const BUSY_STATES = new Set([
-  "pending",
-  "provisioning",
-  "starting",
-  "stopping",
-  "deleting",
-]);
-
 export function GpuInstanceStorage({
   instance,
+  mountKind,
+  onMountKindChange,
   onChanged,
 }: {
   instance: Instance;
+  mountKind?: MountKind;
+  onMountKindChange: (kind?: MountKind) => void;
   onChanged: () => void;
 }) {
   const [form] = Form.useForm<MountFormValues>();
-  const [mountKind, setMountKind] = useState<MountKind>();
   const [selectedResourceId, setSelectedResourceId] = useState("");
   const volumes = instance.volumes ?? [];
   const filesystems = (instance.storage_attachments ?? []).filter(
     (attachment) => attachment.resource_type === "filesystem",
   );
-  const busy = BUSY_STATES.has(instance.state);
   const attachedVolumeIds = new Set(
     (instance.resource_refs ?? [])
       .filter((reference) => reference.startsWith("volume/"))
@@ -127,6 +120,13 @@ export function GpuInstanceStorage({
     mountTargets.data?.some((target) => target.status === "available"),
   );
 
+  useEffect(() => {
+    if (!mountKind) return;
+    form.resetFields();
+    form.setFieldsValue({ readOnly: false });
+    setSelectedResourceId("");
+  }, [form, mountKind]);
+
   const mount = useMutation({
     mutationFn: async (values: MountFormValues) => {
       const resourceId = values.resourceId?.trim();
@@ -162,9 +162,9 @@ export function GpuInstanceStorage({
     },
     onSuccess: () => {
       Message.success(
-        mountKind === "volume" ? "云盘挂载已提交" : "NFS 一键挂载已提交",
+        mountKind === "volume" ? "云盘挂载已提交" : "NFS 挂载已提交",
       );
-      setMountKind(undefined);
+      onMountKindChange(undefined);
       setSelectedResourceId("");
       form.resetFields();
       onChanged();
@@ -173,22 +173,12 @@ export function GpuInstanceStorage({
       Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
-  const openMount = (kind: MountKind) => {
-    form.resetFields();
-    form.setFieldsValue({ readOnly: false });
-    setSelectedResourceId("");
-    setMountKind(kind);
-  };
-
   return (
     <>
       <Space direction="vertical" size={24} className="w-full">
         <section>
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3">
             <Typography.Title heading={6}>挂载点</Typography.Title>
-            <Button disabled={busy} onClick={() => openMount("volume")}>
-              挂载云盘
-            </Button>
           </div>
           <DataTable<Volume>
             data={volumes}
@@ -200,16 +190,6 @@ export function GpuInstanceStorage({
             columns={[
               { title: "名称", dataIndex: "name" },
               { title: "类型", dataIndex: "kind", width: 150 },
-              {
-                title: "来源",
-                render: (_, volume) => volume.source_ref ?? "—",
-              },
-              {
-                title: "容量",
-                width: 120,
-                render: (_, volume) =>
-                  volume.size_gib != null ? `${volume.size_gib} GiB` : "—",
-              },
               {
                 title: "挂载路径",
                 render: (_, volume) => volume.mount_path ?? "—",
@@ -224,16 +204,8 @@ export function GpuInstanceStorage({
         </section>
 
         <section>
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <Typography.Title heading={6}>文件存储 NFS</Typography.Title>
-              <Typography.Text type="secondary">
-                通过 CSI 自动完成 NFS 挂载
-              </Typography.Text>
-            </div>
-            <Button disabled={busy} onClick={() => openMount("filesystem")}>
-              一键挂载 NFS
-            </Button>
+          <div className="mb-3">
+            <Typography.Title heading={6}>文件存储 NFS</Typography.Title>
           </div>
           <DataTable<FilesystemAttachment>
             data={filesystems}
@@ -275,7 +247,7 @@ export function GpuInstanceStorage({
       </Space>
 
       <Modal
-        title={mountKind === "volume" ? "挂载云盘" : "一键挂载 NFS"}
+        title={mountKind === "volume" ? "挂载云盘" : "挂载 NFS"}
         visible={Boolean(mountKind)}
         confirmLoading={mount.isPending}
         okButtonProps={{
@@ -285,7 +257,7 @@ export function GpuInstanceStorage({
               (mountTargets.isLoading || !hasAvailableMountTarget)),
         }}
         onCancel={() => {
-          setMountKind(undefined);
+          onMountKindChange(undefined);
           setSelectedResourceId("");
           form.resetFields();
         }}
@@ -372,7 +344,7 @@ export function GpuInstanceStorage({
               className="mb-4"
               type="warning"
               showIcon
-              content="当前 NFS 没有 available 挂载目标，暂不可一键挂载"
+              content="当前 NFS 没有 available 挂载目标，暂不可挂载"
             />
           ) : null}
           <Form.Item

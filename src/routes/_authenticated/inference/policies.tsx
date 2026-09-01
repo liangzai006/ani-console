@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   ToolbarButton,
   ToolbarIconButton,
@@ -40,7 +40,7 @@ function InferencePoliciesPage() {
       key: "name",
       title: "策略名称",
       render: (_, item) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to="/inference/policies/$policyId"
@@ -157,8 +157,8 @@ function InferencePoliciesPage() {
             title: "操作",
             fixed: "right",
             render: (_value, item) => (
-              <ListRowActions>
-                <ListRowActionButton
+              <DataTableRowActions>
+                <DataTableRowActionButton
                   onClick={() =>
                     Message.success(
                       item.status === "enabled"
@@ -168,14 +168,14 @@ function InferencePoliciesPage() {
                   }
                 >
                   {item.status === "enabled" ? "停用" : "启用"}
-                </ListRowActionButton>
-                <ListRowActionButton
+                </DataTableRowActionButton>
+                <DataTableRowActionButton
                   status="danger"
                   onClick={() => Message.warning("删除操作将在接口接入后启用")}
                 >
                   删除
-                </ListRowActionButton>
-              </ListRowActions>
+                </DataTableRowActionButton>
+              </DataTableRowActions>
             ),
           },
         ]}

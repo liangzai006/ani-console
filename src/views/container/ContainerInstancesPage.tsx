@@ -1,14 +1,15 @@
 import { Dropdown, Menu, Message, Popover } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
+import clsx from "clsx";
 import { useEffect, useState } from "react";
 import {
   ListDataTable,
   ListPageFrame,
   ListPageHeader,
-  ListNameCell,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableNameCell,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -145,7 +146,7 @@ export function ContainerInstancesPage({
       key: "name",
       title: COLUMN_LABELS.name,
       render: (_, row) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to="/instances/container/$instanceId"
@@ -366,26 +367,26 @@ export function ContainerInstancesPage({
               const canStart =
                 row.status === "stopped" || row.status === "failed";
               return (
-                <ListRowActions>
+                <DataTableRowActions>
                   {canStart ? (
-                    <ListRowActionButton
+                    <DataTableRowActionButton
                       onClick={() => showStaticAction("启动", row)}
                     >
                       启动
-                    </ListRowActionButton>
+                    </DataTableRowActionButton>
                   ) : null}
                   {isRunning ? (
                     <>
-                      <ListRowActionButton
+                      <DataTableRowActionButton
                         onClick={() => showStaticAction("停止", row)}
                       >
                         停止
-                      </ListRowActionButton>
-                      <ListRowActionButton
+                      </DataTableRowActionButton>
+                      <DataTableRowActionButton
                         onClick={() => showStaticAction("重启", row)}
                       >
                         重启
-                      </ListRowActionButton>
+                      </DataTableRowActionButton>
                     </>
                   ) : null}
                   <Dropdown
@@ -397,15 +398,19 @@ export function ContainerInstancesPage({
                       />
                     }
                   >
-                    <ListRowActionButton>
+                    <DataTableRowActionButton>
                       更多
                       <i
-                        className={`iconfont icon-down-chevron-small ${styles.moreMenuIcon}`}
+                        className={clsx(
+                          "iconfont",
+                          "icon-down-chevron-small",
+                          styles.moreMenuIcon,
+                        )}
                         aria-hidden="true"
                       />
-                    </ListRowActionButton>
+                    </DataTableRowActionButton>
                   </Dropdown>
-                </ListRowActions>
+                </DataTableRowActions>
               );
             },
           },

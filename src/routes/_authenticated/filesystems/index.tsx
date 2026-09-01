@@ -10,11 +10,11 @@ import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFil
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -118,7 +118,7 @@ function FilesystemsPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to="/filesystems/$filesystemId"
@@ -232,16 +232,16 @@ function FilesystemsPage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
-                  <ListRowActionButton onClick={() => setExpandTarget(item)}>
+                <DataTableRowActions>
+                  <DataTableRowActionButton onClick={() => setExpandTarget(item)}>
                     扩容
-                  </ListRowActionButton>
-                  <ListRowActionButton
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton
                     onClick={() => setMountTargetFilesystem(item)}
                   >
                     添加挂载目标
-                  </ListRowActionButton>
-                  <ListRowActionButton
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton
                     status="danger"
                     onClick={() =>
                       Modal.confirm({
@@ -253,8 +253,8 @@ function FilesystemsPage() {
                     }
                   >
                     删除
-                  </ListRowActionButton>
-                </ListRowActions>
+                  </DataTableRowActionButton>
+                </DataTableRowActions>
               ),
             },
           ]}

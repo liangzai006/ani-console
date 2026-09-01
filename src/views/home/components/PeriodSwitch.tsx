@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import type { HomeTimeRange } from '../types'
 import styles from '../home.module.css'
 
@@ -22,7 +23,7 @@ export function PeriodSwitch({
         <button
           key={period.value}
           type="button"
-          className={`${styles.periodButton} ${period.value === value ? styles.periodButtonActive : ''}`}
+          className={clsx(styles.periodButton, period.value === value && styles.periodButtonActive)}
           aria-pressed={period.value === value}
           onClick={() => onChange(period.value)}
         >

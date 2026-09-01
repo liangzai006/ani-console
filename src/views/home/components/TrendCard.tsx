@@ -1,4 +1,5 @@
 import type { EChartsOption, LineSeriesOption } from 'echarts'
+import clsx from 'clsx'
 import { useMemo, useState } from 'react'
 import { CoreLineBarChart } from '@/components/common'
 import type { HomeTimeRange, HomeTrendData } from '../types'
@@ -73,7 +74,7 @@ export function TrendCard({ data, testId }: { data: HomeTrendData; testId: strin
   }, [current, data.yInterval, data.yMax])
 
   return (
-    <section className={`${styles.panel} ${styles.trendPanel}`} data-testid={`trend-card-${testId}`}>
+    <section className={clsx(styles.panel, styles.trendPanel)} data-testid={`trend-card-${testId}`}>
       <header className={styles.panelHeader}>
         <h2>{data.title}</h2>
         <PeriodSwitch value={range} onChange={setRange} ariaLabel={`${testId}时间范围`} />

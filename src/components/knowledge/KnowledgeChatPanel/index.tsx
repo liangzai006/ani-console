@@ -12,6 +12,7 @@ import {
   useLocalRuntime,
 } from "@assistant-ui/react";
 import { useQuery } from "@tanstack/react-query";
+import clsx from "clsx";
 import {
   Alert,
   Button,
@@ -434,9 +435,10 @@ export function KnowledgeChatPanel({
                 <button
                   key={session.id}
                   type="button"
-                  className={`${styles.sessionItem} ${
-                    session.id === activeSessionId ? styles.sessionItemActive : ""
-                  }`}
+                  className={clsx(
+                    styles.sessionItem,
+                    session.id === activeSessionId && styles.sessionItemActive,
+                  )}
                   onClick={() => setActiveSessionId(session.id)}
                 >
                   <span className={styles.sessionTitle}>{session.title}</span>

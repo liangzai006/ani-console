@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import type { ReactNode } from 'react'
 import styles from './index.module.css'
 
@@ -11,7 +12,7 @@ export function ListPageTitle({ iconClassName, title, subtitle }: ListPageTitleP
   return (
     <>
       <div className={styles.pageHeaderIcon} aria-hidden="true">
-        <i className={`iconfont ${iconClassName}`} />
+        <i className={clsx('iconfont', iconClassName)} />
       </div>
       <div className={styles.pageHeaderTitleArea}>
         <h1 className={styles.pageHeaderTitle}>{title}</h1>

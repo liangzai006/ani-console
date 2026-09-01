@@ -12,11 +12,11 @@ import type { components } from "@/api/core-schema";
 import {
   Ipv4CidrInput,
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -191,7 +191,7 @@ function SubnetsPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, subnet) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <RouterLink
               to="/networks/subnets/$subnetId"
@@ -338,8 +338,8 @@ function SubnetsPage() {
               title: "操作",
               fixed: "right",
               render: (_value, subnet) => (
-                <ListRowActions>
-                  <ListRowActionButton
+                <DataTableRowActions>
+                  <DataTableRowActionButton
                     status="danger"
                     onClick={() =>
                       Modal.confirm({
@@ -351,8 +351,8 @@ function SubnetsPage() {
                     }
                   >
                     删除
-                  </ListRowActionButton>
-                </ListRowActions>
+                  </DataTableRowActionButton>
+                </DataTableRowActions>
               ),
             },
           ]}

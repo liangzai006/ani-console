@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { Empty, Menu, Tooltip } from '@arco-design/web-react'
+import clsx from 'clsx'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { AliIcon } from '@/components/common'
 import { matchSideMenuKey } from '@/lib/side-menu-match'
@@ -149,7 +150,7 @@ export function Sidebar({
               position: 'right',
               triggerProps: { showArrow: false },
             }}
-            className={`sidebar-menu border-none${collapsed ? ' sidebar-menu--collapsed' : ''}`}
+            className={clsx('sidebar-menu', 'border-none', collapsed && 'sidebar-menu--collapsed')}
             style={{ background: 'transparent' }}
           >
             {renderItems(items, collapsed)}

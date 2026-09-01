@@ -8,11 +8,11 @@ import type { components } from "@/api/core-schema";
 import { CreateLoadBalancerModal } from "@/components/network/CreateLoadBalancerModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -106,7 +106,7 @@ function LoadBalancersPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link
               to="/networks/load-balancers/$loadBalancerId"
@@ -230,7 +230,7 @@ function LoadBalancersPage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
+                <DataTableRowActions>
                   <Dropdown
                     droplist={
                       <Menu>
@@ -273,9 +273,9 @@ function LoadBalancersPage() {
                     }
                     trigger="click"
                   >
-                    <ListRowActionButton>更多</ListRowActionButton>
+                    <DataTableRowActionButton>更多</DataTableRowActionButton>
                   </Dropdown>
-                </ListRowActions>
+                </DataTableRowActions>
               ),
             },
           ]}

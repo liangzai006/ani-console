@@ -1,11 +1,8 @@
-import { Empty, Tooltip } from "@arco-design/web-react";
+import { Empty } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
-import {
-  DataTable,
-  StatusTag,
-} from "@/components/common";
+import { DataTable, StatusTag } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
@@ -25,7 +22,9 @@ const OPERATION_LABELS: Record<string, string> = {
   attach_volume: "挂载云盘",
   detach_volume: "卸载云盘",
   attach_filesystem: "挂载 NFS",
+  detach_filesystem: "卸载 NFS",
   bind_secret: "绑定密钥",
+  unbind_secret: "解绑密钥",
   change_security_groups: "更换安全组",
   set_termination_protection: "终止保护",
   rollback: "回滚发布",
@@ -56,7 +55,6 @@ export function GpuInstanceOperations({ instanceId }: { instanceId: string }) {
     title: "操作历史加载失败",
     error: operations.error,
   });
-
   return (
     <DataTable<InstanceOperation>
       data={operations.data ?? []}
@@ -64,6 +62,11 @@ export function GpuInstanceOperations({ instanceId }: { instanceId: string }) {
       pagination={false}
       noDataElement={<Empty description="暂无操作历史" />}
       columns={[
+        {
+          title: "操作时间",
+          width: 180,
+          render: (_, operation) => formatDateTime(operation.created_at),
+        },
         {
           title: "操作",
           width: 140,
@@ -74,26 +77,6 @@ export function GpuInstanceOperations({ instanceId }: { instanceId: string }) {
           title: "状态",
           width: 120,
           render: (_, operation) => <StatusTag status={operation.status} />,
-        },
-        { title: "发起人", dataIndex: "requested_by", width: 160 },
-        {
-          title: "失败原因",
-          render: (_, operation) => {
-            const message =
-              operation.failure_message ?? operation.failure_reason ?? "—";
-            return message === "—" ? (
-              message
-            ) : (
-              <Tooltip content={message}>
-                <span className="block max-w-80 truncate">{message}</span>
-              </Tooltip>
-            );
-          },
-        },
-        {
-          title: "创建时间",
-          width: 180,
-          render: (_, operation) => formatDateTime(operation.created_at),
         },
       ]}
     />

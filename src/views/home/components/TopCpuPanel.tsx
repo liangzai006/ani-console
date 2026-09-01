@@ -1,5 +1,6 @@
 import { IconRight } from '@arco-design/web-react/icon'
 import { Link } from '@tanstack/react-router'
+import clsx from 'clsx'
 import { useState } from 'react'
 import type { HomeCpuItem, HomeMonitorSource } from '../types'
 import styles from '../home.module.css'
@@ -15,7 +16,7 @@ export function TopCpuPanel({ data }: { data: Record<HomeMonitorSource, HomeCpuI
   const items = data[source]
 
   return (
-    <section className={`${styles.panel} ${styles.topCpuPanel}`} data-testid="top-cpu-panel">
+    <section className={clsx(styles.panel, styles.topCpuPanel)} data-testid="top-cpu-panel">
       <header className={styles.panelHeader}>
         <h2>TOP5云主机CPU负载</h2>
         <div className={styles.monitorSwitch} role="group" aria-label="监控来源">
@@ -42,16 +43,21 @@ export function TopCpuPanel({ data }: { data: Record<HomeMonitorSource, HomeCpuI
           const itemTone = tone(item.value)
           return (
             <div key={item.id} className={styles.cpuItem}>
-              <span className={`${styles.cpuRank} ${styles[`cpuRank_${itemTone}`]}`}>{index + 1}</span>
+              <span className={clsx(styles.cpuRank, styles[`cpuRank_${itemTone}`])}>{index + 1}</span>
               <Link to="/instances/vm/$instanceId" params={{ instanceId: item.instanceId }} className={styles.cpuName}>
                 {item.name}
                 <IconRight aria-hidden="true" />
               </Link>
               <div className={styles.cpuBarRow}>
                 <span className={styles.cpuBarTrack}>
-                  <span className={`${styles.cpuBar} ${styles[`cpuBar_${itemTone}`]}`} style={{ width: `${item.value}%` }} />
+                  <span
+                    className={clsx(styles.cpuBar, styles[`cpuBar_${itemTone}`])}
+                    style={{ width: `${item.value}%` }}
+                  />
                 </span>
-                <span className={`${styles.cpuValue} ${styles[`cpuValue_${itemTone}`]}`}>{item.value.toFixed(2)} %</span>
+                <span className={clsx(styles.cpuValue, styles[`cpuValue_${itemTone}`])}>
+                  {item.value.toFixed(2)} %
+                </span>
               </div>
             </div>
           )

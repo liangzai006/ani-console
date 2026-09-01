@@ -6,11 +6,11 @@ import type { components } from "@/api/core-schema";
 import { CreateBucketModal } from "@/components/storage/CreateBucketModal";
 import {
   ListDataTable,
-  ListNameCell,
+  DataTableNameCell,
   ListPageFrame,
   ListPageHeader,
-  ListRowActionButton,
-  ListRowActions,
+  DataTableRowActionButton,
+  DataTableRowActions,
   ListToolbar,
   ToolbarButton,
   ToolbarIconButton,
@@ -65,7 +65,7 @@ function ObjectsPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <ListNameCell
+        <DataTableNameCell
           name={
             <Link to="/objects/$bucketId" params={{ bucketId: item.id }}>
               {item.name}
@@ -161,8 +161,8 @@ function ObjectsPage() {
               title: "操作",
               fixed: "right",
               render: (_value, item) => (
-                <ListRowActions>
-                  <ListRowActionButton
+                <DataTableRowActions>
+                  <DataTableRowActionButton
                     onClick={() =>
                       navigate({
                         to: "/objects/$bucketId",
@@ -172,8 +172,8 @@ function ObjectsPage() {
                     }
                   >
                     浏览器
-                  </ListRowActionButton>
-                  <ListRowActionButton
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton
                     onClick={() =>
                       navigate({
                         to: "/objects/$bucketId",
@@ -183,8 +183,8 @@ function ObjectsPage() {
                     }
                   >
                     上传
-                  </ListRowActionButton>
-                  <ListRowActionButton
+                  </DataTableRowActionButton>
+                  <DataTableRowActionButton
                     onClick={() =>
                       navigate({
                         to: "/objects/$bucketId",
@@ -194,15 +194,15 @@ function ObjectsPage() {
                     }
                   >
                     改权限
-                  </ListRowActionButton>
+                  </DataTableRowActionButton>
                   <Tooltip content="ANI 当前未提供删除存储桶接口">
                     <span>
-                      <ListRowActionButton status="danger" disabled>
+                      <DataTableRowActionButton status="danger" disabled>
                         删除
-                      </ListRowActionButton>
+                      </DataTableRowActionButton>
                     </span>
                   </Tooltip>
-                </ListRowActions>
+                </DataTableRowActions>
               ),
             },
           ]}
