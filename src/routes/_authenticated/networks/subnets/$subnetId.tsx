@@ -96,7 +96,7 @@ function SubnetDetailPage() {
 
   const subnet = detail.data as Subnet
   const parentVpc = vpc.data as Vpc | undefined
-  const associatedInstances = ((instances.data?.items ?? []) as Instance[]).filter((item) => item.subnet_id === subnetId && item.state !== 'deleted')
+  const associatedInstances = ((instances.data?.items ?? []) as Instance[]).filter((item) => item.subnet_id === subnetId)
   const vpcRoutes = (routes.data?.items ?? []) as NetworkRoute[]
   const routeRows: SubnetRouteRow[] = [
     { id: 'system-default', destinationCidr: '0.0.0.0/0', nextHopType: '本地', nextHop: '本地', priority: 100, source: '系统', protected: true },

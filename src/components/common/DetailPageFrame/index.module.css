@@ -382,73 +382,64 @@
   box-shadow: var(--detail-shadow);
 }
 
-.tabBar {
-  display: flex;
-  flex: 0 0 56px;
-  align-items: center;
+.tabs {
+  height: 100%;
   min-width: 0;
+  min-height: 0;
+}
+
+.tabs :global(.arco-tabs-header-nav) {
+  box-sizing: border-box;
   min-height: 56px;
-  overflow-x: auto;
   padding: 8px 16px;
-  gap: 8px;
-  border-bottom: 1px solid var(--color-border-1);
 }
 
-.tabButton {
-  position: relative;
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
+.tabs :global(.arco-tabs-header-nav-line .arco-tabs-header-title) {
   height: 40px;
+  margin: 0 4px;
   padding: 0 16px;
-  border: 0;
   border-radius: 4px;
-  outline: 0;
-  background: transparent;
   color: var(--color-text-1);
-  font: inherit;
   font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
+  line-height: 40px;
 }
 
-.tabButton:hover:not(.tabButtonActive) {
+.tabs :global(.arco-tabs-header-nav-line .arco-tabs-header-title:last-of-type) {
+  margin-right: 0;
+}
+
+.tabs :global(.arco-tabs-header-nav-line .arco-tabs-header-title:hover) {
   color: rgb(var(--primary-6));
 }
 
-.tabButton:focus-visible {
-  box-shadow: 0 0 0 2px rgb(var(--primary-3));
+.tabs
+  :global(.arco-tabs-header-nav-line .arco-tabs-header-title:hover .arco-tabs-header-title-text::before) {
+  background: transparent;
 }
 
-.tabButtonActive {
+.tabs :global(.arco-tabs-header-nav-line .arco-tabs-header-title-active) {
   background: var(--color-primary-light-1);
   color: rgb(var(--primary-6));
 }
 
-.tabButtonActive::after {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 16px;
-  height: 2px;
-  border-radius: 1px;
-  background: rgb(var(--primary-6));
-  transform: translateX(-50%);
-  content: '';
-}
-
-.tabExtra {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  margin-left: auto;
-}
-
-.tabBody {
+.tabs :global(.arco-tabs-content) {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.tabs :global(.arco-tabs-content-inner),
+.tabs :global(.arco-tabs-content-item),
+.tabs :global(.arco-tabs-pane) {
+  min-width: 0;
+  min-height: 0;
+}
+
+.tabs :global(.arco-tabs-content .arco-tabs-content-item.arco-tabs-content-item-active) {
+  box-sizing: border-box;
+  height: 100%;
   overflow: auto;
   padding: 16px;
 }

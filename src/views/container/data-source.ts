@@ -113,7 +113,7 @@ export function createContainerInstanceDataSource(
     async list(query: ContainerInstanceQuery): Promise<ContainerInstanceListResult> {
       const records = await fetchAllContainerInstances(fetchPage)
       const allItems = records
-        .filter((record) => record.kind === 'container' && record.state !== 'deleted')
+        .filter((record) => record.kind === 'container')
         .map(mapContainerInstance)
       const keyword = query.keyword.trim().toLocaleLowerCase()
       let filtered = allItems.filter((item) => matchesStatus(item, query.status))

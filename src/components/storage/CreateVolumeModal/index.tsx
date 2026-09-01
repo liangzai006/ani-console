@@ -38,7 +38,7 @@ export function CreateVolumeModal({
     enabled: visible,
   })
   const instanceItems = ((instances.data?.items ?? []) as Instance[]).filter(
-    (item) => item.state !== 'deleted' && item.kind && INSTANCE_ROUTE[item.kind],
+    (item) => item.kind && INSTANCE_ROUTE[item.kind],
   )
   useEffect(() => {
     if (!mountInstanceId || instanceItems.some((item) => item.id === mountInstanceId)) return

@@ -1,26 +1,3 @@
-export const GPU_SPEC_OPTIONS = [
-  {
-    key: "nvidia-a100-whole-1",
-    label: "A100×1 · 整卡",
-    data: {
-      vendor: "nvidia",
-      model: "A100",
-      count: 1,
-      allocation_mode: "whole",
-    },
-  },
-  {
-    key: "nvidia-a10-whole-1",
-    label: "A10×1 · 整卡",
-    data: {
-      vendor: "nvidia",
-      model: "A10",
-      count: 1,
-      allocation_mode: "whole",
-    },
-  },
-] as const;
-
 export const COMPUTE_SPEC_OPTIONS = [
   { key: "cpu-4-memory-8gi", label: "4C8G", data: { cpu: "4", memory: "8Gi" } },
   {
@@ -35,12 +12,7 @@ export const COMPUTE_SPEC_OPTIONS = [
   },
 ] as const;
 
-export type GpuSpecKey = (typeof GPU_SPEC_OPTIONS)[number]["key"];
 export type ComputeSpecKey = (typeof COMPUTE_SPEC_OPTIONS)[number]["key"];
-
-export const GPU_SPEC_BY_KEY = Object.fromEntries(
-  GPU_SPEC_OPTIONS.map((option) => [option.key, option]),
-) as Record<GpuSpecKey, (typeof GPU_SPEC_OPTIONS)[number]>;
 
 export const COMPUTE_SPEC_BY_KEY = Object.fromEntries(
   COMPUTE_SPEC_OPTIONS.map((option) => [option.key, option]),
@@ -49,7 +21,8 @@ export const COMPUTE_SPEC_BY_KEY = Object.fromEntries(
 export type FormValues = {
   name: string;
   image: string;
-  gpu_spec: GpuSpecKey;
+  spec_id: string;
+  queue_name: string;
   compute_spec: ComputeSpecKey;
   replicas: string;
   vpc_id: string;
@@ -76,6 +49,78 @@ export type Filesystem = {
   protocol?: string;
 };
 
+export type GpuSpecAvailability = {
+  spec_id: string;
+  status: "available" | "full" | "device_full" | "unavailable";
+  available_count: number;
+  has_matching_nodes: boolean;
+  has_idle_devices: boolean;
+  device_idle_count: number;
+  gpu_count?: number;
+};
+
+export type GpuSpecAvailabilityListResponse = {
+  items: GpuSpecAvailability[];
+  quota_remaining: number;
+};
+
+export type GpuSpecOption = {
+  spec_id: string;
+  display_name: string;
+  gpu_type?: string;
+  gpu_mode?: "wholecard" | "vgpu";
+  shares?: number;
+  source: "api" | "temporary";
+  availability?: GpuSpecAvailability;
+};
+
+// TODO: /gpu-specs/availability 返回真实规格后删除临时选项，完全迁移到接口数据。
+export const TEMPORARY_RTX4090_GPU_SPEC_OPTIONS: GpuSpecOption[] = [
+  {
+    spec_id: "rtx-4090-48g-1",
+    display_name: "RTX 4090 · 整卡",
+    gpu_type: "NVIDIA-GeForce-RTX-4090",
+    gpu_mode: "wholecard",
+    shares: 1,
+    source: "temporary",
+  },
+  {
+    spec_id: "rtx4090-12g-4",
+    display_name: "RTX 4090 · vGPU（4 份）",
+    gpu_type: "NVIDIA-GeForce-RTX-4090",
+    gpu_mode: "vgpu",
+    shares: 4,
+    source: "temporary",
+  },
+];
+
+export function isGpuSpecSelectable(spec: GpuSpecOption) {
+  // TODO(gpu-spec-quota): 租户配额校验修复后，删除 full 分支并恢复仅 available 可选。
+  if (spec.availability?.status === "full") return true;
+
+  return (
+    spec.source === "temporary" ||
+    (spec.availability?.status === "available" &&
+      spec.availability.available_count > 0)
+  );
+}
+
+export type GpuSchedulingQueue = {
+  id: string;
+  name: string;
+  workload_class: "inference" | "training" | "batch";
+  is_platform_default: boolean;
+  status?: {
+    state?: "open" | "closed" | "unknown";
+  } | null;
+};
+
+export type GpuSchedulingQueueListResponse = {
+  items: GpuSchedulingQueue[];
+  total: number;
+  next_cursor?: string | null;
+};
+
 export type ExtendedCreateRequest = {
   idempotency_key: string;
   name: string;
@@ -95,11 +140,8 @@ export type ExtendedCreateRequest = {
     };
     replicas: number;
     gpu: {
-      vendor: string;
-      model: string;
-      count: number;
-      allocation_mode: string;
-      workload_class: string;
+      spec_id: string;
+      queue_name: string;
     };
     env: Array<{ name: string; value: string }>;
     filesystem_mounts: Array<{
@@ -113,7 +155,8 @@ export type ExtendedCreateRequest = {
 export const INITIAL_VALUES: FormValues = {
   name: "",
   image: "",
-  gpu_spec: "nvidia-a100-whole-1",
+  spec_id: "",
+  queue_name: "",
   compute_spec: "cpu-4-memory-8gi",
   replicas: "1",
   vpc_id: "",
@@ -144,7 +187,6 @@ export function buildCreateRequest(
   idempotencyKey: string,
 ): ExtendedCreateRequest {
   const computeSpec = COMPUTE_SPEC_BY_KEY[values.compute_spec].data;
-  const gpuSpec = GPU_SPEC_BY_KEY[values.gpu_spec].data;
   return {
     idempotency_key: idempotencyKey,
     name: values.name.trim(),
@@ -164,8 +206,8 @@ export function buildCreateRequest(
       },
       replicas: Number(values.replicas) || 1,
       gpu: {
-        ...gpuSpec,
-        workload_class: "gpu-container",
+        spec_id: values.spec_id,
+        queue_name: values.queue_name,
       },
       env: parseEnv(values.env_text),
       filesystem_mounts:

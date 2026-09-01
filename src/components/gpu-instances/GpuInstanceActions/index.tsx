@@ -10,6 +10,7 @@ import {
   Modal,
   Select,
   Space,
+  Tooltip,
 } from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -74,6 +75,9 @@ const BUSY_STATES = new Set([
   "stopping",
   "deleting",
 ]);
+
+const TERMINATION_PROTECTION_STOP_TOOLTIP =
+  "已开启终止保护，请先关闭终止保护后再关机";
 
 function openTerminalWindow(instanceId: string) {
   const url = `/instances/terminal/${encodeURIComponent(instanceId)}`;
@@ -158,6 +162,8 @@ export function GpuInstanceActions({
   const [formAction, setFormAction] = useState<FormAction>();
   const [bindingType, setBindingType] = useState<"env" | "file">("env");
   const busy = BUSY_STATES.has(instance.state);
+  const stopBlockedByTerminationProtection =
+    instance.termination_protection === true;
   const terminalAvailable =
     instance.state === "running" && instance.access?.exec_available !== false;
   const instanceVpcId = instance.network?.vpc_id ?? instance.vpc_id;
@@ -183,7 +189,7 @@ export function GpuInstanceActions({
     enabled: formAction === "bind_secret",
   });
   const availableSecrets = ((secrets.data?.items ?? []) as Secret[]).filter(
-    (secret) => secret.id && secret.state !== "deleted",
+    (secret) => secret.id,
   );
   const lifecycle = useMutation({
     mutationFn: async (body: LifecycleRequest) => {
@@ -212,6 +218,10 @@ export function GpuInstanceActions({
     onError: (error) =>
       Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
+  const stopDisabled =
+    instance.state !== "running" ||
+    lifecycle.isPending ||
+    stopBlockedByTerminationProtection;
 
   const submitSimpleAction = (
     action: LifecycleAction,
@@ -222,6 +232,11 @@ export function GpuInstanceActions({
       idempotency_key: newIdempotencyKey(),
       ...fields,
     } as LifecycleRequest);
+
+  const submitStop = () => {
+    if (stopBlockedByTerminationProtection) return;
+    submitSimpleAction("stop");
+  };
 
   const openActionForm = (action: FormAction) => {
     setBindingType("env");
@@ -239,8 +254,12 @@ export function GpuInstanceActions({
   };
 
   const handleMenuAction = async (action: string) => {
-    if (action === "stop" || action === "restart") {
-      submitSimpleAction(action);
+    if (action === "stop") {
+      submitStop();
+      return;
+    }
+    if (action === "restart") {
+      submitSimpleAction("restart");
       return;
     }
     if (action === "scale") {
@@ -285,9 +304,15 @@ export function GpuInstanceActions({
         <>
           <Menu.Item
             key="stop"
-            disabled={instance.state !== "running" || lifecycle.isPending}
+            disabled={stopDisabled}
           >
-            停止
+            {stopBlockedByTerminationProtection ? (
+              <Tooltip content={TERMINATION_PROTECTION_STOP_TOOLTIP}>
+                <span className="block">停止</span>
+              </Tooltip>
+            ) : (
+              "停止"
+            )}
           </Menu.Item>
           <Menu.Item
             key="restart"
@@ -350,12 +375,25 @@ export function GpuInstanceActions({
     <>
       {display === "row" ? (
         <DataTableRowActions>
-          <DataTableRowActionButton
-            disabled={instance.state !== "running" || lifecycle.isPending}
-            onClick={() => submitSimpleAction("stop")}
-          >
-            停止
-          </DataTableRowActionButton>
+          {stopBlockedByTerminationProtection ? (
+            <Tooltip content={TERMINATION_PROTECTION_STOP_TOOLTIP}>
+              <span className="inline-flex">
+                <DataTableRowActionButton
+                  disabled={stopDisabled}
+                  onClick={submitStop}
+                >
+                  停止
+                </DataTableRowActionButton>
+              </span>
+            </Tooltip>
+          ) : (
+            <DataTableRowActionButton
+              disabled={stopDisabled}
+              onClick={submitStop}
+            >
+              停止
+            </DataTableRowActionButton>
+          )}
           <DataTableRowActionButton
             disabled={instance.state !== "running" || lifecycle.isPending}
             onClick={() => submitSimpleAction("restart")}

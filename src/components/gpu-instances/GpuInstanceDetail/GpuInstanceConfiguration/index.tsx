@@ -132,6 +132,7 @@ export function GpuInstanceConfiguration({
         <Typography.Title heading={6}>Workload Identity</Typography.Title>
         <Descriptions
           column={1}
+          labelStyle={{ width: '120px' }}
           data={[
             {
               label: "状态",

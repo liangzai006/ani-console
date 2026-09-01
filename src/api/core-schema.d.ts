@@ -1471,6 +1471,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/observability/query_range": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * PromQL 代理区间查询
+     * @description 通过 Core 代理 PromQL 区间查询，返回时间范围内的采样点。
+     */
+    get: operations["queryRangeObservability"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/observability/alert-rules": {
     parameters: {
       query?: never;
@@ -2909,6 +2929,24 @@ export interface components {
         value: number;
         /** Format: date-time */
         timestamp?: string | null;
+      }[];
+      dev_profile: components["schemas"]["CoreDevProfileInfo"];
+    };
+    /** @description PromQL 代理区间查询结果；每条序列包含时间范围内的多个采样点。 */
+    ObservabilityRangeQueryResponse: {
+      query: string;
+      /** @enum {string} */
+      result_type: "vector" | "matrix" | "scalar" | "string";
+      results: {
+        metric: {
+          [key: string]: string;
+        };
+        values: {
+          /** Format: date-time */
+          timestamp: string;
+          /** Format: double */
+          value: number;
+        }[];
       }[];
       dev_profile: components["schemas"]["CoreDevProfileInfo"];
     };
@@ -7242,6 +7280,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ObservabilityQueryResponse"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+    };
+  };
+  queryRangeObservability: {
+    parameters: {
+      query: {
+        query: string;
+        /** Format: date-time */
+        start: string;
+        /** Format: date-time */
+        end: string;
+        step: string;
+        timeout?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description PromQL 区间查询结果 */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ObservabilityRangeQueryResponse"];
         };
       };
       400: components["responses"]["BadRequest"];

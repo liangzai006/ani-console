@@ -1,4 +1,4 @@
-import { Breadcrumb, Button, Tooltip } from '@arco-design/web-react'
+import { Breadcrumb, Button, Tabs, Tooltip } from '@arco-design/web-react'
 import { Link } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
@@ -205,34 +205,25 @@ export function DetailPageFrame({
 
         {hasTabs ? (
           <section className={styles.rightPane} data-testid="detail-right-pane">
-            <div className={styles.tabBar} role="tablist" aria-label="详情视图">
-              {tabs?.map((tab) => {
-                const active = tab.key === activeTab?.key
-                return (
-                  <button
-                    key={tab.key}
-                    id={`detail-tab-${tab.key}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    aria-controls={`detail-tab-panel-${tab.key}`}
-                    className={clsx(styles.tabButton, active && styles.tabButtonActive)}
-                    onClick={() => setActiveTabKey(tab.key)}
-                  >
-                    {tab.label}
-                  </button>
-                )
-              })}
-              {activeTab?.extra ? <div className={styles.tabExtra}>{activeTab.extra}</div> : null}
-            </div>
-            <div
-              id={activeTab ? `detail-tab-panel-${activeTab.key}` : undefined}
-              className={styles.tabBody}
-              role="tabpanel"
-              aria-labelledby={activeTab ? `detail-tab-${activeTab.key}` : undefined}
+            <Tabs
+              className={styles.tabs}
+              type="line"
+              headerPadding={false}
+              inkBarSize={{ width: 16 }}
+              activeTab={activeTab?.key}
+              onChange={setActiveTabKey}
+              extra={activeTab?.extra}
+              overflow="scroll"
+              scrollPosition="auto"
+              destroyOnHide
+              justify
             >
-              {activeTab?.content}
-            </div>
+              {tabs?.map((tab) => (
+                <Tabs.TabPane key={tab.key} title={tab.label}>
+                  {tab.content}
+                </Tabs.TabPane>
+              ))}
+            </Tabs>
           </section>
         ) : null}
       </div>

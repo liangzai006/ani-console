@@ -1,8 +1,8 @@
 import { Empty } from "@arco-design/web-react";
-import { useQuery } from "@tanstack/react-query";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
 import { DataTable, StatusTag } from "@/components/common";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
@@ -32,34 +32,46 @@ const OPERATION_LABELS: Record<string, string> = {
 };
 
 export function GpuInstanceOperations({ instanceId }: { instanceId: string }) {
-  const operations = useQuery({
-    queryKey: ["gpu-instance-operations", instanceId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/instances/{instance_id}/operations",
-        {
-          params: {
-            path: { instance_id: instanceId },
-            query: { limit: 100 },
+  const { query, page, pageSize, setPage, setPageSize } =
+    useCursorPaginatedQuery<InstanceOperation>({
+      queryKey: ["gpu-instance-operations", instanceId],
+      cursorScope: instanceId,
+      initialPageSize: 10,
+      fetchPage: async ({ cursor, limit }) => {
+        const { data, error } = await coreApi.GET(
+          "/instances/{instance_id}/operations",
+          {
+            params: {
+              path: { instance_id: instanceId },
+              query: { limit, cursor },
+            },
           },
-        },
-      );
-      if (error || !data) {
-        throw error ?? new Error("操作历史未返回结果");
-      }
-      return (data.items ?? []) as InstanceOperation[];
-    },
-  });
+        );
+        if (error || !data) {
+          throw error ?? new Error("操作历史未返回结果");
+        }
+        return {
+          ...data,
+          items: (data.items ?? []) as InstanceOperation[],
+        };
+      },
+    });
   useListErrorNotification({
     id: `gpu-instance-operations:${instanceId}`,
     title: "操作历史加载失败",
-    error: operations.error,
+    error: query.error,
   });
   return (
     <DataTable<InstanceOperation>
-      data={operations.data ?? []}
-      loading={operations.isLoading}
-      pagination={false}
+      data={query.data?.items ?? []}
+      loading={query.isFetching}
+      pagination={{
+        page,
+        pageSize,
+        total: query.data?.total ?? 0,
+        onPageChange: setPage,
+        onPageSizeChange: setPageSize,
+      }}
       noDataElement={<Empty description="暂无操作历史" />}
       columns={[
         {

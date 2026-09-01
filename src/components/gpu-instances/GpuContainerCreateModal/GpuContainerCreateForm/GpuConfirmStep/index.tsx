@@ -1,9 +1,10 @@
 import { Alert, Descriptions } from "@arco-design/web-react";
 import {
   COMPUTE_SPEC_BY_KEY,
-  GPU_SPEC_BY_KEY,
   type Filesystem,
   type FormValues,
+  type GpuSchedulingQueue,
+  type GpuSpecOption,
   type RegistryImage,
 } from "../../types";
 
@@ -11,11 +12,15 @@ export function GpuConfirmStep({
   values,
   image,
   filesystem,
+  gpuSpec,
+  schedulingQueue,
   securityGroupName,
 }: {
   values: FormValues;
   image?: RegistryImage;
   filesystem?: Filesystem;
+  gpuSpec?: GpuSpecOption;
+  schedulingQueue?: GpuSchedulingQueue;
   securityGroupName: string;
 }) {
   return (
@@ -39,7 +44,11 @@ export function GpuConfirmStep({
           },
           {
             label: "资源",
-            value: `${COMPUTE_SPEC_BY_KEY[values.compute_spec].label} · GPU ${GPU_SPEC_BY_KEY[values.gpu_spec].label} · 副本 ${values.replicas}`,
+            value: `${COMPUTE_SPEC_BY_KEY[values.compute_spec].label} · GPU ${gpuSpec?.display_name ?? values.spec_id} · 副本 ${values.replicas}`,
+          },
+          {
+            label: "调度队列",
+            value: schedulingQueue?.name || values.queue_name || "—",
           },
           {
             label: "网络",

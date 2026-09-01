@@ -11,8 +11,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { listOrThrow } from "@/lib/api-list";
-import type { Filesystem, FormValues, RegistryImage } from "../types";
-import { INITIAL_VALUES } from "../types";
+import type {
+  Filesystem,
+  FormValues,
+  GpuSchedulingQueue,
+  GpuSchedulingQueueListResponse,
+  GpuSpecAvailabilityListResponse,
+  GpuSpecOption,
+  RegistryImage,
+} from "../types";
+import {
+  INITIAL_VALUES,
+  isGpuSpecSelectable,
+  TEMPORARY_RTX4090_GPU_SPEC_OPTIONS,
+} from "../types";
 import { GpuConfirmStep } from "./GpuConfirmStep";
 import { GpuImageStep } from "./GpuImageStep";
 import { GpuNetworkStorageStep } from "./GpuNetworkStorageStep";
@@ -21,7 +33,7 @@ import { GpuResourceStep } from "./GpuResourceStep";
 import styles from "./index.module.css";
 
 type RegistryResponse = { items: RegistryImage[]; total: number };
-const STEP_TITLES = ["名称", "镜像", "GPU 规格与数量", "网络与存储", "确认"];
+const STEP_TITLES = ["名称", "镜像", "GPU 规格与调度", "网络与存储", "确认"];
 
 type Props = {
   visible: boolean;
@@ -88,6 +100,40 @@ export function GpuContainerCreateForm({
       return data.items.filter((item) => item.purpose === "gpu");
     },
   });
+  const gpuSpecAvailability = useQuery({
+    queryKey: ["gpu-specs", "availability"],
+    enabled: visible,
+    queryFn: async () => {
+      const request = coreApi.GET as unknown as (
+        path: string,
+      ) => Promise<{
+        data?: GpuSpecAvailabilityListResponse;
+        error?: unknown;
+      }>;
+      const { data, error } = await request("/gpu-specs/availability");
+      if (error || !data) {
+        throw error ?? new Error("GPU 规格可用性未返回结果");
+      }
+      return data;
+    },
+  });
+  const gpuSchedulingQueues = useQuery({
+    queryKey: ["gpu-scheduling", "queues", "select"],
+    enabled: visible,
+    queryFn: async () => {
+      const request = coreApi.GET as unknown as (
+        path: string,
+      ) => Promise<{
+        data?: GpuSchedulingQueueListResponse;
+        error?: unknown;
+      }>;
+      const { data, error } = await request("/gpu-scheduling/queues");
+      if (error || !data) {
+        throw error ?? new Error("GPU 调度队列未返回结果");
+      }
+      return data;
+    },
+  });
 
   const defaultSecurityGroup = (securityGroups.data?.items ?? []).find(
     (item) => !values.vpc_id || item.vpc_id === values.vpc_id,
@@ -98,6 +144,29 @@ export function GpuContainerCreateForm({
   const selectedFilesystem = (filesystems.data?.items ?? []).find(
     (item) => String(item.id) === values.filesystem_id,
   ) as Filesystem | undefined;
+  const apiGpuSpecs = gpuSpecAvailability.data?.items ?? [];
+  const usingTemporaryGpuSpecs =
+    gpuSpecAvailability.isSuccess && apiGpuSpecs.length === 0;
+  const gpuSpecs: GpuSpecOption[] = usingTemporaryGpuSpecs
+    ? TEMPORARY_RTX4090_GPU_SPEC_OPTIONS
+    : apiGpuSpecs.map((spec) => ({
+        spec_id: spec.spec_id,
+        display_name: spec.spec_id,
+        source: "api" as const,
+        availability: spec,
+      }));
+  const schedulingQueues = (gpuSchedulingQueues.data?.items ??
+    []) as GpuSchedulingQueue[];
+  const selectedGpuSpec = gpuSpecs.find(
+    (item) => item.spec_id === values.spec_id,
+  );
+  const selectedSchedulingQueue = schedulingQueues.find(
+    (item) => item.name === values.queue_name,
+  );
+  const hasAvailableGpuSpec = gpuSpecs.some(isGpuSpecSelectable);
+  const hasAvailableQueue = schedulingQueues.some(
+    (item) => item.status?.state !== "closed",
+  );
 
   useEffect(() => {
     if (visible) {
@@ -158,7 +227,19 @@ export function GpuContainerCreateForm({
               loading={images.isLoading}
             />
           ) : null}
-          {step === 2 ? <GpuResourceStep /> : null}
+          {step === 2 ? (
+            <GpuResourceStep
+              values={values}
+              specs={gpuSpecs}
+              queues={schedulingQueues}
+              quotaRemaining={gpuSpecAvailability.data?.quota_remaining ?? 0}
+              specsLoading={gpuSpecAvailability.isLoading}
+              queuesLoading={gpuSchedulingQueues.isLoading}
+              specsError={gpuSpecAvailability.isError}
+              queuesError={gpuSchedulingQueues.isError}
+              usingTemporarySpecs={usingTemporaryGpuSpecs}
+            />
+          ) : null}
           {step === 3 ? (
             <GpuNetworkStorageStep
               onFieldValueChange={setFieldValue}
@@ -177,6 +258,8 @@ export function GpuContainerCreateForm({
               values={values}
               image={selectedImage}
               filesystem={selectedFilesystem}
+              gpuSpec={selectedGpuSpec}
+              schedulingQueue={selectedSchedulingQueue}
               securityGroupName={String(
                 defaultSecurityGroup?.name ?? "平台自动配置",
               )}
@@ -205,7 +288,16 @@ export function GpuContainerCreateForm({
                 : next
             }
             loading={submitting}
-            disabled={step === 1 && !images.data?.length}
+            disabled={
+              (step === 1 && !images.data?.length) ||
+              (step === 2 &&
+                (gpuSpecAvailability.isLoading ||
+                  gpuSchedulingQueues.isLoading ||
+                  gpuSpecAvailability.isError ||
+                  gpuSchedulingQueues.isError ||
+                  !hasAvailableGpuSpec ||
+                  !hasAvailableQueue))
+            }
           >
             {step === STEP_TITLES.length - 1 ? "提交创建" : "下一步"}
           </Button>

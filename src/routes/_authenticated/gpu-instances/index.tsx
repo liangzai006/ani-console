@@ -57,9 +57,7 @@ function GpuInstancesPage() {
     setPage(1);
   }, [searchField, searchText, status, setPage]);
 
-  const allItems = ((query.data?.items ?? []) as Instance[]).filter(
-    (item) => item.state !== "deleted",
-  );
+  const allItems = (query.data?.items ?? []) as Instance[];
   const items = useMemo(
     () =>
       allItems.filter((item) => {

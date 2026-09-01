@@ -53,7 +53,6 @@ export function CreateVectorStoreModal({
       ...((models.data?.items ?? []) as Model[])
         .filter(
           (item) =>
-            item.status !== "deleted" &&
             (item.capabilities.includes("embedding") ||
               /embed|bge|gte/i.test(item.name)),
         )

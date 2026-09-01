@@ -28,6 +28,7 @@ export function GpuInstanceReleases({ instance }: { instance: Instance }) {
     <Space direction="vertical" size={16} className="w-full">
       <Descriptions
         column={1}
+        labelStyle={{ width: '120px' }}
         data={[
           {
             label: "当前修订",
@@ -55,7 +56,7 @@ export function GpuInstanceReleases({ instance }: { instance: Instance }) {
         pagination={false}
         noDataElement={<Empty description="暂无发布历史" />}
         columns={[
-          { title: "修订版本", dataIndex: "revision" },
+          { title: "修订版本", dataIndex: "revision", fixed: "left" },
           { title: "镜像", render: (_, release) => release.image ?? "—" },
           {
             title: "发布时间",

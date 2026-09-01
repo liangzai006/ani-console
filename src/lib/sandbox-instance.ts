@@ -85,13 +85,10 @@ function getErrorMessage(error: unknown): string | undefined {
 
 export function getInstanceActionErrorMessage(error: unknown, action: 'create' | 'lifecycle'): string {
   const status = getErrorStatus(error)
-  const message = getErrorMessage(error)
+  const message = getErrorMessage(error)?.trim()
 
-  if (action === 'lifecycle' && (status === 404 || status === undefined)) {
-    return status === 404 ? '资源可能已被清理或状态不同步' : message ?? '资源可能已被清理或状态不同步'
-  }
-  if ((status === 400 || status === 422) && message) return message
-  if (status === 409) return '幂等请求进行中或状态冲突，请稍后刷新'
+  if (message) return message
+  if (action === 'lifecycle' && status === 404) return '资源可能已被清理或状态不同步'
   if (status && status >= 500) return action === 'create' ? '创建失败，请检查配置后重试' : '资源可能已被清理或状态不同步'
-  return message ?? (action === 'create' ? '创建失败，请检查配置后重试' : '资源可能已被清理或状态不同步')
+  return action === 'create' ? '创建失败，请检查配置后重试' : '操作失败，请稍后重试'
 }

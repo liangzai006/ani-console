@@ -39,6 +39,15 @@
   overflow: hidden;
 }
 
+.listDataTable :global(.arco-table-content-inner) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .listDataTable :global(.arco-table-header) {
   flex: 0 0 auto;
   min-width: 0;
@@ -46,7 +55,7 @@
 }
 
 .listDataTable :global(.arco-table-body) {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   min-height: 0;
   overflow: auto;
@@ -59,14 +68,24 @@
 .listDataTable :global(.arco-table-th) {
   box-sizing: border-box;
   height: 40px;
-  padding: 0 16px;
+  padding: 0;
   border-bottom: 1px solid var(--list-table-divider);
   background: var(--list-primary-header);
   color: var(--list-text-secondary);
   font-size: 14px;
   font-weight: 700;
-  line-height: 39px;
   text-align: left;
+  white-space: nowrap;
+}
+
+.listDataTable :global(.arco-table-th-item) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 16px;
+  line-height: 39px;
   white-space: nowrap;
 }
 
@@ -81,6 +100,13 @@
   font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.listDataTable :global(.arco-table-th.arco-table-checkbox),
+.listDataTable :global(.arco-table-td.arco-table-checkbox),
+.listDataTable
+  :global(.arco-table-th.arco-table-checkbox .arco-table-th-item) {
+  padding: 0;
 }
 
 .listDataTable

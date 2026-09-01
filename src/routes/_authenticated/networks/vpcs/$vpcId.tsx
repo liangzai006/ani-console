@@ -119,7 +119,7 @@ function VpcDetailPage() {
     (item) => item.vpc_id === vpcId,
   )
   const associatedInstances = ((instances.data?.items ?? []) as Instance[]).filter(
-    (item) => item.vpc_id === vpcId && item.state !== 'deleted',
+    (item) => item.vpc_id === vpcId,
   )
   const relatedResources: RelatedResource[] = [
     ...vpcSubnets.map((item) => ({

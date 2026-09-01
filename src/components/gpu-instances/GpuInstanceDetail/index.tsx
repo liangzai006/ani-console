@@ -349,15 +349,19 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
           key: "related-summary",
           title: "关联摘要",
           fields: relatedItems.length
-            ? relatedItems.map((item) => ({
-                label: item.kind,
-                value: (
-                  <span className="block min-w-0 truncate" title={item.id ?? item.name}>
-                    {item.name}
-                    {item.id && item.id !== item.name ? ` · ${item.id}` : ""}
-                  </span>
-                ),
-              }))
+            ? relatedItems.map((item) => {
+                const summary = `${item.name}${
+                  item.id && item.id !== item.name ? ` · ${item.id}` : ""
+                }`;
+                return {
+                  label: item.kind,
+                  value: (
+                    <Tooltip content={summary}>
+                      <span className="block min-w-0 truncate">{summary}</span>
+                    </Tooltip>
+                  ),
+                };
+              })
             : [{ label: "暂无关联对象", value: "—" }],
         },
       ]}
