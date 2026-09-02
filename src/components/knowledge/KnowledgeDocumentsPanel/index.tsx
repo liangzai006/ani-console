@@ -22,7 +22,7 @@ import styles from "./index.module.css";
 type KBDocument = components["schemas"]["KBDocument"];
 
 function formatBytes(value?: number) {
-  if (value == null) return "—";
+  if (value == null) return "-";
   if (value < 1024) return `${value} B`;
   if (value < 1024 ** 2) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / 1024 ** 2).toFixed(1)} MB`;

@@ -15,7 +15,7 @@ export type ListDataTableProps<T> = Omit<
 function getHeaderMinWidth(title: string) {
   const textWidth = Array.from(title).reduce(
     (width, character) =>
-      width + (/^[\u0000-\u00ff]$/.test(character) ? 9 : 14),
+      width + ((character.codePointAt(0) ?? 0) <= 0xff ? 9 : 14),
     0,
   );
   return textWidth + 32;

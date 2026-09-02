@@ -8,7 +8,7 @@
 
 1. 阅读 [UI 开发约定](./docs/UI-CONVENTIONS.md) 和 [工程约定](./docs/CONVENTIONS.md)。
 2. 当前状态与变更记录见 [docs/PROJECT-STATUS.md](./docs/PROJECT-STATUS.md)。
-3. 默认运行 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不得运行 `pnpm run verify`、production build，或启动、重启、中断用户的 `pnpm dev`。
+3. 任何新增或修改完成后必须运行 `pnpm lint`、TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不得运行 `pnpm run verify`、production build，或启动、重启、中断用户的 `pnpm dev`。
 
 ## 强制规则
 
@@ -54,16 +54,16 @@
 
 ## GitNexus
 
-仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-8.25`。GitNexus 查询使用当前会话接入的工具，不使用仓库内 CLI 作为替代。
+仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-9.01`。GitNexus 查询使用当前会话接入的工具，不使用仓库内 CLI 作为替代。
 
 - 查看接口、后端契约或执行流时，必须使用已接入的 GitNexus 工具查询索引 `ANI`（`repo: "ANI"`）。
-- 查看产品原型、页面信息架构或交互布局时，必须使用已接入的 GitNexus 工具查询索引 `产品原型-8.25`（`repo: "产品原型-8.25"`）。
+- 查看产品原型、页面信息架构或交互布局时，必须使用已接入的 GitNexus 工具查询索引 `产品原型-9.01`（`repo: "产品原型-9.01"`）。
 - 文档指定的仓库或索引不可用、未建立或无法访问时，不得根据前端代码、训练数据或经验猜测接口契约、后端行为、产品原型和交互布局；必须立即停止相关判断并提示用户建立或恢复对应索引，待索引可用后再继续。
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ani-console** (1824 symbols, 4605 relationships, 146 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ani-console** (1939 symbols, 4884 relationships, 153 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 

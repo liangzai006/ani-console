@@ -38,12 +38,12 @@ const BUSY_STATES = new Set([
 
 function imageLabel(instance: Instance) {
   return (
-    instance.image?.ref ?? instance.image?.name ?? instance.image?.id ?? "—"
+    instance.image?.ref ?? instance.image?.name ?? instance.image?.id ?? "-"
   );
 }
 
 function gpuLabel(instance: Instance) {
-  if (!instance.gpu?.model && !instance.compute?.gpu_type) return "—";
+  if (!instance.gpu?.model && !instance.compute?.gpu_type) return "-";
   return `${instance.gpu?.model ?? instance.compute?.gpu_type} × ${instance.gpu?.count ?? 1}`;
 }
 
@@ -88,8 +88,8 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
         icon={<AliIcon name="GPUrongqishili" size={28} />}
         headerItems={[
           { label: "实例 ID", value: instanceId },
-          { label: "GPU", value: "—" },
-          { label: "创建时间", value: "—" },
+          { label: "GPU", value: "-" },
+          { label: "创建时间", value: "-" },
         ]}
         cards={[
           {
@@ -113,19 +113,19 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
     );
   }
 
-  const nodeName = instance.compute?.node_name ?? instance.node_name ?? "—";
+  const nodeName = instance.compute?.node_name ?? instance.node_name ?? "-";
   const gpuModel = instance.gpu?.model ?? instance.compute?.gpu_type;
   const gpuCount = instance.gpu?.count ?? 1;
   const cpu = instance.compute?.cpu;
   const memory = instance.compute?.memory;
   const cpuMemory =
     cpu != null || memory != null
-      ? `${cpu != null ? `${String(cpu).replace(/C$/i, "")}C` : "—"}${
+      ? `${cpu != null ? `${String(cpu).replace(/C$/i, "")}C` : "-"}${
           memory != null
             ? String(memory).replace(/Gi$/i, "G").replace(/^\s+/, "")
-            : "—"
+            : "-"
         }`
-      : "—";
+      : "-";
   const rolloutLabels: Record<string, string> = {
     pending: "待发布",
     progressing: "发布中",
@@ -137,8 +137,8 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
   const workloadIdentityLabel = workloadIdentity?.active
     ? [workloadIdentity.key_prefix, ...(workloadIdentity.scopes ?? [])]
         .filter(Boolean)
-        .join(" · ") || "—"
-    : "—";
+        .join(" · ") || "-"
+    : "-";
   const securityGroups = instance.network?.security_groups ?? [];
   const loadBalancerRefs = instance.network?.load_balancer_refs ?? [];
   const relatedItems: Array<{
@@ -276,7 +276,7 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
             },
             {
               label: "规格",
-              value: gpuModel ? `${gpuCount}×${gpuModel}` : "—",
+              value: gpuModel ? `${gpuCount}×${gpuModel}` : "-",
             },
             { label: "镜像", value: imageLabel(instance) },
             { label: "Provider", value: instance.provider },
@@ -287,7 +287,7 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
               label: "副本",
               value: instance.container
                 ? `${instance.container.ready_replicas} / ${instance.container.replicas}`
-                : "—",
+                : "-",
             },
             {
               label: "修订 / 发布",
@@ -300,8 +300,8 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
                       : null,
                   ]
                     .filter(Boolean)
-                    .join(" · ") || "—"
-                : "—",
+                    .join(" · ") || "-"
+                : "-",
             },
             {
               label: "Workload Identity",
@@ -311,7 +311,7 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
               label: "负载均衡",
               value: loadBalancerRefs.length
                 ? loadBalancerRefs.join("、")
-                : "—",
+                : "-",
             },
             {
               label: "调用地址",
@@ -325,14 +325,14 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
                   {instance.endpoint}
                 </a>
               ) : (
-                "—"
+                "-"
               ),
             },
             {
               label: "安全组",
               value: securityGroups.length
                 ? securityGroups.map((group) => group.name ?? group.id).join("、")
-                : "—",
+                : "-",
             },
             { label: "创建时间", value: formatDateTime(instance.created_at) },
             {
@@ -362,7 +362,7 @@ export function GpuInstanceDetail({ instanceId }: { instanceId: string }) {
                   ),
                 };
               })
-            : [{ label: "暂无关联对象", value: "—" }],
+            : [{ label: "暂无关联对象", value: "-" }],
         },
       ]}
       tabs={[

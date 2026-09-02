@@ -24,8 +24,8 @@ export function DetailPagePlaceholder({
       icon={iconName ? <AliIcon name={iconName} size={28} /> : undefined}
       headerItems={[
         { label: idLabel, value: idValue },
-        { label: "状态", value: "—" },
-        { label: "创建时间", value: "—" },
+        { label: "状态", value: "-" },
+        { label: "创建时间", value: "-" },
       ]}
       cards={[
         {

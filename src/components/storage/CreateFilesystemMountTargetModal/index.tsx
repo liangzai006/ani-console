@@ -32,13 +32,16 @@ export function CreateFilesystemMountTargetModal({
     enabled: visible,
   });
   const subnets = useQuery({
-    queryKey: ["network-subnets", "filesystem-mount-target-create"],
+    queryKey: ["network-subnets", "filesystem-mount-target-create", vpcId],
     queryFn: () =>
       listOrThrow(() =>
-        coreApi.GET("/networks/subnets", { params: { query: { limit: 100 } } }),
+        coreApi.GET("/networks/subnets", {
+          params: { query: { limit: 100, vpc_id: vpcId || undefined } },
+        }),
       ),
-    enabled: visible,
+    enabled: visible && !!vpcId,
   });
+  // TODO: 子网接口确认按 vpc_id 过滤后，移除此处创建表单的本地兜底过滤。
   const availableSubnets = ((subnets.data?.items ?? []) as Subnet[]).filter(
     (item) => item.vpc_id === vpcId,
   );

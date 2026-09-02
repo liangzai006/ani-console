@@ -24,7 +24,7 @@ export const menuItems: readonly MenuItem[] = [
     icon: <IconCloud />,
     children: [
       {
-        key: "/compute/overview",
+        key: "/overview-compute",
         label: "我的资源概览",
         icon: <IconDashboard />,
       },
@@ -38,10 +38,10 @@ export const menuItems: readonly MenuItem[] = [
         label: "实例",
         icon: <AliIcon name="yunzhuji" />,
         children: [
-          { key: "/instances/vm", label: "云主机 VM" },
-          { key: "/instances/container", label: "容器实例" },
+          { key: "/vm-instances", label: "云主机 VM" },
+          { key: "/container-instances", label: "容器实例" },
           { key: "/gpu-instances", label: "GPU 容器实例" },
-          { key: "/instances/sandbox", label: "Sandbox 实例" },
+          { key: "/sandbox-instances", label: "Sandbox 实例" },
         ],
       },
       {
@@ -58,27 +58,27 @@ export const menuItems: readonly MenuItem[] = [
     icon: <IconNav />,
     children: [
       {
-        key: "/networks/vpcs",
+        key: "/vpcs",
         label: "VPC",
         icon: <AliIcon name="VPCwangluo" />,
       },
       {
-        key: "/networks/subnets",
+        key: "/subnets",
         label: "子网",
         icon: <AliIcon name="ziwang" />,
       },
       {
-        key: "/networks/security-groups",
+        key: "/security-groups",
         label: "安全组",
         icon: <AliIcon name="anquanzu" />,
       },
       {
-        key: "/networks/routes",
+        key: "/routes",
         label: "路由",
         icon: <AliIcon name="VPCluyouqi" />,
       },
       {
-        key: "/networks/load-balancers",
+        key: "/load-balancers",
         label: "负载均衡",
         icon: <AliIcon name="fuzaijunhengqi" />,
       },

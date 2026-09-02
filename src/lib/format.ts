@@ -1,5 +1,5 @@
 export function formatDateTime(value?: string | null): string {
-  if (!value) return '—'
+  if (!value) return '-'
   try {
     return new Date(value).toLocaleString('zh-CN')
   } catch {
@@ -8,7 +8,7 @@ export function formatDateTime(value?: string | null): string {
 }
 
 export function formatBytes(bytes?: number): string {
-  if (bytes == null) return '—'
+  if (bytes == null) return '-'
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let v = bytes
   let i = 0

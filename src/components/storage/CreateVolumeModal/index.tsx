@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Alert, Form, Input, InputNumber, Modal, Select, Switch, Typography } from '@arco-design/web-react'
 import { useEffect, useState } from 'react'
 import { coreApi } from '@/api/client'
+import { asUncontractedQuery } from '@/api/uncontracted-query'
 import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
 import { listOrThrow } from '@/lib/api-list'
@@ -12,9 +13,9 @@ type Volume = components['schemas']['StorageVolume']
 type Instance = components['schemas']['InstanceRecord']
 
 const INSTANCE_ROUTE: Record<string, string> = {
-  vm: '/compute/instances/vm',
-  container: '/compute/instances/container',
-  gpu_container: '/compute/instances/gpu-container',
+  vm: '/vm-instances',
+  container: '/container-instances',
+  gpu_container: '/gpu-instances',
 }
 
 export function CreateVolumeModal({
@@ -34,9 +35,12 @@ export function CreateVolumeModal({
   const [mountInstanceId, setMountInstanceId] = useState('')
   const instances = useQuery({
     queryKey: ['instances', 'volume-create'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/instances', { params: { query: { limit: 100 } } })),
+    queryFn: () => listOrThrow(() => coreApi.GET('/instances', {
+      params: { query: asUncontractedQuery({ limit: 100, mountable: true }) },
+    })),
     enabled: visible,
   })
+  // TODO: 实例接口确认按 mountable 过滤后，移除此处创建表单的本地兜底过滤。
   const instanceItems = ((instances.data?.items ?? []) as Instance[]).filter(
     (item) => item.kind && INSTANCE_ROUTE[item.kind],
   )

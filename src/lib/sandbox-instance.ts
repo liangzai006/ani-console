@@ -60,12 +60,12 @@ export function parseSandboxCommand(value: string): string[] | undefined {
 }
 
 export function getSandboxProviderLabel(instance: ProviderLike): string {
-  const provider = instance.provider ?? instance.dev_profile?.provider ?? '—'
+  const provider = instance.provider ?? instance.dev_profile?.provider ?? '-'
   const realProvider = instance.dev_profile?.real_provider
 
   if (instance.dev_profile?.mode === 'local') return '本地开发模式'
   if (realProvider === true && provider === 'kubernetes_rest') return '真实 Kubernetes/Kata 后端'
-  if (realProvider === false && provider !== '—') return `${provider}（real_provider=false）`
+  if (realProvider === false && provider !== '-') return `${provider}（real_provider=false）`
   return provider
 }
 

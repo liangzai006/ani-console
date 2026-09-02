@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Empty, Input, Select, Space, Spin, Typography } from '@arco-design/web-react'
 import { coreApi, CORE_API_BASE } from '@/api/client'
+import { asUncontractedQuery } from '@/api/uncontracted-query'
 import { ApiErrorAlert } from '@/components/common'
 import { useAuthStore } from '@/stores/auth'
 import type { operations } from '@/api/core-schema'
@@ -13,19 +14,28 @@ const LEVEL_OPTIONS: LogLevel[] = ['debug', 'info', 'warn', 'error']
 const LOG_TAIL_LINES = 100
 const AUTO_SCROLL_THRESHOLD_PX = 24
 
-function buildLogStreamUrl(instanceId: string, level: LogLevel, container?: string): string {
+function buildLogStreamUrl(instanceId: string, level: LogLevel, keyword: string, container?: string): string {
   const params = new URLSearchParams({
     follow: 'true',
     tail_lines: String(LOG_TAIL_LINES),
     level,
   })
   if (container) params.set('container', container)
+  if (keyword) params.set('keyword', keyword)
   return `${CORE_API_BASE}/instances/${encodeURIComponent(instanceId)}/logs?${params.toString()}`
 }
 
-async function fetchInstanceLogs(instanceId: string, level: LogLevel): Promise<string> {
+async function fetchInstanceLogs(instanceId: string, level: LogLevel, keyword: string): Promise<string> {
   const { data, error } = await coreApi.GET('/instances/{instance_id}/logs', {
-    params: { path: { instance_id: instanceId }, query: { follow: false, limit: LOG_TAIL_LINES, level } },
+    params: {
+      path: { instance_id: instanceId },
+      query: asUncontractedQuery({
+        follow: false,
+        limit: LOG_TAIL_LINES,
+        level,
+        keyword: keyword || undefined,
+      }),
+    },
     parseAs: 'text',
   })
   if (error) throw error
@@ -88,6 +98,7 @@ async function readLiveLogStream(response: Response, appendLog: (line: string) =
 async function fetchLiveLogs({
   instanceId,
   level,
+  keyword,
   container,
   signal,
   appendLog,
@@ -95,13 +106,14 @@ async function fetchLiveLogs({
 }: {
   instanceId: string
   level: LogLevel
+  keyword: string
   container?: string
   signal: AbortSignal
   appendLog: (line: string) => void
   onConnected: () => void
 }) {
   const token = useAuthStore.getState().getAccessToken()
-  const response = await fetch(buildLogStreamUrl(instanceId, level, container), {
+  const response = await fetch(buildLogStreamUrl(instanceId, level, keyword, container), {
     method: 'GET',
     headers: {
       Accept: 'text/event-stream',
@@ -134,6 +146,7 @@ export function InstanceLogsPanel({
 }) {
   const [level, setLevel] = useState<LogLevel>('info')
   const [keyword, setKeyword] = useState('')
+  const normalizedKeyword = keyword.trim()
   const [refreshVersion, setRefreshVersion] = useState(0)
   const [logs, setLogs] = useState('')
   const [loading, setLoading] = useState(false)
@@ -162,7 +175,7 @@ export function InstanceLogsPanel({
       setLoading(true)
       setError(null)
       try {
-        const history = await fetchInstanceLogs(instanceId, level)
+        const history = await fetchInstanceLogs(instanceId, level, normalizedKeyword)
         if (cancelled) return
         setLogs(history)
       } catch (err) {
@@ -178,7 +191,7 @@ export function InstanceLogsPanel({
     return () => {
       cancelled = true
     }
-  }, [active, instanceId, level, refreshVersion])
+  }, [active, instanceId, level, normalizedKeyword, refreshVersion])
 
   useEffect(() => {
     if (!active || !liveEnabled) {
@@ -196,6 +209,7 @@ export function InstanceLogsPanel({
         await fetchLiveLogs({
           instanceId,
           level,
+          keyword: normalizedKeyword,
           container,
           signal: controller.signal,
           appendLog: (line) => {
@@ -221,7 +235,7 @@ export function InstanceLogsPanel({
       cancelled = true
       controller.abort()
     }
-  }, [active, container, instanceId, level, liveEnabled])
+  }, [active, container, instanceId, level, liveEnabled, normalizedKeyword])
 
   const handleScroll = () => {
     const output = outputRef.current
@@ -229,14 +243,6 @@ export function InstanceLogsPanel({
     const distanceToBottom = output.scrollHeight - output.scrollTop - output.clientHeight
     shouldAutoScrollRef.current = distanceToBottom <= AUTO_SCROLL_THRESHOLD_PX
   }
-
-  const normalizedKeyword = keyword.trim().toLowerCase()
-  const visibleLogs = normalizedKeyword
-    ? logs
-        .split(/\r?\n/)
-        .filter((line) => line.toLowerCase().includes(normalizedKeyword))
-        .join('\n')
-    : logs
 
   if (!active) return <Empty description="打开日志 Tab 后加载实时日志" />
 
@@ -284,13 +290,9 @@ export function InstanceLogsPanel({
           <div className="py-8">
             <Empty description="暂无日志" />
           </div>
-        ) : visibleLogs.length === 0 ? (
-          <div className="py-8">
-            <Empty description="没有匹配的日志" />
-          </div>
         ) : (
           <pre className="m-0 whitespace-pre-wrap break-words bg-[var(--color-fill-1)] p-3 font-mono text-xs leading-5 text-[var(--color-text-1)]">
-            {visibleLogs}
+            {logs}
           </pre>
         )}
       </div>

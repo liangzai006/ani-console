@@ -77,7 +77,7 @@ function formatSources(sources: Answer["sources"]) {
       const title = source.file_name || source.doc_id || `来源 ${index + 1}`;
       const page = source.page ? ` · 第 ${source.page} 页` : "";
       const score = source.score == null ? "" : ` · 匹配度 ${source.score.toFixed(3)}`;
-      return `[${index + 1}] ${title}${page}${score}\n${source.content || "—"}`;
+      return `[${index + 1}] ${title}${page}${score}\n${source.content || "-"}`;
     })
     .join("\n\n")}`;
 }

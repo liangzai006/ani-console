@@ -36,6 +36,7 @@ export function GpuNetworkStorageStep({
   defaultSecurityGroup,
   networkLoading,
 }: Props) {
+  // TODO: 子网接口确认按 vpc_id 过滤后，移除此处创建表单的本地兜底过滤。
   const availableSubnets = subnets.filter(
     (item) => !values.vpc_id || item.vpc_id === values.vpc_id,
   );

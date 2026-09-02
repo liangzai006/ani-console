@@ -11,6 +11,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
+import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { servicesApi } from "@/api/services-client";
 import { showApiError } from "@/api/helpers";
 import { newIdempotencyKey } from "@/lib/idempotency";
@@ -100,9 +101,24 @@ export function CreateInferenceServiceModal({
     useState<ResourcePresetKey>("a10-1");
   const [inferenceEngine, setInferenceEngine] =
     useState<InferenceEngine>("vllm");
+  const selectedModel = useMemo(
+    () => PROTOTYPE_MODEL_VERSIONS.find((item) => item.id === modelVersionId),
+    [modelVersionId],
+  );
+  const isEmbeddingModel = selectedModel?.kind === "embedding";
+  const runtimeImageKeyword = isEmbeddingModel
+    ? "tei"
+    : inferenceEngine === "sglang"
+      ? "sglang"
+      : "vllm";
+  const recommendedEngine = isEmbeddingModel
+    ? "TEI"
+    : inferenceEngine === "sglang"
+      ? "SGLang"
+      : "vLLM";
 
   const runtimeImages = useQuery({
-    queryKey: ["inference-runtime-images"],
+    queryKey: ["inference-runtime-images", runtimeImageKeyword],
     enabled: visible,
     queryFn: async () => {
       const { data: projectData, error: projectError } = await coreApi.GET(
@@ -114,7 +130,16 @@ export function CreateInferenceServiceModal({
       for (const project of projectData?.items ?? []) {
         const { data: repoData, error: repoError } = await coreApi.GET(
           "/registry/projects/{project}/repositories",
-          { params: { path: { project: project.name }, query: { limit: 50 } } },
+          {
+            params: {
+              path: { project: project.name },
+              query: asUncontractedQuery({
+                limit: 50,
+                search_field: "name",
+                keyword: runtimeImageKeyword,
+              }),
+            },
+          },
         );
         if (repoError) throw repoError;
         for (const repository of repoData?.items ?? []) {
@@ -144,17 +169,8 @@ export function CreateInferenceServiceModal({
     },
   });
 
-  const selectedModel = useMemo(
-    () => PROTOTYPE_MODEL_VERSIONS.find((item) => item.id === modelVersionId),
-    [modelVersionId],
-  );
-  const isEmbeddingModel = selectedModel?.kind === "embedding";
-  const recommendedEngine = isEmbeddingModel
-    ? "TEI"
-    : inferenceEngine === "sglang"
-      ? "SGLang"
-      : "vLLM";
   const compatible = Boolean(selectedModel);
+  // TODO: Registry 后端确认按运行引擎过滤镜像后，移除此处创建表单的本地兜底过滤。
   const runtimeImage = useMemo(() => {
     const keywords = isEmbeddingModel
       ? ["text-embedding", "tei"]
@@ -258,7 +274,7 @@ export function CreateInferenceServiceModal({
         </Form.Item>
         <Form.Item label="推理引擎">
           {isEmbeddingModel ? (
-            <Input value={compatible ? "TEI" : "—"} readOnly />
+            <Input value={compatible ? "TEI" : "-"} readOnly />
           ) : (
             <Select
               value={inferenceEngine}

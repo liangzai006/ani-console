@@ -67,7 +67,7 @@ export function ExpandFilesystemModal({
         <Alert
           type="info"
           showIcon
-          content={`当前容量 ${filesystem?.size_gib ?? "—"} GiB；文件存储只支持扩容，不支持缩容。`}
+          content={`当前容量 ${filesystem?.size_gib ?? "-"} GiB；文件存储只支持扩容，不支持缩容。`}
         />
         <Form.Item label="新容量 (GiB)" required>
           <InputNumber

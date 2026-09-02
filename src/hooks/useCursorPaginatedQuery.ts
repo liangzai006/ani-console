@@ -81,11 +81,12 @@ export function useCursorPaginatedQuery<T>({
     setPage(1);
   }, []);
 
+  const { refetch } = query;
   const refresh = useCallback(() => {
     pageCursors.current = new Map([[1, undefined]]);
-    if (page === 1) void query.refetch();
+    if (page === 1) void refetch();
     else setPage(1);
-  }, [page, query.refetch]);
+  }, [page, refetch]);
 
   return {
     query,

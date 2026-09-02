@@ -10,6 +10,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
+import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { listOrThrow } from "@/lib/api-list";
 import type {
   Filesystem,
@@ -60,12 +61,14 @@ export function GpuContainerCreateForm({
     enabled: visible,
   });
   const subnets = useQuery({
-    queryKey: ["network-subnets", "select"],
+    queryKey: ["network-subnets", "select", values.vpc_id],
     queryFn: () =>
       listOrThrow(() =>
-        coreApi.GET("/networks/subnets", { params: { query: { limit: 50 } } }),
+        coreApi.GET("/networks/subnets", {
+          params: { query: { limit: 50, vpc_id: values.vpc_id || undefined } },
+        }),
       ),
-    enabled: visible,
+    enabled: visible && !!values.vpc_id,
   });
   const securityGroups = useQuery({
     queryKey: ["network-security-groups", "select"],
@@ -91,12 +94,13 @@ export function GpuContainerCreateForm({
     queryFn: async () => {
       const request = coreApi.GET as unknown as (
         path: string,
-        options: { params: { query: { limit: number } } },
+        options: { params: { query: never } },
       ) => Promise<{ data?: RegistryResponse; error?: unknown }>;
       const { data, error } = await request("/registry/images", {
-        params: { query: { limit: 100 } },
+        params: { query: asUncontractedQuery({ limit: 100, purpose: "gpu" }) },
       });
       if (error || !data) throw error ?? new Error("GPU 镜像列表未返回结果");
+      // TODO: Registry 后端确认按 purpose 过滤后，移除此处创建表单的本地兜底过滤。
       return data.items.filter((item) => item.purpose === "gpu");
     },
   });

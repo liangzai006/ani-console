@@ -88,7 +88,7 @@ export function VolumeOSInitGuideModal({
             content={guide.data.hint || `设备：${guide.data.device}`}
           />
           <Typography.Text>
-            设备：{guide.data.device || "—"}　状态：{guide.data.status || "—"}
+            设备：{guide.data.device || "-"}　状态：{guide.data.status || "-"}
           </Typography.Text>
           {guide.data.steps.length ? (
             guide.data.steps.map((step, index) => (

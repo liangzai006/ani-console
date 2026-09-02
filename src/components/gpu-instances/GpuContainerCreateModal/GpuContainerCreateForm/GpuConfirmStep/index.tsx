@@ -35,12 +35,12 @@ export function GpuConfirmStep({
         column={1}
         border
         data={[
-          { label: "名称", value: values.name || "—" },
+          { label: "名称", value: values.name || "-" },
           {
             label: "镜像",
             value: image
               ? `${image.repository}:${image.tag}`
-              : values.image || "—",
+              : values.image || "-",
           },
           {
             label: "资源",
@@ -48,13 +48,13 @@ export function GpuConfirmStep({
           },
           {
             label: "调度队列",
-            value: schedulingQueue?.name || values.queue_name || "—",
+            value: schedulingQueue?.name || values.queue_name || "-",
           },
           {
             label: "网络",
             value: `${values.vpc_id} / ${values.subnet_id} / 默认安全组 ${securityGroupName}`,
           },
-          { label: "环境变量", value: values.env_text || "—" },
+          { label: "环境变量", value: values.env_text || "-" },
           {
             label: "存储",
             value: filesystem

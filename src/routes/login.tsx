@@ -1,9 +1,7 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/login')({
-  component: LoginLayout,
+  component: function LoginLayout() {
+    return <Outlet />
+  },
 })
-
-function LoginLayout() {
-  return <Outlet />
-}

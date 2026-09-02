@@ -16,12 +16,12 @@ export function matchSideMenuKey(
 }
 
 const PATH_SUBMENU: { prefix: string; key: string }[] = [
-  { prefix: "/compute/overview", key: "compute" },
-  { prefix: "/instances", key: "compute" },
-  { prefix: "/instances/container", key: "compute" },
-  { prefix: "/instances/vm", key: "compute" },
+  { prefix: "/overview-compute", key: "compute" },
+  { prefix: "/compute-instances", key: "compute" },
+  { prefix: "/container-instances", key: "compute" },
+  { prefix: "/vm-instances", key: "compute" },
   { prefix: "/gpu-instances", key: "compute" },
-  { prefix: "/instances/sandbox", key: "compute" },
+  { prefix: "/sandbox-instances", key: "compute" },
   { prefix: "/gpu-inventory", key: "compute" },
   { prefix: "/sandbox-templates", key: "compute" },
   { prefix: "/k8s-clusters", key: "compute" },
@@ -33,7 +33,11 @@ const PATH_SUBMENU: { prefix: string; key: string }[] = [
   { prefix: "/models", key: "ai-services" },
   { prefix: "/inference", key: "ai-services" },
   { prefix: "/kb", key: "knowledge" },
-  { prefix: "/networks", key: "network-management" },
+  { prefix: "/vpcs", key: "network-management" },
+  { prefix: "/subnets", key: "network-management" },
+  { prefix: "/security-groups", key: "network-management" },
+  { prefix: "/routes", key: "network-management" },
+  { prefix: "/load-balancers", key: "network-management" },
   { prefix: "/registry", key: "registry" },
 ];
 

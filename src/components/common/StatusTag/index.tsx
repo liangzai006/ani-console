@@ -25,7 +25,7 @@ const STATUS_COLOR: Record<string, 'green' | 'orange' | 'red' | 'blue' | 'gray' 
 }
 
 export function StatusTag({ status }: { status?: string | null }) {
-  if (!status) return <Tag>—</Tag>
+  if (!status) return <Tag>-</Tag>
   const color = STATUS_COLOR[status.toLowerCase()] ?? 'blue'
   return <Tag color={color}>{status}</Tag>
 }

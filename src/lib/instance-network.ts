@@ -11,13 +11,13 @@ function readNestedString(record: NetworkishRecord, objectKey: string, fieldKey:
 }
 
 export function getInstanceNetworkValue(instance: unknown, field: 'vpc_id' | 'subnet_id'): string {
-  if (!instance || typeof instance !== 'object') return '—'
+  if (!instance || typeof instance !== 'object') return '-'
   const record = instance as NetworkishRecord
-  return readString(record[field]) ?? readNestedString(record, 'network', field) ?? '—'
+  return readString(record[field]) ?? readNestedString(record, 'network', field) ?? '-'
 }
 
 export function getInstanceDisplayIp(instance: unknown): string {
-  if (!instance || typeof instance !== 'object') return '—'
+  if (!instance || typeof instance !== 'object') return '-'
   const record = instance as NetworkishRecord
   return (
     readString(record.private_ip) ??
@@ -25,6 +25,6 @@ export function getInstanceDisplayIp(instance: unknown): string {
     readString(record.ip_address) ??
     readString(record.endpoint) ??
     readNestedString(record, 'ssh', 'host') ??
-    '—'
+    '-'
   )
 }

@@ -140,11 +140,11 @@ export function GpuInstanceConfiguration({
             },
             {
               label: "Key 前缀",
-              value: instance.workload_identity?.key_prefix ?? "—",
+              value: instance.workload_identity?.key_prefix ?? "-",
             },
             {
               label: "Scopes",
-              value: scopes.length ? scopes.join("、") : "—",
+              value: scopes.length ? scopes.join("、") : "-",
             },
           ]}
         />

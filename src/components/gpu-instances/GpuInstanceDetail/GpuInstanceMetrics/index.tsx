@@ -16,21 +16,21 @@ type MonitoringTrendSeries = {
 };
 
 function percent(value?: number | null) {
-  if (value == null) return "—";
+  if (value == null) return "-";
   return `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
 }
 
 function percentTooltip(value: unknown) {
   const number = Number(value);
-  return Number.isFinite(number) ? `${Number(number.toFixed(2))}%` : "—";
+  return Number.isFinite(number) ? `${Number(number.toFixed(2))}%` : "-";
 }
 
 function memory(value?: number | null) {
-  return value == null ? "—" : formatBytes(value * 1024 * 1024);
+  return value == null ? "-" : formatBytes(value * 1024 * 1024);
 }
 
 function gpuMemory(used?: number | null, total?: number | null) {
-  if (used == null || total == null) return "—";
+  if (used == null || total == null) return "-";
   const formatGiB = (value: number) =>
     Number.isInteger(value / 1024)
       ? String(value / 1024)
@@ -198,7 +198,7 @@ export function GpuInstanceMetrics({
 
   const data = metrics.data;
   if (gpuOnly) {
-    const gpuModelSummary = gpuModel ? `${gpuModel}×${gpuCount ?? 1}` : "—";
+    const gpuModelSummary = gpuModel ? `${gpuModel}×${gpuCount ?? 1}` : "-";
     return (
       <Grid.Row gutter={[16, 16]}>
         <Grid.Col span={24}>

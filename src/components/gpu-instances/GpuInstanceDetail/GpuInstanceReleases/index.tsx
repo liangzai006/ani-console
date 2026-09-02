@@ -22,7 +22,7 @@ export function GpuInstanceReleases({ instance }: { instance: Instance }) {
     instance.image?.ref ??
     instance.image?.name ??
     instance.image?.id ??
-    "—";
+    "-";
 
   return (
     <Space direction="vertical" size={16} className="w-full">
@@ -32,19 +32,19 @@ export function GpuInstanceReleases({ instance }: { instance: Instance }) {
         data={[
           {
             label: "当前修订",
-            value: instance.container?.revision ?? "—",
+            value: instance.container?.revision ?? "-",
           },
           {
             label: "发布状态",
             value: rolloutStatus
               ? (rolloutLabels[rolloutStatus] ?? rolloutStatus)
-              : "—",
+              : "-",
           },
           {
             label: "就绪副本",
             value: instance.container
               ? `${instance.container.ready_replicas} / ${instance.container.replicas}`
-              : "—",
+              : "-",
           },
           { label: "镜像", value: image },
         ]}
@@ -57,7 +57,7 @@ export function GpuInstanceReleases({ instance }: { instance: Instance }) {
         noDataElement={<Empty description="暂无发布历史" />}
         columns={[
           { title: "修订版本", dataIndex: "revision", fixed: "left" },
-          { title: "镜像", render: (_, release) => release.image ?? "—" },
+          { title: "镜像", render: (_, release) => release.image ?? "-" },
           {
             title: "发布时间",
             render: (_, release) => formatDateTime(release.created_at),

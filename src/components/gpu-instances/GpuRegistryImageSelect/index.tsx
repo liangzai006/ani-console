@@ -1,6 +1,7 @@
 import { Alert, Button, Form, Select } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { coreApi } from "@/api/client";
+import { asUncontractedQuery } from "@/api/uncontracted-query";
 
 type RegistryImage = {
   image: string;
@@ -27,12 +28,13 @@ export function GpuRegistryImageSelect({
     queryFn: async () => {
       const request = coreApi.GET as unknown as (
         path: string,
-        options: { params: { query: { limit: number } } },
+        options: { params: { query: never } },
       ) => Promise<{ data?: RegistryImageListResponse; error?: unknown }>;
       const { data, error } = await request("/registry/images", {
-        params: { query: { limit: 100 } },
+        params: { query: asUncontractedQuery({ limit: 100, purpose: "gpu" }) },
       });
       if (error || !data) throw error ?? new Error("GPU 镜像列表未返回结果");
+      // TODO: Registry 后端确认按 purpose 过滤后，移除此处关联资源选择的本地兜底过滤。
       return data.items.filter((item) => item.purpose === "gpu");
     },
   });

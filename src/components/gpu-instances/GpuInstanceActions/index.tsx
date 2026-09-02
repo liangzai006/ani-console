@@ -16,8 +16,18 @@ import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { coreApi } from "@/api/client";
+import { asUncontractedQuery } from "@/api/uncontracted-query";
 import type { components } from "@/api/core-schema";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
+import {
+  GpuInstanceResizeFields,
+} from "@/components/gpu-instances/GpuInstanceResizeFields";
+import {
+  buildGpuInstanceResizeFields,
+  getGpuInstanceResizeInitialValues,
+  isGpuInstanceResizeUnchanged,
+  type GpuInstanceResizeFormValues,
+} from "@/components/gpu-instances/GpuInstanceResizeFields/helpers";
 import { GpuRegistryImageSelect } from "@/components/gpu-instances/GpuRegistryImageSelect";
 import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
@@ -40,7 +50,7 @@ type FormAction =
   | "bind_secret"
   | "change_security_groups";
 
-type ActionFormValues = {
+type ActionFormValues = GpuInstanceResizeFormValues & {
   replicas?: number;
   image_id?: string;
   cpu?: string;
@@ -80,7 +90,7 @@ const TERMINATION_PROTECTION_STOP_TOOLTIP =
   "已开启终止保护，请先关闭终止保护后再关机";
 
 function openTerminalWindow(instanceId: string) {
-  const url = `/instances/terminal/${encodeURIComponent(instanceId)}`;
+  const url = `/instance-terminal/${encodeURIComponent(instanceId)}`;
   const width = 1200;
   const height = 800;
   const left = Math.max(
@@ -113,7 +123,8 @@ function buildLifecycleBody(
     case "update_image":
       return { ...base, image_id: values.image_id, strategy: "rolling" };
     case "resize":
-      return { ...base, cpu: values.cpu, memory: values.memory };
+      // TODO: Core lifecycle 契约补充 spec_id 后移除扩展字段兼容写法。
+      return { ...base, ...buildGpuInstanceResizeFields(values) } as LifecycleRequest;
     case "rollback":
       return { ...base, revision: values.revision };
     case "attach_volume":
@@ -172,11 +183,15 @@ export function GpuInstanceActions({
     queryFn: () =>
       listOrThrow(() =>
         coreApi.GET("/networks/security-groups", {
-          params: { query: { limit: 100 } },
+          params: { query: asUncontractedQuery({
+            limit: 100,
+            vpc_id: instanceVpcId || undefined,
+          }) },
         }),
       ),
     enabled: formAction === "change_security_groups",
   });
+  // TODO: 安全组接口确认按 vpc_id 过滤后，移除此处关联资源选择的本地兜底过滤。
   const availableSecurityGroups = (
     (securityGroups.data?.items ?? []) as SecurityGroup[]
   ).filter((group) => !instanceVpcId || group.vpc_id === instanceVpcId);
@@ -188,6 +203,7 @@ export function GpuInstanceActions({
       ),
     enabled: formAction === "bind_secret",
   });
+  // TODO: 密钥接口提供可绑定条件并由后端过滤后，移除此处关联资源选择的本地兜底过滤。
   const availableSecrets = ((secrets.data?.items ?? []) as Secret[]).filter(
     (secret) => secret.id,
   );
@@ -243,6 +259,9 @@ export function GpuInstanceActions({
     form.resetFields();
     form.setFieldsValue({
       replicas: instance.container?.replicas ?? 1,
+      ...(action === "resize"
+        ? getGpuInstanceResizeInitialValues(instance)
+        : {}),
       binding_type: "env",
       read_only: false,
       security_group_ids:
@@ -301,33 +320,28 @@ export function GpuInstanceActions({
   const moreMenu = (
     <Menu onClickMenuItem={handleMenuAction}>
       {display === "menu" ? (
-        <>
-          <Menu.Item
-            key="stop"
-            disabled={stopDisabled}
-          >
-            {stopBlockedByTerminationProtection ? (
-              <Tooltip content={TERMINATION_PROTECTION_STOP_TOOLTIP}>
-                <span className="block">停止</span>
-              </Tooltip>
-            ) : (
-              "停止"
-            )}
-          </Menu.Item>
-          <Menu.Item
-            key="restart"
-            disabled={instance.state !== "running" || lifecycle.isPending}
-          >
-            重启
-          </Menu.Item>
-          <Menu.Item key="scale" disabled={busy || lifecycle.isPending}>
-            扩缩容
-          </Menu.Item>
-          <Menu.Item key="terminal" disabled={!terminalAvailable}>
-            打开终端
-          </Menu.Item>
-        </>
+        <Menu.Item key="stop" disabled={stopDisabled}>
+          {stopBlockedByTerminationProtection ? (
+            <Tooltip content={TERMINATION_PROTECTION_STOP_TOOLTIP}>
+              <span className="block">停止</span>
+            </Tooltip>
+          ) : (
+            "停止"
+          )}
+        </Menu.Item>
       ) : null}
+      <Menu.Item
+        key="restart"
+        disabled={instance.state !== "running" || lifecycle.isPending}
+      >
+        重启
+      </Menu.Item>
+      <Menu.Item key="scale" disabled={busy || lifecycle.isPending}>
+        扩缩容
+      </Menu.Item>
+      <Menu.Item key="terminal" disabled={!terminalAvailable}>
+        打开终端
+      </Menu.Item>
       <Menu.Item key="update_image" disabled={busy}>
         更新镜像
       </Menu.Item>
@@ -375,7 +389,14 @@ export function GpuInstanceActions({
     <>
       {display === "row" ? (
         <DataTableRowActions>
-          {stopBlockedByTerminationProtection ? (
+          {instance.state === "stopped" ? (
+            <DataTableRowActionButton
+              disabled={lifecycle.isPending}
+              onClick={() => submitSimpleAction("start")}
+            >
+              启动
+            </DataTableRowActionButton>
+          ) : stopBlockedByTerminationProtection ? (
             <Tooltip content={TERMINATION_PROTECTION_STOP_TOOLTIP}>
               <span className="inline-flex">
                 <DataTableRowActionButton
@@ -394,24 +415,6 @@ export function GpuInstanceActions({
               停止
             </DataTableRowActionButton>
           )}
-          <DataTableRowActionButton
-            disabled={instance.state !== "running" || lifecycle.isPending}
-            onClick={() => submitSimpleAction("restart")}
-          >
-            重启
-          </DataTableRowActionButton>
-          <DataTableRowActionButton
-            disabled={busy || lifecycle.isPending}
-            onClick={() => openActionForm("scale")}
-          >
-            扩缩容
-          </DataTableRowActionButton>
-          <DataTableRowActionButton
-            disabled={!terminalAvailable}
-            onClick={() => openTerminalWindow(instance.id)}
-          >
-            终端
-          </DataTableRowActionButton>
           <Dropdown trigger="click" position="br" droplist={moreMenu}>
             <DataTableRowActionButton disabled={lifecycle.isPending}>
               更多
@@ -468,6 +471,7 @@ export function GpuInstanceActions({
         }
         visible={Boolean(formAction)}
         confirmLoading={lifecycle.isPending}
+        okText={formAction === "resize" ? "确认变配" : "确定"}
         onCancel={() => {
           setFormAction(undefined);
           form.resetFields();
@@ -475,6 +479,13 @@ export function GpuInstanceActions({
         onOk={async () => {
           if (!formAction) return;
           const values = await form.validate();
+          if (
+            formAction === "resize" &&
+            isGpuInstanceResizeUnchanged(instance, values)
+          ) {
+            Message.info("规格未变化");
+            return;
+          }
           lifecycle.mutate(buildLifecycleBody(formAction, values));
         }}
         unmountOnExit
@@ -493,22 +504,7 @@ export function GpuInstanceActions({
             <GpuRegistryImageSelect field="image_id" enabled />
           ) : null}
           {formAction === "resize" ? (
-            <>
-              <Form.Item
-                field="cpu"
-                label="CPU"
-                rules={[{ required: true, message: "请输入 CPU" }]}
-              >
-                <Input placeholder="例如 4" />
-              </Form.Item>
-              <Form.Item
-                field="memory"
-                label="内存"
-                rules={[{ required: true, message: "请输入内存" }]}
-              >
-                <Input placeholder="例如 8Gi" />
-              </Form.Item>
-            </>
+            <GpuInstanceResizeFields instance={instance} enabled />
           ) : null}
           {formAction === "rollback" ? (
             <Form.Item

@@ -7,9 +7,9 @@
 - 项目：独立 ANI Console 前端；仓库根目录已代表 Console 范围，路由和文件直接按业务领域或资源命名。
 - 后端：独立 ANI 仓库；接口契约与行为以 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
 - API：`/api/v1`，统一通过 `src/api/client.ts` 的 `coreApi` 调用。
-- 产品原型：GitNexus 索引 `产品原型-8.25`；页面信息架构与交互布局以该版本为准。
+- 产品原型：GitNexus 索引 `产品原型-9.01`；页面信息架构与交互布局以该版本为准。
 - UI：使用 Arco Design React 和 Arco Token，Tailwind 仅负责布局；沿用现有顶部一级导航及侧栏层级。
-- 验证：默认运行 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不运行 `pnpm run verify`、production build 或干预用户的 `pnpm dev`。
+- 验证：任何新增或修改完成后必须运行 `pnpm lint`、TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不运行 `pnpm run verify`、production build 或干预用户的 `pnpm dev`。
 - 测试：快速迭代阶段不保留自动化测试资产，页面与交互由用户手动验证。
 
 ## 模块状态
@@ -31,6 +31,11 @@
 
 | 日期 | 摘要 |
 |------|------|
+| 2026-09-02 | 完成前端目录与路由架构迁移：停止维护 `src/views`，页面、mock 与业务状态统一迁至 `components/<scope>/<PageName>`，`src/routes` 仅保留路由注册、鉴权/布局、参数和 search 校验；`home` 更名为 `overview`，资源根入口统一使用 `<name>/index.tsx`，并修复由路由模块耦合导致的热更新与 lint 问题。 |
+| 2026-09-02 | 前端路由改为顶级资源路径：计算概览使用 `/overview-compute`；VM、容器、Sandbox、统一实例及终端/VNC 使用 `/vm-instances`、`/container-instances`、`/sandbox-instances`、`/compute-instances`、`/instance-terminal/:id`、`/instance-console/:id`；网络资源使用 `/vpcs`、`/subnets`、`/security-groups`、`/routes`、`/load-balancers`。菜单、面包屑与关联跳转同步更新，Core API `/instances`、`/networks/*` 保持不变。 |
+| 2026-09-02 | 重做云主机 VM：建立独立 `vm-instances` 领域实现，列表、创建和详情接入 Core `/instances`，创建采用四步弹窗，补齐生命周期、VNC、日志、事件、指标与操作历史；待后端在 `GET /instances` OpenAPI 补充 `status/search_field/keyword` 和全量状态计数。 |
+| 2026-09-02 | GPU 容器联调收敛：列表展示发布状态、`compute.gpu_type` 与 `compute.node_name`，操作列收敛为启动/停止和“更多”；变配读取 `/gpu-specs/availability`，CPU/内存暂用本地档位，生命周期契约仍待后端声明 GPU `spec_id`。 |
+| 2026-09-02 | 资源列表筛选统一透传后端，移除状态、搜索和类型的前端二次过滤；创建与关联资源选择暂保留本地兜底并标注后端稳定后移除。产品原型基线更新为 `产品原型-9.01`，空值统一为 `-`，收尾强制执行 lint、TypeScript、差异格式与 GitNexus 检测；当前 lint、类型与格式检查通过。 |
 | 2026-09-01 | GPU 容器创建对齐最新契约：规格与队列分别来自 `/gpu-specs/availability`、`/gpu-scheduling/queues`，创建仅提交 `spec_id + queue_name`；接口空数组时保留 RTX 4090 整卡/vGPU mock。因租户配额异常暂时允许 `full` 规格选择，其他不可用状态仍禁用，并保留恢复 TODO。 |
 | 2026-09-01 | GPU 容器详情按原型补齐发布、关联资源、网络、监控、日志和操作历史；指标卡与 `/observability/query_range` 趋势每 5 秒刷新，提示值最多两位小数，操作历史按 `limit/cursor` 服务端分页且默认 10 条。 |
 | 2026-09-01 | GPU 生命周期交互收敛：终止保护开启时禁止停止并提示原因；创建和操作错误优先展示接口 `message`；镜像更新改为选择租户 GPU 镜像，并保留已开放的终端、扩缩容和发布操作。 |

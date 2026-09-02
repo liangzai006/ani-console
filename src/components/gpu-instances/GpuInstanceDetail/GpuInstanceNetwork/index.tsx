@@ -15,7 +15,7 @@ type SecurityRow = {
 
 function resourceLabel(name?: string | null, id?: string | null) {
   if (name && id && name !== id) return `${name} · ${id}`;
-  return name ?? id ?? "—";
+  return name ?? id ?? "-";
 }
 
 export function GpuInstanceNetwork({ instance }: { instance: Instance }) {

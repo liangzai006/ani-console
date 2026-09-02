@@ -59,7 +59,7 @@ export function ExpandVolumeModal({
         <Alert
           type="info"
           showIcon
-          content={`当前容量 ${volume?.size_gib ?? "—"} GiB；块存储只支持扩容，不支持缩容。`}
+          content={`当前容量 ${volume?.size_gib ?? "-"} GiB；块存储只支持扩容，不支持缩容。`}
         />
         <Form.Item label="新容量 (GiB)" required>
           <InputNumber

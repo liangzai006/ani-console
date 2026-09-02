@@ -93,18 +93,18 @@ export function ObjectBrowser({
     {
       title: '大小',
       width: 100,
-      render: (_, entry) => (entry.size_bytes != null ? formatBytes(entry.size_bytes) : '—'),
+      render: (_, entry) => (entry.size_bytes != null ? formatBytes(entry.size_bytes) : '-'),
     },
     {
       title: '更新时间',
       width: 180,
-      render: (_, entry) => (entry.updated_at ? formatDateTime(entry.updated_at) : '—'),
+      render: (_, entry) => (entry.updated_at ? formatDateTime(entry.updated_at) : '-'),
     },
     {
       title: '存储类型',
       width: 100,
       render: (_, entry) =>
-        entry.kind === 'object' ? (entry.storage_class === 'infrequent_access' ? '低频' : '标准') : '—',
+        entry.kind === 'object' ? (entry.storage_class === 'infrequent_access' ? '低频' : '标准') : '-',
     },
     {
       title: '操作',

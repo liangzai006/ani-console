@@ -120,7 +120,7 @@ export function DetailPageFrame({
           {headerItems.map((item, index) => (
             <div key={`${index}-${String(item.label)}`} className={styles.headerItem}>
               <span className={styles.headerItemLabel}>{item.label}</span>
-              <span className={styles.headerItemValue}>{item.value ?? '—'}</span>
+              <span className={styles.headerItemValue}>{item.value ?? '-'}</span>
             </div>
           ))}
         </div>
@@ -177,7 +177,7 @@ export function DetailPageFrame({
                         <div key={`${card.key}-${index}`} className={styles.fieldRow}>
                           <div className={styles.fieldLabel}>{field.label}</div>
                           <div className={clsx(styles.fieldValue, field.valueClassName)}>
-                            {field.value ?? '—'}
+                            {field.value ?? '-'}
                           </div>
                         </div>
                       ))}

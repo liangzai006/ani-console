@@ -7,12 +7,10 @@ export interface RouterContext {
   queryClient: QueryClient
 }
 
-function RootComponent() {
-  useBranding()
-  return <Outlet />
-}
-
 export const Route = createRootRouteWithContext<RouterContext>()({
-  component: RootComponent,
+  component: function RootComponent() {
+    useBranding()
+    return <Outlet />
+  },
   notFoundComponent: NotFoundPage,
 })

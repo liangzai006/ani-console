@@ -42,7 +42,7 @@ export function FilesystemPermissionsTab() {
             { title: "读写权限", dataIndex: "access" },
             { title: "用户权限", dataIndex: "squash" },
             { title: "描述", dataIndex: "description" },
-            { title: "操作", render: () => "—" },
+            { title: "操作", render: () => "-" },
           ]}
           data={rules}
           pagination={false}
@@ -67,9 +67,9 @@ export function FilesystemPermissionsTab() {
           border
           column={1}
           data={[
-            { label: "权限模式", value: "—" },
-            { label: "所有者", value: "—" },
-            { label: "所属组", value: "—" },
+            { label: "权限模式", value: "-" },
+            { label: "所有者", value: "-" },
+            { label: "所属组", value: "-" },
           ]}
         />
       </section>

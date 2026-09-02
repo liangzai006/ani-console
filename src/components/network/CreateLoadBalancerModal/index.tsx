@@ -35,10 +35,11 @@ export function CreateLoadBalancerModal({
     enabled: visible,
   })
   const subnets = useQuery({
-    queryKey: ['network-subnets', 'load-balancer-create'],
-    queryFn: () => listOrThrow(() => coreApi.GET('/networks/subnets', { params: { query: { limit: 100 } } })),
-    enabled: visible,
+    queryKey: ['network-subnets', 'load-balancer-create', vpcId],
+    queryFn: () => listOrThrow(() => coreApi.GET('/networks/subnets', { params: { query: { limit: 100, vpc_id: vpcId || undefined } } })),
+    enabled: visible && !!vpcId,
   })
+  // TODO: 子网接口确认按 vpc_id 过滤后，移除此处创建表单的本地兜底过滤。
   const availableSubnets = ((subnets.data?.items ?? []) as Subnet[]).filter((item) => !vpcId || item.vpc_id === vpcId)
   useEffect(() => {
     if (subnetId && !availableSubnets.some((item) => item.id === subnetId)) setSubnetId('')

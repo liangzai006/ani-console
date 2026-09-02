@@ -14,6 +14,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
+import { asUncontractedQuery } from "@/api/uncontracted-query";
 import {
   DataTable,
   StatusTag,
@@ -66,18 +67,31 @@ export function GpuInstanceStorage({
     filesystems.map((filesystem) => filesystem.resource_id),
   );
   const volumeOptions = useQuery({
-    queryKey: ["volumes", "gpu-instance-mount"],
+    queryKey: ["volumes", "gpu-instance-mount", instance.id],
     queryFn: () =>
       listOrThrow(() =>
-        coreApi.GET("/volumes", { params: { query: { limit: 100 } } }),
+        coreApi.GET("/volumes", {
+          params: { query: asUncontractedQuery({
+            limit: 100,
+            status: "pending,available",
+            available_for_instance_id: instance.id,
+          }) },
+        }),
       ),
     enabled: mountKind === "volume",
   });
   const filesystemOptions = useQuery({
-    queryKey: ["filesystems", "gpu-instance-mount"],
+    queryKey: ["filesystems", "gpu-instance-mount", instance.id],
     queryFn: () =>
       listOrThrow(() =>
-        coreApi.GET("/filesystems", { params: { query: { limit: 100 } } }),
+        coreApi.GET("/filesystems", {
+          params: { query: asUncontractedQuery({
+            limit: 100,
+            protocol: "nfs",
+            status: "available",
+            available_for_instance_id: instance.id,
+          }) },
+        }),
       ),
     enabled: mountKind === "filesystem",
   });
@@ -100,6 +114,7 @@ export function GpuInstanceStorage({
     },
     enabled: mountKind === "filesystem" && Boolean(selectedResourceId),
   });
+  // TODO: 存储接口确认按状态和 available_for_instance_id 过滤后，移除此处关联资源选择的本地兜底过滤。
   const availableVolumes = (
     (volumeOptions.data?.items ?? []) as StorageVolume[]
   ).filter(
@@ -192,7 +207,7 @@ export function GpuInstanceStorage({
               { title: "类型", dataIndex: "kind", width: 150 },
               {
                 title: "挂载路径",
-                render: (_, volume) => volume.mount_path ?? "—",
+                render: (_, volume) => volume.mount_path ?? "-",
               },
               {
                 title: "访问模式",
@@ -223,7 +238,7 @@ export function GpuInstanceStorage({
               { title: "文件系统 ID", dataIndex: "resource_id" },
               {
                 title: "挂载路径",
-                render: (_, filesystem) => filesystem.mount_path ?? "—",
+                render: (_, filesystem) => filesystem.mount_path ?? "-",
               },
               {
                 title: "访问模式",
@@ -238,7 +253,7 @@ export function GpuInstanceStorage({
                   filesystem.status ? (
                     <StatusTag status={filesystem.status} />
                   ) : (
-                    "—"
+                    "-"
                   ),
               },
             ]}

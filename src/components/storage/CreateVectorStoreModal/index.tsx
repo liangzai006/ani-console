@@ -10,6 +10,7 @@ import {
 } from "@arco-design/web-react";
 import { useState } from "react";
 import { coreApi } from "@/api/client";
+import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
 import { listOrThrow } from "@/lib/api-list";
@@ -44,17 +45,20 @@ export function CreateVectorStoreModal({
     queryKey: ["models", "vector-store-create"],
     queryFn: () =>
       listOrThrow(() =>
-        coreApi.GET("/models", { params: { query: { limit: 100 } } }),
+        coreApi.GET("/models", {
+          params: { query: asUncontractedQuery({ limit: 100, capability: "embedding" }) },
+        }),
       ),
     enabled: visible,
   });
+  // TODO: 模型接口确认按 capability 过滤后，移除此处创建表单的本地兜底过滤。
   const modelOptions = Array.from(
     new Set([
       ...((models.data?.items ?? []) as Model[])
         .filter(
           (item) =>
-            (item.capabilities.includes("embedding") ||
-              /embed|bge|gte/i.test(item.name)),
+            item.capabilities.includes("embedding") ||
+            /embed|bge|gte/i.test(item.name),
         )
         .map((item) => item.name),
       ...DEFAULT_EMBEDDING_MODELS,

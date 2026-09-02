@@ -6,13 +6,11 @@ export const Route = createFileRoute('/_authenticated')({
   beforeLoad: () => {
     if (!isAuthenticated()) throw redirect({ to: '/login' })
   },
-  component: AuthenticatedLayout,
+  component: function AuthenticatedLayout() {
+    return (
+      <AppShell>
+        <Outlet />
+      </AppShell>
+    )
+  },
 })
-
-function AuthenticatedLayout() {
-  return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
-  )
-}
