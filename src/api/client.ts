@@ -1,7 +1,7 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./core-schema";
 import { isDevelopmentAuthBypassActive, useAuthStore } from "@/stores/auth";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { createIdempotencyScope } from "@/lib/idempotency";
 
 export const CORE_API_BASE = "/api/v1";
 
@@ -9,6 +9,30 @@ export const coreApi = createClient<paths>({
   baseUrl: CORE_API_BASE,
   credentials: "include",
 });
+
+const refreshScope = createIdempotencyScope("auth-refresh", ["POST"]);
+let refreshRequest:
+  | { refreshToken: string; promise: ReturnType<typeof requestTokenRefresh> }
+  | undefined;
+
+async function requestTokenRefresh(refreshToken: string) {
+  const submitData = { refresh_token: refreshToken };
+  const { data, error } = await coreApi.POST("/auth/refresh", {
+    body: refreshScope.withKey(submitData, [refreshToken]),
+  });
+  if (error || !data?.access_token) throw error ?? new Error("刷新令牌响应缺少 access_token");
+  refreshScope.reset([refreshToken]);
+  return data;
+}
+
+function refreshAccessToken(refreshToken: string) {
+  if (refreshRequest?.refreshToken === refreshToken) return refreshRequest.promise;
+  const promise = requestTokenRefresh(refreshToken).finally(() => {
+    if (refreshRequest?.promise === promise) refreshRequest = undefined;
+  });
+  refreshRequest = { refreshToken, promise };
+  return promise;
+}
 
 export function redirectToLogin() {
   if (typeof window === "undefined") return;
@@ -53,13 +77,10 @@ export const authMiddleware: Middleware = {
       return response;
     }
 
-    const { data, error } = await coreApi.POST("/auth/refresh", {
-      body: {
-        refresh_token: refreshToken,
-        idempotency_key: newIdempotencyKey(),
-      },
-    });
-    if (error || !data?.access_token) {
+    let data;
+    try {
+      data = await refreshAccessToken(refreshToken);
+    } catch {
       expireAuthSession();
       return response;
     }

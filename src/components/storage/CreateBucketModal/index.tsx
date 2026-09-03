@@ -5,7 +5,7 @@ import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
 import { bucketNamePattern } from '@/lib/validators'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 
 type Bucket = components['schemas']['StorageBucketRecord']
 type Acl = NonNullable<Bucket['acl']>
@@ -21,10 +21,16 @@ export function CreateBucketModal({
   onCreated?: (bucket: Bucket) => void
 }) {
   const qc = useQueryClient()
+  const createScope = useIdempotencyScope('storage-bucket-create', ['POST'])
+  const aclScope = useIdempotencyScope('storage-bucket-acl-update', ['PUT'])
+  const classScope = useIdempotencyScope('storage-bucket-class-update', ['PUT'])
   const [name, setName] = useState('')
   const [acl, setAcl] = useState<Acl>('private')
   const [storageClass, setStorageClass] = useState<StorageClass>('standard')
   const reset = () => {
+    createScope.reset()
+    aclScope.reset()
+    classScope.reset()
     setName('')
     setAcl('private')
     setStorageClass('standard')
@@ -35,27 +41,26 @@ export function CreateBucketModal({
       if (!bucketNamePattern.test(trimmedName)) {
         throw new Error('存储桶名称需为 3-63 位小写字母、数字或连字符，且首尾必须是字母或数字')
       }
+      const createData = { name: trimmedName, access_mode: 'private' as const }
       const { data, error } = await coreApi.POST('/buckets', {
-        body: {
-          name: trimmedName,
-          access_mode: 'private',
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(createData),
       })
       if (error) throw error
       if (!data) throw new Error('存储桶创建失败')
       const bucketId = data.id
       if (acl !== 'private') {
+        const aclData = { acl }
         const { error: aclError } = await coreApi.PUT('/buckets/{bucket_id}/acl', {
           params: { path: { bucket_id: bucketId } },
-          body: { acl, idempotency_key: newIdempotencyKey() },
+          body: aclScope.withKey(aclData, [bucketId]),
         })
         if (aclError) throw aclError
       }
       if (storageClass !== 'standard') {
+        const classData = { storage_class: storageClass }
         const { error: classError } = await coreApi.PUT('/buckets/{bucket_id}/storage-class', {
           params: { path: { bucket_id: bucketId } },
-          body: { storage_class: storageClass, idempotency_key: newIdempotencyKey() },
+          body: classScope.withKey(classData, [bucketId]),
         })
         if (classError) throw classError
       }

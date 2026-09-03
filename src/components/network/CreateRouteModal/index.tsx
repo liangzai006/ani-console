@@ -7,7 +7,7 @@ import type { components } from '@/api/core-schema'
 import { Ipv4CidrInput } from '@/components/common'
 import { listOrThrow } from '@/lib/api-list'
 import { getErrorMessage } from '@/lib/errors'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 import { ipv4CidrError, requireIpv4Cidr } from '@/lib/validators'
 
 type NetworkRoute = components['schemas']['NetworkRoute']
@@ -25,6 +25,7 @@ export function CreateRouteModal({
   onCreated?: (route: NetworkRoute) => void
 }) {
   const qc = useQueryClient()
+  const createScope = useIdempotencyScope('network-route-create', ['POST'])
   const [vpcId, setVpcId] = useState(defaultVpcId ?? '')
   const [destinationCidr, setDestinationCidr] = useState('0.0.0.0/0')
   const [nextHopType, setNextHopType] = useState<NetworkRoute['next_hop_type']>('gateway')
@@ -40,6 +41,7 @@ export function CreateRouteModal({
     if (visible) setVpcId(defaultVpcId ?? '')
   }, [defaultVpcId, visible])
   const reset = () => {
+    createScope.reset()
     setVpcId(defaultVpcId ?? '')
     setDestinationCidr('0.0.0.0/0')
     setNextHopType('gateway')
@@ -52,15 +54,15 @@ export function CreateRouteModal({
       if (!name.trim()) throw new Error('请输入路由名称')
       if (cidrError) throw new Error(cidrError)
       if (!nextHopId.trim()) throw new Error('请输入下一跳 ID')
+      const submitData = {
+        vpc_id: vpcId,
+        destination_cidr: requireIpv4Cidr(destinationCidr, '目标网段'),
+        next_hop_type: nextHopType,
+        next_hop_id: nextHopId.trim(),
+        description: name.trim(),
+      }
       const { data, error } = await coreApi.POST('/networks/routes', {
-        body: {
-          vpc_id: vpcId,
-          destination_cidr: requireIpv4Cidr(destinationCidr, '目标网段'),
-          next_hop_type: nextHopType,
-          next_hop_id: nextHopId.trim(),
-          description: name.trim(),
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(submitData),
       })
       if (error) throw error
       return data

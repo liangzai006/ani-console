@@ -1,6 +1,6 @@
 import { coreApi } from '@/api/client'
 import { getErrorMessage } from '@/lib/errors'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import type { IdempotencyScope } from '@/lib/idempotency'
 import type { components } from '@/api/core-schema'
 
 type Image = components['schemas']['Image']
@@ -200,6 +200,7 @@ export async function uploadImageFile(input: {
   contentType?: string
   onProgress?: (update: ImageUploadProgress) => void
   signal?: AbortSignal
+  idempotencyScope: IdempotencyScope
 }): Promise<Image> {
   const name = (input.name ?? input.file.name).trim()
   if (!name) throw new Error('请输入镜像名称')
@@ -211,18 +212,24 @@ export async function uploadImageFile(input: {
   if (sizeGib < 1) throw new Error('容量必须大于 0')
 
   const contentType = input.contentType?.trim() || DEFAULT_ISO_CONTENT_TYPE
-  const idempotencyKey = newIdempotencyKey()
+  const runtimeDependencies = [
+    input.file.name,
+    input.file.size,
+    input.file.type,
+    input.file.lastModified,
+  ] as const
+  const submitData = {
+    name,
+    format: 'iso' as const,
+    size_gib: sizeGib,
+    content_type: contentType,
+  }
+  const body = input.idempotencyScope.withKey(submitData, runtimeDependencies)
 
   const { data: session, error } = await coreApi.POST('/images/uploads', {
-    body: {
-      idempotency_key: idempotencyKey,
-      name,
-      format: 'iso',
-      size_gib: sizeGib,
-      content_type: contentType,
-    },
+    body,
     headers: {
-      'Idempotency-Key': idempotencyKey,
+      'Idempotency-Key': body.idempotency_key,
     },
   })
   if (error) throw new Error(getErrorMessage(error, '创建上传会话失败'))
@@ -258,7 +265,9 @@ export async function uploadImageFile(input: {
     message: '发送完成，平台入库中…',
   })
 
-  return pollImageUntilTerminal(session.image.id, input.signal)
+  const image = await pollImageUntilTerminal(session.image.id, input.signal)
+  input.idempotencyScope.reset(runtimeDependencies)
+  return image
 }
 
 export type { Image, ImageUploadSession }

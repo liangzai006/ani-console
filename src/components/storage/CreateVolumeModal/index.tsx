@@ -7,7 +7,7 @@ import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
 import { listOrThrow } from '@/lib/api-list'
 import { getErrorMessage } from '@/lib/errors'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 
 type Volume = components['schemas']['StorageVolume']
 type Instance = components['schemas']['InstanceRecord']
@@ -28,6 +28,7 @@ export function CreateVolumeModal({
   onCreated?: (volume: Volume) => void
 }) {
   const qc = useQueryClient()
+  const createScope = useIdempotencyScope('storage-volume-create', ['POST'])
   const [name, setName] = useState('')
   const [sizeGiB, setSizeGiB] = useState(40)
   const [storageClass, setStorageClass] = useState('ani-block')
@@ -49,6 +50,7 @@ export function CreateVolumeModal({
     setMountInstanceId('')
   }, [instanceItems, mountInstanceId])
   const reset = () => {
+    createScope.reset()
     setName('')
     setSizeGiB(40)
     setStorageClass('ani-block')
@@ -62,16 +64,16 @@ export function CreateVolumeModal({
       if (!Number.isInteger(sizeGiB) || sizeGiB < 1) throw new Error('容量必须是大于 0 的整数（GiB）')
       if (!storageClass.trim()) throw new Error('请选择类型')
       const selectedInstance = instanceItems.find((item) => item.id === mountInstanceId)
+      const submitData = {
+        name: trimmedName,
+        size_gib: sizeGiB,
+        storage_class: storageClass.trim(),
+        encrypted,
+        mount_instance_id: selectedInstance ? selectedInstance.id : undefined,
+        mount_route: selectedInstance ? INSTANCE_ROUTE[selectedInstance.kind] : undefined,
+      }
       const { data, error } = await coreApi.POST('/volumes', {
-        body: {
-          name: trimmedName,
-          size_gib: sizeGiB,
-          storage_class: storageClass.trim(),
-          encrypted,
-          mount_instance_id: selectedInstance ? selectedInstance.id : undefined,
-          mount_route: selectedInstance ? INSTANCE_ROUTE[selectedInstance.kind] : undefined,
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(submitData),
       })
       if (error) throw error
       return data

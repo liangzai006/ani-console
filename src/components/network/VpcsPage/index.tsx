@@ -23,9 +23,9 @@ import {
   StatusTag,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import { listOrThrow } from "@/lib/api-list";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { ipv4CidrError, requireIpv4Cidr } from "@/lib/validators";
 
@@ -41,6 +41,7 @@ export function VpcsPage() {
 
 function VpcList() {
   const qc = useQueryClient();
+  const createScope = useIdempotencyScope("network-vpc-create", ["POST"]);
   const [createVisible, setCreateVisible] = useState(false);
   const [name, setName] = useState("");
   const [cidr, setCidr] = useState("10.0.0.0/16");
@@ -94,16 +95,17 @@ function VpcList() {
     mutationFn: async () => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入 VPC 名称");
+      const submitData = {
+        name: trimmedName,
+        cidr: requireIpv4Cidr(cidr, "IPv4 CIDR"),
+      };
       const { error } = await coreApi.POST("/networks/vpcs", {
-        body: {
-          name: trimmedName,
-          cidr: requireIpv4Cidr(cidr, "IPv4 CIDR"),
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(submitData),
       });
       if (error) throw error;
     },
     onSuccess: () => {
+      createScope.reset();
       setCreateVisible(false);
       setName("");
       setCidr("10.0.0.0/16");
@@ -318,7 +320,10 @@ function VpcList() {
       <Modal
         visible={createVisible}
         title="创建 VPC"
-        onCancel={() => setCreateVisible(false)}
+        onCancel={() => {
+          createScope.reset();
+          setCreateVisible(false);
+        }}
         onOk={() => createVpc.mutateAsync(undefined)}
         confirmLoading={createVpc.isPending}
         unmountOnExit

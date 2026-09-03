@@ -16,8 +16,8 @@ import { CreateLifecycleRuleModal } from "@/components/storage/CreateLifecycleRu
 import { ObjectBrowser } from "@/components/storage/ObjectBrowser";
 import { listOrThrow } from "@/lib/api-list";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import { uploadStorageObjectFile } from "@/lib/object-upload";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type Bucket = components["schemas"]["StorageBucketRecord"];
@@ -44,6 +44,11 @@ export function BucketDetailPage({
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const uploadReservationScope = useIdempotencyScope("storage-object-upload-reserve", ["POST", bucketId]);
+  const uploadCompleteScope = useIdempotencyScope("storage-object-upload-complete", ["POST", bucketId]);
+  const createFolderScope = useIdempotencyScope("storage-bucket-prefix-create", ["POST", bucketId]);
+  const updateAclScope = useIdempotencyScope("storage-bucket-acl-update", ["PUT", bucketId]);
+  const updateClassScope = useIdempotencyScope("storage-bucket-class-update", ["PUT", bucketId]);
   const uploadTriggerRef = useRef<HTMLButtonElement>(null);
   const [prefix, setPrefix] = useState("/");
   const [folderVisible, setFolderVisible] = useState(false);
@@ -128,7 +133,13 @@ export function BucketDetailPage({
 
   const upload = useMutation({
     mutationFn: (file: File) =>
-      uploadStorageObjectFile({ bucketId, file, prefix }),
+      uploadStorageObjectFile({
+        bucketId,
+        file,
+        prefix,
+        reservationScope: uploadReservationScope,
+        completeScope: uploadCompleteScope,
+      }),
     onSuccess: refreshBucket,
     onError: (error) => showApiError(error),
   });
@@ -153,16 +164,17 @@ export function BucketDetailPage({
     mutationFn: async (_: undefined) => {
       const name = folderName.trim().replace(/^\/+|\/+$/g, "");
       if (!name) throw new Error("请输入文件夹名称");
+      const submitData = {
+        prefix: prefix === "/" ? `${name}/` : `${prefix}${name}/`,
+      };
       const { error } = await coreApi.POST("/buckets/{bucket_id}/prefixes", {
         params: { path: { bucket_id: bucketId } },
-        body: {
-          prefix: prefix === "/" ? `${name}/` : `${prefix}${name}/`,
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createFolderScope.withKey(submitData),
       });
       if (error) throw error;
     },
     onSuccess: () => {
+      createFolderScope.reset();
       setFolderVisible(false);
       setFolderName("");
       refreshBucket();
@@ -200,35 +212,37 @@ export function BucketDetailPage({
   });
   const updateAcl = useMutation({
     mutationFn: async (_: undefined) => {
+      const submitData = { acl: aclDraft ?? "private" };
       const { data, error } = await coreApi.PUT("/buckets/{bucket_id}/acl", {
         params: { path: { bucket_id: bucketId } },
-        body: {
-          acl: aclDraft ?? "private",
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: updateAclScope.withKey(submitData),
       });
       if (error) throw error;
       return data;
     },
-    onSuccess: () => refreshBucket(),
+    onSuccess: () => {
+      updateAclScope.reset();
+      refreshBucket();
+    },
     onError: (error) => showApiError(error),
   });
   const updateClass = useMutation({
     mutationFn: async (_: undefined) => {
+      const submitData = { storage_class: classDraft ?? "standard" };
       const { data, error } = await coreApi.PUT(
         "/buckets/{bucket_id}/storage-class",
         {
           params: { path: { bucket_id: bucketId } },
-          body: {
-            storage_class: classDraft ?? "standard",
-            idempotency_key: newIdempotencyKey(),
-          },
+          body: updateClassScope.withKey(submitData),
         },
       );
       if (error) throw error;
       return data;
     },
-    onSuccess: () => refreshBucket(),
+    onSuccess: () => {
+      updateClassScope.reset();
+      refreshBucket();
+    },
     onError: (error) => showApiError(error),
   });
   const deleteRule = useMutation({
@@ -618,7 +632,10 @@ export function BucketDetailPage({
       <Modal
         visible={folderVisible}
         title="新建文件夹"
-        onCancel={() => setFolderVisible(false)}
+        onCancel={() => {
+          createFolderScope.reset();
+          setFolderVisible(false);
+        }}
         onOk={() => createFolder.mutateAsync(undefined)}
         confirmLoading={createFolder.isPending}
         unmountOnExit

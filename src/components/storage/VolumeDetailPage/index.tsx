@@ -19,8 +19,8 @@ import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
 import { VolumeOSInitGuideModal } from "@/components/storage/VolumeOSInitGuideModal";
 import { listOrThrow } from "@/lib/api-list";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type Volume = components["schemas"]["StorageVolume"];
 type VolumeSnapshot = components["schemas"]["VolumeSnapshotRecord"];
@@ -29,6 +29,7 @@ type MountedInstanceRow = { id: string; name: string; route?: string | null };
 export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const detachScope = useIdempotencyScope("storage-volume-detach", ["POST", volumeId]);
   const [snapshotVisible, setSnapshotVisible] = useState(false);
   const [attachVisible, setAttachVisible] = useState(false);
   const [expandVisible, setExpandVisible] = useState(false);
@@ -77,20 +78,18 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   });
   const detachVolume = useMutation({
     mutationFn: async (instanceId: string) => {
+      const submitData = { action: "detach_volume" as const, volume_id: volumeId };
       const { error } = await coreApi.POST(
         "/instances/{instance_id}/lifecycle",
         {
           params: { path: { instance_id: instanceId } },
-          body: {
-            action: "detach_volume",
-            volume_id: volumeId,
-            idempotency_key: newIdempotencyKey(),
-          },
+          body: detachScope.withKey(submitData, [instanceId]),
         },
       );
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, instanceId) => {
+      detachScope.reset([instanceId]);
       qc.invalidateQueries({ queryKey: ["instances"] });
       qc.invalidateQueries({ queryKey: ["volume", volumeId] });
       qc.invalidateQueries({ queryKey: ["volumes"] });

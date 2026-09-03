@@ -3,7 +3,7 @@ import { Form, Input, Modal, Typography } from "@arco-design/web-react";
 import { useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 export function CreateVolumeSnapshotModal({
   visible,
@@ -15,15 +15,20 @@ export function CreateVolumeSnapshotModal({
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
+  const createScope = useIdempotencyScope("storage-volume-snapshot-create", ["POST", volumeId]);
   const [name, setName] = useState("");
-  const reset = () => setName("");
+  const reset = () => {
+    createScope.reset();
+    setName("");
+  };
   const create = useMutation({
     mutationFn: async (_: undefined) => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入快照名称");
+      const submitData = { name: trimmedName };
       const { error } = await coreApi.POST("/volumes/{volume_id}/snapshots", {
         params: { path: { volume_id: volumeId } },
-        body: { name: trimmedName, idempotency_key: newIdempotencyKey() },
+        body: createScope.withKey(submitData),
       });
       if (error) throw error;
     },

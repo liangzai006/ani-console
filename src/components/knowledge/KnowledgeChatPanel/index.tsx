@@ -35,7 +35,8 @@ import { SERVICES_API_BASE, servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import type { IdempotencyScope } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useAuthStore } from "@/stores/auth";
 import { KnowledgeMarkdownText } from "../KnowledgeMarkdownText";
 import styles from "./index.module.css";
@@ -101,6 +102,7 @@ function createKnowledgeBaseAdapter(
   sessionIdRef: { current?: string },
   mode: QueryMode,
   topK: number,
+  queryScope: IdempotencyScope,
   onQuestion: (question: string) => void,
   onAnswer: () => void,
 ): ChatModelAdapter {
@@ -176,19 +178,20 @@ function createKnowledgeBaseAdapter(
         return;
       }
 
+      const submitData = {
+        question,
+        session_id: sessionIdRef.current,
+        top_k: topK,
+      };
       const { data, error } = await servicesApi.POST(
         "/knowledge-bases/{kb_id}/query",
         {
           params: { path: { kb_id: kbId } },
-          body: {
-            question,
-            idempotency_key: newIdempotencyKey(),
-            session_id: sessionIdRef.current,
-            top_k: topK,
-          },
+          body: queryScope.withKey(submitData),
         },
       );
       if (error || !data) throw error ?? new Error("问答未返回结果");
+      queryScope.reset();
       sessionIdRef.current = data.session_id;
       onAnswer();
       yield { content: [{ type: "text", text: formatAnswer(data) }] };
@@ -214,6 +217,7 @@ function SessionThread({
   onAnswer: (sessionId: string) => void;
 }) {
   const sessionIdRef = useRef<string>();
+  const queryScope = useIdempotencyScope("knowledge-base-query", ["POST", kbId, sessionKey]);
   const adapter = useMemo(
     () =>
       createKnowledgeBaseAdapter(
@@ -221,10 +225,11 @@ function SessionThread({
         sessionIdRef,
         mode,
         topK,
+        queryScope,
         (question) => onQuestion(sessionKey, question),
         () => onAnswer(sessionKey),
       ),
-    [kbId, mode, onAnswer, onQuestion, sessionKey, topK],
+    [kbId, mode, onAnswer, onQuestion, queryScope, sessionKey, topK],
   );
   const runtime = useLocalRuntime(adapter);
 

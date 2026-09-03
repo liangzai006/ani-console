@@ -21,6 +21,7 @@ import {
   StatusTag,
 } from '@/components/common'
 import { useListErrorNotification } from '@/hooks/useListErrorNotification'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 import { formatDateTime } from '@/lib/format'
 import { showApiError } from '@/api/helpers'
 import { getErrorMessage } from '@/lib/errors'
@@ -56,6 +57,7 @@ function formatBytes(bytes?: number): string | null {
 
 export function ImagesPage() {
   const qc = useQueryClient()
+  const uploadScope = useIdempotencyScope('registry-image-upload-session', ['POST'])
   const [visible, setVisible] = useState(false)
   const [form, setForm] = useState<UploadFormState>(defaultUploadForm)
   const [progress, setProgress] = useState<ImageUploadProgress | null>(null)
@@ -91,6 +93,7 @@ export function ImagesPage() {
         contentType: form.content_type.trim() || undefined,
         onProgress: setProgress,
         signal: controller.signal,
+        idempotencyScope: uploadScope,
       })
     },
     onSuccess: (image) => {
@@ -204,6 +207,7 @@ export function ImagesPage() {
           }
           setVisible(false)
           setProgress(null)
+          uploadScope.reset()
         }}
         onOk={() => uploadIso.mutateAsync()}
         confirmLoading={uploadIso.isPending}

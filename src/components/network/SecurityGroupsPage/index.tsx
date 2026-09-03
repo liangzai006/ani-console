@@ -23,8 +23,8 @@ import {
 } from "@/components/common";
 import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
@@ -33,6 +33,7 @@ type StatusFilter = "all" | "available";
 type SearchField = "name" | "id";
 
 export function SecurityGroupsPage() {
+  const copyScope = useIdempotencyScope("network-security-group-copy", ["POST"]);
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
@@ -95,18 +96,19 @@ export function SecurityGroupsPage() {
   });
   const copySecurityGroup = useMutation({
     mutationFn: async (item: SecurityGroup) => {
+      const submitData = {
+        name: `${item.name}-copy`,
+        vpc_id: item.vpc_id,
+        description: item.description,
+        rules: item.rules,
+      };
       const { error } = await coreApi.POST("/networks/security-groups", {
-        body: {
-          name: `${item.name}-copy`,
-          vpc_id: item.vpc_id,
-          description: item.description,
-          rules: item.rules,
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: copyScope.withKey(submitData, [item.id]),
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, item) => {
+      copyScope.reset([item.id]);
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-security-groups"] });
     },

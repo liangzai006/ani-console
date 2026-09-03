@@ -14,7 +14,7 @@ import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { servicesApi } from "@/api/services-client";
 import { showApiError } from "@/api/helpers";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 const PROTOTYPE_MODEL_VERSIONS = [
   {
@@ -92,6 +92,7 @@ export function CreateInferenceServiceModal({
   initialModelVersionId,
 }: CreateInferenceServiceModalProps) {
   const qc = useQueryClient();
+  const createScope = useIdempotencyScope("inference-service-create", ["POST"]);
   const [name, setName] = useState("");
   const [modelVersionId, setModelVersionId] = useState<string>(
     PROTOTYPE_MODEL_VERSIONS[0].id,
@@ -205,27 +206,28 @@ export function CreateInferenceServiceModal({
       const preset = RESOURCE_PRESETS[resourcePreset];
       const accelerator =
         "accelerator" in preset ? preset.accelerator : undefined;
-      const { data, error } = await servicesApi.POST("/inference-services", {
-        body: {
-          idempotency_key: newIdempotencyKey(),
-          name: name.trim(),
-          model: selectedModel?.model ?? modelVersionId,
-          model_version_id: modelVersionId,
-          served_model_name: selectedModel?.model,
-          image_id: runtimeImage.id,
-          replicas,
-          placement_mode: "auto",
-          resources: {
-            cpu: preset.cpu,
-            memory: preset.memory,
-            ...(accelerator ? { accelerator } : {}),
-          },
+      const submitData = {
+        name: name.trim(),
+        model: selectedModel?.model ?? modelVersionId,
+        model_version_id: modelVersionId,
+        served_model_name: selectedModel?.model,
+        image_id: runtimeImage.id,
+        replicas,
+        placement_mode: "auto" as const,
+        resources: {
+          cpu: preset.cpu,
+          memory: preset.memory,
+          ...(accelerator ? { accelerator } : {}),
         },
+      };
+      const { data, error } = await servicesApi.POST("/inference-services", {
+        body: createScope.withKey(submitData),
       });
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
+      createScope.reset();
       Message.success("推理服务部署请求已提交");
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
       onCancel();
@@ -238,7 +240,10 @@ export function CreateInferenceServiceModal({
       visible={visible}
       title="一键部署推理服务"
       okText="开始部署"
-      onCancel={onCancel}
+      onCancel={() => {
+        createScope.reset();
+        onCancel();
+      }}
       onOk={() => create.mutateAsync()}
       confirmLoading={create.isPending}
       unmountOnExit

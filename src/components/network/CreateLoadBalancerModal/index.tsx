@@ -6,7 +6,7 @@ import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
 import { listOrThrow } from '@/lib/api-list'
 import { getErrorMessage } from '@/lib/errors'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 
 type LoadBalancer = components['schemas']['NetworkLoadBalancer']
 type Vpc = components['schemas']['NetworkVPC']
@@ -22,6 +22,7 @@ export function CreateLoadBalancerModal({
   onCreated?: (item: LoadBalancer) => void
 }) {
   const qc = useQueryClient()
+  const createScope = useIdempotencyScope('network-load-balancer-create', ['POST'])
   const [name, setName] = useState('')
   const [vpcId, setVpcId] = useState('')
   const [subnetId, setSubnetId] = useState('')
@@ -45,6 +46,7 @@ export function CreateLoadBalancerModal({
     if (subnetId && !availableSubnets.some((item) => item.id === subnetId)) setSubnetId('')
   }, [availableSubnets, subnetId])
   const reset = () => {
+    createScope.reset()
     setName('')
     setVpcId('')
     setSubnetId('')
@@ -59,15 +61,15 @@ export function CreateLoadBalancerModal({
       if (!vpcId) throw new Error('请选择 VPC')
       if (listenerPort < 1 || listenerPort > 65535) throw new Error('监听端口必须在 1–65535 之间')
       if (targetPort < 1 || targetPort > 65535) throw new Error('目标端口必须在 1–65535 之间')
+      const submitData = {
+        name: name.trim(),
+        vpc_id: vpcId,
+        subnet_id: subnetId || undefined,
+        scheme,
+        listeners: [{ protocol: listenerProtocol, port: listenerPort, target_port: targetPort }],
+      }
       const { data, error } = await coreApi.POST('/networks/load-balancers', {
-        body: {
-          name: name.trim(),
-          vpc_id: vpcId,
-          subnet_id: subnetId || undefined,
-          scheme,
-          listeners: [{ protocol: listenerProtocol, port: listenerPort, target_port: targetPort }],
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(submitData),
       })
       if (error) throw error
       return data

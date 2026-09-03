@@ -4,7 +4,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 import { Button, Space, Tag } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 
 type TerminalStatus = 'idle' | 'connecting' | 'connected' | 'closed' | 'error'
 
@@ -62,6 +62,7 @@ export function InstanceTerminal({
   command?: string[]
   height?: number | string
 }) {
+  const execScope = useIdempotencyScope('instance-terminal-session-create', ['POST', instanceId])
   const hostRef = useRef<HTMLDivElement | null>(null)
   const termRef = useRef<Terminal | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
@@ -213,16 +214,16 @@ export function InstanceTerminal({
       setStatus('connecting')
       term.writeln('\x1b[90m正在建立终端连接…\x1b[0m')
       try {
+        const submitData = {
+          container: container?.trim() || null,
+          command,
+          tty: true,
+          rows: term.rows,
+          cols: term.cols,
+        }
         const { data, error, response } = await coreApi.POST('/instances/{instance_id}/exec', {
           params: { path: { instance_id: instanceId } },
-          body: {
-            idempotency_key: newIdempotencyKey(),
-            container: container?.trim() || null,
-            command,
-            tty: true,
-            rows: term.rows,
-            cols: term.cols,
-          },
+          body: execScope.withKey(submitData),
         })
         if (error) {
           if (response.status === 401 || response.status === 403) {
@@ -230,6 +231,7 @@ export function InstanceTerminal({
           }
           throw error
         }
+        execScope.reset()
         if (!data?.ws_url) throw new Error('终端连接地址为空')
         if (disposed) return
 
@@ -321,6 +323,7 @@ export function InstanceTerminal({
     instanceId,
     container,
     connectSeq,
+    execScope,
   ])
 
   const meta = STATUS_META[status]

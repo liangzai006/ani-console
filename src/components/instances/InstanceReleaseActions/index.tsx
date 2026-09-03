@@ -2,7 +2,7 @@ import { Button, Form, Message, Modal, Space } from '@arco-design/web-react'
 import { useMutation } from '@tanstack/react-query'
 import type { components } from '@/api/core-schema'
 import { coreApi } from '@/api/client'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 import { getInstanceActionErrorMessage } from '@/lib/sandbox-instance'
 import { InstanceRegistryImageSelect } from '@/components/instances/InstanceRegistryImageSelect'
 
@@ -12,21 +12,24 @@ type Values = { image_id?: string }
 
 export function InstanceReleaseActions({ instance, onChanged }: { instance: Instance; onChanged: () => void }) {
   const [form] = Form.useForm<Values>()
+  const updateImageScope = useIdempotencyScope('instance-image-update', ['POST', instance.id])
+  const rollbackScope = useIdempotencyScope('instance-release-rollback', ['POST', instance.id])
   const busy = ['pending', 'provisioning', 'starting', 'stopping', 'deleting'].includes(instance.state)
   const updateImage = useMutation({
     mutationFn: async (values: Values) => {
+      const submitData = {
+        action: 'update_image' as const,
+        image_id: values.image_id,
+        strategy: 'rolling' as const,
+      }
       const { error, response } = await coreApi.POST('/instances/{instance_id}/lifecycle', {
         params: { path: { instance_id: instance.id } },
-        body: {
-          action: 'update_image',
-          idempotency_key: newIdempotencyKey(),
-          image_id: values.image_id,
-          strategy: 'rolling',
-        } as LifecycleRequest,
+        body: updateImageScope.withKey(submitData) as LifecycleRequest,
       })
       if (error) throw { ...(typeof error === 'object' && error ? error : { message: String(error) }), status: response.status }
     },
     onSuccess: () => {
+      updateImageScope.reset()
       Message.success('镜像更新已提交')
       onChanged()
     },
@@ -34,13 +37,15 @@ export function InstanceReleaseActions({ instance, onChanged }: { instance: Inst
   })
   const rollback = useMutation({
     mutationFn: async () => {
+      const submitData = { action: 'rollback' as const }
       const { error, response } = await coreApi.POST('/instances/{instance_id}/lifecycle', {
         params: { path: { instance_id: instance.id } },
-        body: { action: 'rollback', idempotency_key: newIdempotencyKey() },
+        body: rollbackScope.withKey(submitData),
       })
       if (error) throw { ...(typeof error === 'object' && error ? error : { message: String(error) }), status: response.status }
     },
     onSuccess: () => {
+      rollbackScope.reset()
       Message.success('回滚操作已提交')
       onChanged()
     },

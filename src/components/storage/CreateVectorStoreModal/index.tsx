@@ -15,7 +15,7 @@ import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
 import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type VectorStore = components["schemas"]["VectorStore"];
 type VectorMetric = components["schemas"]["CreateVectorStoreRequest"]["metric"];
@@ -37,6 +37,7 @@ export function CreateVectorStoreModal({
   onCreated?: (store: VectorStore) => void;
 }) {
   const qc = useQueryClient();
+  const createScope = useIdempotencyScope("storage-vector-store-create", ["POST"]);
   const [name, setName] = useState("");
   const [embeddingModel, setEmbeddingModel] = useState("bge-m3");
   const [dimension, setDimension] = useState(1536);
@@ -65,6 +66,7 @@ export function CreateVectorStoreModal({
     ]),
   );
   const reset = () => {
+    createScope.reset();
     setName("");
     setEmbeddingModel("bge-m3");
     setDimension(1536);
@@ -77,14 +79,14 @@ export function CreateVectorStoreModal({
       if (!embeddingModel) throw new Error("请选择 Embedding 模型");
       if (!Number.isInteger(dimension) || dimension < 1)
         throw new Error("向量维度必须是大于 0 的整数");
+      const submitData = {
+        name: trimmedName,
+        embedding_model: embeddingModel,
+        dimension,
+        metric,
+      };
       const { data, error } = await coreApi.POST("/vector-stores", {
-        body: {
-          name: trimmedName,
-          embedding_model: embeddingModel,
-          dimension,
-          metric,
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(submitData),
       });
       if (error) throw error;
       return data;

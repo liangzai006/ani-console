@@ -19,9 +19,9 @@ import {
   StatusTag,
 } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
 import { coreApi } from "@/api/client";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { ContainerInstanceCreateModal } from "@/components/instances/ContainerInstanceCreateModal";
 import { containerInstanceDataSource } from "./data-source";
@@ -74,6 +74,7 @@ export function ContainerInstancesPage({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const lifecycleScope = useIdempotencyScope("container-instance-lifecycle", ["POST"]);
   const [status, setStatus] = useState<ContainerInstanceStatusFilter>("all");
   const [searchField, setSearchField] =
     useState<ContainerInstanceSearchField>("name");
@@ -112,15 +113,17 @@ export function ContainerInstancesPage({
   const lifecycle = useMutation({
     mutationFn: async ({ ids, action }: { ids: string[]; action: "start" | "stop" | "restart" | "delete" }) => {
       await Promise.all(ids.map(async (instanceId) => {
+        const submitData = { action };
         const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
           params: { path: { instance_id: instanceId } },
-          body: { action, idempotency_key: newIdempotencyKey() },
+          body: lifecycleScope.withKey(submitData, [instanceId]),
         });
         if (error) throw { ...(typeof error === "object" && error ? error : { message: String(error) }), status: response.status };
       }));
-      return { count: ids.length, action };
+      return { count: ids.length, action, ids };
     },
-    onSuccess: ({ count, action }) => {
+    onSuccess: ({ count, action, ids }) => {
+      ids.forEach((instanceId) => lifecycleScope.reset([instanceId]));
       const labels = { start: "启动", stop: "停止", restart: "重启", delete: "删除" };
       Message.success(`${count} 个容器实例的${labels[action]}操作已提交`);
       void queryClient.invalidateQueries({ queryKey: ["container-instances"] });

@@ -34,7 +34,7 @@ import {
   ToolbarSearch,
   type ListColumn,
 } from "@/components/common";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { showApiError } from "@/api/helpers";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { listOrThrow } from "@/lib/api-list";
@@ -61,6 +61,7 @@ export function K8sClustersPage() {
 
 function ClusterList() {
   const qc = useQueryClient();
+  const createScope = useIdempotencyScope("k8s-cluster-create", ["POST"]);
   const [visible, setVisible] = useState(false);
   const [name, setName] = useState("");
   const [version, setVersion] = useState("1.36.0");
@@ -120,12 +121,9 @@ function ClusterList() {
 
   const createCluster = useMutation({
     mutationFn: async () => {
+      const submitData = { name, version: version || undefined };
       const { response, error } = await coreApi.POST("/k8s-clusters", {
-        body: {
-          name,
-          version: version || undefined,
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(submitData),
       });
       if (error) throw error;
       const loc = response.headers.get("Location");
@@ -133,6 +131,7 @@ function ClusterList() {
       if (tid) setTaskId(tid);
     },
     onSuccess: () => {
+      createScope.reset();
       setVisible(false);
       setName("");
       setVersion("1.36.0");
@@ -395,7 +394,10 @@ function ClusterList() {
       <Modal
         visible={visible}
         title="创建集群"
-        onCancel={() => setVisible(false)}
+        onCancel={() => {
+          createScope.reset();
+          setVisible(false);
+        }}
         onOk={() => createCluster.mutateAsync()}
         confirmLoading={createCluster.isPending}
       >

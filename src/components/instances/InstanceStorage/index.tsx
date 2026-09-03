@@ -21,8 +21,8 @@ import {
 } from "@/components/common";
 import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type Instance = components["schemas"]["InstanceRecord"];
 type LifecycleRequest = components["schemas"]["InstanceLifecycleRequest"];
@@ -53,6 +53,7 @@ export function InstanceStorage({
   onChanged: () => void;
 }) {
   const [form] = Form.useForm<MountFormValues>();
+  const mountScope = useIdempotencyScope("instance-storage-mount", ["POST", instance.id]);
   const [selectedResourceId, setSelectedResourceId] = useState("");
   const volumes = instance.volumes ?? [];
   const filesystems = (instance.storage_attachments ?? []).filter(
@@ -150,20 +151,19 @@ export function InstanceStorage({
       if (mountKind === "filesystem" && !hasAvailableMountTarget) {
         throw new Error("当前 NFS 没有可用挂载目标");
       }
-      const body = {
+      const submitData = {
         action: mountKind === "volume" ? "attach_volume" : "attach_filesystem",
-        idempotency_key: newIdempotencyKey(),
         mount_path: mountPath,
         read_only: values.readOnly ?? false,
         ...(mountKind === "volume"
           ? { volume_id: resourceId }
           : { filesystem_id: resourceId }),
-      } as LifecycleRequest;
+      };
       const { error, response } = await coreApi.POST(
         "/instances/{instance_id}/lifecycle",
         {
           params: { path: { instance_id: instance.id } },
-          body,
+          body: mountScope.withKey(submitData) as LifecycleRequest,
         },
       );
       if (error) {
@@ -176,6 +176,7 @@ export function InstanceStorage({
       }
     },
     onSuccess: () => {
+      mountScope.reset();
       Message.success(
         mountKind === "volume" ? "云盘挂载已提交" : "NFS 挂载已提交",
       );
@@ -272,6 +273,7 @@ export function InstanceStorage({
               (mountTargets.isLoading || !hasAvailableMountTarget)),
         }}
         onCancel={() => {
+          mountScope.reset();
           onMountKindChange(undefined);
           setSelectedResourceId("");
           form.resetFields();

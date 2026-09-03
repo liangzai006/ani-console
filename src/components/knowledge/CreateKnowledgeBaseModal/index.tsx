@@ -9,7 +9,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
 import { showApiError } from "@/api/helpers";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type KnowledgeBase = components["schemas"]["KnowledgeBase"];
 
@@ -27,6 +27,7 @@ export function CreateKnowledgeBaseModal({
 }) {
   const [form] = Form.useForm();
   const qc = useQueryClient();
+  const createScope = useIdempotencyScope("knowledge-base-create", ["POST"]);
   const create = useMutation({
     mutationFn: async (values: {
       name: string;
@@ -35,19 +36,20 @@ export function CreateKnowledgeBaseModal({
       top_k: number;
       score_threshold: number;
     }) => {
+      const submitData = {
+        ...values,
+        name: values.name.trim(),
+        description: values.description?.trim() || undefined,
+        embedding_model: FIXED_EMBEDDING_MODEL,
+      };
       const { data, error } = await servicesApi.POST("/knowledge-bases", {
-        body: {
-          ...values,
-          name: values.name.trim(),
-          description: values.description?.trim() || undefined,
-          embedding_model: FIXED_EMBEDDING_MODEL,
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(submitData),
       });
       if (error) throw error;
       return data;
     },
     onSuccess: (item) => {
+      createScope.reset();
       Message.success("知识库已创建");
       qc.invalidateQueries({ queryKey: ["knowledge-bases"] });
       form.resetFields();
@@ -61,7 +63,10 @@ export function CreateKnowledgeBaseModal({
       title="创建知识库"
       visible={visible}
       confirmLoading={create.isPending}
-      onCancel={onCancel}
+      onCancel={() => {
+        createScope.reset();
+        onCancel();
+      }}
       onOk={() => form.validate().then((values) => create.mutate(values))}
       unmountOnExit
     >

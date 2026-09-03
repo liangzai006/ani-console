@@ -16,7 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import styles from "./index.module.css";
 
@@ -69,10 +69,9 @@ function parseEnv(text: string) {
   }).filter((item): item is { name: string; value: string } => item !== null);
 }
 
-function buildCreateBody(values: FormValues, idempotencyKey: string) {
+function buildCreateBody(values: FormValues) {
   const mountPath = values.mount_path.trim() || "/data";
   return {
-    idempotency_key: idempotencyKey,
     name: values.name.trim(),
     kind: "container" as const,
     instance_type: "container" as const,
@@ -105,9 +104,10 @@ export function ContainerInstanceCreateModal({ visible, onCancel, onCreated }: {
 }) {
   const [form] = Form.useForm<FormValues>();
   const queryClient = useQueryClient();
+  const createScope = useIdempotencyScope("container-instance-create", ["POST"]);
+  const bindSecretScope = useIdempotencyScope("container-instance-secret-bind", ["POST"]);
   const [step, setStep] = useState(0);
   const [values, setValues] = useState(INITIAL_VALUES);
-  const [idempotencyKey, setIdempotencyKey] = useState(() => newIdempotencyKey());
 
   const useListQuery = (path: string, key: string) => useQuery({
     queryKey: [key, "container-create"], enabled: visible,
@@ -144,21 +144,24 @@ export function ContainerInstanceCreateModal({ visible, onCancel, onCreated }: {
 
   const create = useMutation({
     mutationFn: async () => {
-      const request = coreApi.POST as unknown as (path: string, options: { body: ReturnType<typeof buildCreateBody> }) => Promise<{ data?: { instance?: { id?: string } }; error?: unknown; response: Response }>;
-      const { data, error, response } = await request("/instances", { body: buildCreateBody(values, idempotencyKey) });
+      const request = coreApi.POST as unknown as (path: string, options: { body: ReturnType<typeof buildCreateBody> & { idempotency_key: string } }) => Promise<{ data?: { instance?: { id?: string } }; error?: unknown; response: Response }>;
+      const submitData = buildCreateBody(values);
+      const { data, error, response } = await request("/instances", { body: createScope.withKey(submitData) });
       if (error) throw { ...(typeof error === "object" && error ? error : { message: String(error) }), status: response.status };
       const instanceId = data?.instance?.id;
       if (values.secret_id && instanceId) {
+        const bindData = { action: "bind_secret" as const, secret_id: values.secret_id, binding_type: values.secret_binding_type };
         const { error: bindingError, response: bindingResponse } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
           params: { path: { instance_id: instanceId } },
-          body: { action: "bind_secret", idempotency_key: newIdempotencyKey(), secret_id: values.secret_id, binding_type: values.secret_binding_type },
+          body: bindSecretScope.withKey(bindData, [instanceId]),
         });
         if (bindingError) throw { ...(typeof bindingError === "object" && bindingError ? bindingError : { message: String(bindingError) }), status: bindingResponse.status };
       }
     },
     onSuccess: () => {
+      createScope.reset();
+      bindSecretScope.reset();
       Message.success("容器实例创建已提交");
-      setIdempotencyKey(newIdempotencyKey());
       void queryClient.invalidateQueries({ queryKey: ["container-instances"] });
       onCreated();
     },
@@ -167,7 +170,8 @@ export function ContainerInstanceCreateModal({ visible, onCancel, onCreated }: {
 
   const close = () => {
     if (create.isPending) return;
-    setIdempotencyKey(newIdempotencyKey());
+    createScope.reset();
+    bindSecretScope.reset();
     onCancel();
   };
   const next = async () => {

@@ -1,20 +1,24 @@
 import { coreApi } from '@/api/client'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { createIdempotencyScope } from '@/lib/idempotency'
 import type { AuthTokens } from '@/stores/auth'
 
 const inflight = new Map<string, Promise<AuthTokens>>()
+const exchangeScope = createIdempotencyScope('auth-oidc-exchange', ['POST'])
 
 export function exchangeOidcCode(code: string, state: string, redirectUri: string): Promise<AuthTokens> {
-  const key = `${code}:${state}`
+  const runtimeDependencies = [code, state, redirectUri] as const
+  const key = JSON.stringify(runtimeDependencies)
   const existing = inflight.get(key)
   if (existing) return existing
 
+  const submitData = { code, state, redirect_uri: redirectUri }
   const promise = coreApi
-    .POST('/auth/token', { body: { code, state, redirect_uri: redirectUri, idempotency_key: newIdempotencyKey() } })
+    .POST('/auth/token', { body: exchangeScope.withKey(submitData, runtimeDependencies) })
     .then(({ data, error }) => {
       if (error || !data?.access_token || !data.refresh_token) {
         throw error ?? new Error('登录失败：未返回 access_token')
       }
+      exchangeScope.reset(runtimeDependencies)
       return {
         access_token: data.access_token,
         refresh_token: data.refresh_token,

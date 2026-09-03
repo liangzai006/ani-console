@@ -184,11 +184,9 @@ function parseEnv(text: string) {
 export function buildCreateRequest(
   values: FormValues,
   securityGroupId: string,
-  idempotencyKey: string,
-): ExtendedCreateRequest {
+): Omit<ExtendedCreateRequest, "idempotency_key"> {
   const computeSpec = COMPUTE_SPEC_BY_KEY[values.compute_spec].data;
   return {
-    idempotency_key: idempotencyKey,
     name: values.name.trim(),
     kind: "gpu_container",
     instance_type: "gpu_container",

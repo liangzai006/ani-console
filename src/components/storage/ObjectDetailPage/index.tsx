@@ -11,7 +11,7 @@ import {
   StatusTag,
 } from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type StorageObject = components["schemas"]["StorageObject"];
@@ -19,6 +19,7 @@ type StorageObject = components["schemas"]["StorageObject"];
 export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; objectId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const completeScope = useIdempotencyScope("storage-object-upload-complete", ["POST", objectId]);
   const detail = useQuery({
     queryKey: ["object", objectId],
     queryFn: async () => {
@@ -36,17 +37,19 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
   });
   const completeUpload = useMutation({
     mutationFn: async (_: undefined) => {
+      const submitData = {};
       const { data, error } = await coreApi.POST(
         "/objects/{object_id}/complete",
         {
           params: { path: { object_id: objectId } },
-          body: { idempotency_key: newIdempotencyKey() },
+          body: completeScope.withKey(submitData),
         },
       );
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
+      completeScope.reset();
       qc.invalidateQueries({ queryKey: ["object", objectId] });
       qc.invalidateQueries({ queryKey: ["bucket-objects", bucketId] });
       qc.invalidateQueries({ queryKey: ["buckets"] });

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { coreApi } from '@/api/client'
 import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 
 export type SecurityGroupRuleResource = components['schemas']['NetworkSecurityGroupRuleResource']
 type Direction = SecurityGroupRuleResource['direction']
@@ -39,6 +39,7 @@ export function SecurityGroupRuleModal({
   onSuccess?: () => void
 }) {
   const qc = useQueryClient()
+  const saveScope = useIdempotencyScope('network-security-group-rule-save', [rule ? 'PUT' : 'POST', securityGroupId, rule?.id])
   const [draft, setDraft] = useState<RuleDraft>(() => emptyRule(direction))
   useEffect(() => {
     if (visible)
@@ -58,29 +59,30 @@ export function SecurityGroupRuleModal({
   }, [direction, rule, visible])
   const save = useMutation({
     mutationFn: async () => {
-      const body = {
+      const submitData = {
         ...draft,
         port_range: draft.port_range.trim(),
         cidr: draft.cidr.trim(),
         description: draft.description?.trim() || undefined,
       }
-      if (!body.port_range) throw new Error('请输入端口范围')
-      if (!body.cidr) throw new Error('请输入来源 CIDR')
+      if (!submitData.port_range) throw new Error('请输入端口范围')
+      if (!submitData.cidr) throw new Error('请输入来源 CIDR')
       if (rule) {
         const { error } = await coreApi.PUT('/networks/security-groups/{security_group_id}/rules/{rule_id}', {
           params: { path: { security_group_id: securityGroupId, rule_id: rule.id } },
-          body: { ...body, idempotency_key: newIdempotencyKey() },
+          body: saveScope.withKey(submitData),
         })
         if (error) throw error
       } else {
         const { error } = await coreApi.POST('/networks/security-groups/{security_group_id}/rules', {
           params: { path: { security_group_id: securityGroupId } },
-          body: { ...body, idempotency_key: newIdempotencyKey() },
+          body: saveScope.withKey(submitData),
         })
         if (error) throw error
       }
     },
     onSuccess: () => {
+      saveScope.reset()
       qc.invalidateQueries({ queryKey: ['network-security-group-rules', securityGroupId] })
       qc.invalidateQueries({ queryKey: ['network-security-group', securityGroupId] })
       qc.invalidateQueries({ queryKey: ['network-security-groups'] })
@@ -95,7 +97,10 @@ export function SecurityGroupRuleModal({
       visible={visible}
       title={`${rule ? '编辑' : '添加'}${direction === 'ingress' ? '入站' : '出站'}规则`}
       okText={rule ? '保存' : '添加'}
-      onCancel={onCancel}
+      onCancel={() => {
+        saveScope.reset()
+        onCancel()
+      }}
       onOk={() => save.mutateAsync()}
       confirmLoading={save.isPending}
       unmountOnExit

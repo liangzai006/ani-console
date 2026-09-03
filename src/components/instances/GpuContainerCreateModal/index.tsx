@@ -1,8 +1,7 @@
 import { Message, Modal } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 import { coreApi } from "@/api/client";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { GpuContainerCreateForm } from "./GpuContainerCreateForm";
 import {
@@ -19,9 +18,7 @@ export function GpuContainerCreateModal({
   onCreated,
 }: Props) {
   const queryClient = useQueryClient();
-  const [idempotencyKey, setIdempotencyKey] = useState(() =>
-    newIdempotencyKey(),
-  );
+  const createScope = useIdempotencyScope("gpu-container-instance-create", ["POST"]);
   const create = useMutation({
     mutationFn: async ({
       values,
@@ -34,8 +31,9 @@ export function GpuContainerCreateModal({
         path: string,
         options: { body: ExtendedCreateRequest },
       ) => Promise<{ error?: unknown; response: Response }>;
+      const submitData = buildCreateRequest(values, securityGroupId);
       const { error, response } = await request("/instances", {
-        body: buildCreateRequest(values, securityGroupId, idempotencyKey),
+        body: createScope.withKey(submitData) as ExtendedCreateRequest,
       });
       if (error) {
         throw {
@@ -47,11 +45,11 @@ export function GpuContainerCreateModal({
       }
     },
     onSuccess: () => {
+      createScope.reset();
       Message.success("GPU 容器实例创建已提交");
       void queryClient.invalidateQueries({
         queryKey: ["instances", "gpu_container"],
       });
-      setIdempotencyKey(newIdempotencyKey());
       onCreated();
     },
     onError: (error) =>
@@ -60,7 +58,7 @@ export function GpuContainerCreateModal({
 
   const close = () => {
     if (create.isPending) return;
-    setIdempotencyKey(newIdempotencyKey());
+    createScope.reset();
     onCancel();
   };
 

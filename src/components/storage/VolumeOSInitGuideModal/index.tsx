@@ -12,7 +12,7 @@ import {
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import { ApiErrorAlert } from "@/components/common";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 export function VolumeOSInitGuideModal({
   visible,
@@ -24,6 +24,7 @@ export function VolumeOSInitGuideModal({
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
+  const completeScope = useIdempotencyScope("storage-volume-os-init-complete", ["POST", volumeId]);
   const guide = useQuery({
     queryKey: ["volume-os-init-guide", volumeId],
     queryFn: async () => {
@@ -38,16 +39,18 @@ export function VolumeOSInitGuideModal({
   });
   const complete = useMutation({
     mutationFn: async (_: undefined) => {
+      const submitData = { mode: "done" as const };
       const { error } = await coreApi.POST(
         "/volumes/{volume_id}/os-init-complete",
         {
           params: { path: { volume_id: volumeId } },
-          body: { mode: "done", idempotency_key: newIdempotencyKey() },
+          body: completeScope.withKey(submitData),
         },
       );
       if (error) throw error;
     },
     onSuccess: () => {
+      completeScope.reset();
       qc.invalidateQueries({ queryKey: ["volume", volumeId] });
       qc.invalidateQueries({ queryKey: ["volume-os-init-guide", volumeId] });
       onCancel();
@@ -58,10 +61,20 @@ export function VolumeOSInitGuideModal({
     <Modal
       visible={visible}
       title="初始化引导"
-      onCancel={onCancel}
+      onCancel={() => {
+        completeScope.reset();
+        onCancel();
+      }}
       footer={
         <Space>
-          <Button onClick={onCancel}>关闭</Button>
+          <Button
+            onClick={() => {
+              completeScope.reset();
+              onCancel();
+            }}
+          >
+            关闭
+          </Button>
           <Button
             type="primary"
             loading={complete.isPending}

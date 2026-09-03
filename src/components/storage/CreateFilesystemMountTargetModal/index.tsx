@@ -6,7 +6,7 @@ import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
 import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type Vpc = components["schemas"]["NetworkVPC"];
 type Subnet = components["schemas"]["NetworkSubnet"];
@@ -21,6 +21,7 @@ export function CreateFilesystemMountTargetModal({
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
+  const createScope = useIdempotencyScope("storage-filesystem-mount-target-create", ["POST", filesystemId]);
   const [vpcId, setVpcId] = useState("");
   const [subnetId, setSubnetId] = useState("");
   const vpcs = useQuery({
@@ -52,6 +53,7 @@ export function CreateFilesystemMountTargetModal({
   }, [availableSubnets, subnetId]);
 
   const close = () => {
+    createScope.reset();
     setVpcId("");
     setSubnetId("");
     onCancel();
@@ -60,15 +62,12 @@ export function CreateFilesystemMountTargetModal({
     mutationFn: async (_: undefined) => {
       if (!vpcId) throw new Error("请选择 VPC");
       if (!subnetId) throw new Error("请选择子网");
+      const submitData = { vpc_id: vpcId, subnet_id: subnetId };
       const { error } = await coreApi.POST(
         "/filesystems/{filesystem_id}/mount-targets",
         {
           params: { path: { filesystem_id: filesystemId } },
-          body: {
-            vpc_id: vpcId,
-            subnet_id: subnetId,
-            idempotency_key: newIdempotencyKey(),
-          },
+          body: createScope.withKey(submitData),
         },
       );
       if (error) throw error;

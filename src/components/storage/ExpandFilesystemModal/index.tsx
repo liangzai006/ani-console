@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type Filesystem = components["schemas"]["StorageFilesystem"];
 
@@ -26,6 +26,7 @@ export function ExpandFilesystemModal({
   onExpanded?: () => void;
 }) {
   const qc = useQueryClient();
+  const expandScope = useIdempotencyScope("storage-filesystem-expand", ["POST", filesystem?.id]);
   const [sizeGiB, setSizeGiB] = useState(1);
   useEffect(() => {
     if (visible && filesystem) setSizeGiB(filesystem.size_gib + 1);
@@ -36,16 +37,18 @@ export function ExpandFilesystemModal({
       if (!Number.isInteger(sizeGiB) || sizeGiB <= filesystem.size_gib) {
         throw new Error(`新容量必须大于当前容量 ${filesystem.size_gib} GiB`);
       }
+      const submitData = { size_gib: sizeGiB };
       const { error } = await coreApi.POST(
         "/filesystems/{filesystem_id}/expand",
         {
           params: { path: { filesystem_id: filesystem.id } },
-          body: { size_gib: sizeGiB, idempotency_key: newIdempotencyKey() },
+          body: expandScope.withKey(submitData),
         },
       );
       if (error) throw error;
     },
     onSuccess: () => {
+      expandScope.reset();
       qc.invalidateQueries({ queryKey: ["filesystems"] });
       if (filesystem)
         qc.invalidateQueries({ queryKey: ["filesystem", filesystem.id] });
@@ -58,7 +61,10 @@ export function ExpandFilesystemModal({
     <Modal
       visible={visible}
       title="扩容文件存储"
-      onCancel={onCancel}
+      onCancel={() => {
+        expandScope.reset();
+        onCancel();
+      }}
       onOk={() => expand.mutateAsync(undefined)}
       confirmLoading={expand.isPending}
       unmountOnExit

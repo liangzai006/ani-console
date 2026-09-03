@@ -5,7 +5,7 @@ import { coreApi } from '@/api/client'
 import type { components } from '@/api/core-schema'
 import { Ipv4CidrInput } from '@/components/common'
 import { listOrThrow } from '@/lib/api-list'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 import { getInstanceActionErrorMessage } from '@/lib/sandbox-instance'
 import { optionalIpv4WithinCidrError, subnetFixedOctets, suggestGatewayIp } from '@/lib/validators'
 import styles from './index.module.css'
@@ -59,13 +59,13 @@ export function VmInstanceCreateModal({ visible, onCancel, onCreated }: {
   const [form] = Form.useForm<Values>()
   const [step, setStep] = useState(0)
   const [values, setValues] = useState<Values>(INITIAL)
-  const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey)
   const queryClient = useQueryClient()
+  const createScope = useIdempotencyScope('vm-instance-create', ['POST'])
 
   useEffect(() => {
     if (!visible) return
-    form.setFieldsValue(INITIAL); setValues(INITIAL); setStep(0); setIdempotencyKey(newIdempotencyKey())
-  }, [form, visible])
+    createScope.reset(); form.setFieldsValue(INITIAL); setValues(INITIAL); setStep(0)
+  }, [createScope, form, visible])
 
   const images = useQuery({
     queryKey: ['registry-images', 'vm-create', 'system'], enabled: visible,
@@ -104,17 +104,18 @@ export function VmInstanceCreateModal({ visible, onCancel, onCreated }: {
         data_disks: dataDisk ? [{ size_gib: dataDisk.size, volume_type: dataDisk.type, delete_on_failure: true, delete_with_instance: false }] : [],
         filesystem_mounts: values.filesystemId ? [{ filesystem_id: values.filesystemId, mount_path: '/mnt/nfs', read_only: false }] : [],
       }
-      const body: ExtendedRequest = {
-        idempotency_key: idempotencyKey, name: values.name.trim(), kind: 'vm', instance_type: 'vm', replicas: 1,
+      const submitData = {
+        name: values.name.trim(), kind: 'vm' as const, instance_type: 'vm' as const, replicas: 1,
         cpu: spec.cpu, memory: spec.memory, auto_start: values.autoStart, termination_protection: values.terminationProtection,
         boot_image: values.imageRef, image_ref: values.imageRef, ssh_username: values.sshUsername.trim(),
         ssh_key_ref: values.loginMode === 'ssh-key' ? values.sshKeyRef : null, vm_config: vmConfig,
       }
+      const body = createScope.withKey(submitData) as ExtendedRequest
       const { data, error, response } = await coreApi.POST('/instances', { body })
       if (error) throw { ...(typeof error === 'object' && error ? error : { message: String(error) }), status: response.status }
       return data?.operation_id
     },
-    onSuccess: async (operationId) => { Message.success('云主机创建已提交'); await queryClient.invalidateQueries({ queryKey: ['vm-instances'] }); onCreated(operationId) },
+    onSuccess: async (operationId) => { createScope.reset(); Message.success('云主机创建已提交'); await queryClient.invalidateQueries({ queryKey: ['vm-instances'] }); onCreated(operationId) },
     onError: (error) => Message.error(getInstanceActionErrorMessage(error, 'create')),
   })
 
@@ -131,7 +132,7 @@ export function VmInstanceCreateModal({ visible, onCancel, onCreated }: {
   }
   const setValue = <K extends keyof Values>(key: K, value: Values[K]) => { form.setFieldValue(key, value); setValues((current) => ({ ...current, [key]: value })) }
 
-  return <Modal title="创建云主机 VM" visible={visible} onCancel={onCancel} footer={null} unmountOnExit maskClosable={!create.isPending} style={{ width: 820 }}>
+  return <Modal title="创建云主机 VM" visible={visible} onCancel={() => { createScope.reset(); onCancel() }} footer={null} unmountOnExit maskClosable={!create.isPending} style={{ width: 820 }}>
     <div className={styles.form}>
       <Steps current={step + 1}>{STEPS.map((title) => <Steps.Step key={title} title={title} />)}</Steps>
       <div className={styles.content}><Form form={form} layout="vertical" initialValues={INITIAL} onValuesChange={(changed) => setValues((current) => ({ ...current, ...changed }))}>

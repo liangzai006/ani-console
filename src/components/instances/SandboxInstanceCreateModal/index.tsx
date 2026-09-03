@@ -17,7 +17,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
 import { listOrThrow } from "@/lib/api-list";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
 type SandboxTemplate = components["schemas"]["SandboxTemplate"];
@@ -58,6 +58,7 @@ export function SandboxInstanceCreateModal({
   onCancel: () => void;
   onCreated: (instanceId: string) => void;
 }) {
+  const createScope = useIdempotencyScope("sandbox-instance-create", ["POST"]);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(INITIAL);
   const templates = useQuery({
@@ -98,35 +99,32 @@ export function SandboxInstanceCreateModal({
   const create = useMutation({
     mutationFn: async () => {
       if (!selected) throw new Error("请选择可用的 Sandbox 模板");
-      const { data, error, response } = await coreApi.POST("/instances", {
-        body: {
-          idempotency_key: newIdempotencyKey(),
-          name: form.name.trim(),
-          kind: "sandbox",
-          instance_type: "sandbox",
-          image: selected.image,
-          cpu: form.cpu,
-          memory: form.memory,
-          auto_start: form.autoStart,
-          termination_protection: false,
-          replicas: 1,
-          ssh_username: null,
-          sandbox_config: {
-            runtime_class: "sandbox-kata",
-            template_id: selected.id,
-            session_timeout: form.sessionTimeout,
-            idle_timeout: form.idleTimeout,
-            on_timeout: form.onTimeout,
-            network_egress_policy: form.egressPolicy,
-            egress_allowlist:
-              form.egressPolicy === "allowlist"
-                ? form.egressAllowlist
-                    .split(/\r?\n/)
-                    .map((host) => host.trim())
-                    .filter(Boolean)
-                : [],
-          },
+      const submitData = {
+        name: form.name.trim(),
+        kind: "sandbox" as const,
+        instance_type: "sandbox" as const,
+        image: selected.image,
+        cpu: form.cpu,
+        memory: form.memory,
+        auto_start: form.autoStart,
+        termination_protection: false,
+        replicas: 1,
+        ssh_username: null,
+        sandbox_config: {
+          runtime_class: "sandbox-kata",
+          template_id: selected.id,
+          session_timeout: form.sessionTimeout,
+          idle_timeout: form.idleTimeout,
+          on_timeout: form.onTimeout,
+          network_egress_policy: form.egressPolicy,
+          egress_allowlist:
+            form.egressPolicy === "allowlist"
+              ? form.egressAllowlist.split(/\r?\n/).map((host) => host.trim()).filter(Boolean)
+              : [],
         },
+      };
+      const { data, error, response } = await coreApi.POST("/instances", {
+        body: createScope.withKey(submitData),
       });
       if (error || !data)
         throw {
@@ -138,6 +136,7 @@ export function SandboxInstanceCreateModal({
       return data;
     },
     onSuccess: (data) => {
+      createScope.reset();
       Message.success("Sandbox 创建已提交");
       onCreated(data.instance.id);
     },
@@ -192,7 +191,10 @@ export function SandboxInstanceCreateModal({
     <Modal
       title="创建 Sandbox"
       visible={visible}
-      onCancel={onCancel}
+      onCancel={() => {
+        createScope.reset();
+        onCancel();
+      }}
       footer={footer}
       style={{ width: 760 }}
       unmountOnExit

@@ -31,13 +31,14 @@ import {
 import { InstanceRegistryImageSelect } from "@/components/instances/InstanceRegistryImageSelect";
 import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
 type Instance = components["schemas"]["InstanceRecord"];
 type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
 type Secret = components["schemas"]["Secret"];
 type LifecycleRequest = components["schemas"]["InstanceLifecycleRequest"];
+type LifecycleSubmitData = Omit<LifecycleRequest, "idempotency_key">;
 type LifecycleAction = LifecycleRequest["action"];
 type FormAction =
   | "scale"
@@ -111,11 +112,8 @@ function openTerminalWindow(instanceId: string) {
 function buildLifecycleBody(
   action: FormAction,
   values: ActionFormValues,
-): LifecycleRequest {
-  const base = {
-    action,
-    idempotency_key: newIdempotencyKey(),
-  } as LifecycleRequest;
+): LifecycleSubmitData {
+  const base = { action } as LifecycleSubmitData;
 
   switch (action) {
     case "scale":
@@ -124,7 +122,7 @@ function buildLifecycleBody(
       return { ...base, image_id: values.image_id, strategy: "rolling" };
     case "resize":
       // TODO: Core lifecycle 契约补充 spec_id 后移除扩展字段兼容写法。
-      return { ...base, ...buildGpuInstanceResizeFields(values) } as LifecycleRequest;
+      return { ...base, ...buildGpuInstanceResizeFields(values) } as LifecycleSubmitData;
     case "rollback":
       return { ...base, revision: values.revision };
     case "attach_volume":
@@ -170,6 +168,7 @@ export function GpuInstanceActions({
   display?: "row" | "menu" | "release" | "configuration";
 }) {
   const [form] = Form.useForm<ActionFormValues>();
+  const lifecycleScope = useIdempotencyScope("gpu-instance-lifecycle", ["POST", instance.id]);
   const [formAction, setFormAction] = useState<FormAction>();
   const [bindingType, setBindingType] = useState<"env" | "file">("env");
   const busy = BUSY_STATES.has(instance.state);
@@ -208,12 +207,12 @@ export function GpuInstanceActions({
     (secret) => secret.id,
   );
   const lifecycle = useMutation({
-    mutationFn: async (body: LifecycleRequest) => {
+    mutationFn: async (submitData: LifecycleSubmitData) => {
       const { error, response } = await coreApi.POST(
         "/instances/{instance_id}/lifecycle",
         {
           params: { path: { instance_id: instance.id } },
-          body,
+          body: lifecycleScope.withKey(submitData) as LifecycleRequest,
         },
       );
       if (error) {
@@ -226,6 +225,7 @@ export function GpuInstanceActions({
       }
     },
     onSuccess: () => {
+      lifecycleScope.reset();
       Message.success("操作已提交");
       setFormAction(undefined);
       form.resetFields();
@@ -245,9 +245,8 @@ export function GpuInstanceActions({
   ) =>
     lifecycle.mutate({
       action,
-      idempotency_key: newIdempotencyKey(),
       ...fields,
-    } as LifecycleRequest);
+    } as LifecycleSubmitData);
 
   const submitStop = () => {
     if (stopBlockedByTerminationProtection) return;
@@ -473,6 +472,7 @@ export function GpuInstanceActions({
         confirmLoading={lifecycle.isPending}
         okText={formAction === "resize" ? "确认变配" : "确定"}
         onCancel={() => {
+          lifecycleScope.reset();
           setFormAction(undefined);
           form.resetFields();
         }}

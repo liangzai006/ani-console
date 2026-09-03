@@ -22,8 +22,8 @@ import {
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { SandboxInstanceCreateModal } from "@/components/instances/SandboxInstanceCreateModal";
 
@@ -51,6 +51,7 @@ function sessionStatus(instance: SandboxInstance) {
 export function SandboxInstancesPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", ["POST"]);
   const [status, setStatus] = useState<SandboxStatus>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
@@ -96,11 +97,12 @@ export function SandboxInstancesPage() {
       action: LifecycleAction;
       duration?: string;
     }) => {
+      const submitData = { action, duration };
       const { error, response } = await coreApi.POST(
         "/instances/{instance_id}/lifecycle",
         {
           params: { path: { instance_id: id } },
-          body: { action, duration, idempotency_key: newIdempotencyKey() },
+          body: lifecycleScope.withKey(submitData, [id]),
         },
       );
       if (error) {
@@ -111,9 +113,10 @@ export function SandboxInstancesPage() {
           status: response.status,
         };
       }
-      return { action };
+      return { action, id };
     },
-    onSuccess: ({ action }) => {
+    onSuccess: ({ action, id }) => {
+      lifecycleScope.reset([id]);
       Message.success(action === "delete" ? "Sandbox 已销毁" : "操作已提交");
       queryClient.invalidateQueries({ queryKey: ["sandbox-instances"] });
       queryClient.invalidateQueries({ queryKey: ["instance"] });

@@ -2,7 +2,7 @@ import { Button, Message, Upload } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { servicesApi } from "@/api/services-client";
 import { showApiError } from "@/api/helpers";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 const allowedTypes = ["pdf", "docx", "xlsx", "pptx", "md", "txt"] as const;
 
@@ -18,24 +18,27 @@ async function sha256(file: File) {
 
 export function KnowledgeDocumentUploadButton({ kbId }: { kbId: string }) {
   const qc = useQueryClient();
+  const reservationScope = useIdempotencyScope("knowledge-document-reserve", ["POST", kbId]);
+  const notifyScope = useIdempotencyScope("knowledge-document-notify-uploaded", ["POST", kbId]);
   const upload = useMutation({
     mutationFn: async (file: File) => {
       const fileType = file.name.split(".").pop()?.toLowerCase();
       if (!allowedTypes.includes(fileType as (typeof allowedTypes)[number]))
         throw new Error("仅支持 PDF、DOCX、XLSX、PPTX、Markdown 和 TXT 文件");
       if (file.size > 100 * 1024 * 1024) throw new Error("文件不能超过 100 MB");
-      const idempotencyKey = newIdempotencyKey();
+      const checksum = await sha256(file);
+      const reservationDependencies = [file.name, file.size, file.type, file.lastModified] as const;
+      const reservationData = {
+        file_name: file.name,
+        file_type: fileType as (typeof allowedTypes)[number],
+        file_size_bytes: file.size,
+        checksum_sha256: checksum,
+      };
       const { data: reservation, error } = await servicesApi.POST(
         "/knowledge-bases/{kb_id}/documents",
         {
           params: { path: { kb_id: kbId } },
-          body: {
-            idempotency_key: idempotencyKey,
-            file_name: file.name,
-            file_type: fileType as (typeof allowedTypes)[number],
-            file_size_bytes: file.size,
-            checksum_sha256: await sha256(file),
-          },
+          body: reservationScope.withKey(reservationData, reservationDependencies),
         },
       );
       if (error || !reservation) throw error ?? new Error("未获取到上传地址");
@@ -45,20 +48,24 @@ export function KnowledgeDocumentUploadButton({ kbId }: { kbId: string }) {
         headers: file.type ? { "Content-Type": file.type } : undefined,
       });
       if (!put.ok) throw new Error(`文件上传失败（HTTP ${put.status}）`);
+      const notifyDependencies = [reservation.doc_id] as const;
+      const notifyData = {
+        doc_id: reservation.doc_id,
+        storage_path: reservation.storage_path,
+      };
       const { error: notifyError } = await servicesApi.POST(
         "/knowledge-bases/{kb_id}/documents/{doc_id}/notify-uploaded",
         {
           params: { path: { kb_id: kbId, doc_id: reservation.doc_id } },
-          body: {
-            idempotency_key: idempotencyKey,
-            doc_id: reservation.doc_id,
-            storage_path: reservation.storage_path,
-          },
+          body: notifyScope.withKey(notifyData, notifyDependencies),
         },
       );
       if (notifyError) throw notifyError;
+      return { reservationDependencies, notifyDependencies };
     },
-    onSuccess: () => {
+    onSuccess: ({ reservationDependencies, notifyDependencies }) => {
+      reservationScope.reset(reservationDependencies);
+      notifyScope.reset(notifyDependencies);
       Message.success("文档已上传，正在解析");
       void qc.invalidateQueries({ queryKey: ["knowledge-base-documents", kbId] });
       void qc.invalidateQueries({ queryKey: ["knowledge-base", kbId] });

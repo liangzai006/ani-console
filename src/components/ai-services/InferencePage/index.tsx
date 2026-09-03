@@ -32,8 +32,8 @@ import {
   type ListColumn,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type InferenceService = components["schemas"]["InferenceService"];
 type InferenceServiceListResponse = {
@@ -45,6 +45,8 @@ type SearchField = "name" | "id";
 
 export function InferencePage() {
   const qc = useQueryClient();
+  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", ["POST"]);
+  const resizeScope = useIdempotencyScope("inference-service-resize", ["PATCH"]);
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
@@ -87,17 +89,19 @@ export function InferencePage() {
       item: InferenceService;
       action: "start" | "stop" | "restart";
     }) => {
+      const submitData = { action };
       const { data, error } = await servicesApi.POST(
         "/inference-services/{service_id}/lifecycle",
         {
           params: { path: { service_id: item.id } },
-          body: { idempotency_key: newIdempotencyKey(), action },
+          body: lifecycleScope.withKey(submitData, [item.id]),
         },
       );
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      lifecycleScope.reset([variables.item.id]);
       Message.success("生命周期操作已提交");
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
     },
@@ -120,17 +124,19 @@ export function InferencePage() {
   });
   const resize = useMutation({
     mutationFn: async (item: InferenceService) => {
+      const submitData = { replicas };
       const { data, error } = await servicesApi.PATCH(
         "/inference-services/{service_id}",
         {
           params: { path: { service_id: item.id } },
-          body: { idempotency_key: newIdempotencyKey(), replicas },
+          body: resizeScope.withKey(submitData, [item.id]),
         },
       );
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, item) => {
+      resizeScope.reset([item.id]);
       Message.success("变配操作已提交");
       setResizeTarget(undefined);
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
@@ -381,7 +387,10 @@ export function InferencePage() {
       <Modal
         visible={Boolean(resizeTarget)}
         title={resizeTarget ? `变配 · ${resizeTarget.name}` : "变配"}
-        onCancel={() => setResizeTarget(undefined)}
+        onCancel={() => {
+          if (resizeTarget) resizeScope.reset([resizeTarget.id]);
+          setResizeTarget(undefined);
+        }}
         onOk={() => (resizeTarget ? resize.mutateAsync(resizeTarget) : undefined)}
         confirmLoading={resize.isPending}
         unmountOnExit

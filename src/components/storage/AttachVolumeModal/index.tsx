@@ -7,7 +7,7 @@ import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
 import { listOrThrow } from '@/lib/api-list'
 import { getErrorMessage } from '@/lib/errors'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 
 type Instance = components['schemas']['InstanceRecord']
 const attachableInstanceKinds = new Set<Instance['kind']>(['vm', 'container', 'gpu_container'])
@@ -24,6 +24,7 @@ export function AttachVolumeModal({
   onAttached?: () => void
 }) {
   const qc = useQueryClient()
+  const attachScope = useIdempotencyScope('storage-volume-attach', ['POST', volumeId])
   const [instanceId, setInstanceId] = useState('')
   const instances = useQuery({
     queryKey: ['instances', 'volume-attach'],
@@ -49,13 +50,15 @@ export function AttachVolumeModal({
   const attach = useMutation({
     mutationFn: async () => {
       if (!instanceId) throw new Error('请选择挂载实例')
+      const submitData = { action: 'attach_volume' as const, volume_id: volumeId }
       const { error } = await coreApi.POST('/instances/{instance_id}/lifecycle', {
         params: { path: { instance_id: instanceId } },
-        body: { action: 'attach_volume', volume_id: volumeId, idempotency_key: newIdempotencyKey() },
+        body: attachScope.withKey(submitData, [instanceId]),
       })
       if (error) throw error
     },
     onSuccess: () => {
+      attachScope.reset([instanceId])
       qc.invalidateQueries({ queryKey: ['instances'] })
       qc.invalidateQueries({ queryKey: ['volume', volumeId] })
       qc.invalidateQueries({ queryKey: ['volumes'] })
@@ -71,6 +74,7 @@ export function AttachVolumeModal({
       visible={visible}
       title="挂载块存储卷"
       onCancel={() => {
+        attachScope.reset()
         setInstanceId('')
         onCancel()
       }}

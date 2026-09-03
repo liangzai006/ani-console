@@ -12,7 +12,7 @@ import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
 import { DataTable } from "@/components/common";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type Instance = components["schemas"]["InstanceRecord"];
 
@@ -47,6 +47,7 @@ export function InstanceConfiguration({
   instance: Instance;
   onChanged: () => void;
 }) {
+  const unbindScope = useIdempotencyScope("instance-secret-unbind", ["POST", instance.id]);
   const secretRefs = secretReferences(instance);
   const secretRows: SecretRow[] = secretRefs.map((reference) => ({
     reference,
@@ -56,15 +57,15 @@ export function InstanceConfiguration({
   const scopes = instance.workload_identity?.scopes ?? [];
   const unbindSecret = useMutation({
     mutationFn: async (reference: string) => {
+      const submitData = {
+        action: "unbind_secret" as const,
+        secret_id: secretId(reference),
+      };
       const { error, response } = await coreApi.POST(
         "/instances/{instance_id}/lifecycle",
         {
           params: { path: { instance_id: instance.id } },
-          body: {
-            action: "unbind_secret",
-            idempotency_key: newIdempotencyKey(),
-            secret_id: secretId(reference),
-          },
+          body: unbindScope.withKey(submitData, [reference]),
         },
       );
       if (error) {
@@ -76,7 +77,8 @@ export function InstanceConfiguration({
         };
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, reference) => {
+      unbindScope.reset([reference]);
       Message.success("密钥解绑已提交");
       onChanged();
     },

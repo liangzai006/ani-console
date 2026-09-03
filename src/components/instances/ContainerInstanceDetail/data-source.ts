@@ -1,6 +1,5 @@
 import { coreApi } from '@/api/client'
-import { newIdempotencyKey } from '@/lib/idempotency'
-import type { ContainerDetailDataSource, ContainerDetailInstance, ContainerDetailPowerAction } from './types'
+import type { ContainerDetailDataSource, ContainerDetailInstance } from './types'
 
 function buildDetail(record: Record<string, unknown>): ContainerDetailInstance | undefined {
   const compute = record.compute as Record<string, unknown> | undefined
@@ -41,10 +40,10 @@ export const containerDetailDataSource: ContainerDetailDataSource = {
     return buildDetail(record)
   },
 
-  async changePowerState(instanceId: string, action: ContainerDetailPowerAction) {
+  async changePowerState(instanceId, body) {
     const { error, response } = await coreApi.POST('/instances/{instance_id}/lifecycle', {
       params: { path: { instance_id: instanceId } },
-      body: { action, idempotency_key: newIdempotencyKey() },
+      body,
     })
     if (error) {
       throw { ...(typeof error === 'object' && error ? error : { message: String(error) }), status: response?.status }

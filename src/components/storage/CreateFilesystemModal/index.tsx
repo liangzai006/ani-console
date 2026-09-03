@@ -14,7 +14,7 @@ import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
 import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type Filesystem = components["schemas"]["StorageFilesystem"];
 type FilesystemProtocol = "nfs" | "cephfs";
@@ -32,6 +32,8 @@ export function CreateFilesystemModal({
   onCreated?: (filesystem: Filesystem) => void;
 }) {
   const qc = useQueryClient();
+  const createScope = useIdempotencyScope("storage-filesystem-create", ["POST"]);
+  const mountTargetScope = useIdempotencyScope("storage-filesystem-mount-target-create", ["POST"]);
   const [name, setName] = useState("");
   const [protocol, setProtocol] = useState<FilesystemProtocol>("nfs");
   const [performanceMode, setPerformanceMode] =
@@ -66,6 +68,8 @@ export function CreateFilesystemModal({
       setSubnetId("");
   }, [availableSubnets, subnetId]);
   const reset = () => {
+    createScope.reset();
+    mountTargetScope.reset();
     setName("");
     setProtocol("nfs");
     setPerformanceMode("standard");
@@ -81,44 +85,30 @@ export function CreateFilesystemModal({
         throw new Error("容量必须是大于 0 的整数（GiB）");
       if (!vpcId) throw new Error("请选择 VPC");
       if (!subnetId) throw new Error("请选择子网");
+      const createData = {
+        name: trimmedName,
+        protocol,
+        performance_mode: performanceMode,
+        size_gib: sizeGiB,
+      };
       const { data, error } = await coreApi.POST("/filesystems", {
-        body: {
-          name: trimmedName,
-          protocol,
-          performance_mode: performanceMode,
-          size_gib: sizeGiB,
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(createData),
       });
       if (error) throw error;
       if (!data) throw new Error("文件存储创建成功但未返回资源信息");
-      let mountTargetError: unknown = null;
-      try {
-        const { error: targetError } = await coreApi.POST(
-          "/filesystems/{filesystem_id}/mount-targets",
-          {
-            params: { path: { filesystem_id: data.id } },
-            body: {
-              vpc_id: vpcId,
-              subnet_id: subnetId,
-              idempotency_key: newIdempotencyKey(),
-            },
-          },
-        );
-        if (targetError) mountTargetError = targetError;
-      } catch (targetError) {
-        mountTargetError = targetError;
-      }
-      return { filesystem: data, mountTargetError };
+      const mountTargetData = { vpc_id: vpcId, subnet_id: subnetId };
+      const { error: targetError } = await coreApi.POST(
+        "/filesystems/{filesystem_id}/mount-targets",
+        {
+          params: { path: { filesystem_id: data.id } },
+          body: mountTargetScope.withKey(mountTargetData, [data.id]),
+        },
+      );
+      if (targetError) throw targetError;
+      return data;
     },
-    onSuccess: ({ filesystem, mountTargetError }) => {
+    onSuccess: (filesystem) => {
       qc.invalidateQueries({ queryKey: ["filesystems"] });
-      if (mountTargetError)
-        showApiError(
-          new Error(
-            `文件存储已创建，但挂载目标创建失败：${getErrorMessage(mountTargetError, "未知错误")}`,
-          ),
-        );
       reset();
       onCreated?.(filesystem);
       onCancel();

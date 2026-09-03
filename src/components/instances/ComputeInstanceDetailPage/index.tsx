@@ -9,8 +9,8 @@ import { coreApi } from '@/api/client'
 import { PageHeader } from '@/components/shell/AppShell'
 import { InstanceLogsPanel } from '@/components/instances/InstanceLogsPanel'
 import { useListErrorNotification } from '@/hooks/useListErrorNotification'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 import { formatDateTime } from '@/lib/format'
-import { newIdempotencyKey } from '@/lib/idempotency'
 import { getInstanceDisplayIp, getInstanceNetworkValue } from '@/lib/instance-network'
 import { getInstanceActionErrorMessage, getSandboxProviderLabel } from '@/lib/sandbox-instance'
 
@@ -71,6 +71,7 @@ export function InstanceDetailPage({ instanceId }: { instanceId: string }) {
 export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: string; returnTo: string }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const lifecycleScope = useIdempotencyScope('instance-lifecycle', ['POST', instanceId])
   const [activeTab, setActiveTab] = useState('overview')
 
   const detail = useQuery({
@@ -148,14 +149,16 @@ export function InstanceDetailContent({ instanceId, returnTo }: { instanceId: st
 
   const lifecycle = useMutation({
     mutationFn: async (action: 'start' | 'stop' | 'restart' | 'delete') => {
+      const submitData = { action }
       const { error, response } = await coreApi.POST('/instances/{instance_id}/lifecycle', {
         params: { path: { instance_id: instanceId } },
-        body: { action, idempotency_key: newIdempotencyKey() },
+        body: lifecycleScope.withKey(submitData),
       })
       if (error) throw { ...(typeof error === 'object' && error ? error : { message: String(error) }), status: response.status }
       return action
     },
     onSuccess: (action) => {
+      lifecycleScope.reset()
       if (action === 'delete') {
         Message.success('实例已删除')
         qc.invalidateQueries({ queryKey: ['instances'] })

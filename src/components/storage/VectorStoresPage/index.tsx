@@ -25,7 +25,7 @@ import {
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type VectorStore = components["schemas"]["VectorStore"];
 type StatusFilter = "all" | "ready" | "pending";
@@ -33,6 +33,7 @@ type SearchField = "name" | "id";
 
 export function VectorStoresPage() {
   const qc = useQueryClient();
+  const rebuildScope = useIdempotencyScope("storage-vector-store-rebuild", ["POST"]);
   const navigate = useNavigate();
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -80,16 +81,18 @@ export function VectorStoresPage() {
   });
   const rebuildIndex = useMutation({
     mutationFn: async (item: VectorStore) => {
+      const submitData = {};
       const { error } = await coreApi.POST(
         "/vector-stores/{vector_store_id}/rebuild-index",
         {
           params: { path: { vector_store_id: item.id } },
-          body: { idempotency_key: newIdempotencyKey() },
+          body: rebuildScope.withKey(submitData, [item.id]),
         },
       );
       if (error) throw error;
     },
     onSuccess: (_, item) => {
+      rebuildScope.reset([item.id]);
       Message.success(`已提交「${item.name}」索引重建`);
       void qc.invalidateQueries({ queryKey: ["vector-stores"] });
       void qc.invalidateQueries({ queryKey: ["vector-store", item.id] });

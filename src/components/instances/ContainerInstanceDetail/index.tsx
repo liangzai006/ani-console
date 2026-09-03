@@ -21,6 +21,7 @@ import { InstanceTerminal } from '@/components/instances/InstanceTerminal'
 import { InstanceReleases } from '@/components/instances/InstanceReleases'
 import { InstanceReleaseActions } from '@/components/instances/InstanceReleaseActions'
 import { useListErrorNotification } from '@/hooks/useListErrorNotification'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 import { formatDateTime } from '@/lib/format'
 import { getInstanceDisplayIp, getInstanceNetworkValue } from '@/lib/instance-network'
 import { getInstanceActionErrorMessage } from '@/lib/sandbox-instance'
@@ -38,6 +39,7 @@ function openTerminalWindow(instanceId: string) {
 export function ContainerInstanceDetailPage({ instanceId }: { instanceId: string }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const lifecycleScope = useIdempotencyScope('container-instance-lifecycle', ['POST', instanceId])
   const [mountKind, setMountKind] = useState<MountKind>()
 
   const query = useQuery({
@@ -52,10 +54,12 @@ export function ContainerInstanceDetailPage({ instanceId }: { instanceId: string
 
   const lifecycle = useMutation({
     mutationFn: async (action: 'start' | 'stop' | 'restart') => {
-      await containerDetailDataSource.changePowerState(instanceId, action)
+      const submitData = { action }
+      await containerDetailDataSource.changePowerState(instanceId, lifecycleScope.withKey(submitData))
       return action
     },
     onSuccess: async (_, action) => {
+      lifecycleScope.reset()
       const messages: Record<string, string> = { start: '启动操作已提交', stop: '停止操作已提交', restart: '重启操作已提交' }
       Message.success(messages[action] ?? '操作已提交')
       await qc.invalidateQueries({ queryKey: ['container-instance-detail', instanceId] })
@@ -66,9 +70,11 @@ export function ContainerInstanceDetailPage({ instanceId }: { instanceId: string
 
   const deleteInstance = useMutation({
     mutationFn: async () => {
-      await containerDetailDataSource.changePowerState(instanceId, 'delete')
+      const submitData = { action: 'delete' as const }
+      await containerDetailDataSource.changePowerState(instanceId, lifecycleScope.withKey(submitData))
     },
     onSuccess: async () => {
+      lifecycleScope.reset()
       Message.success('实例已删除')
       await qc.invalidateQueries({ queryKey: ['container-instances'] })
       navigate({ to: '/container-instances' })

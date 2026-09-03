@@ -23,9 +23,9 @@ import {
   StatusTag,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import { listOrThrow } from "@/lib/api-list";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import {
   ipv4CidrWithinError,
@@ -45,6 +45,7 @@ type SubnetSearchField = "name" | "id";
 
 export function SubnetsPage() {
   const qc = useQueryClient();
+  const createScope = useIdempotencyScope("network-subnet-create", ["POST"]);
   const navigate = useNavigate();
   const [createVisible, setCreateVisible] = useState(false);
   const [name, setName] = useState("");
@@ -109,6 +110,7 @@ export function SubnetsPage() {
     : 0;
 
   const resetCreateForm = () => {
+    createScope.reset();
     setName("");
     setVpcId("");
     setCidr("10.0.1.0/24");
@@ -127,19 +129,14 @@ export function SubnetsPage() {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入子网名称");
       if (!selectedVpcCidr) throw new Error("请选择 VPC");
+      const submitData = {
+        name: trimmedName,
+        vpc_id: vpcId,
+        cidr: requireIpv4CidrWithin(cidr, selectedVpcCidr, "CIDR", "VPC CIDR"),
+        gateway: optionalIpv4WithinCidr(gateway, cidr, "网关", "CIDR"),
+      };
       const { error } = await coreApi.POST("/networks/subnets", {
-        body: {
-          name: trimmedName,
-          vpc_id: vpcId,
-          cidr: requireIpv4CidrWithin(
-            cidr,
-            selectedVpcCidr,
-            "CIDR",
-            "VPC CIDR",
-          ),
-          gateway: optionalIpv4WithinCidr(gateway, cidr, "网关", "CIDR"),
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(submitData),
       });
       if (error) throw error;
     },

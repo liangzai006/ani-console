@@ -4,6 +4,7 @@ import type { components } from '@/api/core-schema'
 type InstanceRecord = components['schemas']['InstanceRecord']
 
 export type ContainerDetailPowerAction = 'start' | 'stop' | 'restart' | 'delete'
+type LifecycleRequest = components['schemas']['InstanceLifecycleRequest']
 
 export type ContainerDetailInstance = {
   id: string
@@ -32,7 +33,7 @@ export type ContainerDetailInstance = {
 
 export type ContainerDetailDataSource = {
   getDetail(instanceId: string): Promise<ContainerDetailInstance | undefined>
-  changePowerState(instanceId: string, action: ContainerDetailPowerAction): Promise<void>
+  changePowerState(instanceId: string, body: LifecycleRequest): Promise<void>
 }
 
 export type ContainerActionButton = {

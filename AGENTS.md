@@ -16,7 +16,9 @@
 - UI 实现顺序、组件复用和样式边界以 `docs/UI-CONVENTIONS.md` 为准；目录及组件组织以 `docs/CONVENTIONS.md` 为准。
 - 后端由独立的 ANI 仓库维护；接口契约与后端行为以其 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
 - Core API 统一通过 `src/api/client.ts` 的 `coreApi` 调用。
-- POST 及有副作用的 PUT/PATCH 必须携带 `idempotency_key`。
+- POST 及有副作用的 PUT/PATCH 必须通过公共幂等作用域注入 `idempotency_key`：React 代码使用 `useIdempotencyScope`，非 React 流程使用 `createIdempotencyScope`；key 仅由公共幂等库使用外部 `uuid` 包生成，不得保留本地手写 UUID 实现，业务代码不得直接生成 key，也不得包装或修改 `useMutation` 的行为。
+- 幂等作用域依赖至少包含请求方法，并包含会影响请求身份、但不在实际 body 中的稳定业务参数；路由模板和实际 URL 不得作为依赖。实际提交内容必须先构造为不含 key 的 `submitData`，再以 `scope.withKey(submitData, runtimeDependencies?)` 生成最终 body。
+- 同一作用域内，相同依赖与相同提交内容的失败重试必须复用原 key；提交内容、固定依赖或运行时依赖变化时必须生成新 key。请求成功或用户取消时调用 `reset()`，任何失败均保留 key；多阶段流程的每个写请求步骤使用独立作用域。
 - 当前快速迭代阶段不保留自动化测试资产；页面与交互由用户手动验证。
 - 不覆盖或清理用户已有的无关工作区改动。
 
@@ -63,7 +65,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ani-console** (1924 symbols, 4898 relationships, 152 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ani-console** (1940 symbols, 4939 relationships, 153 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 

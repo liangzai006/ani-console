@@ -6,7 +6,7 @@ import { showApiError } from '@/api/helpers'
 import type { components } from '@/api/core-schema'
 import { listOrThrow } from '@/lib/api-list'
 import { getErrorMessage } from '@/lib/errors'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 
 type SecurityGroupRule = components['schemas']['NetworkSecurityGroupRule']
 type Vpc = components['schemas']['NetworkVPC']
@@ -37,6 +37,7 @@ export function CreateSecurityGroupModal({
   onCreated?: (securityGroup: components['schemas']['NetworkSecurityGroup']) => void
 }) {
   const qc = useQueryClient()
+  const createScope = useIdempotencyScope('network-security-group-create', ['POST'])
   const [name, setName] = useState('')
   const [vpcId, setVpcId] = useState(defaultVpcId ?? '')
   const [ruleTemplate, setRuleTemplate] = useState<RuleTemplate>('common')
@@ -50,6 +51,7 @@ export function CreateSecurityGroupModal({
     if (visible) setVpcId(defaultVpcId ?? '')
   }, [defaultVpcId, visible])
   const reset = () => {
+    createScope.reset()
     setName('')
     setVpcId(defaultVpcId ?? '')
     setRuleTemplate('common')
@@ -59,13 +61,13 @@ export function CreateSecurityGroupModal({
       const trimmedName = name.trim()
       if (!trimmedName) throw new Error('请输入安全组名称')
       if (!vpcId) throw new Error('请选择绑定的 VPC')
+      const submitData = {
+        name: trimmedName,
+        vpc_id: vpcId,
+        rules: RULE_TEMPLATES[ruleTemplate],
+      }
       const { data, error } = await coreApi.POST('/networks/security-groups', {
-        body: {
-          name: trimmedName,
-          vpc_id: vpcId,
-          rules: RULE_TEMPLATES[ruleTemplate],
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: createScope.withKey(submitData),
       })
       if (error) throw error
       return data

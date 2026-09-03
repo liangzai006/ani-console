@@ -4,7 +4,7 @@ import { Alert, Button, Radio, Spin, Tag } from '@arco-design/web-react'
 import clsx from 'clsx'
 import { coreApi } from '@/api/client'
 import { getErrorMessage } from '@/lib/errors'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 
 type ConsoleStatus = 'connecting' | 'connected' | 'disconnected' | 'error' | 'expired'
 type ViewMode = 'fit' | 'native'
@@ -39,6 +39,7 @@ export function InstanceVncConsole({
   instanceId: string
   protocol?: 'vnc' | 'novnc'
 }) {
+  const consoleScope = useIdempotencyScope('instance-vnc-session-create', ['POST', instanceId, protocol])
   const hostRef = useRef<HTMLDivElement | null>(null)
   const rfbRef = useRef<RFB | null>(null)
   const expiresAtRef = useRef<string | null>(null)
@@ -66,11 +67,13 @@ export function InstanceVncConsole({
       setStatus('connecting')
       setErrorText(null)
       try {
+        const submitData = { protocol }
         const { data, error } = await coreApi.POST('/instances/{instance_id}/console', {
           params: { path: { instance_id: instanceId } },
-          body: { protocol, idempotency_key: newIdempotencyKey() },
+          body: consoleScope.withKey(submitData),
         })
         if (error) throw error
+        consoleScope.reset()
         const url = data?.connect_url || data?.url
         if (!url) throw new Error('控制台连接地址为空')
         expiresAtRef.current = data?.expires_at ?? null
@@ -120,7 +123,7 @@ export function InstanceVncConsole({
       rfbRef.current = null
       rfb?.disconnect()
     }
-  }, [instanceId, protocol, reconnectKey])
+  }, [consoleScope, instanceId, protocol, reconnectKey])
 
   const meta = STATUS_META[status]
   const canReconnect = status === 'error' || status === 'disconnected' || status === 'expired'

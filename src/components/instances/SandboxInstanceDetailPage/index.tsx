@@ -24,8 +24,8 @@ import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import {
   getInstanceActionErrorMessage,
   getSandboxProviderLabel,
@@ -100,6 +100,7 @@ export function SandboxInstanceDetailPage({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", ["POST", instanceId]);
   const [activeTab, setActiveTab] = useState("overview");
   const detail = useQuery({
     queryKey: ["instance", instanceId],
@@ -126,11 +127,12 @@ export function SandboxInstanceDetailPage({
       action: LifecycleAction;
       duration?: string;
     }) => {
+      const submitData = { action, duration };
       const { error, response } = await coreApi.POST(
         "/instances/{instance_id}/lifecycle",
         {
           params: { path: { instance_id: instanceId } },
-          body: { action, duration, idempotency_key: newIdempotencyKey() },
+          body: lifecycleScope.withKey(submitData),
         },
       );
       if (error)
@@ -143,6 +145,7 @@ export function SandboxInstanceDetailPage({
       return action;
     },
     onSuccess: (action) => {
+      lifecycleScope.reset();
       if (action === "delete") {
         Message.success("Sandbox 已销毁");
         navigate({ to: "/sandbox-instances" });

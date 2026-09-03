@@ -14,8 +14,8 @@ import { showApiError } from "@/api/helpers";
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type LifecycleAction = "start" | "stop" | "restart";
 type InferenceLog = components["schemas"]["InferenceServiceLog"];
@@ -23,6 +23,8 @@ type InferenceLog = components["schemas"]["InferenceServiceLog"];
 export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", ["POST", serviceId]);
+  const scaleScope = useIdempotencyScope("inference-service-scale", ["PATCH", serviceId]);
   const [scaleVisible, setScaleVisible] = useState(false);
   const [replicas, setReplicas] = useState(1);
   const [logLevel, setLogLevel] = useState<
@@ -78,17 +80,19 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   });
   const lifecycle = useMutation({
     mutationFn: async (action: LifecycleAction) => {
+      const submitData = { action };
       const { data, error } = await servicesApi.POST(
         "/inference-services/{service_id}/lifecycle",
         {
           params: { path: { service_id: serviceId } },
-          body: { idempotency_key: newIdempotencyKey(), action },
+          body: lifecycleScope.withKey(submitData),
         },
       );
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
+      lifecycleScope.reset();
       Message.success("生命周期操作已提交");
       void qc.invalidateQueries({ queryKey: ["inference-service", serviceId] });
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
@@ -97,17 +101,19 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   });
   const scale = useMutation({
     mutationFn: async () => {
+      const submitData = { replicas };
       const { data, error } = await servicesApi.PATCH(
         "/inference-services/{service_id}",
         {
           params: { path: { service_id: serviceId } },
-          body: { idempotency_key: newIdempotencyKey(), replicas },
+          body: scaleScope.withKey(submitData),
         },
       );
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
+      scaleScope.reset();
       Message.success("扩缩容操作已提交");
       setScaleVisible(false);
       void qc.invalidateQueries({ queryKey: ["inference-service", serviceId] });

@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type Volume = components["schemas"]["StorageVolume"];
 
@@ -24,6 +24,7 @@ export function ExpandVolumeModal({
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
+  const expandScope = useIdempotencyScope("storage-volume-expand", ["POST", volume?.id]);
   const [sizeGiB, setSizeGiB] = useState(1);
   useEffect(() => {
     if (visible && volume) setSizeGiB(volume.size_gib + 1);
@@ -33,13 +34,15 @@ export function ExpandVolumeModal({
       if (!volume) throw new Error("块存储卷不存在");
       if (!Number.isInteger(sizeGiB) || sizeGiB <= volume.size_gib)
         throw new Error(`新容量必须大于当前容量 ${volume.size_gib} GiB`);
+      const submitData = { size_gib: sizeGiB };
       const { error } = await coreApi.POST("/volumes/{volume_id}/expand", {
         params: { path: { volume_id: volume.id } },
-        body: { size_gib: sizeGiB, idempotency_key: newIdempotencyKey() },
+        body: expandScope.withKey(submitData),
       });
       if (error) throw error;
     },
     onSuccess: () => {
+      expandScope.reset();
       qc.invalidateQueries({ queryKey: ["volumes"] });
       if (volume) qc.invalidateQueries({ queryKey: ["volume", volume.id] });
       onCancel();
@@ -50,7 +53,10 @@ export function ExpandVolumeModal({
     <Modal
       visible={visible}
       title="扩容块存储卷"
-      onCancel={onCancel}
+      onCancel={() => {
+        expandScope.reset();
+        onCancel();
+      }}
       onOk={() => expand.mutateAsync(undefined)}
       confirmLoading={expand.isPending}
       unmountOnExit

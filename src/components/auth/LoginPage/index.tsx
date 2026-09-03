@@ -6,12 +6,13 @@ import { coreApi } from '@/api/client'
 import { AuthCenterLayout } from '@/components/shell/AuthCenterLayout'
 import { parseApiError } from '@/lib/errors'
 import { isAuthenticated, useAuthStore } from '@/stores/auth'
-import { newIdempotencyKey } from '@/lib/idempotency'
+import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 
 export function LoginPage({ redirect = '/' }: { redirect?: string }) {
   const navigate = useNavigate()
   const setTokens = useAuthStore((state) => state.setTokens)
   const setDevelopmentBypass = useAuthStore((state) => state.setDevelopmentBypass)
+  const loginScope = useIdempotencyScope('auth-password-login', ['POST'])
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -21,19 +22,20 @@ export function LoginPage({ redirect = '/' }: { redirect?: string }) {
 
   const login = useMutation({
     mutationFn: async (values: PasswordLoginValues) => {
+      const submitData = {
+        tenant_name: values.tenant_name.trim(),
+        username: values.username.trim(),
+        password: values.password,
+      }
       const { data, error } = await coreApi.POST('/auth/password/login', {
-        body: {
-          tenant_name: values.tenant_name.trim(),
-          username: values.username.trim(),
-          password: values.password,
-          idempotency_key: newIdempotencyKey(),
-        },
+        body: loginScope.withKey(submitData),
       })
       if (error) throw error
       if (!data?.access_token || !data.refresh_token) throw new Error('登录响应缺少令牌')
       return data
     },
     onSuccess: (tokens) => {
+      loginScope.reset()
       setTokens(tokens)
       Message.success('登录成功')
       navigate({ to: redirect, replace: true })

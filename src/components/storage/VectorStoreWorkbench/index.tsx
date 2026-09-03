@@ -6,12 +6,13 @@ import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type VectorStore = components["schemas"]["VectorStore"];
 type SearchHit = components["schemas"]["VectorStoreSearchHit"];
 
 export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
+  const searchScope = useIdempotencyScope("storage-vector-store-search", ["POST", store.id]);
   const [searchVector, setSearchVector] = useState("");
   const [topK, setTopK] = useState(10);
   const [filterJson, setFilterJson] = useState("{}");
@@ -32,21 +33,18 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
           `向量维度必须为 ${store.dimension}，当前为 ${vector.length}`,
         );
       const filter = filterJson.trim() ? JSON.parse(filterJson) : undefined;
+      const submitData = { vector, top_k: topK, filter };
       const { data, error } = await coreApi.POST(
         "/vector-stores/{vector_store_id}/search",
         {
           params: { path: { vector_store_id: store.id } },
-          body: {
-            vector,
-            top_k: topK,
-            filter,
-            idempotency_key: newIdempotencyKey(),
-          },
+          body: searchScope.withKey(submitData),
         },
       );
       if (error) throw error;
       return data;
     },
+    onSuccess: () => searchScope.reset(),
     onError: (error) => showApiError(error),
   });
   const hits = (search.data?.items ?? []) as SearchHit[];

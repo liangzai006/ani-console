@@ -28,7 +28,7 @@ import {
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
-import { newIdempotencyKey } from "@/lib/idempotency";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type Volume = components["schemas"]["StorageVolume"];
 type StatusFilter = "all" | "available" | "mounted" | "failed";
@@ -36,6 +36,7 @@ type SearchField = "name" | "id";
 
 export function VolumesPage() {
   const qc = useQueryClient();
+  const detachScope = useIdempotencyScope("storage-volume-detach", ["POST"]);
   const [createVisible, setCreateVisible] = useState(false);
   const [attachTarget, setAttachTarget] = useState<Volume | null>(null);
   const [expandTarget, setExpandTarget] = useState<Volume | null>(null);
@@ -85,20 +86,18 @@ export function VolumesPage() {
   const detachVolume = useMutation({
     mutationFn: async (item: Volume) => {
       if (!item.mount_instance_id) throw new Error("块存储卷未挂载实例");
+      const submitData = { action: "detach_volume" as const, volume_id: item.id };
       const { error } = await coreApi.POST(
         "/instances/{instance_id}/lifecycle",
         {
           params: { path: { instance_id: item.mount_instance_id } },
-          body: {
-            action: "detach_volume",
-            volume_id: item.id,
-            idempotency_key: newIdempotencyKey(),
-          },
+          body: detachScope.withKey(submitData, [item.mount_instance_id, item.id]),
         },
       );
       if (error) throw error;
     },
     onSuccess: (_data, item) => {
+      detachScope.reset([item.mount_instance_id, item.id]);
       void qc.invalidateQueries({ queryKey: ["instances"] });
       void qc.invalidateQueries({ queryKey: ["volume", item.id] });
       void qc.invalidateQueries({ queryKey: ["volumes"] });
