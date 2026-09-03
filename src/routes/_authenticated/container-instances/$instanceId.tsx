@@ -1,5 +1,5 @@
 import { createFileRoute, useRouterState } from '@tanstack/react-router'
-import { ContainerInstanceDetailPage } from '@/components/container-instances/ContainerInstanceDetail'
+import { ContainerInstanceDetailPage } from '@/components/instances/ContainerInstanceDetail'
 
 export const Route = createFileRoute('/_authenticated/container-instances/$instanceId')({
   component: function ContainerInstanceDetailRoute() {

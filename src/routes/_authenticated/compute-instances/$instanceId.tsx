@@ -1,4 +1,4 @@
-import { InstanceDetailPage } from '@/components/compute-instances/ComputeInstanceDetailPage'
+import { InstanceDetailPage } from '@/components/instances/ComputeInstanceDetailPage'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_authenticated/compute-instances/$instanceId')({

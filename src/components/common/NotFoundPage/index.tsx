@@ -8,8 +8,8 @@ export function NotFoundPage() {
   const authenticated = isAuthenticated()
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg-1)] p-6">
-      <Card className="w-full max-w-[560px]">
+    <div className="flex min-h-screen items-center justify-center bg-(--color-bg-1) p-6">
+      <Card className="w-full max-w-140">
         <Result
           status="404"
           title="页面不存在"

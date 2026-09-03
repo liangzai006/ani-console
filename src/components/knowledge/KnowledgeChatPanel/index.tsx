@@ -244,7 +244,7 @@ function KnowledgeThread() {
         <div className={styles.threadContent}>
           <AuiIf condition={(state) => state.thread.isEmpty}>
             <div className={styles.welcome}>
-              <Typography.Title heading={4} className="!m-0">
+              <Typography.Title heading={4} className="m-0!">
                 想从知识库中了解什么？
               </Typography.Title>
               <Typography.Text type="secondary">
@@ -516,7 +516,7 @@ export function KnowledgeChatPanel({
                     {formatDateTime(citation.created_at)}
                   </Typography.Text>
                 </div>
-                <Typography.Paragraph className="!mb-0" type="secondary">
+                <Typography.Paragraph className="mb-0!" type="secondary">
                   {citation.content}
                 </Typography.Paragraph>
               </article>

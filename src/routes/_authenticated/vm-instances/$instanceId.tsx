@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useRouterState } from '@tanstack/react-router'
-import { InstanceDetailContent } from '@/components/compute-instances/ComputeInstanceDetailPage'
+import { InstanceDetailContent } from '@/components/instances/ComputeInstanceDetailPage'
 
 export const Route = createFileRoute('/_authenticated/vm-instances/$instanceId')({
   component: function VmInstanceDetailRoute() {

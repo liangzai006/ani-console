@@ -329,7 +329,7 @@ export function InstanceTerminal({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Space>
-          <span className="text-sm text-[var(--color-text-2)]">状态</span>
+          <span className="text-sm text-(--color-text-2)">状态</span>
           <Tag color={meta.color}>{meta.text}</Tag>
         </Space>
         <Button

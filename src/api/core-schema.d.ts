@@ -325,6 +325,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/instances/{instance_id}/logs/stream": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 流式订阅实例日志 */
+    get: operations["streamInstanceLogs"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/instances/{instance_id}/events": {
     parameters: {
       query?: never;
@@ -2900,12 +2917,20 @@ export interface components {
        * @default sandbox-kata
        */
       runtime_class: string;
+      /** @description Sandbox 模板 ID。 */
+      template_id?: string;
       /**
        * @description 会话最大存活时间，Go duration 字符串，如 30m、2h。
        * @default 30m
        */
       session_timeout: string;
+      /** @description 会话空闲超时，Go duration 字符串。 */
+      idle_timeout?: string;
+      /** @description 会话超时后的处理策略。 */
+      on_timeout?: "pause" | "kill";
       network_egress_policy?: components["schemas"]["SandboxNetworkEgressPolicy"];
+      /** @description allowlist 出口策略允许访问的 host。 */
+      egress_allowlist?: string[];
     };
     /** @description Sandbox 实例运行摘要；dev_profile.real_provider=false 时仅表示 local profile 状态机。 */
     SandboxInstanceStatus: {
@@ -3168,7 +3193,11 @@ export interface components {
     };
     /** @enum {string} */
     NetworkResourceState:
-      "pending" | "available" | "failed" | "deleting" | "deleted";
+      | "pending"
+      | "available"
+      | "failed"
+      | "deleting"
+      | "deleted";
     NetworkVPC: {
       id: string;
       tenant_id: string;
@@ -3274,7 +3303,9 @@ export interface components {
     };
     /** @enum {string} */
     NetworkSecurityGroupBindingTargetType:
-      "instance" | "network_interface" | "load_balancer";
+      | "instance"
+      | "network_interface"
+      | "load_balancer";
     NetworkSecurityGroupBinding: {
       id: string;
       security_group_id: string;
@@ -3378,7 +3409,11 @@ export interface components {
     };
     /** @enum {string} */
     StorageResourceState:
-      "pending" | "available" | "failed" | "deleting" | "deleted";
+      | "pending"
+      | "available"
+      | "failed"
+      | "deleting"
+      | "deleted";
     StorageVolume: {
       id: string;
       tenant_id: string;
@@ -3455,7 +3490,12 @@ export interface components {
       capabilities: string[];
       /** @enum {string} */
       status:
-        "pending" | "downloading" | "ready" | "error" | "deleted" | string;
+        | "pending"
+        | "downloading"
+        | "ready"
+        | "error"
+        | "deleted"
+        | string;
       /** Format: int64 */
       total_size_bytes: number;
       /** Format: date-time */
@@ -4839,6 +4879,44 @@ export interface operations {
       401: components["responses"]["Unauthorized"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+    };
+  };
+  streamInstanceLogs: {
+    parameters: {
+      query?: {
+        level?: "debug" | "info" | "warn" | "error";
+        limit?: number;
+        interval_seconds?: number;
+      };
+      header?: never;
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description 实例日志 SSE 流，依次推送 log、error 和 done 事件。 */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/event-stream": string;
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
     };
   };
   listInstanceEvents: {

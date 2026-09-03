@@ -235,7 +235,7 @@ const mockOverview: HomeOverviewData = {
       id: "create-container",
       name: "创建容器实例",
       icon: "rongqishili",
-      route: "/container-instances/create",
+      route: "/container-instances",
     },
     {
       id: "create-gpu",
@@ -247,7 +247,7 @@ const mockOverview: HomeOverviewData = {
       id: "create-sandbox",
       name: "创建 Sandbox",
       icon: "Sandbox",
-      route: "/sandbox-instances/create",
+      route: "/sandbox-instances",
     },
     {
       id: "create-k8s",

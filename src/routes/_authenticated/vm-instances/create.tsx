@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { VmInstanceCreateModal } from '@/components/vm-instances/VmInstanceCreateModal'
+import { VmInstanceCreateModal } from '@/components/instances/VmInstanceCreateModal'
 
 export const Route = createFileRoute('/_authenticated/vm-instances/create')({
   component: function VmInstanceCreatePage() {

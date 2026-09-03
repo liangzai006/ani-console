@@ -7,7 +7,7 @@
 - 项目：独立 ANI Console 前端；仓库根目录已代表 Console 范围，路由和文件直接按业务领域或资源命名。
 - 后端：独立 ANI 仓库；接口契约与行为以 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
 - API：`/api/v1`，统一通过 `src/api/client.ts` 的 `coreApi` 调用。
-- 产品原型：GitNexus 索引 `产品原型-9.01`；页面信息架构与交互布局以该版本为准。
+- 产品原型：GitNexus 索引 `产品原型-9.02`；页面信息架构与交互布局以该版本为准。
 - UI：使用 Arco Design React 和 Arco Token，Tailwind 仅负责布局；沿用现有顶部一级导航及侧栏层级。
 - 验证：任何新增或修改完成后必须运行 `pnpm lint`、TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不运行 `pnpm run verify`、production build 或干预用户的 `pnpm dev`。
 - 测试：快速迭代阶段不保留自动化测试资产，页面与交互由用户手动验证。
@@ -31,6 +31,11 @@
 
 | 日期 | 摘要 |
 |------|------|
+| 2026-09-02 | 产品原型基线更新为 `产品原型-9.02`；重做 Sandbox 列表、三步创建模态框与 12 项详情页签，接入会话生命周期及终端、监控、日志、事件等能力，未开放能力保持空态；移除独立创建页、旧表单和无入口的模板页，相关入口统一返回实例列表，并同步 Core 类型与路由树。 |
+| 2026-09-02 | 实例领域组件统一迁入 `components/instances`，抽取普通容器与 GPU 容器共用的配置、存储、网络、发布、指标、事件、操作历史等详情组件，移除冗余包装；`MetricCard` 迁入公共组件，实例 URL 与路由分层保持不变。 |
+| 2026-09-02 | 重做普通容器列表、六步创建弹窗与详情：接入单实例生命周期、终端、删除、发布回滚、网络、监控、日志、事件、存储挂载、密钥及 Workload Identity；按实例类型区分普通/GPU 镜像与监控，移除批量操作、列设置及独立创建路由。 |
+| 2026-09-02 | 云主机创建按新版原型调整为五步，补齐 cloud-init、安全组、SSH 登录、系统盘/数据盘、NFS、自动启动和终止保护，并按 ANI `vm_config` 提交；镜像类型字段就绪前暂展示全部 Registry 镜像。镜像仓库列表同步调整镜像名与仓库信息层级，资源概览修复区块间距。 |
+| 2026-09-02 | GPU 容器日志改接 SSE 流式接口，支持历史回放、级别过滤、错误提示、静默重连、去重和卸载中止，非流式接口保留用于更早历史分页；生产 Nginx 同步关闭 `/api/` 响应缓冲与缓存并延长超时。相关 lint、TypeScript 与差异格式检查通过；GitNexus 对累计工作区改动最高评估为 CRITICAL。 |
 | 2026-09-02 | 完成前端目录与路由架构迁移：停止维护 `src/views`，页面、mock 与业务状态统一迁至 `components/<scope>/<PageName>`，`src/routes` 仅保留路由注册、鉴权/布局、参数和 search 校验；`home` 更名为 `overview`，资源根入口统一使用 `<name>/index.tsx`，并修复由路由模块耦合导致的热更新与 lint 问题。 |
 | 2026-09-02 | 前端路由改为顶级资源路径：计算概览使用 `/overview-compute`；VM、容器、Sandbox、统一实例及终端/VNC 使用 `/vm-instances`、`/container-instances`、`/sandbox-instances`、`/compute-instances`、`/instance-terminal/:id`、`/instance-console/:id`；网络资源使用 `/vpcs`、`/subnets`、`/security-groups`、`/routes`、`/load-balancers`。菜单、面包屑与关联跳转同步更新，Core API `/instances`、`/networks/*` 保持不变。 |
 | 2026-09-02 | 重做云主机 VM：建立独立 `vm-instances` 领域实现，列表、创建和详情接入 Core `/instances`，创建采用四步弹窗，补齐生命周期、VNC、日志、事件、指标与操作历史；待后端在 `GET /instances` OpenAPI 补充 `status/search_field/keyword` 和全量状态计数。 |

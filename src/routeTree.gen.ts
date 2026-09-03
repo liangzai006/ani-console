@@ -20,7 +20,6 @@ import { Route as AuthenticatedVmInstancesIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedVectorStoresIndexRouteImport } from './routes/_authenticated/vector-stores/index'
 import { Route as AuthenticatedSubnetsIndexRouteImport } from './routes/_authenticated/subnets/index'
 import { Route as AuthenticatedSecurityGroupsIndexRouteImport } from './routes/_authenticated/security-groups/index'
-import { Route as AuthenticatedSandboxTemplatesIndexRouteImport } from './routes/_authenticated/sandbox-templates/index'
 import { Route as AuthenticatedSandboxInstancesIndexRouteImport } from './routes/_authenticated/sandbox-instances/index'
 import { Route as AuthenticatedRoutesIndexRouteImport } from './routes/_authenticated/routes/index'
 import { Route as AuthenticatedRegistryIndexRouteImport } from './routes/_authenticated/registry/index'
@@ -44,7 +43,6 @@ import { Route as AuthenticatedVmInstancesInstanceIdRouteImport } from './routes
 import { Route as AuthenticatedVectorStoresVectorStoreIdRouteImport } from './routes/_authenticated/vector-stores/$vectorStoreId'
 import { Route as AuthenticatedSubnetsSubnetIdRouteImport } from './routes/_authenticated/subnets/$subnetId'
 import { Route as AuthenticatedSecurityGroupsSecurityGroupIdRouteImport } from './routes/_authenticated/security-groups/$securityGroupId'
-import { Route as AuthenticatedSandboxInstancesCreateRouteImport } from './routes/_authenticated/sandbox-instances/create'
 import { Route as AuthenticatedSandboxInstancesInstanceIdRouteImport } from './routes/_authenticated/sandbox-instances/$instanceId'
 import { Route as AuthenticatedRoutesRouteIdRouteImport } from './routes/_authenticated/routes/$routeId'
 import { Route as AuthenticatedObjectsBucketIdRouteImport } from './routes/_authenticated/objects/$bucketId'
@@ -60,7 +58,6 @@ import { Route as AuthenticatedGpuInstancesInstanceIdRouteImport } from './route
 import { Route as AuthenticatedFilesystemsFilesystemIdRouteImport } from './routes/_authenticated/filesystems/$filesystemId'
 import { Route as AuthenticatedContainerInstancesInstanceIdRouteImport } from './routes/_authenticated/container-instances/$instanceId'
 import { Route as AuthenticatedComputeInstancesInstanceIdRouteImport } from './routes/_authenticated/compute-instances/$instanceId'
-import { Route as AuthenticatedContainerInstancesCreateRouteRouteImport } from './routes/_authenticated/container-instances/create/route'
 import { Route as AuthenticatedObjectsBucketIdIndexRouteImport } from './routes/_authenticated/objects/$bucketId/index'
 import { Route as AuthenticatedObjectsBucketIdObjectIdRouteImport } from './routes/_authenticated/objects/$bucketId/$objectId'
 import { Route as AuthenticatedInferencePoliciesPolicyIdRouteImport } from './routes/_authenticated/inference/policies.$policyId'
@@ -123,12 +120,6 @@ const AuthenticatedSecurityGroupsIndexRoute =
   AuthenticatedSecurityGroupsIndexRouteImport.update({
     id: '/security-groups/',
     path: '/security-groups/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSandboxTemplatesIndexRoute =
-  AuthenticatedSandboxTemplatesIndexRouteImport.update({
-    id: '/sandbox-templates/',
-    path: '/sandbox-templates/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedSandboxInstancesIndexRoute =
@@ -267,12 +258,6 @@ const AuthenticatedSecurityGroupsSecurityGroupIdRoute =
     path: '/security-groups/$securityGroupId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedSandboxInstancesCreateRoute =
-  AuthenticatedSandboxInstancesCreateRouteImport.update({
-    id: '/sandbox-instances/create',
-    path: '/sandbox-instances/create',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedSandboxInstancesInstanceIdRoute =
   AuthenticatedSandboxInstancesInstanceIdRouteImport.update({
     id: '/sandbox-instances/$instanceId',
@@ -362,12 +347,6 @@ const AuthenticatedComputeInstancesInstanceIdRoute =
     path: '/compute-instances/$instanceId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedContainerInstancesCreateRouteRoute =
-  AuthenticatedContainerInstancesCreateRouteRouteImport.update({
-    id: '/container-instances/create',
-    path: '/container-instances/create',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedObjectsBucketIdIndexRoute =
   AuthenticatedObjectsBucketIdIndexRouteImport.update({
     id: '/',
@@ -398,7 +377,6 @@ export interface FileRoutesByFullPath {
   '/login/callback': typeof LoginCallbackRoute
   '/': typeof AuthenticatedIndexRoute
   '/login/': typeof LoginIndexRoute
-  '/container-instances/create': typeof AuthenticatedContainerInstancesCreateRouteRoute
   '/compute-instances/$instanceId': typeof AuthenticatedComputeInstancesInstanceIdRoute
   '/container-instances/$instanceId': typeof AuthenticatedContainerInstancesInstanceIdRoute
   '/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
@@ -414,7 +392,6 @@ export interface FileRoutesByFullPath {
   '/objects/$bucketId': typeof AuthenticatedObjectsBucketIdRouteWithChildren
   '/routes/$routeId': typeof AuthenticatedRoutesRouteIdRoute
   '/sandbox-instances/$instanceId': typeof AuthenticatedSandboxInstancesInstanceIdRoute
-  '/sandbox-instances/create': typeof AuthenticatedSandboxInstancesCreateRoute
   '/security-groups/$securityGroupId': typeof AuthenticatedSecurityGroupsSecurityGroupIdRoute
   '/subnets/$subnetId': typeof AuthenticatedSubnetsSubnetIdRoute
   '/vector-stores/$vectorStoreId': typeof AuthenticatedVectorStoresVectorStoreIdRoute
@@ -438,7 +415,6 @@ export interface FileRoutesByFullPath {
   '/registry': typeof AuthenticatedRegistryIndexRoute
   '/routes': typeof AuthenticatedRoutesIndexRoute
   '/sandbox-instances': typeof AuthenticatedSandboxInstancesIndexRoute
-  '/sandbox-templates': typeof AuthenticatedSandboxTemplatesIndexRoute
   '/security-groups': typeof AuthenticatedSecurityGroupsIndexRoute
   '/subnets': typeof AuthenticatedSubnetsIndexRoute
   '/vector-stores': typeof AuthenticatedVectorStoresIndexRoute
@@ -454,7 +430,6 @@ export interface FileRoutesByTo {
   '/login/callback': typeof LoginCallbackRoute
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginIndexRoute
-  '/container-instances/create': typeof AuthenticatedContainerInstancesCreateRouteRoute
   '/compute-instances/$instanceId': typeof AuthenticatedComputeInstancesInstanceIdRoute
   '/container-instances/$instanceId': typeof AuthenticatedContainerInstancesInstanceIdRoute
   '/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
@@ -469,7 +444,6 @@ export interface FileRoutesByTo {
   '/models/$modelId': typeof AuthenticatedModelsModelIdRoute
   '/routes/$routeId': typeof AuthenticatedRoutesRouteIdRoute
   '/sandbox-instances/$instanceId': typeof AuthenticatedSandboxInstancesInstanceIdRoute
-  '/sandbox-instances/create': typeof AuthenticatedSandboxInstancesCreateRoute
   '/security-groups/$securityGroupId': typeof AuthenticatedSecurityGroupsSecurityGroupIdRoute
   '/subnets/$subnetId': typeof AuthenticatedSubnetsSubnetIdRoute
   '/vector-stores/$vectorStoreId': typeof AuthenticatedVectorStoresVectorStoreIdRoute
@@ -493,7 +467,6 @@ export interface FileRoutesByTo {
   '/registry': typeof AuthenticatedRegistryIndexRoute
   '/routes': typeof AuthenticatedRoutesIndexRoute
   '/sandbox-instances': typeof AuthenticatedSandboxInstancesIndexRoute
-  '/sandbox-templates': typeof AuthenticatedSandboxTemplatesIndexRoute
   '/security-groups': typeof AuthenticatedSecurityGroupsIndexRoute
   '/subnets': typeof AuthenticatedSubnetsIndexRoute
   '/vector-stores': typeof AuthenticatedVectorStoresIndexRoute
@@ -512,7 +485,6 @@ export interface FileRoutesById {
   '/login/callback': typeof LoginCallbackRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/login/': typeof LoginIndexRoute
-  '/_authenticated/container-instances/create': typeof AuthenticatedContainerInstancesCreateRouteRoute
   '/_authenticated/compute-instances/$instanceId': typeof AuthenticatedComputeInstancesInstanceIdRoute
   '/_authenticated/container-instances/$instanceId': typeof AuthenticatedContainerInstancesInstanceIdRoute
   '/_authenticated/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
@@ -528,7 +500,6 @@ export interface FileRoutesById {
   '/_authenticated/objects/$bucketId': typeof AuthenticatedObjectsBucketIdRouteWithChildren
   '/_authenticated/routes/$routeId': typeof AuthenticatedRoutesRouteIdRoute
   '/_authenticated/sandbox-instances/$instanceId': typeof AuthenticatedSandboxInstancesInstanceIdRoute
-  '/_authenticated/sandbox-instances/create': typeof AuthenticatedSandboxInstancesCreateRoute
   '/_authenticated/security-groups/$securityGroupId': typeof AuthenticatedSecurityGroupsSecurityGroupIdRoute
   '/_authenticated/subnets/$subnetId': typeof AuthenticatedSubnetsSubnetIdRoute
   '/_authenticated/vector-stores/$vectorStoreId': typeof AuthenticatedVectorStoresVectorStoreIdRoute
@@ -552,7 +523,6 @@ export interface FileRoutesById {
   '/_authenticated/registry/': typeof AuthenticatedRegistryIndexRoute
   '/_authenticated/routes/': typeof AuthenticatedRoutesIndexRoute
   '/_authenticated/sandbox-instances/': typeof AuthenticatedSandboxInstancesIndexRoute
-  '/_authenticated/sandbox-templates/': typeof AuthenticatedSandboxTemplatesIndexRoute
   '/_authenticated/security-groups/': typeof AuthenticatedSecurityGroupsIndexRoute
   '/_authenticated/subnets/': typeof AuthenticatedSubnetsIndexRoute
   '/_authenticated/vector-stores/': typeof AuthenticatedVectorStoresIndexRoute
@@ -571,7 +541,6 @@ export interface FileRouteTypes {
     | '/login/callback'
     | '/'
     | '/login/'
-    | '/container-instances/create'
     | '/compute-instances/$instanceId'
     | '/container-instances/$instanceId'
     | '/filesystems/$filesystemId'
@@ -587,7 +556,6 @@ export interface FileRouteTypes {
     | '/objects/$bucketId'
     | '/routes/$routeId'
     | '/sandbox-instances/$instanceId'
-    | '/sandbox-instances/create'
     | '/security-groups/$securityGroupId'
     | '/subnets/$subnetId'
     | '/vector-stores/$vectorStoreId'
@@ -611,7 +579,6 @@ export interface FileRouteTypes {
     | '/registry'
     | '/routes'
     | '/sandbox-instances'
-    | '/sandbox-templates'
     | '/security-groups'
     | '/subnets'
     | '/vector-stores'
@@ -627,7 +594,6 @@ export interface FileRouteTypes {
     | '/login/callback'
     | '/'
     | '/login'
-    | '/container-instances/create'
     | '/compute-instances/$instanceId'
     | '/container-instances/$instanceId'
     | '/filesystems/$filesystemId'
@@ -642,7 +608,6 @@ export interface FileRouteTypes {
     | '/models/$modelId'
     | '/routes/$routeId'
     | '/sandbox-instances/$instanceId'
-    | '/sandbox-instances/create'
     | '/security-groups/$securityGroupId'
     | '/subnets/$subnetId'
     | '/vector-stores/$vectorStoreId'
@@ -666,7 +631,6 @@ export interface FileRouteTypes {
     | '/registry'
     | '/routes'
     | '/sandbox-instances'
-    | '/sandbox-templates'
     | '/security-groups'
     | '/subnets'
     | '/vector-stores'
@@ -684,7 +648,6 @@ export interface FileRouteTypes {
     | '/login/callback'
     | '/_authenticated/'
     | '/login/'
-    | '/_authenticated/container-instances/create'
     | '/_authenticated/compute-instances/$instanceId'
     | '/_authenticated/container-instances/$instanceId'
     | '/_authenticated/filesystems/$filesystemId'
@@ -700,7 +663,6 @@ export interface FileRouteTypes {
     | '/_authenticated/objects/$bucketId'
     | '/_authenticated/routes/$routeId'
     | '/_authenticated/sandbox-instances/$instanceId'
-    | '/_authenticated/sandbox-instances/create'
     | '/_authenticated/security-groups/$securityGroupId'
     | '/_authenticated/subnets/$subnetId'
     | '/_authenticated/vector-stores/$vectorStoreId'
@@ -724,7 +686,6 @@ export interface FileRouteTypes {
     | '/_authenticated/registry/'
     | '/_authenticated/routes/'
     | '/_authenticated/sandbox-instances/'
-    | '/_authenticated/sandbox-templates/'
     | '/_authenticated/security-groups/'
     | '/_authenticated/subnets/'
     | '/_authenticated/vector-stores/'
@@ -819,13 +780,6 @@ declare module '@tanstack/react-router' {
       path: '/security-groups'
       fullPath: '/security-groups'
       preLoaderRoute: typeof AuthenticatedSecurityGroupsIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sandbox-templates/': {
-      id: '/_authenticated/sandbox-templates/'
-      path: '/sandbox-templates'
-      fullPath: '/sandbox-templates'
-      preLoaderRoute: typeof AuthenticatedSandboxTemplatesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/sandbox-instances/': {
@@ -989,13 +943,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSecurityGroupsSecurityGroupIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/sandbox-instances/create': {
-      id: '/_authenticated/sandbox-instances/create'
-      path: '/sandbox-instances/create'
-      fullPath: '/sandbox-instances/create'
-      preLoaderRoute: typeof AuthenticatedSandboxInstancesCreateRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/sandbox-instances/$instanceId': {
       id: '/_authenticated/sandbox-instances/$instanceId'
       path: '/sandbox-instances/$instanceId'
@@ -1101,13 +1048,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedComputeInstancesInstanceIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/container-instances/create': {
-      id: '/_authenticated/container-instances/create'
-      path: '/container-instances/create'
-      fullPath: '/container-instances/create'
-      preLoaderRoute: typeof AuthenticatedContainerInstancesCreateRouteRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/objects/$bucketId/': {
       id: '/_authenticated/objects/$bucketId/'
       path: '/'
@@ -1189,7 +1129,6 @@ const AuthenticatedVmInstancesInstanceIdRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedContainerInstancesCreateRouteRoute: typeof AuthenticatedContainerInstancesCreateRouteRoute
   AuthenticatedComputeInstancesInstanceIdRoute: typeof AuthenticatedComputeInstancesInstanceIdRoute
   AuthenticatedContainerInstancesInstanceIdRoute: typeof AuthenticatedContainerInstancesInstanceIdRoute
   AuthenticatedFilesystemsFilesystemIdRoute: typeof AuthenticatedFilesystemsFilesystemIdRoute
@@ -1205,7 +1144,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedObjectsBucketIdRoute: typeof AuthenticatedObjectsBucketIdRouteWithChildren
   AuthenticatedRoutesRouteIdRoute: typeof AuthenticatedRoutesRouteIdRoute
   AuthenticatedSandboxInstancesInstanceIdRoute: typeof AuthenticatedSandboxInstancesInstanceIdRoute
-  AuthenticatedSandboxInstancesCreateRoute: typeof AuthenticatedSandboxInstancesCreateRoute
   AuthenticatedSecurityGroupsSecurityGroupIdRoute: typeof AuthenticatedSecurityGroupsSecurityGroupIdRoute
   AuthenticatedSubnetsSubnetIdRoute: typeof AuthenticatedSubnetsSubnetIdRoute
   AuthenticatedVectorStoresVectorStoreIdRoute: typeof AuthenticatedVectorStoresVectorStoreIdRoute
@@ -1229,7 +1167,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRegistryIndexRoute: typeof AuthenticatedRegistryIndexRoute
   AuthenticatedRoutesIndexRoute: typeof AuthenticatedRoutesIndexRoute
   AuthenticatedSandboxInstancesIndexRoute: typeof AuthenticatedSandboxInstancesIndexRoute
-  AuthenticatedSandboxTemplatesIndexRoute: typeof AuthenticatedSandboxTemplatesIndexRoute
   AuthenticatedSecurityGroupsIndexRoute: typeof AuthenticatedSecurityGroupsIndexRoute
   AuthenticatedSubnetsIndexRoute: typeof AuthenticatedSubnetsIndexRoute
   AuthenticatedVectorStoresIndexRoute: typeof AuthenticatedVectorStoresIndexRoute
@@ -1240,8 +1177,6 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedContainerInstancesCreateRouteRoute:
-    AuthenticatedContainerInstancesCreateRouteRoute,
   AuthenticatedComputeInstancesInstanceIdRoute:
     AuthenticatedComputeInstancesInstanceIdRoute,
   AuthenticatedContainerInstancesInstanceIdRoute:
@@ -1268,8 +1203,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRoutesRouteIdRoute: AuthenticatedRoutesRouteIdRoute,
   AuthenticatedSandboxInstancesInstanceIdRoute:
     AuthenticatedSandboxInstancesInstanceIdRoute,
-  AuthenticatedSandboxInstancesCreateRoute:
-    AuthenticatedSandboxInstancesCreateRoute,
   AuthenticatedSecurityGroupsSecurityGroupIdRoute:
     AuthenticatedSecurityGroupsSecurityGroupIdRoute,
   AuthenticatedSubnetsSubnetIdRoute: AuthenticatedSubnetsSubnetIdRoute,
@@ -1300,8 +1233,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRoutesIndexRoute: AuthenticatedRoutesIndexRoute,
   AuthenticatedSandboxInstancesIndexRoute:
     AuthenticatedSandboxInstancesIndexRoute,
-  AuthenticatedSandboxTemplatesIndexRoute:
-    AuthenticatedSandboxTemplatesIndexRoute,
   AuthenticatedSecurityGroupsIndexRoute: AuthenticatedSecurityGroupsIndexRoute,
   AuthenticatedSubnetsIndexRoute: AuthenticatedSubnetsIndexRoute,
   AuthenticatedVectorStoresIndexRoute: AuthenticatedVectorStoresIndexRoute,

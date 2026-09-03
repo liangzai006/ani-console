@@ -81,7 +81,7 @@ export function LoginCallbackPage() {
   if (phase === 'missing') {
     return (
       <AuthCenterLayout>
-        <Card className="w-full max-w-[400px]">
+        <Card className="w-full max-w-100">
           <Result
             status="warning"
             title="缺少授权参数"
@@ -106,7 +106,7 @@ export function LoginCallbackPage() {
 
     return (
       <AuthCenterLayout>
-        <Card className="w-full max-w-[480px] space-y-4">
+        <Card className="w-full max-w-120 space-y-4">
           <ApiErrorAlert error={error} title="登录失败" />
           {detail ? <Typography.Paragraph type="secondary">{detail}</Typography.Paragraph> : null}
           {parsed.request_id ? (
@@ -124,7 +124,7 @@ export function LoginCallbackPage() {
 
   return (
     <AuthCenterLayout>
-      <Card className="w-full max-w-[360px] text-center">
+      <Card className="w-full max-w-90 text-center">
         <Spin className="block" />
         <Typography.Text className="mt-4 block">正在完成登录…</Typography.Text>
       </Card>

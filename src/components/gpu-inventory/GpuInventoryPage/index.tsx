@@ -6,7 +6,7 @@ import {
   DataTable,
   StatusTag,
 } from '@/components/common'
-import { MetricCard } from '@/components/dashboard/MetricCard'
+import { MetricCard } from '@/components/common/MetricCard'
 import { PageHeader } from '@/components/shell/AppShell'
 import { useListErrorNotification } from '@/hooks/useListErrorNotification'
 import type { components } from '@/api/core-schema'
@@ -76,7 +76,7 @@ export function GpuInventoryPage() {
       <Grid.Row gutter={16}>
         <Grid.Col xs={24} md={8}>
           {summaryLoading ? (
-            <Card className="flex h-full min-h-[120px] items-center justify-center">
+            <Card className="flex h-full min-h-30 items-center justify-center">
               <Spin />
             </Card>
           ) : (
@@ -94,7 +94,7 @@ export function GpuInventoryPage() {
                 <Spin />
               </div>
             ) : (
-              <CorePieChart option={chart} className="h-[200px] w-full" />
+              <CorePieChart option={chart} className="h-50 w-full" />
             )}
           </Card>
         </Grid.Col>

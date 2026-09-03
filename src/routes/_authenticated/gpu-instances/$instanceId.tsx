@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { GpuInstanceDetail } from "@/components/gpu-instances/GpuInstanceDetail";
+import { GpuInstanceDetail } from "@/components/instances/GpuInstanceDetail";
 
 export const Route = createFileRoute(
   "/_authenticated/gpu-instances/$instanceId",

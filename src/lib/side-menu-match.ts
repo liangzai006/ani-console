@@ -23,7 +23,6 @@ const PATH_SUBMENU: { prefix: string; key: string }[] = [
   { prefix: "/gpu-instances", key: "compute" },
   { prefix: "/sandbox-instances", key: "compute" },
   { prefix: "/gpu-inventory", key: "compute" },
-  { prefix: "/sandbox-templates", key: "compute" },
   { prefix: "/k8s-clusters", key: "compute" },
   { prefix: "/images", key: "registry" },
   { prefix: "/volumes", key: "storage" },

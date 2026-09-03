@@ -118,13 +118,15 @@ export function RegistryPage() {
         options: { params: { query: never } },
       ) => RegistryApiResponse<RegistryImageListResponse>;
       const { data, error } = await request("/registry/images", {
-        params: { query: asUncontractedQuery({
-          limit,
-          cursor,
-          keyword: keyword.trim() || undefined,
-          project: project === "all" ? undefined : project,
-          purpose: purpose === "all" ? undefined : purpose,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit,
+            cursor,
+            keyword: keyword.trim() || undefined,
+            project: project === "all" ? undefined : project,
+            purpose: purpose === "all" ? undefined : purpose,
+          }),
+        },
       });
       if (error || !data)
         throw error ?? new Error("Registry 镜像列表未返回结果");
@@ -206,10 +208,10 @@ export function RegistryPage() {
       render: (_, item) => (
         <div>
           <Typography.Text className="block font-medium">
-            {item.repository}
+            {item.image}
           </Typography.Text>
           <Typography.Text type="secondary" className="text-xs">
-            {item.digest}
+            {item.repository}
           </Typography.Text>
         </div>
       ),
@@ -246,10 +248,10 @@ export function RegistryPage() {
       item.purpose === "gpu"
         ? "/gpu-instances"
         : item.purpose === "sandbox"
-          ? "/sandbox-instances/create"
+          ? "/sandbox-instances"
           : item.purpose === "system"
             ? "/compute-instances"
-            : "/container-instances/create";
+            : "/container-instances";
     void navigate({ to: target });
   };
 
