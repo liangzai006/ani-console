@@ -2,12 +2,15 @@ import { Alert, Button, Form, Select } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
+import { ImageNameText } from "@/components/common";
 
 type RegistryImage = {
   image: string;
+  name?: string | null;
   purpose?: string;
   repository: string;
   tag: string;
+  size_bytes?: number | null;
 };
 
 type RegistryImageListResponse = {
@@ -74,7 +77,7 @@ export function InstanceRegistryImageSelect({
         >
           {(images.data ?? []).map((item) => (
             <Select.Option key={item.image} value={item.image}>
-              {item.repository}:{item.tag}
+              <ImageNameText image={item} showSize />
             </Select.Option>
           ))}
         </Select>

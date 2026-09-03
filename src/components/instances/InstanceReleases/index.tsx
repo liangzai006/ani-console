@@ -1,6 +1,6 @@
 import { Descriptions, Empty, Space, Typography } from "@arco-design/web-react";
 import type { components } from "@/api/core-schema";
-import { DataTable } from "@/components/common";
+import { DataTable, ImageNameText } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 
 type Instance = components["schemas"]["InstanceRecord"];
@@ -18,17 +18,12 @@ export function InstanceReleases({ instance }: { instance: Instance }) {
     rolled_back: "已回滚",
   };
   const rolloutStatus = instance.container?.rollout_status;
-  const image =
-    instance.image?.ref ??
-    instance.image?.name ??
-    instance.image?.id ??
-    "-";
 
   return (
     <Space direction="vertical" size={16} className="w-full">
       <Descriptions
         column={1}
-        labelStyle={{ width: '120px' }}
+        labelStyle={{ width: "120px" }}
         data={[
           {
             label: "当前修订",
@@ -46,7 +41,7 @@ export function InstanceReleases({ instance }: { instance: Instance }) {
               ? `${instance.container.ready_replicas} / ${instance.container.replicas}`
               : "-",
           },
-          { label: "镜像", value: image },
+          { label: "镜像", value: <ImageNameText image={instance.image} /> },
         ]}
       />
       <Typography.Title heading={6}>发布历史</Typography.Title>
@@ -57,7 +52,10 @@ export function InstanceReleases({ instance }: { instance: Instance }) {
         noDataElement={<Empty description="暂无发布历史" />}
         columns={[
           { title: "修订版本", dataIndex: "revision", fixed: "left" },
-          { title: "镜像", render: (_, release) => release.image ?? "-" },
+          {
+            title: "镜像",
+            render: (_, release) => <ImageNameText image={release.image} />,
+          },
           {
             title: "发布时间",
             render: (_, release) => formatDateTime(release.created_at),

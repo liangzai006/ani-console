@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { VmInstancesList } from '@/components/instances/VmInstancesList'
+import { VmInstancesPage } from '@/components/instances/VmInstancesPage'
 
 export const Route = createFileRoute('/_authenticated/vm-instances/')({
-  component: VmInstancesList,
+  component: VmInstancesPage,
 })

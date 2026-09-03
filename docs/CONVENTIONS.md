@@ -3,6 +3,7 @@
 ## 目录
 
 - `src/routes/`：仅保留 TanStack Router 薄入口，负责 `createFileRoute`、路由参数、search 校验、loader/beforeLoad 等路由编排；具体页面实现必须从 `src/components/<scope>/<PageName>/index.tsx` 导入，避免页面实现与文件路由生成耦合导致热更新失效。
+- 页面级组件的目录名与导出名必须以 `Page` 结尾（例如 `VmInstancesPage`），普通业务组件不得使用 `Page` 后缀，以便从命名上明确区分路由页面与可复用组件。
 - `src/components/`：按 page scope 组织的组件目录。组件必须使用 `src/components/<scope>/<ComponentName>/index.tsx`；私有样式使用同目录的 `index.css`、`index.less`、`index.module.css` 或 `index.module.less`；子组件使用 `src/components/<scope>/<ComponentName>/<SubComponentName>/index.tsx`。禁止在 scope 目录直接平铺组件或组件样式文件。
 - 跨页面、跨领域复用的通用组件统一放在 `src/components/common/<ComponentName>/index.tsx`；业务组件放在对应 page scope。scope 级 `index.ts` 仅作为导出清单，不承载组件实现。
 - 资源创建模态框统一放在 `src/components/<domain>/<ComponentName>/index.tsx`，通过 `visible`、`onCancel`、成功回调及必要的上下文默认值暴露复用接口，避免绑定具体路由。

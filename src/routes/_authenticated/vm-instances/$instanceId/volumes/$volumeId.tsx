@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { VmVolumeDetailPage } from '@/components/instances/VmVolumeDetail'
+import { VmVolumeDetailPage } from '@/components/instances/VmVolumeDetailPage'
 
 export const Route = createFileRoute('/_authenticated/vm-instances/$instanceId/volumes/$volumeId')({
   component: function VmVolumeDetailRoute() {

@@ -1,46 +1,38 @@
 import {
   Button,
-  Checkbox,
   Dropdown,
-  Form,
-  Input,
-  InputNumber,
   Menu,
   Message,
-  Modal,
-  Select,
   Space,
   Tooltip,
 } from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
 import type { components } from "@/api/core-schema";
-import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
 import {
-  GpuInstanceResizeFields,
-} from "@/components/instances/GpuInstanceResizeFields";
-import {
-  buildGpuInstanceResizeFields,
-  getGpuInstanceResizeInitialValues,
-  isGpuInstanceResizeUnchanged,
-  type GpuInstanceResizeFormValues,
-} from "@/components/instances/GpuInstanceResizeFields/helpers";
-import { InstanceRegistryImageSelect } from "@/components/instances/InstanceRegistryImageSelect";
-import { listOrThrow } from "@/lib/api-list";
-import { getErrorMessage } from "@/lib/errors";
+  DataTableRowActionButton,
+  DataTableRowActions,
+} from "@/components/common";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+import { GpuInstanceAttachFilesystemModal } from "./GpuInstanceAttachFilesystemModal";
+import { GpuInstanceAttachVolumeModal } from "./GpuInstanceAttachVolumeModal";
+import { GpuInstanceBindSecretModal } from "./GpuInstanceBindSecretModal";
+import { GpuInstanceChangeSecurityGroupsModal } from "./GpuInstanceChangeSecurityGroupsModal";
+import { GpuInstanceDeleteModal } from "./GpuInstanceDeleteModal";
+import { GpuInstanceDetachVolumeModal } from "./GpuInstanceDetachVolumeModal";
+import { GpuInstanceResizeModal } from "./GpuInstanceResizeModal";
+import { GpuInstanceRollbackLatestModal } from "./GpuInstanceRollbackLatestModal";
+import { GpuInstanceRollbackModal } from "./GpuInstanceRollbackModal";
+import { GpuInstanceScaleModal } from "./GpuInstanceScaleModal";
+import { GpuInstanceStopModal } from "./GpuInstanceStopModal";
+import { GpuInstanceUpdateImageModal } from "./GpuInstanceUpdateImageModal";
 
 type Instance = components["schemas"]["InstanceRecord"];
-type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
-type Secret = components["schemas"]["Secret"];
-type LifecycleRequest = components["schemas"]["InstanceLifecycleRequest"];
-type LifecycleSubmitData = Omit<LifecycleRequest, "idempotency_key">;
-type LifecycleAction = LifecycleRequest["action"];
-type FormAction =
+type ModalAction =
   | "scale"
   | "update_image"
   | "resize"
@@ -50,34 +42,6 @@ type FormAction =
   | "attach_filesystem"
   | "bind_secret"
   | "change_security_groups";
-
-type ActionFormValues = GpuInstanceResizeFormValues & {
-  replicas?: number;
-  image_id?: string;
-  cpu?: string;
-  memory?: string;
-  revision?: string;
-  volume_id?: string;
-  filesystem_id?: string;
-  mount_path?: string;
-  read_only?: boolean;
-  secret_id?: string;
-  binding_type?: "env" | "file";
-  env_name?: string;
-  security_group_ids?: string[];
-};
-
-const ACTION_TITLES: Record<FormAction, string> = {
-  scale: "扩缩容",
-  update_image: "更新镜像",
-  resize: "变配",
-  rollback: "回滚发布",
-  attach_volume: "挂载云盘",
-  detach_volume: "卸载云盘",
-  attach_filesystem: "挂载 NFS",
-  bind_secret: "绑定密钥",
-  change_security_groups: "更换安全组",
-};
 
 const BUSY_STATES = new Set([
   "pending",
@@ -90,74 +54,6 @@ const BUSY_STATES = new Set([
 const TERMINATION_PROTECTION_STOP_TOOLTIP =
   "已开启终止保护，请先关闭终止保护后再关机";
 
-function openTerminalWindow(instanceId: string) {
-  const url = `/instance-terminal/${encodeURIComponent(instanceId)}`;
-  const width = 1200;
-  const height = 800;
-  const left = Math.max(
-    0,
-    window.screenX + Math.round((window.outerWidth - width) / 2),
-  );
-  const top = Math.max(
-    0,
-    window.screenY + Math.round((window.outerHeight - height) / 2),
-  );
-  window.open(
-    url,
-    `Connecting ${instanceId}`,
-    `width=${width},height=${height},left=${left},top=${top},scrollbars=1,resizable=1`,
-  );
-}
-
-function buildLifecycleBody(
-  action: FormAction,
-  values: ActionFormValues,
-): LifecycleSubmitData {
-  const base = { action } as LifecycleSubmitData;
-
-  switch (action) {
-    case "scale":
-      return { ...base, replicas: values.replicas };
-    case "update_image":
-      return { ...base, image_id: values.image_id, strategy: "rolling" };
-    case "resize":
-      // TODO: Core lifecycle 契约补充 spec_id 后移除扩展字段兼容写法。
-      return { ...base, ...buildGpuInstanceResizeFields(values) } as LifecycleSubmitData;
-    case "rollback":
-      return { ...base, revision: values.revision };
-    case "attach_volume":
-      return {
-        ...base,
-        volume_id: values.volume_id,
-        mount_path: values.mount_path,
-        read_only: values.read_only ?? false,
-      };
-    case "detach_volume":
-      return { ...base, volume_id: values.volume_id };
-    case "attach_filesystem":
-      return {
-        ...base,
-        filesystem_id: values.filesystem_id,
-        mount_path: values.mount_path,
-        read_only: values.read_only ?? false,
-      };
-    case "bind_secret":
-      return {
-        ...base,
-        secret_id: values.secret_id,
-        binding_type: values.binding_type,
-        env_name: values.binding_type === "env" ? values.env_name : undefined,
-        mount_path:
-          values.binding_type === "file" ? values.mount_path : undefined,
-      };
-    case "change_security_groups":
-      return {
-        ...base,
-        security_group_ids: values.security_group_ids ?? [],
-      };
-  }
-}
-
 export function GpuInstanceActions({
   instance,
   onChanged,
@@ -167,125 +63,135 @@ export function GpuInstanceActions({
   onChanged: () => void;
   display?: "row" | "menu" | "release" | "configuration";
 }) {
-  const [form] = Form.useForm<ActionFormValues>();
-  const lifecycleScope = useIdempotencyScope("gpu-instance-lifecycle", ["POST", instance.id]);
-  const [formAction, setFormAction] = useState<FormAction>();
-  const [bindingType, setBindingType] = useState<"env" | "file">("env");
-  const busy = BUSY_STATES.has(instance.state);
-  const stopBlockedByTerminationProtection =
-    instance.termination_protection === true;
-  const terminalAvailable =
-    instance.state === "running" && instance.access?.exec_available !== false;
-  const instanceVpcId = instance.network?.vpc_id ?? instance.vpc_id;
-  const securityGroups = useQuery({
-    queryKey: ["network-security-groups", "gpu-instance-change", instanceVpcId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/security-groups", {
-          params: { query: asUncontractedQuery({
-            limit: 100,
-            vpc_id: instanceVpcId || undefined,
-          }) },
-        }),
-      ),
-    enabled: formAction === "change_security_groups",
-  });
-  // TODO: 安全组接口确认按 vpc_id 过滤后，移除此处关联资源选择的本地兜底过滤。
-  const availableSecurityGroups = (
-    (securityGroups.data?.items ?? []) as SecurityGroup[]
-  ).filter((group) => !instanceVpcId || group.vpc_id === instanceVpcId);
-  const secrets = useQuery({
-    queryKey: ["secrets", "gpu-instance-bind"],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/secrets", { params: { query: { limit: 100 } } }),
-      ),
-    enabled: formAction === "bind_secret",
-  });
-  // TODO: 密钥接口提供可绑定条件并由后端过滤后，移除此处关联资源选择的本地兜底过滤。
-  const availableSecrets = ((secrets.data?.items ?? []) as Secret[]).filter(
-    (secret) => secret.id,
+  const navigate = useNavigate();
+  const startScope = useIdempotencyScope("gpu-instance-start", [
+    "POST",
+    instance.id,
+  ]);
+  const restartScope = useIdempotencyScope("gpu-instance-restart", [
+    "POST",
+    instance.id,
+  ]);
+  const protectionScope = useIdempotencyScope(
+    "gpu-instance-termination-protection",
+    ["POST", instance.id],
   );
-  const lifecycle = useMutation({
-    mutationFn: async (submitData: LifecycleSubmitData) => {
+  const [modalAction, setModalAction] = useState<ModalAction>();
+  const [stopVisible, setStopVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [rollbackLatestVisible, setRollbackLatestVisible] = useState(false);
+  const start = useMutation({
+    mutationFn: async () => {
+      const submitData = { action: "start" as const };
       const { error, response } = await coreApi.POST(
         "/instances/{instance_id}/lifecycle",
         {
           params: { path: { instance_id: instance.id } },
-          body: lifecycleScope.withKey(submitData) as LifecycleRequest,
+          body: startScope.withKey(submitData),
         },
       );
-      if (error) {
+      if (error)
         throw {
           ...(typeof error === "object" && error
             ? error
             : { message: String(error) }),
           status: response.status,
         };
-      }
     },
     onSuccess: () => {
-      lifecycleScope.reset();
-      Message.success("操作已提交");
-      setFormAction(undefined);
-      form.resetFields();
+      startScope.reset();
+      Message.success("启动已提交");
       onChanged();
     },
     onError: (error) =>
       Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
+  const restart = useMutation({
+    mutationFn: async () => {
+      const submitData = { action: "restart" as const };
+      const { error, response } = await coreApi.POST(
+        "/instances/{instance_id}/lifecycle",
+        {
+          params: { path: { instance_id: instance.id } },
+          body: restartScope.withKey(submitData),
+        },
+      );
+      if (error)
+        throw {
+          ...(typeof error === "object" && error
+            ? error
+            : { message: String(error) }),
+          status: response.status,
+        };
+    },
+    onSuccess: () => {
+      restartScope.reset();
+      Message.success("重启已提交");
+      onChanged();
+    },
+    onError: (error) =>
+      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+  });
+  const terminationProtection = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const submitData = {
+        action: "set_termination_protection" as const,
+        enabled,
+      };
+      const { error, response } = await coreApi.POST(
+        "/instances/{instance_id}/lifecycle",
+        {
+          params: { path: { instance_id: instance.id } },
+          body: protectionScope.withKey(submitData),
+        },
+      );
+      if (error)
+        throw {
+          ...(typeof error === "object" && error
+            ? error
+            : { message: String(error) }),
+          status: response.status,
+        };
+    },
+    onSuccess: () => {
+      protectionScope.reset();
+      Message.success("终止保护已更新");
+      onChanged();
+    },
+    onError: (error) =>
+      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+  });
+  const actionPending =
+    start.isPending || restart.isPending || terminationProtection.isPending;
+  const busy = BUSY_STATES.has(instance.state) || actionPending;
+  const stopBlockedByTerminationProtection =
+    instance.termination_protection === true;
+  const terminalAvailable =
+    instance.state === "running" && instance.access?.exec_available !== false;
   const stopDisabled =
     instance.state !== "running" ||
-    lifecycle.isPending ||
+    actionPending ||
     stopBlockedByTerminationProtection;
-
-  const submitSimpleAction = (
-    action: LifecycleAction,
-    fields: Partial<LifecycleRequest> = {},
-  ) =>
-    lifecycle.mutate({
-      action,
-      ...fields,
-    } as LifecycleSubmitData);
-
-  const submitStop = () => {
-    if (stopBlockedByTerminationProtection) return;
-    submitSimpleAction("stop");
-  };
-
-  const openActionForm = (action: FormAction) => {
-    setBindingType("env");
-    form.resetFields();
-    form.setFieldsValue({
-      replicas: instance.container?.replicas ?? 1,
-      ...(action === "resize"
-        ? getGpuInstanceResizeInitialValues(instance)
-        : {}),
-      binding_type: "env",
-      read_only: false,
-      security_group_ids:
-        action === "change_security_groups"
-          ? (instance.network?.security_groups ?? []).map((group) => group.id)
-          : undefined,
-    });
-    setFormAction(action);
-  };
 
   const handleMenuAction = async (action: string) => {
     if (action === "stop") {
-      submitStop();
+      if (!stopBlockedByTerminationProtection) setStopVisible(true);
       return;
     }
     if (action === "restart") {
-      submitSimpleAction("restart");
+      restart.mutate();
       return;
     }
     if (action === "scale") {
-      openActionForm("scale");
+      setModalAction("scale");
       return;
     }
     if (action === "terminal") {
-      openTerminalWindow(instance.id);
+      navigate({
+        to: "/gpu-instances/$instanceId",
+        params: { instanceId: instance.id },
+        search: { tab: "terminal" },
+      });
       return;
     }
     if (action === "copy_endpoint") {
@@ -299,21 +205,14 @@ export function GpuInstanceActions({
       return;
     }
     if (action === "termination_protection") {
-      submitSimpleAction("set_termination_protection", {
-        enabled: !instance.termination_protection,
-      });
+      terminationProtection.mutate(!instance.termination_protection);
       return;
     }
     if (action === "delete") {
-      Modal.confirm({
-        title: "删除 GPU 容器实例",
-        content: `确定删除「${instance.name}」？删除后无法恢复。`,
-        okButtonProps: { status: "danger" },
-        onOk: () => submitSimpleAction("delete"),
-      });
+      setDeleteVisible(true);
       return;
     }
-    openActionForm(action as FormAction);
+    setModalAction(action as ModalAction);
   };
 
   const moreMenu = (
@@ -331,11 +230,11 @@ export function GpuInstanceActions({
       ) : null}
       <Menu.Item
         key="restart"
-        disabled={instance.state !== "running" || lifecycle.isPending}
+        disabled={instance.state !== "running" || actionPending}
       >
         重启
       </Menu.Item>
-      <Menu.Item key="scale" disabled={busy || lifecycle.isPending}>
+      <Menu.Item key="scale" disabled={busy}>
         扩缩容
       </Menu.Item>
       <Menu.Item key="terminal" disabled={!terminalAvailable}>
@@ -390,8 +289,8 @@ export function GpuInstanceActions({
         <DataTableRowActions>
           {instance.state === "stopped" ? (
             <DataTableRowActionButton
-              disabled={lifecycle.isPending}
-              onClick={() => submitSimpleAction("start")}
+              disabled={actionPending}
+              onClick={() => start.mutate()}
             >
               启动
             </DataTableRowActionButton>
@@ -400,7 +299,7 @@ export function GpuInstanceActions({
               <span className="inline-flex">
                 <DataTableRowActionButton
                   disabled={stopDisabled}
-                  onClick={submitStop}
+                  onClick={() => setStopVisible(true)}
                 >
                   停止
                 </DataTableRowActionButton>
@@ -409,13 +308,13 @@ export function GpuInstanceActions({
           ) : (
             <DataTableRowActionButton
               disabled={stopDisabled}
-              onClick={submitStop}
+              onClick={() => setStopVisible(true)}
             >
               停止
             </DataTableRowActionButton>
           )}
           <Dropdown trigger="click" position="br" droplist={moreMenu}>
-            <DataTableRowActionButton disabled={lifecycle.isPending}>
+            <DataTableRowActionButton disabled={actionPending}>
               更多
               <i
                 className="iconfont icon-down-chevron-small ml-1"
@@ -428,21 +327,15 @@ export function GpuInstanceActions({
         <Space>
           <Button
             size="small"
-            disabled={busy || lifecycle.isPending}
-            onClick={() => openActionForm("update_image")}
+            disabled={busy}
+            onClick={() => setModalAction("update_image")}
           >
             更新镜像
           </Button>
           <Button
             size="small"
-            disabled={instance.state !== "stopped" || lifecycle.isPending}
-            onClick={() =>
-              Modal.confirm({
-                title: "回滚上一版",
-                content: `确定将「${instance.name}」回滚到上一修订版本？`,
-                onOk: () => submitSimpleAction("rollback"),
-              })
-            }
+            disabled={instance.state !== "stopped" || actionPending}
+            onClick={() => setRollbackLatestVisible(true)}
           >
             回滚上一版
           </Button>
@@ -450,193 +343,140 @@ export function GpuInstanceActions({
       ) : display === "configuration" ? (
         <Button
           size="small"
-          disabled={busy || lifecycle.isPending}
-          onClick={() => openActionForm("bind_secret")}
+          disabled={busy}
+          onClick={() => setModalAction("bind_secret")}
         >
           绑定密钥
         </Button>
       ) : (
         <Dropdown trigger="click" position="br" droplist={moreMenu}>
-          <Button loading={lifecycle.isPending}>
+          <Button loading={actionPending}>
             更多操作
             <IconDown className="ml-1 text-xs" />
           </Button>
         </Dropdown>
       )}
 
-      <Modal
-        title={
-          formAction ? `${ACTION_TITLES[formAction]} · ${instance.name}` : ""
-        }
-        visible={Boolean(formAction)}
-        confirmLoading={lifecycle.isPending}
-        okText={formAction === "resize" ? "确认变配" : "确定"}
-        onCancel={() => {
-          lifecycleScope.reset();
-          setFormAction(undefined);
-          form.resetFields();
-        }}
-        onOk={async () => {
-          if (!formAction) return;
-          const values = await form.validate();
-          if (
-            formAction === "resize" &&
-            isGpuInstanceResizeUnchanged(instance, values)
-          ) {
-            Message.info("规格未变化");
-            return;
-          }
-          lifecycle.mutate(buildLifecycleBody(formAction, values));
-        }}
-        unmountOnExit
-      >
-        <Form form={form} layout="vertical">
-          {formAction === "scale" ? (
-            <Form.Item
-              field="replicas"
-              label="副本数"
-              rules={[{ required: true, message: "请输入副本数" }]}
-            >
-              <InputNumber min={1} precision={0} className="w-full" />
-            </Form.Item>
-          ) : null}
-          {formAction === "update_image" ? (
-            <InstanceRegistryImageSelect field="image_id" enabled instanceKind="gpu_container" />
-          ) : null}
-          {formAction === "resize" ? (
-            <GpuInstanceResizeFields instance={instance} enabled />
-          ) : null}
-          {formAction === "rollback" ? (
-            <Form.Item
-              field="revision"
-              label="目标修订版本"
-              rules={[{ required: true, message: "请输入目标修订版本" }]}
-            >
-              <Input placeholder="请输入 revision" />
-            </Form.Item>
-          ) : null}
-          {formAction === "attach_volume" || formAction === "detach_volume" ? (
-            <Form.Item
-              field="volume_id"
-              label="云盘 ID"
-              rules={[{ required: true, message: "请输入云盘 ID" }]}
-            >
-              <Input placeholder="请输入云盘 ID" />
-            </Form.Item>
-          ) : null}
-          {formAction === "attach_filesystem" ? (
-            <Form.Item
-              field="filesystem_id"
-              label="NFS 文件系统 ID"
-              rules={[{ required: true, message: "请输入文件系统 ID" }]}
-            >
-              <Input placeholder="请输入文件系统 ID" />
-            </Form.Item>
-          ) : null}
-          {formAction === "attach_volume" ||
-          formAction === "attach_filesystem" ? (
-            <Form.Item
-              field="mount_path"
-              label="挂载路径"
-              rules={[{ required: true, message: "请输入挂载路径" }]}
-            >
-              <Input placeholder="例如 /data" />
-            </Form.Item>
-          ) : null}
-          {formAction === "attach_volume" ||
-          formAction === "attach_filesystem" ? (
-            <Form.Item field="read_only" triggerPropName="checked">
-              <Checkbox>只读挂载</Checkbox>
-            </Form.Item>
-          ) : null}
-          {formAction === "bind_secret" ? (
-            <>
-              <Form.Item
-                field="secret_id"
-                label="密钥"
-                extra={
-                  secrets.error
-                    ? getErrorMessage(secrets.error, "密钥列表加载失败")
-                    : undefined
-                }
-                rules={[{ required: true, message: "请选择密钥" }]}
-              >
-                <Select
-                  loading={secrets.isLoading}
-                  placeholder="请选择已创建的密钥"
-                  showSearch
-                  allowClear
-                  options={availableSecrets.map((secret) => ({
-                    label: secret.name ?? secret.id ?? "未命名密钥",
-                    value: secret.id!,
-                  }))}
-                />
-              </Form.Item>
-              <Form.Item
-                field="binding_type"
-                label="绑定方式"
-                rules={[{ required: true, message: "请选择绑定方式" }]}
-              >
-                <Select
-                  options={[
-                    { label: "环境变量", value: "env" },
-                    { label: "文件", value: "file" },
-                  ]}
-                  onChange={setBindingType}
-                />
-              </Form.Item>
-              {bindingType === "file" ? (
-                <Form.Item
-                  field="mount_path"
-                  label="挂载路径"
-                  rules={[{ required: true, message: "请输入挂载路径" }]}
-                >
-                  <Input placeholder="例如 /data" />
-                </Form.Item>
-              ) : null}
-              {bindingType === "env" ? (
-                <Form.Item
-                  field="env_name"
-                  label="环境变量名"
-                  rules={[{ required: true, message: "请输入环境变量名" }]}
-                >
-                  <Input placeholder="例如 API_KEY" />
-                </Form.Item>
-              ) : null}
-            </>
-          ) : null}
-          {formAction === "change_security_groups" ? (
-            <Form.Item
-              field="security_group_ids"
-              label="安全组"
-              extra={
-                securityGroups.error
-                  ? getErrorMessage(securityGroups.error, "安全组列表加载失败")
-                  : "可多选；清空选择表示解除全部安全组。"
-              }
-            >
-              <Select
-                mode="multiple"
-                loading={securityGroups.isLoading}
-                placeholder="请选择当前 VPC 下的安全组"
-                showSearch
-                allowClear
-                filterOption={(inputValue, option) =>
-                  String(option.props.children)
-                    .toLowerCase()
-                    .includes(inputValue.toLowerCase())
-                }
-              >
-                {availableSecurityGroups.map((group) => (
-                  <Select.Option key={group.id} value={group.id}>
-                    {group.name} · {group.id}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-          ) : null}
-        </Form>
-      </Modal>
+      {stopVisible && (
+        <GpuInstanceStopModal
+          instance={instance}
+          onCancel={() => setStopVisible(false)}
+          onSubmitted={() => {
+            setStopVisible(false);
+            onChanged();
+          }}
+        />
+      )}
+      {deleteVisible && (
+        <GpuInstanceDeleteModal
+          instance={instance}
+          onCancel={() => setDeleteVisible(false)}
+          onSubmitted={() => {
+            setDeleteVisible(false);
+            onChanged();
+          }}
+        />
+      )}
+      {rollbackLatestVisible && (
+        <GpuInstanceRollbackLatestModal
+          instance={instance}
+          onCancel={() => setRollbackLatestVisible(false)}
+          onSubmitted={() => {
+            setRollbackLatestVisible(false);
+            onChanged();
+          }}
+        />
+      )}
+      {modalAction === "scale" && (
+        <GpuInstanceScaleModal
+          instance={instance}
+          onCancel={() => setModalAction(undefined)}
+          onSubmitted={() => {
+            setModalAction(undefined);
+            onChanged();
+          }}
+        />
+      )}
+      {modalAction === "update_image" && (
+        <GpuInstanceUpdateImageModal
+          instance={instance}
+          onCancel={() => setModalAction(undefined)}
+          onSubmitted={() => {
+            setModalAction(undefined);
+            onChanged();
+          }}
+        />
+      )}
+      {modalAction === "resize" && (
+        <GpuInstanceResizeModal
+          instance={instance}
+          onCancel={() => setModalAction(undefined)}
+          onSubmitted={() => {
+            setModalAction(undefined);
+            onChanged();
+          }}
+        />
+      )}
+      {modalAction === "rollback" && (
+        <GpuInstanceRollbackModal
+          instance={instance}
+          onCancel={() => setModalAction(undefined)}
+          onSubmitted={() => {
+            setModalAction(undefined);
+            onChanged();
+          }}
+        />
+      )}
+      {modalAction === "attach_volume" && (
+        <GpuInstanceAttachVolumeModal
+          instance={instance}
+          onCancel={() => setModalAction(undefined)}
+          onSubmitted={() => {
+            setModalAction(undefined);
+            onChanged();
+          }}
+        />
+      )}
+      {modalAction === "detach_volume" && (
+        <GpuInstanceDetachVolumeModal
+          instance={instance}
+          onCancel={() => setModalAction(undefined)}
+          onSubmitted={() => {
+            setModalAction(undefined);
+            onChanged();
+          }}
+        />
+      )}
+      {modalAction === "attach_filesystem" && (
+        <GpuInstanceAttachFilesystemModal
+          instance={instance}
+          onCancel={() => setModalAction(undefined)}
+          onSubmitted={() => {
+            setModalAction(undefined);
+            onChanged();
+          }}
+        />
+      )}
+      {modalAction === "bind_secret" && (
+        <GpuInstanceBindSecretModal
+          instance={instance}
+          onCancel={() => setModalAction(undefined)}
+          onSubmitted={() => {
+            setModalAction(undefined);
+            onChanged();
+          }}
+        />
+      )}
+      {modalAction === "change_security_groups" && (
+        <GpuInstanceChangeSecurityGroupsModal
+          instance={instance}
+          onCancel={() => setModalAction(undefined)}
+          onSubmitted={() => {
+            setModalAction(undefined);
+            onChanged();
+          }}
+        />
+      )}
     </>
   );
 }

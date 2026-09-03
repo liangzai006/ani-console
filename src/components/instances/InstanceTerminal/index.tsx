@@ -1,12 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
-import { Terminal } from '@xterm/xterm'
+import { Button, Message, Space, Tag } from '@arco-design/web-react'
 import { FitAddon } from '@xterm/addon-fit'
+import { Terminal } from '@xterm/xterm'
+import clsx from 'clsx'
 import '@xterm/xterm/css/xterm.css'
-import { Button, Space, Tag } from '@arco-design/web-react'
 import { coreApi } from '@/api/client'
 import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
+import styles from './index.module.css'
 
-type TerminalStatus = 'idle' | 'connecting' | 'connected' | 'closed' | 'error'
+type TerminalStatus = 'connecting' | 'connected' | 'closed' | 'error'
+
+type TerminalMessage = {
+  type?: unknown
+  data?: unknown
+  code?: unknown
+  message?: unknown
+}
+
+const TERMINAL_SUBPROTOCOL = 'ani.terminal.v1'
 
 const TERMINAL_THEME = {
   background: '#0b0e16',
@@ -16,59 +27,83 @@ const TERMINAL_THEME = {
 }
 
 const STATUS_META: Record<TerminalStatus, { text: string; color: string }> = {
-  idle: { text: '未连接', color: 'gray' },
   connecting: { text: '连接中', color: 'blue' },
   connected: { text: '已连接', color: 'green' },
   closed: { text: '已断开', color: 'gray' },
   error: { text: '连接异常', color: 'red' },
 }
 
-function packStdin(data: string): string {
-  return JSON.stringify({ Op: 'stdin', Data: data })
+function packStdin(data: string) {
+  return JSON.stringify({ type: 'stdin', data })
 }
 
-function packResize(cols: number, rows: number): string {
-  return JSON.stringify({ Op: 'resize', Cols: cols, Rows: rows })
+function packResize(cols: number, rows: number) {
+  return JSON.stringify({ type: 'resize', cols, rows })
 }
 
-function unpackTerminalOutput(data: string): string {
-  try {
-    const parsed = JSON.parse(data) as { Data?: unknown }
-    if (typeof parsed.Data === 'string') return parsed.Data
-  } catch {
-    // 非 JSON 输出按原始文本写入，兼容当前 Core 契约。
+function getSessionError(error: unknown, status: number) {
+  if (status === 401 || status === 403) return '登录失效或没有实例 exec 权限'
+  if (status === 404) return '实例不存在或终端服务不可用'
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string' && message.trim()) return message
   }
-  return data
+  return '终端会话创建失败'
 }
 
-function keyEventToTerminalData(event: KeyboardEvent): string | null {
-  if (event.metaKey || event.altKey) return null
-  if (event.key.length === 1) return event.key
-  if (event.key === 'Enter') return '\r'
-  if (event.key === 'Backspace') return '\x7f'
-  if (event.key === 'Tab') return '\t'
-  if (event.key === 'Escape') return '\x1b'
-  return null
+function writeGatewayMessage(term: Terminal, raw: string, onError: (message: string) => void) {
+  let message: TerminalMessage
+  try {
+    message = JSON.parse(raw) as TerminalMessage
+  } catch {
+    term.write(raw)
+    return
+  }
+
+  if ((message.type === 'stdout' || message.type === 'stderr') && typeof message.data === 'string') {
+    term.write(message.data)
+    return
+  }
+  if (message.type === 'toast' && typeof message.data === 'string') {
+    Message.info(message.data)
+    return
+  }
+  if (message.type === 'exit') {
+    term.writeln(`\r\n\x1b[90m[进程已退出${message.code == null ? '' : `，退出码 ${String(message.code)}`}]\x1b[0m`)
+    return
+  }
+  if (message.type === 'error') {
+    const detail = typeof message.message === 'string' ? message.message : '终端流处理失败'
+    const code = typeof message.code === 'string' ? `（${message.code}）` : ''
+    const error = `${detail}${code}`
+    term.writeln(`\r\n\x1b[31m${error}\x1b[0m`)
+    onError(error)
+    return
+  }
+
+  term.writeln(`\r\n\x1b[33m[未识别的终端消息] ${raw}\x1b[0m`)
 }
 
 export function InstanceTerminal({
   instanceId,
   container,
   command = ['/bin/sh'],
-  height = 420,
+  height = '100%',
+  className,
 }: {
   instanceId: string
   container?: string
   command?: string[]
   height?: number | string
+  className?: string
 }) {
   const execScope = useIdempotencyScope('instance-terminal-session-create', ['POST', instanceId])
   const hostRef = useRef<HTMLDivElement | null>(null)
-  const termRef = useRef<Terminal | null>(null)
-  const fitRef = useRef<FitAddon | null>(null)
   const socketRef = useRef<WebSocket | null>(null)
-  const [status, setStatus] = useState<TerminalStatus>('idle')
+  const [status, setStatus] = useState<TerminalStatus>('connecting')
+  const [errorMessage, setErrorMessage] = useState('')
   const [connectSeq, setConnectSeq] = useState(0)
+  const commandSignature = JSON.stringify(command)
 
   useEffect(() => {
     const host = hostRef.current
@@ -80,143 +115,79 @@ export function InstanceTerminal({
       fontFamily: 'Menlo, Monaco, Consolas, "Courier New", monospace',
       theme: TERMINAL_THEME,
       convertEol: true,
-      cols: 120,
-      rows: 30,
+      scrollback: 5000,
+      cols: 80,
+      rows: 24,
     })
     const fitAddon = new FitAddon()
-    term.loadAddon(fitAddon)
-    termRef.current = term
-    fitRef.current = fitAddon
-
-    let disposed = false
-    let opened = false
-    let openFrame: number | null = null
-    let focusFrame: number | null = null
-    let fitFrame: number | null = null
-    let connectTimer: number | null = null
-    let terminalActive = false
+    const abortController = new AbortController()
     const decoder = new TextDecoder()
-    const safeWrite = (data: string) => {
-      try {
-        term.write(data)
-      } catch {
-        scheduleFit()
-        window.requestAnimationFrame(() => {
-          if (!disposed) {
-            try {
-              term.write(data)
-            } catch {
-              // xterm renderer can be temporarily unavailable during first layout.
-            }
-          }
-        })
-      }
-    }
-    const sendStdin = (data: string) => {
+    let disposed = false
+    let socketFailed = false
+    let fitFrame: number | undefined
+    let lastResize = ''
+
+    setStatus('connecting')
+    setErrorMessage('')
+    term.loadAddon(fitAddon)
+    term.open(host)
+
+    const sendResize = (cols: number, rows: number) => {
       const socket = socketRef.current
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(packStdin(data))
-      }
+      const dimensions = `${cols}x${rows}`
+      if (socket?.readyState !== WebSocket.OPEN || dimensions === lastResize) return
+      lastResize = dimensions
+      socket.send(packResize(cols, rows))
     }
-    const focusTerminal = () => {
-      terminalActive = true
-      host.focus()
-      try {
-        term.focus()
-      } catch {
-        // xterm 还未完成 DOM 初始化时忽略，后续点击或连接成功会再次聚焦
-      }
-    }
-    const focusTerminalSoon = () => {
-      if (focusFrame != null) window.cancelAnimationFrame(focusFrame)
-      focusFrame = window.requestAnimationFrame(() => {
-        focusFrame = null
-        if (!disposed) focusTerminal()
-      })
-    }
-    const sendResize = () => {
-      const socket = socketRef.current
-      if (!socket || socket.readyState !== WebSocket.OPEN) return
-      socket.send(packResize(term.cols, term.rows))
-    }
-    const fitAndResize = () => {
-      if (!opened || disposed) return
-      if (host.clientWidth === 0 || host.clientHeight === 0) return
+
+    const fit = () => {
+      if (disposed || host.clientWidth === 0 || host.clientHeight === 0) return
       try {
         fitAddon.fit()
       } catch {
-        return
+        // xterm 尚未完成首帧布局时等待下一次 ResizeObserver 回调。
       }
-      sendResize()
     }
+
     const scheduleFit = () => {
-      if (fitFrame != null) window.cancelAnimationFrame(fitFrame)
+      if (fitFrame !== undefined) window.cancelAnimationFrame(fitFrame)
       fitFrame = window.requestAnimationFrame(() => {
-        fitFrame = window.requestAnimationFrame(() => {
-          fitFrame = null
-          fitAndResize()
-        })
+        fitFrame = undefined
+        fit()
       })
     }
 
-    const resizeObserver = new ResizeObserver(() => scheduleFit())
-    resizeObserver.observe(host)
-    host.addEventListener('mousedown', focusTerminal)
-    const shouldUseKeyboardFallback = (event: KeyboardEvent) => {
-      const target = event.target
-      if (!(target instanceof Node)) return false
-      if (!host.contains(target) && !terminalActive) return false
-      if (target instanceof HTMLElement) {
-        const tagName = target.tagName.toLowerCase()
-        if (tagName === 'textarea' || tagName === 'input' || target.isContentEditable) return false
-      }
-      return true
-    }
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!shouldUseKeyboardFallback(event)) return
-      const data = keyEventToTerminalData(event)
-      if (data == null) return
-      event.preventDefault()
-      event.stopPropagation()
-      sendStdin(data)
-    }
-    const handleWindowMouseDown = (event: MouseEvent) => {
-      const target = event.target
-      if (!(target instanceof Node) || !host.contains(target)) terminalActive = false
-    }
-    host.addEventListener('keydown', handleKeyDown, true)
-    window.addEventListener('keydown', handleKeyDown, true)
-    window.addEventListener('mousedown', handleWindowMouseDown, true)
-
-    const dataDisposable = term.onData((data) => {
-      sendStdin(data)
-    })
-    const resizeDisposable = term.onResize(({ cols, rows }) => {
+    const inputDisposable = term.onData((data) => {
       const socket = socketRef.current
-      if (!socket || socket.readyState !== WebSocket.OPEN) return
-      socket.send(packResize(cols, rows))
+      if (socket?.readyState === WebSocket.OPEN) socket.send(packStdin(data))
     })
+    const resizeDisposable = term.onResize(({ cols, rows }) => sendResize(cols, rows))
+    const resizeObserver = new ResizeObserver(scheduleFit)
+    resizeObserver.observe(host)
 
-    const resolveWebSocketUrl = (wsUrl: string, token?: string) => {
-      try {
-        const url = new URL(wsUrl)
-        if (!url.searchParams.has('token') && token) {
-          url.searchParams.set('token', token)
-        }
-        return url.toString()
-      } catch {
-        if (!token || /(?:^|[?&])token=/.test(wsUrl)) return wsUrl
-        return `${wsUrl}${wsUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+    const handleMessage = async (data: string | ArrayBuffer | Blob) => {
+      let text: string
+      if (typeof data === 'string') text = data
+      else if (data instanceof ArrayBuffer) text = decoder.decode(data)
+      else text = await data.text()
+      if (!disposed) {
+        writeGatewayMessage(term, text, (message) => {
+          setStatus('error')
+          setErrorMessage(message)
+        })
       }
     }
 
     const connect = async () => {
-      setStatus('connecting')
-      term.writeln('\x1b[90m正在建立终端连接…\x1b[0m')
+      scheduleFit()
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
+      if (disposed) return
+      fit()
+
       try {
         const submitData = {
           container: container?.trim() || null,
-          command,
+          command: JSON.parse(commandSignature) as string[],
           tty: true,
           rows: term.rows,
           cols: term.cols,
@@ -224,130 +195,94 @@ export function InstanceTerminal({
         const { data, error, response } = await coreApi.POST('/instances/{instance_id}/exec', {
           params: { path: { instance_id: instanceId } },
           body: execScope.withKey(submitData),
+          signal: abortController.signal,
         })
-        if (error) {
-          if (response.status === 401 || response.status === 403) {
-            throw new Error('登录失效或没有实例 exec 权限')
-          }
-          throw error
-        }
+        if (error) throw new Error(getSessionError(error, response.status))
         execScope.reset()
         if (!data?.ws_url) throw new Error('终端连接地址为空')
         if (disposed) return
 
-        const wsUrl = resolveWebSocketUrl(data.ws_url, data.token)
-        const socket = new WebSocket(wsUrl)
+        const socket = new WebSocket(data.ws_url, TERMINAL_SUBPROTOCOL)
         socket.binaryType = 'arraybuffer'
         socketRef.current = socket
+
         socket.onopen = () => {
-          if (disposed) return
+          if (disposed || socketRef.current !== socket) return
           setStatus('connected')
           scheduleFit()
-          focusTerminalSoon()
+          sendResize(term.cols, term.rows)
+          term.focus()
         }
         socket.onmessage = (event) => {
-          if (typeof event.data === 'string') {
-            const output = unpackTerminalOutput(event.data)
-            if (output) safeWrite(output)
-            return
-          }
-          if (event.data instanceof ArrayBuffer) {
-            const output = unpackTerminalOutput(decoder.decode(event.data))
-            if (output) safeWrite(output)
-            return
-          }
-          if (event.data instanceof Blob) {
-            void event.data.text().then((text) => {
-              if (!disposed) {
-                const output = unpackTerminalOutput(text)
-                if (output) safeWrite(output)
-              }
-            })
-          }
+          if (socketRef.current !== socket) return
+          void handleMessage(event.data).catch(() => {
+            if (!disposed) term.writeln('\r\n\x1b[33m终端消息解析失败\x1b[0m')
+          })
         }
         socket.onerror = () => {
-          if (disposed) return
+          if (disposed || socketRef.current !== socket) return
+          socketFailed = true
           setStatus('error')
+          setErrorMessage('WebSocket 连接失败，请检查网络和终端网关')
           term.writeln('\r\n\x1b[31m终端连接异常\x1b[0m')
         }
-        socket.onclose = () => {
-          if (disposed) return
-          setStatus((current) => (current === 'error' ? current : 'closed'))
-          term.writeln('\r\n\x1b[90m连接已关闭\x1b[0m')
+        socket.onclose = (event) => {
+          if (disposed || socketRef.current !== socket) return
+          socketRef.current = null
+          if (!socketFailed) {
+            setStatus('closed')
+            setErrorMessage(event.reason || `连接已关闭（${event.code}）`)
+            term.writeln('\r\n\x1b[90m连接已关闭\x1b[0m')
+          }
         }
-      } catch (e) {
-        if (disposed) return
+      } catch (error) {
+        if (disposed || abortController.signal.aborted) return
+        const message = error instanceof Error ? error.message : '终端连接失败'
         setStatus('error')
-        const message = e instanceof Error ? e.message : '终端连接失败'
+        setErrorMessage(message)
         term.writeln(`\r\n\x1b[31m${message}\x1b[0m`)
       }
     }
 
-    const ensureOpen = () => {
-      if (disposed || opened) return
-      if (host.clientWidth === 0 || host.clientHeight === 0) {
-        openFrame = window.requestAnimationFrame(ensureOpen)
-        return
-      }
-      term.open(host)
-      opened = true
-      scheduleFit()
-      connectTimer = window.setTimeout(() => {
-        void connect()
-      }, 0)
-    }
-    ensureOpen()
+    void connect()
 
     return () => {
       disposed = true
-      if (openFrame != null) window.cancelAnimationFrame(openFrame)
-      if (focusFrame != null) window.cancelAnimationFrame(focusFrame)
-      if (fitFrame != null) window.cancelAnimationFrame(fitFrame)
-      if (connectTimer != null) window.clearTimeout(connectTimer)
+      abortController.abort()
+      if (fitFrame !== undefined) window.cancelAnimationFrame(fitFrame)
       resizeObserver.disconnect()
-      host.removeEventListener('mousedown', focusTerminal)
-      host.removeEventListener('keydown', handleKeyDown, true)
-      window.removeEventListener('keydown', handleKeyDown, true)
-      window.removeEventListener('mousedown', handleWindowMouseDown, true)
-      dataDisposable.dispose()
+      inputDisposable.dispose()
       resizeDisposable.dispose()
-      socketRef.current?.close()
+      const socket = socketRef.current
       socketRef.current = null
+      if (socket && socket.readyState !== WebSocket.CLOSED) socket.close(1000, 'terminal tab closed')
       term.dispose()
-      termRef.current = null
-      fitRef.current = null
     }
-    // connectSeq 变化时重新建立连接
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    instanceId,
-    container,
-    connectSeq,
-    execScope,
-  ])
+  }, [commandSignature, connectSeq, container, execScope, instanceId])
 
   const meta = STATUS_META[status]
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
+    <div className={clsx('flex min-h-0 flex-col gap-3', className)}>
+      <div className="flex shrink-0 items-center justify-between gap-4">
         <Space>
           <span className="text-sm text-(--color-text-2)">状态</span>
           <Tag color={meta.color}>{meta.text}</Tag>
+          {errorMessage ? <span className="text-sm text-(--color-text-3)">{errorMessage}</span> : null}
         </Space>
         <Button
           size="small"
           loading={status === 'connecting'}
           disabled={status === 'connected' || status === 'connecting'}
-          onClick={() => setConnectSeq((n) => n + 1)}
+          onClick={() => setConnectSeq((current) => current + 1)}
         >
           重新连接
         </Button>
       </div>
       <div
         ref={hostRef}
+        className={clsx(styles.terminalHost, 'min-h-0 flex-1')}
         data-testid="instance-terminal-output"
-        tabIndex={0}
         style={{
           height,
           padding: 8,

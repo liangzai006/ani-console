@@ -8,6 +8,7 @@ import { GpuContainerCreateModal } from "@/components/instances/GpuContainerCrea
 import {
   ListDataTable,
   DataTableNameCell,
+  ImageNameText,
   ListPageFrame,
   ListPageHeader,
   StatusTabs,
@@ -130,20 +131,23 @@ export function GpuInstancesPage() {
     {
       key: "gpu",
       title: "GPU",
-      render: (_, row) => row.compute?.gpu_type ?? "-",
+      width: 220,
+      render: (_, row) => {
+        const gpu = row.compute?.gpu_type ?? "-";
+
+        return (
+          <Tooltip content={gpu}>
+            <span className="block truncate">{gpu}</span>
+          </Tooltip>
+        );
+      },
     },
     {
       key: "image",
       title: "镜像",
-      render: (_, row) => {
-        const image = row.image?.ref ?? row.image?.name ?? row.image?.id ?? "-";
-
-        return (
-          <Tooltip content={image}>
-            <span className="block max-w-56 truncate">{image}</span>
-          </Tooltip>
-        );
-      },
+      render: (_, row) => (
+        <ImageNameText image={row.image} className="max-w-56" />
+      ),
     },
     {
       key: "replicas",

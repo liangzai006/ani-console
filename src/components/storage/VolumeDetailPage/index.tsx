@@ -4,11 +4,18 @@ import {
   DetailPagePlaceholder,
   AliIcon,
   StatusTag,
-} from '@/components/common'
+} from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react"
+  Alert,
+  Button,
+  Empty,
+  Modal,
+  Space,
+  Spin,
+  Tooltip,
+} from "@arco-design/web-react";
 import { useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
@@ -19,6 +26,7 @@ import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
 import { VolumeOSInitGuideModal } from "@/components/storage/VolumeOSInitGuideModal";
 import { listOrThrow } from "@/lib/api-list";
 import { formatBytes, formatDateTime } from "@/lib/format";
+import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
@@ -29,7 +37,10 @@ type MountedInstanceRow = { id: string; name: string; route?: string | null };
 export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const detachScope = useIdempotencyScope("storage-volume-detach", ["POST", volumeId]);
+  const detachScope = useIdempotencyScope("storage-volume-detach", [
+    "POST",
+    volumeId,
+  ]);
   const [snapshotVisible, setSnapshotVisible] = useState(false);
   const [attachVisible, setAttachVisible] = useState(false);
   const [expandVisible, setExpandVisible] = useState(false);
@@ -78,7 +89,10 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   });
   const detachVolume = useMutation({
     mutationFn: async (instanceId: string) => {
-      const submitData = { action: "detach_volume" as const, volume_id: volumeId };
+      const submitData = {
+        action: "detach_volume" as const,
+        volume_id: volumeId,
+      };
       const { error } = await coreApi.POST(
         "/instances/{instance_id}/lifecycle",
         {
@@ -106,7 +120,11 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[{ label: "存储" }, { label: "块存储", to: "/volumes" }, { label: volumeId }]}
+        breadcrumbs={[
+          { label: "存储" },
+          { label: "块存储", to: "/volumes" },
+          { label: volumeId },
+        ]}
         title={volumeId}
         idLabel="卷 ID"
         idValue={volumeId}
@@ -117,12 +135,16 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const volume = detail.data as Volume;
   const snapshotItems = (snapshots.data?.items ?? []) as VolumeSnapshot[];
   const mounted = Boolean(volume.mount_instance_id);
-  const openMountedInstance = () => {
+  const openMountedInstance = async () => {
     if (!volume.mount_instance_id) return;
-    navigate({
-      to: "/compute-instances/$instanceId",
-      params: { instanceId: volume.mount_instance_id },
+    const { data, error } = await coreApi.GET("/instances/{instance_id}", {
+      params: { path: { instance_id: volume.mount_instance_id } },
     });
+    if (error || !data) {
+      showApiError(error ?? new Error("挂载实例详情未返回结果"));
+      return;
+    }
+    navigateToInstanceDetail(navigate, data);
   };
   const unavailable = (description: string) => (
     <Empty description={description} />

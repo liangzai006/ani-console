@@ -10,6 +10,7 @@ import {
   Spin,
   Steps,
   Switch,
+  Tooltip,
   Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -19,6 +20,8 @@ import { coreApi } from "@/api/client";
 import { listOrThrow } from "@/lib/api-list";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+import { getImageDisplayName } from "@/lib/render";
+import { ImageNameText } from "@/components/common";
 
 type SandboxTemplate = components["schemas"]["SandboxTemplate"];
 type EgressPolicy = components["schemas"]["SandboxNetworkEgressPolicy"];
@@ -119,7 +122,10 @@ export function SandboxInstanceCreateModal({
           network_egress_policy: form.egressPolicy,
           egress_allowlist:
             form.egressPolicy === "allowlist"
-              ? form.egressAllowlist.split(/\r?\n/).map((host) => host.trim()).filter(Boolean)
+              ? form.egressAllowlist
+                  .split(/\r?\n/)
+                  .map((host) => host.trim())
+                  .filter(Boolean)
               : [],
         },
       };
@@ -231,13 +237,23 @@ export function SandboxInstanceCreateModal({
               >
                 {items.map((item) => (
                   <Select.Option key={item.id} value={item.id}>
-                    {item.name} · {item.image}
+                    <Tooltip content={`${item.name} · ${item.image}`}>
+                      <span className="block truncate">
+                        {item.name} · {getImageDisplayName(item.image)}
+                      </span>
+                    </Tooltip>
                   </Select.Option>
                 ))}
               </Select>
             </Form.Item>
             <Form.Item label="模板镜像（仓库）">
-              <Input value={selected?.image ?? ""} readOnly disabled />
+              <Tooltip content={selected?.image ?? "-"}>
+                <Input
+                  value={getImageDisplayName(selected?.image)}
+                  readOnly
+                  disabled
+                />
+              </Tooltip>
             </Form.Item>
             <Form.Item label="CPU">
               <Select
@@ -346,7 +362,10 @@ export function SandboxInstanceCreateModal({
           data={[
             { label: "名称", value: form.name || "-" },
             { label: "模板", value: selected?.name ?? "-" },
-            { label: "镜像", value: selected?.image ?? "-" },
+            {
+              label: "镜像",
+              value: <ImageNameText image={selected?.image} />,
+            },
             { label: "规格", value: `${form.cpu}C / ${form.memory}` },
             {
               label: "会话",

@@ -1,11 +1,23 @@
 import {
   DataTable,
   DetailPageFrame,
+  ImageNameText,
   AliIcon,
-} from '@/components/common'
+} from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  Alert, Button, Empty, InputNumber, Message, Modal, Select, Space, Spin, Tooltip, Typography } from "@arco-design/web-react"
+  Alert,
+  Button,
+  Empty,
+  InputNumber,
+  Message,
+  Modal,
+  Select,
+  Space,
+  Spin,
+  Tooltip,
+  Typography,
+} from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { components } from "@/api/services-schema";
@@ -14,6 +26,7 @@ import { showApiError } from "@/api/helpers";
 import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
+import { getImageDisplayName } from "@/lib/render";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
@@ -23,8 +36,14 @@ type InferenceLog = components["schemas"]["InferenceServiceLog"];
 export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", ["POST", serviceId]);
-  const scaleScope = useIdempotencyScope("inference-service-scale", ["PATCH", serviceId]);
+  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", [
+    "POST",
+    serviceId,
+  ]);
+  const scaleScope = useIdempotencyScope("inference-service-scale", [
+    "PATCH",
+    serviceId,
+  ]);
   const [scaleVisible, setScaleVisible] = useState(false);
   const [replicas, setReplicas] = useState(1);
   const [logLevel, setLogLevel] = useState<
@@ -147,7 +166,11 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   if (!service.data)
     return (
       <DetailPageFrame
-        breadcrumbs={[{ label: "AI" }, { label: "推理服务", to: "/inference" }, { label: serviceId }]}
+        breadcrumbs={[
+          { label: "AI" },
+          { label: "推理服务", to: "/inference" },
+          { label: serviceId },
+        ]}
         title={serviceId}
         icon={<AliIcon name="tuilifuwu" size={28} />}
         headerItems={[
@@ -155,7 +178,13 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
           { label: "状态", value: "-" },
           { label: "创建时间", value: "-" },
         ]}
-        cards={[{ key: "basic", title: "基本信息", fields: [{ label: "服务 ID", value: serviceId }] }]}
+        cards={[
+          {
+            key: "basic",
+            title: "基本信息",
+            fields: [{ label: "服务 ID", value: serviceId }],
+          },
+        ]}
       />
     );
   const item = service.data;
@@ -278,7 +307,10 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
             title: "运行信息",
             fields: [
               { label: "镜像 ID", value: item.image_id ?? "-" },
-              { label: "镜像引用", value: item.image_ref ?? "-" },
+              {
+                label: "镜像引用",
+                value: <ImageNameText image={item.image_ref} />,
+              },
               { label: "调用地址", value: item.invocation_url ?? "尚未提供" },
               { label: "配置代次", value: item.generation },
               { label: "已观察代次", value: item.observed_generation },
@@ -304,7 +336,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
                   {
                     id: "image",
                     type: "镜像",
-                    name: item.image_ref ?? item.image_id ?? "-",
+                    name: getImageDisplayName(item.image_ref ?? item.image_id),
                     detail: item.placement_mode,
                   },
                   {

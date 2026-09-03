@@ -35,10 +35,8 @@ import { Route as AuthenticatedGpuInventoryIndexRouteImport } from './routes/_au
 import { Route as AuthenticatedGpuInstancesIndexRouteImport } from './routes/_authenticated/gpu-instances/index'
 import { Route as AuthenticatedFilesystemsIndexRouteImport } from './routes/_authenticated/filesystems/index'
 import { Route as AuthenticatedContainerInstancesIndexRouteImport } from './routes/_authenticated/container-instances/index'
-import { Route as AuthenticatedComputeInstancesIndexRouteImport } from './routes/_authenticated/compute-instances/index'
 import { Route as AuthenticatedVpcsVpcIdRouteImport } from './routes/_authenticated/vpcs/$vpcId'
 import { Route as AuthenticatedVolumesVolumeIdRouteImport } from './routes/_authenticated/volumes/$volumeId'
-import { Route as AuthenticatedVmInstancesCreateRouteImport } from './routes/_authenticated/vm-instances/create'
 import { Route as AuthenticatedVmInstancesInstanceIdRouteImport } from './routes/_authenticated/vm-instances/$instanceId'
 import { Route as AuthenticatedVectorStoresVectorStoreIdRouteImport } from './routes/_authenticated/vector-stores/$vectorStoreId'
 import { Route as AuthenticatedSubnetsSubnetIdRouteImport } from './routes/_authenticated/subnets/$subnetId'
@@ -50,17 +48,12 @@ import { Route as AuthenticatedModelsModelIdRouteImport } from './routes/_authen
 import { Route as AuthenticatedLoadBalancersLoadBalancerIdRouteImport } from './routes/_authenticated/load-balancers/$loadBalancerId'
 import { Route as AuthenticatedKbKbIdRouteImport } from './routes/_authenticated/kb/$kbId'
 import { Route as AuthenticatedK8sClustersClusterIdRouteImport } from './routes/_authenticated/k8s-clusters/$clusterId'
-import { Route as AuthenticatedInstanceTerminalInstanceIdRouteImport } from './routes/_authenticated/instance-terminal/$instanceId'
-import { Route as AuthenticatedInstanceConsoleInstanceIdRouteImport } from './routes/_authenticated/instance-console/$instanceId'
-import { Route as AuthenticatedInferencePoliciesRouteImport } from './routes/_authenticated/inference/policies'
 import { Route as AuthenticatedInferenceServiceIdRouteImport } from './routes/_authenticated/inference/$serviceId'
 import { Route as AuthenticatedGpuInstancesInstanceIdRouteImport } from './routes/_authenticated/gpu-instances/$instanceId'
 import { Route as AuthenticatedFilesystemsFilesystemIdRouteImport } from './routes/_authenticated/filesystems/$filesystemId'
 import { Route as AuthenticatedContainerInstancesInstanceIdRouteImport } from './routes/_authenticated/container-instances/$instanceId'
-import { Route as AuthenticatedComputeInstancesInstanceIdRouteImport } from './routes/_authenticated/compute-instances/$instanceId'
 import { Route as AuthenticatedObjectsBucketIdIndexRouteImport } from './routes/_authenticated/objects/$bucketId/index'
 import { Route as AuthenticatedObjectsBucketIdObjectIdRouteImport } from './routes/_authenticated/objects/$bucketId/$objectId'
-import { Route as AuthenticatedInferencePoliciesPolicyIdRouteImport } from './routes/_authenticated/inference/policies.$policyId'
 import { Route as AuthenticatedVmInstancesInstanceIdVolumesVolumeIdRouteImport } from './routes/_authenticated/vm-instances/$instanceId/volumes/$volumeId'
 
 const LoginRoute = LoginRouteImport.update({
@@ -211,12 +204,6 @@ const AuthenticatedContainerInstancesIndexRoute =
     path: '/container-instances/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedComputeInstancesIndexRoute =
-  AuthenticatedComputeInstancesIndexRouteImport.update({
-    id: '/compute-instances/',
-    path: '/compute-instances/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedVpcsVpcIdRoute = AuthenticatedVpcsVpcIdRouteImport.update({
   id: '/vpcs/$vpcId',
   path: '/vpcs/$vpcId',
@@ -226,12 +213,6 @@ const AuthenticatedVolumesVolumeIdRoute =
   AuthenticatedVolumesVolumeIdRouteImport.update({
     id: '/volumes/$volumeId',
     path: '/volumes/$volumeId',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedVmInstancesCreateRoute =
-  AuthenticatedVmInstancesCreateRouteImport.update({
-    id: '/vm-instances/create',
-    path: '/vm-instances/create',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedVmInstancesInstanceIdRoute =
@@ -299,24 +280,6 @@ const AuthenticatedK8sClustersClusterIdRoute =
     path: '/k8s-clusters/$clusterId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedInstanceTerminalInstanceIdRoute =
-  AuthenticatedInstanceTerminalInstanceIdRouteImport.update({
-    id: '/instance-terminal/$instanceId',
-    path: '/instance-terminal/$instanceId',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedInstanceConsoleInstanceIdRoute =
-  AuthenticatedInstanceConsoleInstanceIdRouteImport.update({
-    id: '/instance-console/$instanceId',
-    path: '/instance-console/$instanceId',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedInferencePoliciesRoute =
-  AuthenticatedInferencePoliciesRouteImport.update({
-    id: '/inference/policies',
-    path: '/inference/policies',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedInferenceServiceIdRoute =
   AuthenticatedInferenceServiceIdRouteImport.update({
     id: '/inference/$serviceId',
@@ -341,12 +304,6 @@ const AuthenticatedContainerInstancesInstanceIdRoute =
     path: '/container-instances/$instanceId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedComputeInstancesInstanceIdRoute =
-  AuthenticatedComputeInstancesInstanceIdRouteImport.update({
-    id: '/compute-instances/$instanceId',
-    path: '/compute-instances/$instanceId',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedObjectsBucketIdIndexRoute =
   AuthenticatedObjectsBucketIdIndexRouteImport.update({
     id: '/',
@@ -358,12 +315,6 @@ const AuthenticatedObjectsBucketIdObjectIdRoute =
     id: '/$objectId',
     path: '/$objectId',
     getParentRoute: () => AuthenticatedObjectsBucketIdRoute,
-  } as any)
-const AuthenticatedInferencePoliciesPolicyIdRoute =
-  AuthenticatedInferencePoliciesPolicyIdRouteImport.update({
-    id: '/$policyId',
-    path: '/$policyId',
-    getParentRoute: () => AuthenticatedInferencePoliciesRoute,
   } as any)
 const AuthenticatedVmInstancesInstanceIdVolumesVolumeIdRoute =
   AuthenticatedVmInstancesInstanceIdVolumesVolumeIdRouteImport.update({
@@ -377,14 +328,10 @@ export interface FileRoutesByFullPath {
   '/login/callback': typeof LoginCallbackRoute
   '/': typeof AuthenticatedIndexRoute
   '/login/': typeof LoginIndexRoute
-  '/compute-instances/$instanceId': typeof AuthenticatedComputeInstancesInstanceIdRoute
   '/container-instances/$instanceId': typeof AuthenticatedContainerInstancesInstanceIdRoute
   '/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
   '/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
-  '/inference/policies': typeof AuthenticatedInferencePoliciesRouteWithChildren
-  '/instance-console/$instanceId': typeof AuthenticatedInstanceConsoleInstanceIdRoute
-  '/instance-terminal/$instanceId': typeof AuthenticatedInstanceTerminalInstanceIdRoute
   '/k8s-clusters/$clusterId': typeof AuthenticatedK8sClustersClusterIdRoute
   '/kb/$kbId': typeof AuthenticatedKbKbIdRoute
   '/load-balancers/$loadBalancerId': typeof AuthenticatedLoadBalancersLoadBalancerIdRoute
@@ -396,10 +343,8 @@ export interface FileRoutesByFullPath {
   '/subnets/$subnetId': typeof AuthenticatedSubnetsSubnetIdRoute
   '/vector-stores/$vectorStoreId': typeof AuthenticatedVectorStoresVectorStoreIdRoute
   '/vm-instances/$instanceId': typeof AuthenticatedVmInstancesInstanceIdRouteWithChildren
-  '/vm-instances/create': typeof AuthenticatedVmInstancesCreateRoute
   '/volumes/$volumeId': typeof AuthenticatedVolumesVolumeIdRoute
   '/vpcs/$vpcId': typeof AuthenticatedVpcsVpcIdRoute
-  '/compute-instances': typeof AuthenticatedComputeInstancesIndexRoute
   '/container-instances': typeof AuthenticatedContainerInstancesIndexRoute
   '/filesystems': typeof AuthenticatedFilesystemsIndexRoute
   '/gpu-instances': typeof AuthenticatedGpuInstancesIndexRoute
@@ -421,7 +366,6 @@ export interface FileRoutesByFullPath {
   '/vm-instances': typeof AuthenticatedVmInstancesIndexRoute
   '/volumes': typeof AuthenticatedVolumesIndexRoute
   '/vpcs': typeof AuthenticatedVpcsIndexRoute
-  '/inference/policies/$policyId': typeof AuthenticatedInferencePoliciesPolicyIdRoute
   '/objects/$bucketId/$objectId': typeof AuthenticatedObjectsBucketIdObjectIdRoute
   '/objects/$bucketId/': typeof AuthenticatedObjectsBucketIdIndexRoute
   '/vm-instances/$instanceId/volumes/$volumeId': typeof AuthenticatedVmInstancesInstanceIdVolumesVolumeIdRoute
@@ -430,14 +374,10 @@ export interface FileRoutesByTo {
   '/login/callback': typeof LoginCallbackRoute
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginIndexRoute
-  '/compute-instances/$instanceId': typeof AuthenticatedComputeInstancesInstanceIdRoute
   '/container-instances/$instanceId': typeof AuthenticatedContainerInstancesInstanceIdRoute
   '/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
   '/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
-  '/inference/policies': typeof AuthenticatedInferencePoliciesRouteWithChildren
-  '/instance-console/$instanceId': typeof AuthenticatedInstanceConsoleInstanceIdRoute
-  '/instance-terminal/$instanceId': typeof AuthenticatedInstanceTerminalInstanceIdRoute
   '/k8s-clusters/$clusterId': typeof AuthenticatedK8sClustersClusterIdRoute
   '/kb/$kbId': typeof AuthenticatedKbKbIdRoute
   '/load-balancers/$loadBalancerId': typeof AuthenticatedLoadBalancersLoadBalancerIdRoute
@@ -448,10 +388,8 @@ export interface FileRoutesByTo {
   '/subnets/$subnetId': typeof AuthenticatedSubnetsSubnetIdRoute
   '/vector-stores/$vectorStoreId': typeof AuthenticatedVectorStoresVectorStoreIdRoute
   '/vm-instances/$instanceId': typeof AuthenticatedVmInstancesInstanceIdRouteWithChildren
-  '/vm-instances/create': typeof AuthenticatedVmInstancesCreateRoute
   '/volumes/$volumeId': typeof AuthenticatedVolumesVolumeIdRoute
   '/vpcs/$vpcId': typeof AuthenticatedVpcsVpcIdRoute
-  '/compute-instances': typeof AuthenticatedComputeInstancesIndexRoute
   '/container-instances': typeof AuthenticatedContainerInstancesIndexRoute
   '/filesystems': typeof AuthenticatedFilesystemsIndexRoute
   '/gpu-instances': typeof AuthenticatedGpuInstancesIndexRoute
@@ -473,7 +411,6 @@ export interface FileRoutesByTo {
   '/vm-instances': typeof AuthenticatedVmInstancesIndexRoute
   '/volumes': typeof AuthenticatedVolumesIndexRoute
   '/vpcs': typeof AuthenticatedVpcsIndexRoute
-  '/inference/policies/$policyId': typeof AuthenticatedInferencePoliciesPolicyIdRoute
   '/objects/$bucketId/$objectId': typeof AuthenticatedObjectsBucketIdObjectIdRoute
   '/objects/$bucketId': typeof AuthenticatedObjectsBucketIdIndexRoute
   '/vm-instances/$instanceId/volumes/$volumeId': typeof AuthenticatedVmInstancesInstanceIdVolumesVolumeIdRoute
@@ -485,14 +422,10 @@ export interface FileRoutesById {
   '/login/callback': typeof LoginCallbackRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/login/': typeof LoginIndexRoute
-  '/_authenticated/compute-instances/$instanceId': typeof AuthenticatedComputeInstancesInstanceIdRoute
   '/_authenticated/container-instances/$instanceId': typeof AuthenticatedContainerInstancesInstanceIdRoute
   '/_authenticated/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
   '/_authenticated/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/_authenticated/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
-  '/_authenticated/inference/policies': typeof AuthenticatedInferencePoliciesRouteWithChildren
-  '/_authenticated/instance-console/$instanceId': typeof AuthenticatedInstanceConsoleInstanceIdRoute
-  '/_authenticated/instance-terminal/$instanceId': typeof AuthenticatedInstanceTerminalInstanceIdRoute
   '/_authenticated/k8s-clusters/$clusterId': typeof AuthenticatedK8sClustersClusterIdRoute
   '/_authenticated/kb/$kbId': typeof AuthenticatedKbKbIdRoute
   '/_authenticated/load-balancers/$loadBalancerId': typeof AuthenticatedLoadBalancersLoadBalancerIdRoute
@@ -504,10 +437,8 @@ export interface FileRoutesById {
   '/_authenticated/subnets/$subnetId': typeof AuthenticatedSubnetsSubnetIdRoute
   '/_authenticated/vector-stores/$vectorStoreId': typeof AuthenticatedVectorStoresVectorStoreIdRoute
   '/_authenticated/vm-instances/$instanceId': typeof AuthenticatedVmInstancesInstanceIdRouteWithChildren
-  '/_authenticated/vm-instances/create': typeof AuthenticatedVmInstancesCreateRoute
   '/_authenticated/volumes/$volumeId': typeof AuthenticatedVolumesVolumeIdRoute
   '/_authenticated/vpcs/$vpcId': typeof AuthenticatedVpcsVpcIdRoute
-  '/_authenticated/compute-instances/': typeof AuthenticatedComputeInstancesIndexRoute
   '/_authenticated/container-instances/': typeof AuthenticatedContainerInstancesIndexRoute
   '/_authenticated/filesystems/': typeof AuthenticatedFilesystemsIndexRoute
   '/_authenticated/gpu-instances/': typeof AuthenticatedGpuInstancesIndexRoute
@@ -529,7 +460,6 @@ export interface FileRoutesById {
   '/_authenticated/vm-instances/': typeof AuthenticatedVmInstancesIndexRoute
   '/_authenticated/volumes/': typeof AuthenticatedVolumesIndexRoute
   '/_authenticated/vpcs/': typeof AuthenticatedVpcsIndexRoute
-  '/_authenticated/inference/policies/$policyId': typeof AuthenticatedInferencePoliciesPolicyIdRoute
   '/_authenticated/objects/$bucketId/$objectId': typeof AuthenticatedObjectsBucketIdObjectIdRoute
   '/_authenticated/objects/$bucketId/': typeof AuthenticatedObjectsBucketIdIndexRoute
   '/_authenticated/vm-instances/$instanceId/volumes/$volumeId': typeof AuthenticatedVmInstancesInstanceIdVolumesVolumeIdRoute
@@ -541,14 +471,10 @@ export interface FileRouteTypes {
     | '/login/callback'
     | '/'
     | '/login/'
-    | '/compute-instances/$instanceId'
     | '/container-instances/$instanceId'
     | '/filesystems/$filesystemId'
     | '/gpu-instances/$instanceId'
     | '/inference/$serviceId'
-    | '/inference/policies'
-    | '/instance-console/$instanceId'
-    | '/instance-terminal/$instanceId'
     | '/k8s-clusters/$clusterId'
     | '/kb/$kbId'
     | '/load-balancers/$loadBalancerId'
@@ -560,10 +486,8 @@ export interface FileRouteTypes {
     | '/subnets/$subnetId'
     | '/vector-stores/$vectorStoreId'
     | '/vm-instances/$instanceId'
-    | '/vm-instances/create'
     | '/volumes/$volumeId'
     | '/vpcs/$vpcId'
-    | '/compute-instances'
     | '/container-instances'
     | '/filesystems'
     | '/gpu-instances'
@@ -585,7 +509,6 @@ export interface FileRouteTypes {
     | '/vm-instances'
     | '/volumes'
     | '/vpcs'
-    | '/inference/policies/$policyId'
     | '/objects/$bucketId/$objectId'
     | '/objects/$bucketId/'
     | '/vm-instances/$instanceId/volumes/$volumeId'
@@ -594,14 +517,10 @@ export interface FileRouteTypes {
     | '/login/callback'
     | '/'
     | '/login'
-    | '/compute-instances/$instanceId'
     | '/container-instances/$instanceId'
     | '/filesystems/$filesystemId'
     | '/gpu-instances/$instanceId'
     | '/inference/$serviceId'
-    | '/inference/policies'
-    | '/instance-console/$instanceId'
-    | '/instance-terminal/$instanceId'
     | '/k8s-clusters/$clusterId'
     | '/kb/$kbId'
     | '/load-balancers/$loadBalancerId'
@@ -612,10 +531,8 @@ export interface FileRouteTypes {
     | '/subnets/$subnetId'
     | '/vector-stores/$vectorStoreId'
     | '/vm-instances/$instanceId'
-    | '/vm-instances/create'
     | '/volumes/$volumeId'
     | '/vpcs/$vpcId'
-    | '/compute-instances'
     | '/container-instances'
     | '/filesystems'
     | '/gpu-instances'
@@ -637,7 +554,6 @@ export interface FileRouteTypes {
     | '/vm-instances'
     | '/volumes'
     | '/vpcs'
-    | '/inference/policies/$policyId'
     | '/objects/$bucketId/$objectId'
     | '/objects/$bucketId'
     | '/vm-instances/$instanceId/volumes/$volumeId'
@@ -648,14 +564,10 @@ export interface FileRouteTypes {
     | '/login/callback'
     | '/_authenticated/'
     | '/login/'
-    | '/_authenticated/compute-instances/$instanceId'
     | '/_authenticated/container-instances/$instanceId'
     | '/_authenticated/filesystems/$filesystemId'
     | '/_authenticated/gpu-instances/$instanceId'
     | '/_authenticated/inference/$serviceId'
-    | '/_authenticated/inference/policies'
-    | '/_authenticated/instance-console/$instanceId'
-    | '/_authenticated/instance-terminal/$instanceId'
     | '/_authenticated/k8s-clusters/$clusterId'
     | '/_authenticated/kb/$kbId'
     | '/_authenticated/load-balancers/$loadBalancerId'
@@ -667,10 +579,8 @@ export interface FileRouteTypes {
     | '/_authenticated/subnets/$subnetId'
     | '/_authenticated/vector-stores/$vectorStoreId'
     | '/_authenticated/vm-instances/$instanceId'
-    | '/_authenticated/vm-instances/create'
     | '/_authenticated/volumes/$volumeId'
     | '/_authenticated/vpcs/$vpcId'
-    | '/_authenticated/compute-instances/'
     | '/_authenticated/container-instances/'
     | '/_authenticated/filesystems/'
     | '/_authenticated/gpu-instances/'
@@ -692,7 +602,6 @@ export interface FileRouteTypes {
     | '/_authenticated/vm-instances/'
     | '/_authenticated/volumes/'
     | '/_authenticated/vpcs/'
-    | '/_authenticated/inference/policies/$policyId'
     | '/_authenticated/objects/$bucketId/$objectId'
     | '/_authenticated/objects/$bucketId/'
     | '/_authenticated/vm-instances/$instanceId/volumes/$volumeId'
@@ -887,13 +796,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContainerInstancesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/compute-instances/': {
-      id: '/_authenticated/compute-instances/'
-      path: '/compute-instances'
-      fullPath: '/compute-instances'
-      preLoaderRoute: typeof AuthenticatedComputeInstancesIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/vpcs/$vpcId': {
       id: '/_authenticated/vpcs/$vpcId'
       path: '/vpcs/$vpcId'
@@ -906,13 +808,6 @@ declare module '@tanstack/react-router' {
       path: '/volumes/$volumeId'
       fullPath: '/volumes/$volumeId'
       preLoaderRoute: typeof AuthenticatedVolumesVolumeIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/vm-instances/create': {
-      id: '/_authenticated/vm-instances/create'
-      path: '/vm-instances/create'
-      fullPath: '/vm-instances/create'
-      preLoaderRoute: typeof AuthenticatedVmInstancesCreateRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/vm-instances/$instanceId': {
@@ -992,27 +887,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedK8sClustersClusterIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/instance-terminal/$instanceId': {
-      id: '/_authenticated/instance-terminal/$instanceId'
-      path: '/instance-terminal/$instanceId'
-      fullPath: '/instance-terminal/$instanceId'
-      preLoaderRoute: typeof AuthenticatedInstanceTerminalInstanceIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/instance-console/$instanceId': {
-      id: '/_authenticated/instance-console/$instanceId'
-      path: '/instance-console/$instanceId'
-      fullPath: '/instance-console/$instanceId'
-      preLoaderRoute: typeof AuthenticatedInstanceConsoleInstanceIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/inference/policies': {
-      id: '/_authenticated/inference/policies'
-      path: '/inference/policies'
-      fullPath: '/inference/policies'
-      preLoaderRoute: typeof AuthenticatedInferencePoliciesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/inference/$serviceId': {
       id: '/_authenticated/inference/$serviceId'
       path: '/inference/$serviceId'
@@ -1041,13 +915,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContainerInstancesInstanceIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/compute-instances/$instanceId': {
-      id: '/_authenticated/compute-instances/$instanceId'
-      path: '/compute-instances/$instanceId'
-      fullPath: '/compute-instances/$instanceId'
-      preLoaderRoute: typeof AuthenticatedComputeInstancesInstanceIdRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/objects/$bucketId/': {
       id: '/_authenticated/objects/$bucketId/'
       path: '/'
@@ -1062,13 +929,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedObjectsBucketIdObjectIdRouteImport
       parentRoute: typeof AuthenticatedObjectsBucketIdRoute
     }
-    '/_authenticated/inference/policies/$policyId': {
-      id: '/_authenticated/inference/policies/$policyId'
-      path: '/$policyId'
-      fullPath: '/inference/policies/$policyId'
-      preLoaderRoute: typeof AuthenticatedInferencePoliciesPolicyIdRouteImport
-      parentRoute: typeof AuthenticatedInferencePoliciesRoute
-    }
     '/_authenticated/vm-instances/$instanceId/volumes/$volumeId': {
       id: '/_authenticated/vm-instances/$instanceId/volumes/$volumeId'
       path: '/volumes/$volumeId'
@@ -1078,21 +938,6 @@ declare module '@tanstack/react-router' {
     }
   }
 }
-
-interface AuthenticatedInferencePoliciesRouteChildren {
-  AuthenticatedInferencePoliciesPolicyIdRoute: typeof AuthenticatedInferencePoliciesPolicyIdRoute
-}
-
-const AuthenticatedInferencePoliciesRouteChildren: AuthenticatedInferencePoliciesRouteChildren =
-  {
-    AuthenticatedInferencePoliciesPolicyIdRoute:
-      AuthenticatedInferencePoliciesPolicyIdRoute,
-  }
-
-const AuthenticatedInferencePoliciesRouteWithChildren =
-  AuthenticatedInferencePoliciesRoute._addFileChildren(
-    AuthenticatedInferencePoliciesRouteChildren,
-  )
 
 interface AuthenticatedObjectsBucketIdRouteChildren {
   AuthenticatedObjectsBucketIdObjectIdRoute: typeof AuthenticatedObjectsBucketIdObjectIdRoute
@@ -1129,14 +974,10 @@ const AuthenticatedVmInstancesInstanceIdRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedComputeInstancesInstanceIdRoute: typeof AuthenticatedComputeInstancesInstanceIdRoute
   AuthenticatedContainerInstancesInstanceIdRoute: typeof AuthenticatedContainerInstancesInstanceIdRoute
   AuthenticatedFilesystemsFilesystemIdRoute: typeof AuthenticatedFilesystemsFilesystemIdRoute
   AuthenticatedGpuInstancesInstanceIdRoute: typeof AuthenticatedGpuInstancesInstanceIdRoute
   AuthenticatedInferenceServiceIdRoute: typeof AuthenticatedInferenceServiceIdRoute
-  AuthenticatedInferencePoliciesRoute: typeof AuthenticatedInferencePoliciesRouteWithChildren
-  AuthenticatedInstanceConsoleInstanceIdRoute: typeof AuthenticatedInstanceConsoleInstanceIdRoute
-  AuthenticatedInstanceTerminalInstanceIdRoute: typeof AuthenticatedInstanceTerminalInstanceIdRoute
   AuthenticatedK8sClustersClusterIdRoute: typeof AuthenticatedK8sClustersClusterIdRoute
   AuthenticatedKbKbIdRoute: typeof AuthenticatedKbKbIdRoute
   AuthenticatedLoadBalancersLoadBalancerIdRoute: typeof AuthenticatedLoadBalancersLoadBalancerIdRoute
@@ -1148,10 +989,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSubnetsSubnetIdRoute: typeof AuthenticatedSubnetsSubnetIdRoute
   AuthenticatedVectorStoresVectorStoreIdRoute: typeof AuthenticatedVectorStoresVectorStoreIdRoute
   AuthenticatedVmInstancesInstanceIdRoute: typeof AuthenticatedVmInstancesInstanceIdRouteWithChildren
-  AuthenticatedVmInstancesCreateRoute: typeof AuthenticatedVmInstancesCreateRoute
   AuthenticatedVolumesVolumeIdRoute: typeof AuthenticatedVolumesVolumeIdRoute
   AuthenticatedVpcsVpcIdRoute: typeof AuthenticatedVpcsVpcIdRoute
-  AuthenticatedComputeInstancesIndexRoute: typeof AuthenticatedComputeInstancesIndexRoute
   AuthenticatedContainerInstancesIndexRoute: typeof AuthenticatedContainerInstancesIndexRoute
   AuthenticatedFilesystemsIndexRoute: typeof AuthenticatedFilesystemsIndexRoute
   AuthenticatedGpuInstancesIndexRoute: typeof AuthenticatedGpuInstancesIndexRoute
@@ -1177,8 +1016,6 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedComputeInstancesInstanceIdRoute:
-    AuthenticatedComputeInstancesInstanceIdRoute,
   AuthenticatedContainerInstancesInstanceIdRoute:
     AuthenticatedContainerInstancesInstanceIdRoute,
   AuthenticatedFilesystemsFilesystemIdRoute:
@@ -1186,12 +1023,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedGpuInstancesInstanceIdRoute:
     AuthenticatedGpuInstancesInstanceIdRoute,
   AuthenticatedInferenceServiceIdRoute: AuthenticatedInferenceServiceIdRoute,
-  AuthenticatedInferencePoliciesRoute:
-    AuthenticatedInferencePoliciesRouteWithChildren,
-  AuthenticatedInstanceConsoleInstanceIdRoute:
-    AuthenticatedInstanceConsoleInstanceIdRoute,
-  AuthenticatedInstanceTerminalInstanceIdRoute:
-    AuthenticatedInstanceTerminalInstanceIdRoute,
   AuthenticatedK8sClustersClusterIdRoute:
     AuthenticatedK8sClustersClusterIdRoute,
   AuthenticatedKbKbIdRoute: AuthenticatedKbKbIdRoute,
@@ -1210,11 +1041,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedVectorStoresVectorStoreIdRoute,
   AuthenticatedVmInstancesInstanceIdRoute:
     AuthenticatedVmInstancesInstanceIdRouteWithChildren,
-  AuthenticatedVmInstancesCreateRoute: AuthenticatedVmInstancesCreateRoute,
   AuthenticatedVolumesVolumeIdRoute: AuthenticatedVolumesVolumeIdRoute,
   AuthenticatedVpcsVpcIdRoute: AuthenticatedVpcsVpcIdRoute,
-  AuthenticatedComputeInstancesIndexRoute:
-    AuthenticatedComputeInstancesIndexRoute,
   AuthenticatedContainerInstancesIndexRoute:
     AuthenticatedContainerInstancesIndexRoute,
   AuthenticatedFilesystemsIndexRoute: AuthenticatedFilesystemsIndexRoute,

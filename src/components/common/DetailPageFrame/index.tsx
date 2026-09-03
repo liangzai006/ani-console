@@ -18,6 +18,8 @@ type DetailPageFrameProps = {
   onBack?: () => void
   leftWidth?: number
   defaultTabKey?: string
+  activeTabKey?: string
+  onTabChange?: (key: string) => void
 }
 
 function buildInitialCollapsed(cardsSignature: string) {
@@ -41,6 +43,8 @@ export function DetailPageFrame({
   onBack,
   leftWidth = 452,
   defaultTabKey,
+  activeTabKey: controlledActiveTabKey,
+  onTabChange,
 }: DetailPageFrameProps) {
   const visibleBreadcrumbs = breadcrumbs.filter((item) => item.to !== '/')
   const hasTabs = Boolean(tabs?.length)
@@ -48,7 +52,8 @@ export function DetailPageFrame({
   const initialCollapsed = useMemo(() => buildInitialCollapsed(cardsSignature), [cardsSignature])
   const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>(initialCollapsed)
   const [leftCollapsed, setLeftCollapsed] = useState(false)
-  const [activeTabKey, setActiveTabKey] = useState(defaultTabKey ?? tabs?.[0]?.key ?? '')
+  const [internalActiveTabKey, setInternalActiveTabKey] = useState(defaultTabKey ?? tabs?.[0]?.key ?? '')
+  const activeTabKey = controlledActiveTabKey ?? internalActiveTabKey
 
   useEffect(() => {
     setCollapsedCards(initialCollapsed)
@@ -57,7 +62,7 @@ export function DetailPageFrame({
   useEffect(() => {
     if (!tabs?.length) return
     if (!tabs.some((tab) => tab.key === activeTabKey)) {
-      setActiveTabKey(defaultTabKey ?? tabs[0].key)
+      setInternalActiveTabKey(defaultTabKey ?? tabs[0].key)
     }
   }, [activeTabKey, defaultTabKey, tabs])
 
@@ -211,7 +216,10 @@ export function DetailPageFrame({
               headerPadding={false}
               inkBarSize={{ width: 16 }}
               activeTab={activeTab?.key}
-              onChange={setActiveTabKey}
+              onChange={(key) => {
+                if (controlledActiveTabKey === undefined) setInternalActiveTabKey(key)
+                onTabChange?.(key)
+              }}
               extra={activeTab?.extra}
               overflow="scroll"
               scrollPosition="auto"

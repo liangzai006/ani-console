@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { Modal } from "@arco-design/web-react";
+import { Dropdown, Menu, Modal } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
@@ -56,13 +56,15 @@ export function FilesystemsPage() {
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
       const { data, error } = await coreApi.GET("/filesystems", {
-        params: { query: asUncontractedQuery({
-          limit,
-          cursor,
-          status: status === "all" ? undefined : status,
-          search_field: keyword ? searchField : undefined,
-          keyword: keyword || undefined,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit,
+            cursor,
+            status: status === "all" ? undefined : status,
+            search_field: keyword ? searchField : undefined,
+            keyword: keyword || undefined,
+          }),
+        },
       });
       if (error || !data) throw error ?? new Error("文件存储列表未返回结果");
       return data;
@@ -239,27 +241,47 @@ export function FilesystemsPage() {
               fixed: "right",
               render: (_value, item) => (
                 <DataTableRowActions>
-                  <DataTableRowActionButton onClick={() => setExpandTarget(item)}>
+                  <DataTableRowActionButton
+                    onClick={() => setExpandTarget(item)}
+                  >
                     扩容
                   </DataTableRowActionButton>
-                  <DataTableRowActionButton
-                    onClick={() => setMountTargetFilesystem(item)}
-                  >
-                    添加挂载目标
-                  </DataTableRowActionButton>
-                  <DataTableRowActionButton
-                    status="danger"
-                    onClick={() =>
-                      Modal.confirm({
-                        title: "删除文件存储",
-                        content: `确定删除「${item.name}」？请先确认没有实例正在使用该文件系统。`,
-                        okButtonProps: { status: "danger" },
-                        onOk: () => remove.mutateAsync(item),
-                      })
+                  <Dropdown
+                    trigger="click"
+                    position="br"
+                    droplist={
+                      <Menu>
+                        <Menu.Item
+                          key="mount-target"
+                          onClick={() => setMountTargetFilesystem(item)}
+                        >
+                          添加挂载目标
+                        </Menu.Item>
+                        <Menu.Item
+                          key="delete"
+                          style={{ color: "var(--color-danger-6)" }}
+                          onClick={() =>
+                            Modal.confirm({
+                              title: "删除文件存储",
+                              content: `确定删除「${item.name}」？请先确认没有实例正在使用该文件系统。`,
+                              okButtonProps: { status: "danger" },
+                              onOk: () => remove.mutateAsync(item),
+                            })
+                          }
+                        >
+                          删除
+                        </Menu.Item>
+                      </Menu>
                     }
                   >
-                    删除
-                  </DataTableRowActionButton>
+                    <DataTableRowActionButton>
+                      更多
+                      <i
+                        className="iconfont icon-down-chevron-small"
+                        aria-hidden="true"
+                      />
+                    </DataTableRowActionButton>
+                  </Dropdown>
                 </DataTableRowActions>
               ),
             },

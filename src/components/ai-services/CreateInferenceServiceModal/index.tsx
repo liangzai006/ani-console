@@ -15,6 +15,7 @@ import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { servicesApi } from "@/api/services-client";
 import { showApiError } from "@/api/helpers";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { getImageSelectionLabel } from "@/lib/render";
 
 const PROTOTYPE_MODEL_VERSIONS = [
   {
@@ -161,7 +162,10 @@ export function CreateInferenceServiceModal({
             images.push({
               id: `${artifact.project}/${artifact.repository}:${tag}`,
               repository: artifact.repository.toLowerCase(),
-              label: `${artifact.project}/${artifact.repository}:${tag}`,
+              label: getImageSelectionLabel({
+                image: `${artifact.project}/${artifact.repository}:${tag}`,
+                size_bytes: artifact.size_bytes,
+              }),
             });
           }
         }

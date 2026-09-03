@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="novnc__novnc" />
 
 interface ImportMetaEnv {
   readonly VITE_API_PROXY_TARGET?: string

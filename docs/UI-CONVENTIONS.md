@@ -19,6 +19,7 @@
 - 不引入与 Arco 平行的组件库，不自行仿造 Arco 已提供的 Button、Table、Form、Modal 等基础组件。
 - 颜色与状态语义使用 Arco Token；TailwindCSS 不使用独立色板替代 Token。
 - TailwindCSS 主要负责布局、尺寸和间距，不开启会覆盖 Arco 基础样式的 preflight。
+- 合并动态、条件或由组件外部传入的 `className` 时统一使用 `clsx`；不得使用数组过滤后 `join`、字符串拼接或模板字符串手工组合类名。
 - 不复制 Arco 源码进行样式修改。局部覆写应限制在组件自身作用域，避免影响其他页面。
 - 页面 Layout、菜单、导航和壳层默认不调整，只有用户明确要求时才修改。
 

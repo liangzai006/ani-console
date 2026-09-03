@@ -7,6 +7,7 @@ import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
 import {
   DataTableNameCell,
+  ImageNameText,
   DataTableRowActionButton,
   DataTableRowActions,
   ListDataTable,
@@ -32,18 +33,6 @@ type SandboxStatus = "all" | "running" | "paused" | "expired";
 type SearchField = "name" | "id";
 type LifecycleAction = "pause" | "resume" | "extend" | "touch_idle" | "delete";
 
-function openTerminal(instanceId: string) {
-  window.open(
-    `/instance-terminal/${encodeURIComponent(instanceId)}`,
-    `Sandbox ${instanceId}`,
-    "width=1200,height=800,scrollbars=1,resizable=1",
-  );
-}
-
-function imageLabel(instance: SandboxInstance) {
-  return instance.image?.ref ?? instance.image?.name ?? "-";
-}
-
 function sessionStatus(instance: SandboxInstance) {
   return instance.sandbox?.session_state ?? instance.state;
 }
@@ -51,7 +40,9 @@ function sessionStatus(instance: SandboxInstance) {
 export function SandboxInstancesPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", ["POST"]);
+  const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", [
+    "POST",
+  ]);
   const [status, setStatus] = useState<SandboxStatus>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
@@ -187,7 +178,8 @@ export function SandboxInstancesPage() {
     {
       key: "template",
       title: "模板 / 镜像",
-      render: (_, item) => imageLabel(item),
+      width: 220,
+      render: (_, item) => <ImageNameText image={item.image} />,
     },
     {
       key: "ttl",
@@ -253,7 +245,13 @@ export function SandboxInstancesPage() {
             <Menu.Item
               key="terminal"
               disabled={!running}
-              onClick={() => openTerminal(item.id)}
+              onClick={() =>
+                navigate({
+                  to: "/sandbox-instances/$instanceId",
+                  params: { instanceId: item.id },
+                  search: { tab: "terminal" },
+                })
+              }
             >
               打开终端
             </Menu.Item>

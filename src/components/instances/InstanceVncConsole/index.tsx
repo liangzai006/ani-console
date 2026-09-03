@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import RFB from '@novnc/novnc'
+import RFB from '@novnc/novnc/lib/rfb'
 import { Alert, Button, Radio, Spin, Tag } from '@arco-design/web-react'
 import clsx from 'clsx'
 import { coreApi } from '@/api/client'
@@ -8,6 +8,8 @@ import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
 
 type ConsoleStatus = 'connecting' | 'connected' | 'disconnected' | 'error' | 'expired'
 type ViewMode = 'fit' | 'native'
+
+const VNC_SUBPROTOCOL = 'ani.vnc.v1'
 
 const STATUS_META: Record<ConsoleStatus, { text: string; color: string }> = {
   connecting: { text: '连接中', color: 'blue' },
@@ -74,15 +76,15 @@ export function InstanceVncConsole({
         })
         if (error) throw error
         consoleScope.reset()
-        const url = data?.connect_url || data?.url
-        if (!url) throw new Error('控制台连接地址为空')
+        const connectUrl = data?.connect_url
+        if (!connectUrl) throw new Error('控制台连接地址为空')
         expiresAtRef.current = data?.expires_at ?? null
         if (isExpired(data?.expires_at)) {
           throw new Error('控制台会话已过期，请重新申请')
         }
         if (disposed) return
 
-        rfb = new RFB(host, url)
+        rfb = new RFB(host, connectUrl, { wsProtocols: [VNC_SUBPROTOCOL] })
         applyViewMode(rfb, viewModeRef.current)
         rfb.background = '#0b0e16'
         rfb.addEventListener('connect', () => {

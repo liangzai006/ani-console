@@ -21,6 +21,7 @@ import {
   ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
+  ImageNameText,
   ListToolbar,
   ToolbarIconButton,
   ToolbarSearch,
@@ -35,6 +36,7 @@ type RegistryProject = components["schemas"]["RegistryProject"];
 type RegistryScanResult = components["schemas"]["RegistryScanResult"];
 type RegistryPurpose = "container" | "gpu" | "sandbox" | "system";
 type RegistryImage = {
+  name?: string | null;
   project: string;
   repository: string;
   tag: string;
@@ -207,9 +209,7 @@ export function RegistryPage() {
       title: "镜像名",
       render: (_, item) => (
         <div>
-          <Typography.Text className="block font-medium">
-            {item.image}
-          </Typography.Text>
+          <ImageNameText image={item} className="font-medium" />
           <Typography.Text type="secondary" className="text-xs">
             {item.repository}
           </Typography.Text>
@@ -250,7 +250,7 @@ export function RegistryPage() {
         : item.purpose === "sandbox"
           ? "/sandbox-instances"
           : item.purpose === "system"
-            ? "/compute-instances"
+            ? "/vm-instances"
             : "/container-instances";
     void navigate({ to: target });
   };

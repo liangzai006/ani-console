@@ -593,8 +593,8 @@ export function BucketDetailPage({
             label: "概览",
             content: (
               <Descriptions
-                column={2}
-                border
+                column={1}
+                labelStyle={{ width: '120px' }}
                 data={[
                   { label: "桶 ID", value: bucketInfo.id },
                   { label: "桶名称", value: bucketInfo.name },

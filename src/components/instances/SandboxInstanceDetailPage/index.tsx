@@ -14,18 +14,19 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
-import { DataTable, StatusTag } from "@/components/common";
+import { DataTable, ImageNameText, StatusTag } from "@/components/common";
 import { PageHeader } from "@/components/shell/AppShell";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
+import { InstanceTerminal } from "@/components/instances/InstanceTerminal";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
+import type { SandboxInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
 import {
   getInstanceActionErrorMessage,
   getSandboxProviderLabel,
@@ -36,14 +37,6 @@ type LifecycleAction = "pause" | "resume" | "extend" | "touch_idle" | "delete";
 
 function unavailable(description: string) {
   return <Empty description={description} />;
-}
-
-function openTerminal(instanceId: string) {
-  window.open(
-    `/instance-terminal/${encodeURIComponent(instanceId)}`,
-    `Sandbox ${instanceId}`,
-    "width=1200,height=800,scrollbars=1,resizable=1",
-  );
 }
 
 function SandboxSecurityEvents({ instanceId }: { instanceId: string }) {
@@ -95,13 +88,19 @@ function SandboxSecurityEvents({ instanceId }: { instanceId: string }) {
 
 export function SandboxInstanceDetailPage({
   instanceId,
+  tab,
+  onTabChange,
 }: {
   instanceId: string;
+  tab: SandboxInstanceDetailTabKey;
+  onTabChange: (tab: SandboxInstanceDetailTabKey) => void;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", ["POST", instanceId]);
-  const [activeTab, setActiveTab] = useState("overview");
+  const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", [
+    "POST",
+    instanceId,
+  ]);
   const detail = useQuery({
     queryKey: ["instance", instanceId],
     queryFn: async () => {
@@ -193,7 +192,7 @@ export function SandboxInstanceDetailPage({
             <Button
               type="primary"
               disabled={!running}
-              onClick={() => openTerminal(instanceId)}
+              onClick={() => onTabChange("terminal")}
             >
               打开终端
             </Button>
@@ -261,18 +260,22 @@ export function SandboxInstanceDetailPage({
         />
       </Card>
 
-      <Tabs activeTab={activeTab} onChange={setActiveTab} destroyOnHide>
+      <Tabs
+        activeTab={tab}
+        onChange={(key) => onTabChange(key as SandboxInstanceDetailTabKey)}
+        destroyOnHide
+      >
         <Tabs.TabPane key="overview" title="概览">
           <div className="space-y-4">
             <Descriptions
               title="会话"
-              column={2}
+              column={1}
               data={[
                 { label: "实例 ID", value: instance.id },
                 { label: "会话状态", value: sessionState },
                 {
                   label: "镜像",
-                  value: instance.image?.ref ?? instance.image?.name ?? "-",
+                  value: <ImageNameText image={instance.image} />,
                 },
                 { label: "RuntimeClass", value: sandbox?.runtime_class ?? "-" },
                 { label: "CPU", value: instance.compute?.cpu ?? "-" },
@@ -281,7 +284,7 @@ export function SandboxInstanceDetailPage({
             />
             <Descriptions
               title="运行环境"
-              column={2}
+              column={1}
               data={[
                 {
                   label: "Provider 状态",
@@ -311,16 +314,11 @@ export function SandboxInstanceDetailPage({
           {unavailable("Sandbox 环境变量管理接口尚未开放")}
         </Tabs.TabPane>
         <Tabs.TabPane key="terminal" title="终端">
-          <Card>
-            <p>通过短期一次性凭据连接 Sandbox WebTerminal。</p>
-            <Button
-              type="primary"
-              disabled={!running}
-              onClick={() => openTerminal(instanceId)}
-            >
-              打开终端
-            </Button>
-          </Card>
+          {running ? (
+            <InstanceTerminal className="h-full" instanceId={instanceId} />
+          ) : (
+            unavailable("终端仅运行中的 Sandbox 可用")
+          )}
         </Tabs.TabPane>
         <Tabs.TabPane key="code" title="代码解释器">
           {unavailable("代码解释器接口尚未进入当前 Core OpenAPI")}
@@ -332,28 +330,23 @@ export function SandboxInstanceDetailPage({
           {unavailable("检查点创建、恢复与克隆接口尚未进入当前 Core OpenAPI")}
         </Tabs.TabPane>
         <Tabs.TabPane key="metrics" title="监控">
-          {activeTab === "metrics" ? (
+          {tab === "metrics" ? (
             <InstanceMetrics instanceId={instanceId} instanceKind="sandbox" />
           ) : null}
         </Tabs.TabPane>
         <Tabs.TabPane key="logs" title="日志">
-          <InstanceLogsPanel
-            instanceId={instanceId}
-            active={activeTab === "logs"}
-          />
+          <InstanceLogsPanel instanceId={instanceId} active={tab === "logs"} />
         </Tabs.TabPane>
         <Tabs.TabPane key="events" title="事件">
-          {activeTab === "events" ? (
-            <InstanceEvents instanceId={instanceId} />
-          ) : null}
+          {tab === "events" ? <InstanceEvents instanceId={instanceId} /> : null}
         </Tabs.TabPane>
         <Tabs.TabPane key="security" title="安全事件">
-          {activeTab === "security" ? (
+          {tab === "security" ? (
             <SandboxSecurityEvents instanceId={instanceId} />
           ) : null}
         </Tabs.TabPane>
         <Tabs.TabPane key="operations" title="操作历史">
-          {activeTab === "operations" ? (
+          {tab === "operations" ? (
             <InstanceOperations instanceId={instanceId} />
           ) : null}
         </Tabs.TabPane>

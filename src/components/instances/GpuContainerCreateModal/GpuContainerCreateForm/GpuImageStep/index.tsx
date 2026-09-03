@@ -1,4 +1,5 @@
 import { Empty, Form, Select, Spin, Typography } from "@arco-design/web-react";
+import { ImageNameText } from "@/components/common";
 import type { RegistryImage } from "../../types";
 
 export function GpuImageStep({
@@ -24,10 +25,7 @@ export function GpuImageStep({
           <Select placeholder="请选择 GPU 镜像">
             {images.map((item) => (
               <Select.Option key={item.image} value={item.image}>
-                {item.repository}:{item.tag}
-                {item.size_bytes
-                  ? ` · ${Math.ceil(item.size_bytes / 1024 / 1024)} MiB`
-                  : ""}
+                <ImageNameText image={item} showSize />
               </Select.Option>
             ))}
           </Select>

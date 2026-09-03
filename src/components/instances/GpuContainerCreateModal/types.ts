@@ -35,6 +35,7 @@ export type FormValues = {
 
 export type RegistryImage = {
   image: string;
+  name?: string | null;
   purpose?: string;
   project: string;
   repository: string;

@@ -110,39 +110,3 @@ export const inferenceServiceItems: InferenceServiceItem[] = [
     createdAt: "2026-08-20 15:02",
   },
 ];
-
-export type InferencePolicyItem = {
-  id: string;
-  name: string;
-  status: "enabled" | "disabled";
-  scope: string;
-  rules: string;
-  updatedAt: string;
-};
-
-export const inferencePolicyItems: InferencePolicyItem[] = [
-  {
-    id: "pol_global_default",
-    name: "全局默认限流",
-    status: "enabled",
-    scope: "全部推理服务",
-    rules: "QPS 100 · 并发 20",
-    updatedAt: "2026-08-23 10:30",
-  },
-  {
-    id: "pol_chat_prod",
-    name: "生产对话服务保护",
-    status: "enabled",
-    scope: "推理服务 infer-chat-prod",
-    rules: "QPS 60 · 并发 12",
-    updatedAt: "2026-08-22 18:05",
-  },
-  {
-    id: "pol_embedding_key",
-    name: "Embedding API Key 限流",
-    status: "disabled",
-    scope: "API Key key-embedding",
-    rules: "QPS 30 · 并发 8",
-    updatedAt: "2026-08-21 09:45",
-  },
-];

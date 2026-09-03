@@ -17,7 +17,6 @@ export function matchSideMenuKey(
 
 const PATH_SUBMENU: { prefix: string; key: string }[] = [
   { prefix: "/overview-compute", key: "compute" },
-  { prefix: "/compute-instances", key: "compute" },
   { prefix: "/container-instances", key: "compute" },
   { prefix: "/vm-instances", key: "compute" },
   { prefix: "/gpu-instances", key: "compute" },

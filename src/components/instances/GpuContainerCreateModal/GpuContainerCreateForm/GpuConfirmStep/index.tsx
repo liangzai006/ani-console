@@ -1,4 +1,5 @@
 import { Alert, Descriptions } from "@arco-design/web-react";
+import { ImageNameText } from "@/components/common";
 import {
   COMPUTE_SPEC_BY_KEY,
   type Filesystem,
@@ -38,9 +39,11 @@ export function GpuConfirmStep({
           { label: "名称", value: values.name || "-" },
           {
             label: "镜像",
-            value: image
-              ? `${image.repository}:${image.tag}`
-              : values.image || "-",
+            value: image ? (
+              <ImageNameText image={image} showSize />
+            ) : (
+              values.image || "-"
+            ),
           },
           {
             label: "资源",

@@ -1,0 +1,9 @@
+.terminalHost :global(.xterm-viewport) {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.terminalHost :global(.xterm-viewport)::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}

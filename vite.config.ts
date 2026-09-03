@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
+        '@novnc/novnc/lib/rfb': path.resolve(__dirname, './node_modules/@novnc/novnc/core/rfb.js'),
         '@': path.resolve(__dirname, './src'),
       },
     },
@@ -34,7 +35,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      include: ['@novnc/novnc'],
+      include: ['@novnc/novnc/lib/rfb'],
       esbuildOptions: {
         target: 'esnext',
       },

@@ -34,7 +34,7 @@ import { GpuResourceStep } from "./GpuResourceStep";
 import styles from "./index.module.css";
 
 type RegistryResponse = { items: RegistryImage[]; total: number };
-const STEP_TITLES = ["名称", "镜像", "GPU 规格与调度", "网络与存储", "确认"];
+const STEP_TITLES = ["名称", "镜像", "规格与调度", "网络与存储", "确认"];
 
 type Props = {
   visible: boolean;
