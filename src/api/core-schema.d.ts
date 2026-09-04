@@ -440,6 +440,145 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/instances/{instance_id}/sandbox/tokens": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 签发 Sandbox 短期访问令牌 */
+    post: operations["createSandboxToken"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/instances/{instance_id}/sandbox/ports": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 开放 Sandbox 临时预览端口 */
+    post: operations["createSandboxPort"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/instances/{instance_id}/sandbox/ports/{port}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** 关闭 Sandbox 临时预览端口 */
+    delete: operations["deleteSandboxPort"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/instances/{instance_id}/sandbox/files": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 查询 Sandbox 文件 */
+    get: operations["listSandboxFiles"];
+    put?: never;
+    /** 写入 Sandbox 文件 */
+    post: operations["writeSandboxFile"];
+    /** 删除 Sandbox 文件 */
+    delete: operations["deleteSandboxFile"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/instances/{instance_id}/sandbox/checkpoints": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 查询 Sandbox checkpoint */
+    get: operations["listSandboxCheckpoints"];
+    put?: never;
+    /** 创建 Sandbox checkpoint */
+    post: operations["createSandboxCheckpoint"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/instances/{instance_id}/sandbox/checkpoints/{checkpoint_id}/restore": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 恢复 Sandbox checkpoint */
+    post: operations["restoreSandboxCheckpoint"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/instances/{instance_id}/sandbox/checkpoints/{checkpoint_id}/clone": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 从 Sandbox checkpoint 克隆实例 */
+    post: operations["cloneSandboxCheckpoint"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/instances/{instance_id}/sandbox/code-runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 在 Sandbox 中执行一次代码 */
+    post: operations["createSandboxCodeRun"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/networks/vpcs": {
     parameters: {
       query?: never;
@@ -2369,12 +2508,17 @@ export interface components {
         | "kb.parse"
         | "kb.index"
         | "inference.deploy"
-        | "volume.snapshot.create";
+        | "volume.snapshot.create"
+        | "sandbox.checkpoint.create"
+        | "sandbox.checkpoint.restore"
+        | "sandbox.code_run.create";
       /** @enum {string|null} */
       resource_type?:
         | "inference_service"
         | "kb_document"
         | "model_version"
+        | "sandbox_checkpoint"
+        | "sandbox_code_run"
         | "volume_snapshot"
         | null;
       /** Format: uuid */
@@ -2931,16 +3075,180 @@ export interface components {
       network_egress_policy?: components["schemas"]["SandboxNetworkEgressPolicy"];
       /** @description allowlist 出口策略允许访问的 host。 */
       egress_allowlist?: string[];
+      env?: {
+        name: string;
+        value?: string | null;
+        secret_ref?: string | null;
+      }[];
+      initial_ports?: {
+        name?: string | null;
+        container_port: number;
+        protocol?: "tcp" | "udp";
+      }[];
     };
     /** @description Sandbox 实例运行摘要；dev_profile.real_provider=false 时仅表示 local profile 状态机。 */
     SandboxInstanceStatus: {
+      template_id?: string | null;
       runtime_class: string;
       session_timeout: string;
+      idle_timeout?: string | null;
+      remain_seconds?: number | null;
+      idle_remain_seconds?: number | null;
+      /** @enum {string|null} */
+      on_timeout?: "pause" | "kill" | null;
       network_egress_policy: components["schemas"]["SandboxNetworkEgressPolicy"];
+      egress_allowlist?: string[];
+      ports?: {
+        port: number;
+        name?: string | null;
+        /** @default tcp */
+        protocol?: "tcp" | "http";
+        /** @enum {string} */
+        status: "opening" | "available" | "closing" | "failed";
+        preview_url?: string | null;
+      }[];
+      env?: {
+        name: string;
+        secret_ref?: string | null;
+      }[];
+      checkpoints?: {
+        id: string;
+        name: string;
+        /** @enum {string} */
+        status: "creating" | "available" | "restoring" | "failed" | "deleted";
+      }[];
+      files_summary?: {
+        file_count?: number;
+        /** Format: int64 */
+        total_size_bytes?: number;
+      };
       /** @enum {string} */
-      session_state: "pending" | "running" | "expired" | "stopped";
+      session_state: "pending" | "running" | "paused" | "expired" | "stopped";
+      agent_ref?: string | null;
+      /** @enum {string|null} */
+      stop_reason?:
+        | "TTL_EXPIRED"
+        | "IDLE_EXPIRED"
+        | "USER_REQUESTED"
+        | "RUNTIME_FAILED"
+        | null;
+      connectivity?: {
+        token_available?: boolean;
+        ports_available?: boolean;
+      };
       dev_profile?: components["schemas"]["CoreDevProfileInfo"];
     } | null;
+    CreateSandboxTokenRequest: {
+      idempotency_key: string;
+      /** @default 15m */
+      expires_in?: string;
+      /** @default connect */
+      scopes?: ("connect" | "exec" | "files" | "ports")[];
+    };
+    SandboxTokenResponse: {
+      token: string;
+      /** Format: date-time */
+      expires_at: string;
+      scopes: ("connect" | "exec" | "files" | "ports")[];
+    };
+    CreateSandboxPortRequest: {
+      idempotency_key: string;
+      port: number;
+      name?: string | null;
+      /** @default tcp */
+      protocol?: "tcp" | "http";
+    };
+    SandboxPort: {
+      port: number;
+      name?: string | null;
+      /** @enum {string} */
+      protocol: "tcp" | "http";
+      /** @enum {string} */
+      status: "opening" | "available" | "closing" | "failed";
+      /** Format: uri */
+      preview_url: string | null;
+      /** Format: date-time */
+      expires_at?: string | null;
+      reason?: string | null;
+    };
+    SandboxFile: {
+      path: string;
+      /** @enum {string} */
+      kind: "file" | "directory";
+      /** Format: int64 */
+      size_bytes: number;
+      /** Format: date-time */
+      updated_at: string;
+    };
+    SandboxFileListResponse: {
+      items: components["schemas"]["SandboxFile"][];
+      total: number;
+      next_cursor?: string | null;
+    };
+    /** @description content_base64 与 upload_id 互斥。 */
+    WriteSandboxFileRequest: {
+      idempotency_key: string;
+      path: string;
+      /** Format: byte */
+      content_base64?: string;
+      upload_id?: string;
+      /** @default false */
+      overwrite?: boolean;
+    };
+    CreateSandboxCheckpointRequest: {
+      idempotency_key: string;
+      name: string;
+      /** @default false */
+      keep_memory?: boolean;
+    };
+    SandboxCheckpoint: {
+      id: string;
+      name: string;
+      /** @enum {string} */
+      status: "creating" | "available" | "restoring" | "failed" | "deleted";
+      keep_memory: boolean;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: int64 */
+      size_bytes?: number | null;
+      reason?: string | null;
+    };
+    SandboxCheckpointListResponse: {
+      items: components["schemas"]["SandboxCheckpoint"][];
+      total: number;
+      next_cursor?: string | null;
+    };
+    SandboxCheckpointActionRequest: {
+      idempotency_key: string;
+    };
+    CloneSandboxCheckpointRequest: {
+      idempotency_key: string;
+      name: string;
+    };
+    CreateSandboxCodeRunRequest: {
+      idempotency_key: string;
+      /** @enum {string} */
+      language: "python" | "javascript";
+      code: string;
+      /** @default 60 */
+      timeout_seconds?: number;
+      stdin?: string | null;
+    };
+    SandboxCodeRun: {
+      id: string;
+      /** @enum {string} */
+      status: "accepted" | "running" | "succeeded" | "failed" | "timed_out";
+      /** @enum {string} */
+      language: "python" | "javascript";
+      stdout?: string | null;
+      stderr?: string | null;
+      exit_code?: number | null;
+      truncated: boolean;
+      /** Format: date-time */
+      created_at: string;
+      /** Format: date-time */
+      completed_at?: string | null;
+    };
     /** @description PromQL 代理查询结果；不暴露底层 Prometheus 地址。 */
     ObservabilityQueryResponse: {
       query: string;
@@ -3193,11 +3501,7 @@ export interface components {
     };
     /** @enum {string} */
     NetworkResourceState:
-      | "pending"
-      | "available"
-      | "failed"
-      | "deleting"
-      | "deleted";
+      "pending" | "available" | "failed" | "deleting" | "deleted";
     NetworkVPC: {
       id: string;
       tenant_id: string;
@@ -3303,9 +3607,7 @@ export interface components {
     };
     /** @enum {string} */
     NetworkSecurityGroupBindingTargetType:
-      | "instance"
-      | "network_interface"
-      | "load_balancer";
+      "instance" | "network_interface" | "load_balancer";
     NetworkSecurityGroupBinding: {
       id: string;
       security_group_id: string;
@@ -3409,11 +3711,7 @@ export interface components {
     };
     /** @enum {string} */
     StorageResourceState:
-      | "pending"
-      | "available"
-      | "failed"
-      | "deleting"
-      | "deleted";
+      "pending" | "available" | "failed" | "deleting" | "deleted";
     StorageVolume: {
       id: string;
       tenant_id: string;
@@ -3490,12 +3788,7 @@ export interface components {
       capabilities: string[];
       /** @enum {string} */
       status:
-        | "pending"
-        | "downloading"
-        | "ready"
-        | "error"
-        | "deleted"
-        | string;
+        "pending" | "downloading" | "ready" | "error" | "deleted" | string;
       /** Format: int64 */
       total_size_bytes: number;
       /** Format: date-time */
@@ -5063,6 +5356,362 @@ export interface operations {
       401: components["responses"]["Unauthorized"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
+    };
+  };
+  createSandboxToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateSandboxTokenRequest"];
+      };
+    };
+    responses: {
+      /** @description 短期访问令牌 */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SandboxTokenResponse"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  createSandboxPort: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateSandboxPortRequest"];
+      };
+    };
+    responses: {
+      /** @description 预览端口 */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SandboxPort"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  deleteSandboxPort: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+      };
+      path: {
+        instance_id: string;
+        port: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description 预览端口关闭状态 */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SandboxPort"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  listSandboxFiles: {
+    parameters: {
+      query?: {
+        path?: string;
+        limit?: number;
+        cursor?: string;
+      };
+      header?: never;
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description 文件列表 */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SandboxFileListResponse"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  writeSandboxFile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WriteSandboxFileRequest"];
+      };
+    };
+    responses: {
+      /** @description 已写入文件 */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SandboxFile"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorResponse"];
+        };
+      };
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  deleteSandboxFile: {
+    parameters: {
+      query: {
+        path: string;
+      };
+      header: {
+        "Idempotency-Key": string;
+      };
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description 文件已删除 */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  listSandboxCheckpoints: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string;
+      };
+      header?: never;
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description checkpoint 列表 */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SandboxCheckpointListResponse"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  createSandboxCheckpoint: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateSandboxCheckpointRequest"];
+      };
+    };
+    responses: {
+      /** @description checkpoint 创建任务已接受 */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AsyncTask"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  restoreSandboxCheckpoint: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        instance_id: string;
+        checkpoint_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SandboxCheckpointActionRequest"];
+      };
+    };
+    responses: {
+      /** @description checkpoint 恢复任务已接受 */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AsyncTask"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  cloneSandboxCheckpoint: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        instance_id: string;
+        checkpoint_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CloneSandboxCheckpointRequest"];
+      };
+    };
+    responses: {
+      /** @description 克隆实例已创建 */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CreateInstanceResponse"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      422: components["responses"]["PreconditionFailed"];
+    };
+  };
+  createSandboxCodeRun: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateSandboxCodeRunRequest"];
+      };
+    };
+    responses: {
+      /** @description 代码执行任务已接受 */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AsyncTask"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      422: components["responses"]["PreconditionFailed"];
     };
   };
   listNetworkVPCs: {

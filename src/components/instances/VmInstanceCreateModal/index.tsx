@@ -117,13 +117,7 @@ const INITIAL: Values = {
   autoStart: true,
   terminationProtection: false,
 };
-const STEPS = [
-  "基础信息",
-  "镜像配置",
-  "规格",
-  "网络与 SSH",
-  "磁盘与高级确认",
-];
+const STEPS = ["基础信息", "镜像配置", "规格", "网络与 SSH", "磁盘与高级确认"];
 const SPECS: Record<
   SpecOption,
   { label: string; cpu: string; memory: string }
@@ -463,15 +457,15 @@ export function VmInstanceCreateModal({
               <Form.Item
                 field="spec"
                 label="规格档位"
-                rules={[{ required: true }]}
+                rules={[{ required: true, message: "请选择规格档位" }]}
               >
-                <Radio.Group type="button">
-                  {Object.entries(SPECS).map(([key, spec]) => (
-                    <Radio key={key} value={key}>
-                      {spec.label}
-                    </Radio>
-                  ))}
-                </Radio.Group>
+                <Select
+                  placeholder="请选择规格档位"
+                  options={Object.entries(SPECS).map(([value, spec]) => ({
+                    label: spec.label,
+                    value,
+                  }))}
+                />
               </Form.Item>
             ) : null}
             {step === 3 ? (

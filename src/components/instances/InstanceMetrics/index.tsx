@@ -127,7 +127,7 @@ export function InstanceMetrics({
               },
               {
                 name: "内存利用率",
-                promql: `100 * (sum(container_memory_working_set_bytes{namespace="${instanceId}",pod="${instanceId}",container!="",container!="POD"}) / sum(container_spec_memory_limit_bytes{namespace="${instanceId}",pod="${instanceId}",container!="",container!="POD"}))`,
+                promql: `100 * (container_memory_working_set_bytes{namespace="${instanceId}",pod="${instanceId}",container!="",container!="POD"} / container_spec_memory_limit_bytes{namespace="${instanceId}",pod="${instanceId}",container!="",container!="POD"})`,
               },
               ...(hasGpuMetrics
                 ? [
@@ -263,10 +263,9 @@ export function InstanceMetrics({
     title: "资源利用率趋势加载失败",
     error: monitoringTrend.error,
   });
-  if (!metrics.data) return <Empty description="暂无监控指标" />;
-
-  const data = metrics.data;
   if (gpuOnly && hasGpuMetrics) {
+    if (!metrics.data) return <Empty description="暂无监控指标" />;
+    const data = metrics.data;
     const gpuModelSummary = gpuModel ? `${gpuModel}×${gpuCount ?? 1}` : "-";
     return (
       <Grid.Row gutter={[16, 16]}>
@@ -328,49 +327,54 @@ export function InstanceMetrics({
     );
   }
 
+  const data = metrics.data;
   return (
     <Grid.Row gutter={[16, 16]}>
       <Grid.Col span={24}>
         <Card size="small">
-          <Grid.Row gutter={[16, 16]}>
-            <Grid.Col span={hasGpuMetrics ? 6 : 8}>
-              <div className="px-3 py-2">
-                <Statistic
-                  title="CPU 利用率"
-                  value={percent(data.cpu_utilization_pct)}
-                />
-              </div>
-            </Grid.Col>
-            <Grid.Col span={hasGpuMetrics ? 6 : 8}>
-              <div className="px-3 py-2">
-                <Statistic
-                  title="内存"
-                  value={memory(data.memory_used_mb)}
-                  suffix={`/ ${memory(data.memory_total_mb)}`}
-                />
-              </div>
-            </Grid.Col>
-            {hasGpuMetrics ? (
-              <Grid.Col span={6}>
+          {data ? (
+            <Grid.Row gutter={[16, 16]}>
+              <Grid.Col span={hasGpuMetrics ? 6 : 8}>
                 <div className="px-3 py-2">
                   <Statistic
-                    title="GPU 利用率"
-                    value={percent(data.gpu_utilization_pct)}
+                    title="CPU 利用率"
+                    value={percent(data.cpu_utilization_pct)}
                   />
                 </div>
               </Grid.Col>
-            ) : null}
-            <Grid.Col span={hasGpuMetrics ? 6 : 8}>
-              <div className="px-3 py-2">
-                <Statistic
-                  title="网络入 / 出"
-                  value={`${formatBytes(
-                    data.network_rx_bytes ?? undefined,
-                  )} / ${formatBytes(data.network_tx_bytes ?? undefined)}`}
-                />
-              </div>
-            </Grid.Col>
-          </Grid.Row>
+              <Grid.Col span={hasGpuMetrics ? 6 : 8}>
+                <div className="px-3 py-2">
+                  <Statistic
+                    title="内存"
+                    value={memory(data.memory_used_mb)}
+                    suffix={`/ ${memory(data.memory_total_mb)}`}
+                  />
+                </div>
+              </Grid.Col>
+              {hasGpuMetrics ? (
+                <Grid.Col span={6}>
+                  <div className="px-3 py-2">
+                    <Statistic
+                      title="GPU 利用率"
+                      value={percent(data.gpu_utilization_pct)}
+                    />
+                  </div>
+                </Grid.Col>
+              ) : null}
+              <Grid.Col span={hasGpuMetrics ? 6 : 8}>
+                <div className="px-3 py-2">
+                  <Statistic
+                    title="网络入 / 出"
+                    value={`${formatBytes(
+                      data.network_rx_bytes ?? undefined,
+                    )} / ${formatBytes(data.network_tx_bytes ?? undefined)}`}
+                  />
+                </div>
+              </Grid.Col>
+            </Grid.Row>
+          ) : (
+            <Empty description="暂无监控指标" />
+          )}
         </Card>
       </Grid.Col>
       <Grid.Col span={24}>
@@ -388,9 +392,9 @@ export function InstanceMetrics({
               option={monitoringTrendOption}
               style={{ height: 280 }}
             />
-          ) : (
+          ) : monitoringTrendErrors.length === 0 ? (
             <Empty description="暂无资源利用率趋势数据" />
-          )}
+          ) : null}
         </Card>
       </Grid.Col>
     </Grid.Row>

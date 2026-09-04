@@ -1,0 +1,393 @@
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Descriptions,
+  Empty,
+  Form,
+  Input,
+  InputNumber,
+  Message,
+  Modal,
+  Select,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+} from "@arco-design/web-react";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import type { components } from "@/api/core-schema";
+import { coreApi } from "@/api/client";
+import { DataTable } from "@/components/common";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { formatDateTime } from "@/lib/format";
+import { getImageDisplayName } from "@/lib/render";
+import {
+  copySandboxText,
+  showSandboxError,
+  throwSandboxApiError,
+} from "../utils";
+
+type SandboxInstance = components["schemas"]["InstanceRecord"];
+type SandboxStatus = NonNullable<
+  components["schemas"]["SandboxInstanceStatus"]
+>;
+type SandboxPortSummary = NonNullable<SandboxStatus["ports"]>[number];
+type SandboxToken = components["schemas"]["SandboxTokenResponse"];
+type TokenScope = SandboxToken["scopes"][number];
+
+const TOKEN_SCOPE_OPTIONS = [
+  { label: "连接", value: "connect" },
+  { label: "终端", value: "exec" },
+  { label: "文件", value: "files" },
+  { label: "端口", value: "ports" },
+];
+
+export function SandboxAccessPanel({
+  instance,
+  onChanged,
+}: {
+  instance: SandboxInstance;
+  onChanged: () => void;
+}) {
+  const sandbox = instance.sandbox!;
+  const tokenScope = useIdempotencyScope("sandbox-access-token", [
+    "POST",
+    instance.id,
+  ]);
+  const createPortScope = useIdempotencyScope("sandbox-preview-port-create", [
+    "POST",
+    instance.id,
+  ]);
+  const deletePortScope = useIdempotencyScope("sandbox-preview-port-delete", [
+    "DELETE",
+    instance.id,
+  ]);
+  const [token, setToken] = useState<SandboxToken>();
+  const [tokenExpiresIn, setTokenExpiresIn] = useState("15m");
+  const [tokenScopes, setTokenScopes] = useState<TokenScope[]>(["connect"]);
+  const [portVisible, setPortVisible] = useState(false);
+  const [port, setPort] = useState(8080);
+  const [portName, setPortName] = useState("");
+  const [protocol, setProtocol] = useState<"tcp" | "http">("http");
+  const running = sandbox.session_state === "running";
+  const tokenAvailable = sandbox.connectivity?.token_available !== false;
+  const portsAvailable = sandbox.connectivity?.ports_available !== false;
+  const browserTemplate = getImageDisplayName(instance.image)
+    .toLowerCase()
+    .includes("browser");
+
+  const issueToken = useMutation({
+    mutationFn: async () => {
+      const submitData = {
+        expires_in: tokenExpiresIn,
+        scopes: tokenScopes,
+      };
+      const { data, error, response } = await coreApi.POST(
+        "/instances/{instance_id}/sandbox/tokens",
+        {
+          params: { path: { instance_id: instance.id } },
+          body: tokenScope.withKey(submitData),
+        },
+      );
+      if (error || !data) {
+        throwSandboxApiError(error, response.status, "连接令牌签发失败");
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      tokenScope.reset();
+      setToken(data);
+      Message.success("短期连接令牌已签发");
+    },
+    onError: (error) => showSandboxError(error, "连接令牌签发失败"),
+  });
+
+  const createPort = useMutation({
+    mutationFn: async () => {
+      const submitData = {
+        port,
+        name: portName.trim() || undefined,
+        protocol,
+      };
+      const { data, error, response } = await coreApi.POST(
+        "/instances/{instance_id}/sandbox/ports",
+        {
+          params: { path: { instance_id: instance.id } },
+          body: createPortScope.withKey(submitData),
+        },
+      );
+      if (error || !data) {
+        throwSandboxApiError(error, response.status, "预览端口开放失败");
+      }
+      return data;
+    },
+    onSuccess: () => {
+      createPortScope.reset();
+      setPortVisible(false);
+      setPortName("");
+      Message.success("预览端口已开放");
+      onChanged();
+    },
+    onError: (error) => showSandboxError(error, "预览端口开放失败"),
+  });
+
+  const closePort = useMutation({
+    mutationFn: async (targetPort: number) => {
+      const { idempotency_key } = deletePortScope.withKey({}, [targetPort]);
+      const { error, response } = await coreApi.DELETE(
+        "/instances/{instance_id}/sandbox/ports/{port}",
+        {
+          params: {
+            path: { instance_id: instance.id, port: targetPort },
+            header: { "Idempotency-Key": idempotency_key },
+          },
+        },
+      );
+      if (error) {
+        throwSandboxApiError(error, response.status, "预览端口关闭失败");
+      }
+      return targetPort;
+    },
+    onSuccess: (targetPort) => {
+      deletePortScope.reset([targetPort]);
+      Message.success(`端口 ${targetPort} 已关闭`);
+      onChanged();
+    },
+    onError: (error) => showSandboxError(error, "预览端口关闭失败"),
+  });
+
+  const confirmClosePort = (targetPort: number) => {
+    Modal.confirm({
+      title: `关闭预览端口 ${targetPort}`,
+      content: "关闭后，现有临时预览地址将不可继续访问。",
+      okButtonProps: { status: "danger" },
+      onOk: () => closePort.mutateAsync(targetPort),
+    });
+  };
+
+  return (
+    <>
+      <Space direction="vertical" size={24} className="w-full">
+        <Alert
+          type="info"
+          content="预览地址由 Sandbox Runtime 临时签发，不创建或暴露 Kubernetes Ingress。连接令牌仅在签发响应中显示一次。"
+        />
+
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <Typography.Title heading={6}>短期连接令牌</Typography.Title>
+            <Button
+              size="small"
+              type="primary"
+              disabled={!running || !tokenAvailable || tokenScopes.length === 0}
+              loading={issueToken.isPending}
+              onClick={() => issueToken.mutate()}
+            >
+              签发令牌
+            </Button>
+          </div>
+          <Form layout="vertical">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Form.Item label="有效期">
+                <Select
+                  value={tokenExpiresIn}
+                  onChange={setTokenExpiresIn}
+                  options={[
+                    { label: "15 分钟", value: "15m" },
+                    { label: "30 分钟", value: "30m" },
+                    { label: "1 小时", value: "1h" },
+                  ]}
+                />
+              </Form.Item>
+              <Form.Item label="授权范围">
+                <Checkbox.Group
+                  options={TOKEN_SCOPE_OPTIONS}
+                  value={tokenScopes}
+                  onChange={(value) => setTokenScopes(value as TokenScope[])}
+                />
+              </Form.Item>
+            </div>
+          </Form>
+          {token ? (
+            <div className="space-y-3 rounded-lg bg-(--color-fill-1) p-4">
+              <Alert
+                type="warning"
+                content="请立即复制并安全保存。离开本页后，令牌不会再次显示。"
+              />
+              <Input.TextArea
+                aria-label="短期连接令牌"
+                value={token.token}
+                readOnly
+                autoSize={{ minRows: 2, maxRows: 4 }}
+              />
+              <Descriptions
+                column={{ xs: 1, md: 2 }}
+                data={[
+                  {
+                    label: "过期时间",
+                    value: formatDateTime(token.expires_at),
+                  },
+                  { label: "授权范围", value: token.scopes.join("、") },
+                ]}
+              />
+              <Button
+                onClick={() => copySandboxText(token.token, "令牌已复制")}
+              >
+                复制令牌
+              </Button>
+            </div>
+          ) : (
+            <Empty
+              description={
+                running ? "尚未签发连接令牌" : "仅运行中的 Sandbox 可签发令牌"
+              }
+            />
+          )}
+        </section>
+
+        {browserTemplate ? (
+          <Alert
+            type="info"
+            content="检测到浏览器类模板，可开放 9222 端口用于 CDP 或受控浏览器预览。"
+          />
+        ) : null}
+
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <Typography.Title heading={6}>预览端口</Typography.Title>
+            <Space>
+              <Button size="small" onClick={onChanged}>
+                刷新
+              </Button>
+              <Button
+                size="small"
+                disabled={!running || !portsAvailable}
+                onClick={() => setPortVisible(true)}
+              >
+                开放预览端口
+              </Button>
+            </Space>
+          </div>
+          <DataTable<SandboxPortSummary>
+            data={sandbox.ports ?? []}
+            rowKey={(item) => String(item.port)}
+            pagination={false}
+            noDataElement={<Empty description="暂无预览端口" />}
+            columns={[
+              {
+                title: "端口",
+                width: 100,
+                render: (_, item) => `:${item.port}`,
+              },
+              { title: "名称", render: (_, item) => item.name ?? "-" },
+              {
+                title: "协议",
+                width: 100,
+                render: (_, item) => item.protocol ?? "tcp",
+              },
+              {
+                title: "状态",
+                width: 120,
+                render: (_, item) => (
+                  <Tag color={item.status === "available" ? "green" : "orange"}>
+                    {item.status}
+                  </Tag>
+                ),
+              },
+              {
+                title: "预览地址",
+                render: (_, item) =>
+                  item.preview_url ? (
+                    <Tooltip content={item.preview_url}>
+                      <a
+                        href={item.preview_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block max-w-96 truncate text-[rgb(var(--link-6))]"
+                      >
+                        {item.preview_url}
+                      </a>
+                    </Tooltip>
+                  ) : (
+                    "-"
+                  ),
+              },
+              {
+                title: "操作",
+                width: 150,
+                fixed: "right",
+                render: (_, item) => (
+                  <Space>
+                    <Button
+                      type="text"
+                      size="small"
+                      disabled={!item.preview_url}
+                      onClick={() =>
+                        item.preview_url &&
+                        copySandboxText(item.preview_url, "预览地址已复制")
+                      }
+                    >
+                      复制
+                    </Button>
+                    <Button
+                      type="text"
+                      size="small"
+                      status="danger"
+                      disabled={closePort.isPending}
+                      onClick={() => confirmClosePort(item.port)}
+                    >
+                      关闭
+                    </Button>
+                  </Space>
+                ),
+              },
+            ]}
+          />
+        </section>
+      </Space>
+
+      <Modal
+        title="开放预览端口"
+        visible={portVisible}
+        confirmLoading={createPort.isPending}
+        onCancel={() => {
+          createPortScope.reset();
+          setPortVisible(false);
+        }}
+        onOk={() => createPort.mutate()}
+        okButtonProps={{ disabled: port < 1 || port > 65535 }}
+      >
+        <Form layout="vertical">
+          <Form.Item label="端口" required>
+            <InputNumber
+              value={port}
+              min={1}
+              max={65535}
+              precision={0}
+              onChange={(value) => setPort(Number(value) || 0)}
+            />
+          </Form.Item>
+          <Form.Item label="名称">
+            <Input
+              value={portName}
+              onChange={setPortName}
+              placeholder="例如 web-preview"
+            />
+          </Form.Item>
+          <Form.Item label="协议" required>
+            <Select
+              value={protocol}
+              onChange={setProtocol}
+              options={[
+                { label: "HTTP", value: "http" },
+                { label: "TCP", value: "tcp" },
+              ]}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </>
+  );
+}

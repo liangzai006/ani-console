@@ -229,7 +229,7 @@ const mockOverview: HomeOverviewData = {
       id: "create-vm",
       name: "创建云主机",
       icon: "yunzhuji",
-      route: "/vm-instances/create",
+      route: "/vm-instances",
     },
     {
       id: "create-container",

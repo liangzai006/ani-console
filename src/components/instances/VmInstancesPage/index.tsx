@@ -93,6 +93,7 @@ export function VmInstancesPage() {
         <DataTableNameCell
           name={
             <Link
+              from="/"
               to="/vm-instances/$instanceId"
               params={{ instanceId: row.id }}
             >

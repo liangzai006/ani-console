@@ -5,7 +5,6 @@ export type HomeMonitorSource = "external" | "internal";
 
 export type HomeRoute =
   | "/vm-instances"
-  | "/vm-instances/create"
   | "/container-instances"
   | "/gpu-instances"
   | "/sandbox-instances"

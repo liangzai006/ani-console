@@ -42,7 +42,6 @@ export const gpuInstanceDetailTabKeys = [
 export type GpuInstanceDetailTabKey = (typeof gpuInstanceDetailTabKeys)[number];
 
 export const sandboxInstanceDetailTabKeys = [
-  "overview",
   "access",
   "env",
   "terminal",
