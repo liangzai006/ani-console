@@ -8,9 +8,10 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
-import { DataTable } from "@/components/common";
+import { DataTable, TableSectionHeader } from "@/components/common";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
@@ -43,11 +44,16 @@ function secretPurpose(reference: string) {
 export function InstanceConfiguration({
   instance,
   onChanged,
+  secretAction,
 }: {
   instance: Instance;
   onChanged: () => void;
+  secretAction?: ReactNode;
 }) {
-  const unbindScope = useIdempotencyScope("instance-secret-unbind", ["POST", instance.id]);
+  const unbindScope = useIdempotencyScope("instance-secret-unbind", [
+    "POST",
+    instance.id,
+  ]);
   const secretRefs = secretReferences(instance);
   const secretRows: SecretRow[] = secretRefs.map((reference) => ({
     reference,
@@ -94,7 +100,7 @@ export function InstanceConfiguration({
       </section>
 
       <section>
-        <Typography.Title heading={6}>绑定密钥</Typography.Title>
+        <TableSectionHeader title="绑定密钥" extra={secretAction} />
         <DataTable<SecretRow>
           data={secretRows}
           rowKey="reference"
@@ -134,7 +140,7 @@ export function InstanceConfiguration({
         <Typography.Title heading={6}>Workload Identity</Typography.Title>
         <Descriptions
           column={1}
-          labelStyle={{ width: '120px' }}
+          labelStyle={{ width: "120px" }}
           data={[
             {
               label: "状态",

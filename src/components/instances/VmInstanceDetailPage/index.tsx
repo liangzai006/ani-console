@@ -1,4 +1,4 @@
-import { Button, Empty, Space, Spin, Tooltip } from "@arco-design/web-react";
+import { Button, Empty, Spin, Tooltip } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -232,6 +232,7 @@ export function VmInstanceDetailPage({
         actions={
           <VmInstanceActions
             instance={instance}
+            display="detail"
             onOperationSubmitted={refreshDetail}
           />
         }
@@ -243,7 +244,10 @@ export function VmInstanceDetailPage({
               { label: "实例 ID", value: instance.id },
               { label: "状态", value: <StatusTag status={instance.state} /> },
               { label: "规格", value: flavorLabel(instance) },
-              { label: "镜像", value: <ImageNameText image={instance.image} /> },
+              {
+                label: "镜像",
+                value: <ImageNameText image={instance.image} />,
+              },
               { label: "Provider", value: instance.provider || "-" },
               {
                 label: "节点",
@@ -311,28 +315,6 @@ export function VmInstanceDetailPage({
           {
             key: "storage",
             label: "卷与快照",
-            extra: (
-              <Space>
-                <Button
-                  disabled={!stable || busy}
-                  onClick={() => setMountKind("volume")}
-                >
-                  挂载云盘
-                </Button>
-                <Button
-                  disabled={!stable || busy}
-                  onClick={() => setMountKind("filesystem")}
-                >
-                  挂载 NFS
-                </Button>
-                <Button
-                  disabled={!stable || busy}
-                  onClick={() => setSnapshotVisible(true)}
-                >
-                  创建快照
-                </Button>
-              </Space>
-            ),
             content: (
               <VmInstanceStorage
                 instance={instance}
@@ -340,6 +322,30 @@ export function VmInstanceDetailPage({
                 onMountKindChange={setMountKind}
                 onChanged={refreshDetail}
                 canRollback={stable && !busy}
+                volumeAction={
+                  <Button
+                    disabled={!stable || busy}
+                    onClick={() => setMountKind("volume")}
+                  >
+                    挂载云盘
+                  </Button>
+                }
+                filesystemAction={
+                  <Button
+                    disabled={!stable || busy}
+                    onClick={() => setMountKind("filesystem")}
+                  >
+                    挂载 NFS
+                  </Button>
+                }
+                snapshotAction={
+                  <Button
+                    disabled={!stable || busy}
+                    onClick={() => setSnapshotVisible(true)}
+                  >
+                    创建快照
+                  </Button>
+                }
               />
             ),
           },

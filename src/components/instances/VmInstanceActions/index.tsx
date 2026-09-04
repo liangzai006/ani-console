@@ -1,4 +1,11 @@
-import { Dropdown, Menu, Message, Tooltip } from "@arco-design/web-react";
+import {
+  Button,
+  Dropdown,
+  Menu,
+  Message,
+  Space,
+  Tooltip,
+} from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -45,9 +52,11 @@ const BUSY_STATES = new Set<VmInstance["state"]>([
 export function VmInstanceActions({
   instance,
   onOperationSubmitted,
+  display = "row",
 }: {
   instance: VmInstance;
   onOperationSubmitted: (operationId: string) => void;
+  display?: "row" | "detail";
 }) {
   const navigate = useNavigate();
   const startScope = useIdempotencyScope("vm-instance-start", [
@@ -197,91 +206,116 @@ export function VmInstanceActions({
     setModalAction(action as ModalAction);
   };
 
+  const lifecycleDisabled = canStart
+    ? busy
+    : !running || busy || protectedInstance;
+  const lifecycleAction = () => {
+    if (canStart) start.mutate();
+    else setStopVisible(true);
+  };
+  const lifecycleButton =
+    display === "row" ? (
+      <DataTableRowActionButton
+        disabled={lifecycleDisabled}
+        title={
+          canStart || running || protectedInstance
+            ? undefined
+            : "当前状态不可关机"
+        }
+        onClick={lifecycleAction}
+      >
+        {canStart ? "开机" : "关机"}
+      </DataTableRowActionButton>
+    ) : (
+      <Button
+        disabled={lifecycleDisabled}
+        loading={start.isPending}
+        title={
+          canStart || running || protectedInstance
+            ? undefined
+            : "当前状态不可关机"
+        }
+        onClick={lifecycleAction}
+      >
+        {canStart ? "开机" : "关机"}
+      </Button>
+    );
+  const lifecycleControl =
+    protectedInstance && running ? (
+      <Tooltip content="已开启终止保护，请先关闭后再关机">
+        <span className="inline-flex">{lifecycleButton}</span>
+      </Tooltip>
+    ) : (
+      lifecycleButton
+    );
+  const moreMenu = (
+    <Menu onClickMenuItem={handleMoreAction}>
+      <Menu.Item key="restart" disabled={!running || busy}>
+        重启
+      </Menu.Item>
+      <Menu.Item key="resize" disabled={!stopped || busy}>
+        变配
+      </Menu.Item>
+      <Menu.Item key="rebuild" disabled={!stable || busy || protectedInstance}>
+        重建
+      </Menu.Item>
+      <Menu.Item key="snapshot" disabled={!stable || busy}>
+        创建快照
+      </Menu.Item>
+      <Menu.Item key="attach_volume" disabled={!stable || busy}>
+        挂载云盘
+      </Menu.Item>
+      <Menu.Item
+        key="detach_volume"
+        disabled={!stable || busy || detachableVolumes.length === 0}
+      >
+        卸载云盘
+      </Menu.Item>
+      <Menu.Item key="attach_filesystem" disabled={!stable || busy}>
+        挂载 NFS
+      </Menu.Item>
+      <Menu.Item key="change_security_groups" disabled={!stable || busy}>
+        更换安全组
+      </Menu.Item>
+      <Menu.Item key="termination_protection" disabled={busy}>
+        {protectedInstance ? "关闭终止保护" : "开启终止保护"}
+      </Menu.Item>
+      <Menu.Item key="console" disabled={!consoleAvailable}>
+        远程连接
+      </Menu.Item>
+      <Menu.Item
+        key="delete"
+        disabled={busy || protectedInstance}
+        style={{ color: "var(--color-danger-6)" }}
+      >
+        删除
+      </Menu.Item>
+    </Menu>
+  );
+
   return (
     <>
-      <DataTableRowActions>
-        {canStart ? (
-          <DataTableRowActionButton
-            disabled={busy}
-            onClick={() => start.mutate()}
-          >
-            开机
-          </DataTableRowActionButton>
-        ) : protectedInstance && running ? (
-          <Tooltip content="已开启终止保护，请先关闭后再关机">
-            <span className="inline-flex">
-              <DataTableRowActionButton disabled>关机</DataTableRowActionButton>
-            </span>
-          </Tooltip>
-        ) : (
-          <DataTableRowActionButton
-            disabled={!running || busy}
-            title={running ? undefined : "当前状态不可关机"}
-            onClick={() => setStopVisible(true)}
-          >
-            关机
-          </DataTableRowActionButton>
-        )}
-        <Dropdown
-          trigger="click"
-          position="br"
-          droplist={
-            <Menu onClickMenuItem={handleMoreAction}>
-              <Menu.Item key="restart" disabled={!running || busy}>
-                重启
-              </Menu.Item>
-              <Menu.Item key="resize" disabled={!stopped || busy}>
-                变配
-              </Menu.Item>
-              <Menu.Item
-                key="rebuild"
-                disabled={!stable || busy || protectedInstance}
-              >
-                重建
-              </Menu.Item>
-              <Menu.Item key="snapshot" disabled={!stable || busy}>
-                创建快照
-              </Menu.Item>
-              <Menu.Item key="attach_volume" disabled={!stable || busy}>
-                挂载云盘
-              </Menu.Item>
-              <Menu.Item
-                key="detach_volume"
-                disabled={!stable || busy || detachableVolumes.length === 0}
-              >
-                卸载云盘
-              </Menu.Item>
-              <Menu.Item key="attach_filesystem" disabled={!stable || busy}>
-                挂载 NFS
-              </Menu.Item>
-              <Menu.Item
-                key="change_security_groups"
-                disabled={!stable || busy}
-              >
-                更换安全组
-              </Menu.Item>
-              <Menu.Item key="termination_protection" disabled={busy}>
-                {protectedInstance ? "关闭终止保护" : "开启终止保护"}
-              </Menu.Item>
-              <Menu.Item key="console" disabled={!consoleAvailable}>
-                远程连接
-              </Menu.Item>
-              <Menu.Item
-                key="delete"
-                disabled={busy || protectedInstance}
-                style={{ color: "var(--color-danger-6)" }}
-              >
-                删除
-              </Menu.Item>
-            </Menu>
-          }
-        >
-          <DataTableRowActionButton disabled={busy}>
-            更多
-            <IconDown />
-          </DataTableRowActionButton>
-        </Dropdown>
-      </DataTableRowActions>
+      {display === "row" ? (
+        <DataTableRowActions>
+          {lifecycleControl}
+          <Dropdown trigger="click" position="br" droplist={moreMenu}>
+            <DataTableRowActionButton disabled={busy}>
+              更多
+              <IconDown />
+            </DataTableRowActionButton>
+          </Dropdown>
+        </DataTableRowActions>
+      ) : (
+        <Space>
+          {lifecycleControl}
+          <Dropdown trigger="click" position="br" droplist={moreMenu}>
+            <Button disabled={busy}>
+              更多操作
+              <IconDown className="ml-1 text-xs" />
+            </Button>
+          </Dropdown>
+        </Space>
+      )}
 
       {stopVisible && (
         <VmInstanceStopModal

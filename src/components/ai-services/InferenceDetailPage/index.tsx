@@ -3,6 +3,7 @@ import {
   DetailPageFrame,
   ImageNameText,
   AliIcon,
+  TableSectionHeader,
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -358,58 +359,65 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
           {
             key: "logs",
             label: "日志",
-            extra: (
-              <Space>
-                <Select
-                  size="small"
-                  value={logLevel}
-                  onChange={setLogLevel}
-                  className="w-[120px]"
-                  options={[
-                    { value: "all", label: "全部级别" },
-                    { value: "debug", label: "Debug" },
-                    { value: "info", label: "Info" },
-                    { value: "warn", label: "Warn" },
-                    { value: "error", label: "Error" },
-                  ]}
+            content: (
+              <div>
+                <TableSectionHeader
+                  title="推理日志"
+                  extra={
+                    <Space>
+                      <Select
+                        size="small"
+                        value={logLevel}
+                        onChange={setLogLevel}
+                        className="w-[120px]"
+                        options={[
+                          { value: "all", label: "全部级别" },
+                          { value: "debug", label: "Debug" },
+                          { value: "info", label: "Info" },
+                          { value: "warn", label: "Warn" },
+                          { value: "error", label: "Error" },
+                        ]}
+                      />
+                      <Button
+                        size="small"
+                        loading={logs.isFetching}
+                        onClick={() => void logs.refetch()}
+                      >
+                        刷新
+                      </Button>
+                    </Space>
+                  }
                 />
-                <Button
-                  size="small"
-                  loading={logs.isFetching}
-                  onClick={() => void logs.refetch()}
-                >
-                  刷新
-                </Button>
-              </Space>
-            ),
-            content: logs.error ? (
-              <Alert
-                type="error"
-                showIcon
-                content={getErrorMessage(logs.error, "日志加载失败")}
-              />
-            ) : (
-              <DataTable<InferenceLog>
-                loading={logs.isFetching}
-                data={logs.data?.items ?? []}
-                rowKey={(row) =>
-                  `${row.timestamp}-${row.container}-${row.message}`
-                }
-                pagination={false}
-                noDataElement={<Empty description="暂无日志" />}
-                columns={[
-                  {
-                    title: "时间",
-                    render: (_, row) => formatDateTime(row.timestamp),
-                  },
-                  { title: "级别", dataIndex: "level" },
-                  {
-                    title: "容器",
-                    render: (_, row) => row.container ?? "-",
-                  },
-                  { title: "消息", dataIndex: "message" },
-                ]}
-              />
+                {logs.error ? (
+                  <Alert
+                    type="error"
+                    showIcon
+                    content={getErrorMessage(logs.error, "日志加载失败")}
+                  />
+                ) : (
+                  <DataTable<InferenceLog>
+                    loading={logs.isFetching}
+                    data={logs.data?.items ?? []}
+                    rowKey={(row) =>
+                      `${row.timestamp}-${row.container}-${row.message}`
+                    }
+                    pagination={false}
+                    noDataElement={<Empty description="暂无日志" />}
+                    columns={[
+                      {
+                        title: "时间",
+                        render: (_, row) => formatDateTime(row.timestamp),
+                      },
+                      { title: "级别", dataIndex: "level" },
+                      {
+                        title: "容器",
+                        render: (_, row) => row.container ?? "-",
+                      },
+                      { title: "消息", dataIndex: "message" },
+                    ]}
+                  />
+                )}
+              </div>
             ),
           },
           {

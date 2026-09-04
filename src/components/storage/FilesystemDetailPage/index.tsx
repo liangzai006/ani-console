@@ -4,11 +4,19 @@ import {
   DetailPagePlaceholder,
   AliIcon,
   StatusTag,
-} from '@/components/common'
+  TableSectionHeader,
+} from "@/components/common";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react"
+  Alert,
+  Button,
+  Empty,
+  Modal,
+  Space,
+  Spin,
+  Tooltip,
+} from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { useState } from "react";
 import { showApiError } from "@/api/helpers";
@@ -23,7 +31,11 @@ import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 type Filesystem = components["schemas"]["StorageFilesystem"];
 type MountTarget = components["schemas"]["FilesystemMountTarget"];
 
-export function FilesystemDetailPage({ filesystemId }: { filesystemId: string }) {
+export function FilesystemDetailPage({
+  filesystemId,
+}: {
+  filesystemId: string;
+}) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [expandVisible, setExpandVisible] = useState(false);
@@ -83,7 +95,11 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[{ label: "存储" }, { label: "文件存储", to: "/filesystems" }, { label: filesystemId }]}
+        breadcrumbs={[
+          { label: "存储" },
+          { label: "文件存储", to: "/filesystems" },
+          { label: filesystemId },
+        ]}
         title={filesystemId}
         idLabel="文件系统 ID"
         idValue={filesystemId}
@@ -188,61 +204,66 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
           {
             key: "mount-targets",
             label: "挂载目标",
-            extra: (
-              <Button
-                type="primary"
-                onClick={() => setMountTargetVisible(true)}
-              >
-                创建挂载目标
-              </Button>
-            ),
             content: (
-              <DataTable<MountTarget>
-                columns={[
-                  { title: "挂载目标 ID", dataIndex: "id" },
-                  {
-                    title: "状态",
-                    width: 120,
-                    render: (_, row) => <StatusTag status={row.status} />,
-                  },
-                  {
-                    title: "VPC",
-                    render: (_, row) =>
-                      row.vpc_id ? (
+              <div>
+                <TableSectionHeader
+                  title="挂载目标"
+                  extra={
+                    <Button
+                      type="primary"
+                      onClick={() => setMountTargetVisible(true)}
+                    >
+                      创建挂载目标
+                    </Button>
+                  }
+                />
+                <DataTable<MountTarget>
+                  columns={[
+                    { title: "挂载目标 ID", dataIndex: "id" },
+                    {
+                      title: "状态",
+                      width: 120,
+                      render: (_, row) => <StatusTag status={row.status} />,
+                    },
+                    {
+                      title: "VPC",
+                      render: (_, row) =>
+                        row.vpc_id ? (
+                          <Link
+                            to="/vpcs/$vpcId"
+                            params={{ vpcId: row.vpc_id }}
+                          >
+                            {row.vpc_id}
+                          </Link>
+                        ) : (
+                          "-"
+                        ),
+                    },
+                    {
+                      title: "子网",
+                      render: (_, row) => (
                         <Link
-                          to="/vpcs/$vpcId"
-                          params={{ vpcId: row.vpc_id }}
+                          to="/subnets/$subnetId"
+                          params={{ subnetId: row.subnet_id }}
                         >
-                          {row.vpc_id}
+                          {row.subnet_id}
                         </Link>
-                      ) : (
-                        "-"
                       ),
-                  },
-                  {
-                    title: "子网",
-                    render: (_, row) => (
-                      <Link
-                        to="/subnets/$subnetId"
-                        params={{ subnetId: row.subnet_id }}
-                      >
-                        {row.subnet_id}
-                      </Link>
-                    ),
-                  },
-                  { title: "IP 地址", dataIndex: "ip_address" },
-                  {
-                    title: "创建时间",
-                    render: (_, row) => formatDateTime(row.created_at),
-                  },
-                ]}
-                data={mountItems}
-                loading={mounts.isLoading}
-                pagination={false}
-                noDataElement={
-                  <Empty description="暂无挂载目标，请创建挂载目标后获取访问地址" />
-                }
-              />
+                    },
+                    { title: "IP 地址", dataIndex: "ip_address" },
+                    {
+                      title: "创建时间",
+                      render: (_, row) => formatDateTime(row.created_at),
+                    },
+                  ]}
+                  data={mountItems}
+                  loading={mounts.isLoading}
+                  pagination={false}
+                  noDataElement={
+                    <Empty description="暂无挂载目标，请创建挂载目标后获取访问地址" />
+                  }
+                />
+              </div>
             ),
           },
           {

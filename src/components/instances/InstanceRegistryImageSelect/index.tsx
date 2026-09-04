@@ -40,8 +40,7 @@ export function InstanceRegistryImageSelect({
         params: { query: asUncontractedQuery({ limit: 100, purpose }) },
       });
       if (error || !data) throw error ?? new Error("容器镜像列表未返回结果");
-      // TODO: Registry 后端确认按 purpose 过滤后，移除此处关联资源选择的本地兜底过滤。
-      return data.items.filter((item) => item.purpose === purpose);
+      return data.items;
     },
   });
 

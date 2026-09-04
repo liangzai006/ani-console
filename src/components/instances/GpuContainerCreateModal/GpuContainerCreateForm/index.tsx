@@ -100,17 +100,14 @@ export function GpuContainerCreateForm({
         params: { query: asUncontractedQuery({ limit: 100, purpose: "gpu" }) },
       });
       if (error || !data) throw error ?? new Error("GPU 镜像列表未返回结果");
-      // TODO: Registry 后端确认按 purpose 过滤后，移除此处创建表单的本地兜底过滤。
-      return data.items.filter((item) => item.purpose === "gpu");
+      return data.items;
     },
   });
   const gpuSpecAvailability = useQuery({
     queryKey: ["gpu-specs", "availability"],
     enabled: visible,
     queryFn: async () => {
-      const request = coreApi.GET as unknown as (
-        path: string,
-      ) => Promise<{
+      const request = coreApi.GET as unknown as (path: string) => Promise<{
         data?: GpuSpecAvailabilityListResponse;
         error?: unknown;
       }>;
@@ -125,9 +122,7 @@ export function GpuContainerCreateForm({
     queryKey: ["gpu-scheduling", "queues", "select"],
     enabled: visible,
     queryFn: async () => {
-      const request = coreApi.GET as unknown as (
-        path: string,
-      ) => Promise<{
+      const request = coreApi.GET as unknown as (path: string) => Promise<{
         data?: GpuSchedulingQueueListResponse;
         error?: unknown;
       }>;

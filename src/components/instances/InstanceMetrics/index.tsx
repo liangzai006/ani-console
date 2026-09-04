@@ -120,24 +120,35 @@ export function InstanceMetrics({
                 scale: 100,
               },
             ]
-          : [
-              {
-                name: "CPU 利用率",
-                promql: `100 * avg(rate(container_cpu_usage_seconds_total{namespace="${instanceId}",pod="${instanceId}",container!="",container!="POD"}[5m]))`,
-              },
-              {
-                name: "内存利用率",
-                promql: `100 * (container_memory_working_set_bytes{namespace="${instanceId}",pod="${instanceId}",container!="",container!="POD"} / container_spec_memory_limit_bytes{namespace="${instanceId}",pod="${instanceId}",container!="",container!="POD"})`,
-              },
-              ...(hasGpuMetrics
-                ? [
-                    {
-                      name: "GPU 利用率",
-                      promql: `avg(DCGM_FI_DEV_GPU_UTIL{namespace="${instanceId}",pod="${instanceId}"})`,
-                    },
-                  ]
-                : []),
-            ];
+          : instanceKind === "sandbox"
+            ? [
+                {
+                  name: "CPU 利用率",
+                  promql: `100 * sum(rate(container_cpu_usage_seconds_total{namespace="${instanceId}",pod="${instanceId}",container="",id!~"/kata_overhead/.*"}[5m]))`,
+                },
+                {
+                  name: "内存利用率",
+                  promql: `100 * (1 - sum(kata_guest_meminfo{item="mem_available",cri_namespace="${instanceId}",cri_name="${instanceId}"}) / sum(kata_guest_meminfo{item="mem_total",cri_namespace="${instanceId}",cri_name="${instanceId}"}))`,
+                },
+              ]
+            : [
+                {
+                  name: "CPU 利用率",
+                  promql: `100 * avg(rate(container_cpu_usage_seconds_total{namespace="${instanceId}",pod="${instanceId}",container!="",container!="POD"}[5m]))`,
+                },
+                {
+                  name: "内存利用率",
+                  promql: `100 * (container_memory_working_set_bytes{namespace="${instanceId}",pod="${instanceId}",container!="",container!="POD"} / container_spec_memory_limit_bytes{namespace="${instanceId}",pod="${instanceId}",container!="",container!="POD"})`,
+                },
+                ...(hasGpuMetrics
+                  ? [
+                      {
+                        name: "GPU 利用率",
+                        promql: `avg(DCGM_FI_DEV_GPU_UTIL{namespace="${instanceId}",pod="${instanceId}"})`,
+                      },
+                    ]
+                  : []),
+              ];
 
       return Promise.all(
         queries.map(

@@ -8,17 +8,13 @@ import {
   Modal,
   Select,
   Space,
-  Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
-import {
-  DataTable,
-  StatusTag,
-} from "@/components/common";
+import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
 import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
@@ -46,14 +42,21 @@ export function InstanceStorage({
   mountKind,
   onMountKindChange,
   onChanged,
+  volumeAction,
+  filesystemAction,
 }: {
   instance: Instance;
   mountKind?: MountKind;
   onMountKindChange: (kind?: MountKind) => void;
   onChanged: () => void;
+  volumeAction?: ReactNode;
+  filesystemAction?: ReactNode;
 }) {
   const [form] = Form.useForm<MountFormValues>();
-  const mountScope = useIdempotencyScope("instance-storage-mount", ["POST", instance.id]);
+  const mountScope = useIdempotencyScope("instance-storage-mount", [
+    "POST",
+    instance.id,
+  ]);
   const [selectedResourceId, setSelectedResourceId] = useState("");
   const volumes = instance.volumes ?? [];
   const filesystems = (instance.storage_attachments ?? []).filter(
@@ -72,11 +75,13 @@ export function InstanceStorage({
     queryFn: () =>
       listOrThrow(() =>
         coreApi.GET("/volumes", {
-          params: { query: asUncontractedQuery({
-            limit: 100,
-            status: "pending,available",
-            available_for_instance_id: instance.id,
-          }) },
+          params: {
+            query: asUncontractedQuery({
+              limit: 100,
+              status: "pending,available",
+              available_for_instance_id: instance.id,
+            }),
+          },
         }),
       ),
     enabled: mountKind === "volume",
@@ -86,12 +91,14 @@ export function InstanceStorage({
     queryFn: () =>
       listOrThrow(() =>
         coreApi.GET("/filesystems", {
-          params: { query: asUncontractedQuery({
-            limit: 100,
-            protocol: "nfs",
-            status: "available",
-            available_for_instance_id: instance.id,
-          }) },
+          params: {
+            query: asUncontractedQuery({
+              limit: 100,
+              protocol: "nfs",
+              status: "available",
+              available_for_instance_id: instance.id,
+            }),
+          },
         }),
       ),
     enabled: mountKind === "filesystem",
@@ -193,9 +200,7 @@ export function InstanceStorage({
     <>
       <Space direction="vertical" size={24} className="w-full">
         <section>
-          <div className="mb-3">
-            <Typography.Title heading={6}>挂载点</Typography.Title>
-          </div>
+          <TableSectionHeader title="挂载点" extra={volumeAction} />
           <DataTable<Volume>
             data={volumes}
             rowKey={(volume) =>
@@ -220,9 +225,7 @@ export function InstanceStorage({
         </section>
 
         <section>
-          <div className="mb-3">
-            <Typography.Title heading={6}>文件存储 NFS</Typography.Title>
-          </div>
+          <TableSectionHeader title="文件存储 NFS" extra={filesystemAction} />
           <DataTable<FilesystemAttachment>
             data={filesystems}
             rowKey={(filesystem) =>

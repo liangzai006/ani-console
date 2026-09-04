@@ -3,12 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { coreApi } from "@/api/client";
 import type { components } from "@/api/core-schema";
 import { StatusTag } from "@/components/common";
+import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import { getErrorMessage } from "@/lib/errors";
-import {
-  CPU_SPEC_OPTIONS,
-  currentCpuMemorySpec,
-  currentGpuSpecValue,
-} from "./helpers";
+import { GPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instance-compute-specs";
+import { currentCpuMemorySpec, currentGpuSpecValue } from "./helpers";
 
 type Instance = components["schemas"]["InstanceRecord"];
 
@@ -33,9 +31,7 @@ export function GpuInstanceResizeFields({
     queryKey: ["gpu-specs", "availability", "resize", instance.id],
     enabled,
     queryFn: async () => {
-      const request = coreApi.GET as unknown as (
-        path: string,
-      ) => Promise<{
+      const request = coreApi.GET as unknown as (path: string) => Promise<{
         data?: GpuSpecAvailabilityListResponse;
         error?: unknown;
       }>;
@@ -50,16 +46,16 @@ export function GpuInstanceResizeFields({
   const currentGpuValue = currentGpuSpecValue(instance);
   const currentGpuLabel =
     instance.compute?.gpu_type ?? instance.compute?.spec_id ?? "-";
-  const cpuOptions = CPU_SPEC_OPTIONS.some(
+  const cpuOptions = GPU_INSTANCE_COMPUTE_SPECS.some(
     (option) => option.value === currentCpuSpec,
   )
-    ? CPU_SPEC_OPTIONS.map((option) => ({
+    ? GPU_INSTANCE_COMPUTE_SPECS.map((option) => ({
         label: `${option.value}${option.value === currentCpuSpec ? "（当前）" : ""}`,
         value: option.value,
       }))
     : [
         { label: `${currentCpuSpec}（当前）`, value: currentCpuSpec },
-        ...CPU_SPEC_OPTIONS.map((option) => ({
+        ...GPU_INSTANCE_COMPUTE_SPECS.map((option) => ({
           label: option.value,
           value: option.value,
         })),
@@ -109,13 +105,12 @@ export function GpuInstanceResizeFields({
           placeholder="请选择 GPU 规格"
         />
       </Form.Item>
-      <Form.Item
+      <InstanceComputeSpecSelect
         field="cpu_memory_spec"
-        label="CPU / 内存"
-        rules={[{ required: true, message: "请选择 CPU / 内存" }]}
-      >
-        <Select options={cpuOptions} placeholder="请选择 CPU / 内存" />
-      </Form.Item>
+        profile="gpu"
+        placeholder="请选择 CPU / 内存"
+        options={cpuOptions}
+      />
       <Typography.Paragraph type="secondary" className="mb-0">
         提交后写入生命周期任务，实例保持已停止；启动后按新规格调度。
       </Typography.Paragraph>

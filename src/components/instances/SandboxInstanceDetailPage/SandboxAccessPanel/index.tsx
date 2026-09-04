@@ -1,8 +1,6 @@
 import {
   Alert,
   Button,
-  Checkbox,
-  Descriptions,
   Empty,
   Form,
   Input,
@@ -21,8 +19,8 @@ import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
 import { DataTable } from "@/components/common";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
-import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
+import { SandboxTokenIssueModal } from "./SandboxTokenIssueModal";
 import {
   copySandboxText,
   showSandboxError,
@@ -34,15 +32,6 @@ type SandboxStatus = NonNullable<
   components["schemas"]["SandboxInstanceStatus"]
 >;
 type SandboxPortSummary = NonNullable<SandboxStatus["ports"]>[number];
-type SandboxToken = components["schemas"]["SandboxTokenResponse"];
-type TokenScope = SandboxToken["scopes"][number];
-
-const TOKEN_SCOPE_OPTIONS = [
-  { label: "连接", value: "connect" },
-  { label: "终端", value: "exec" },
-  { label: "文件", value: "files" },
-  { label: "端口", value: "ports" },
-];
 
 export function SandboxAccessPanel({
   instance,
@@ -52,10 +41,6 @@ export function SandboxAccessPanel({
   onChanged: () => void;
 }) {
   const sandbox = instance.sandbox!;
-  const tokenScope = useIdempotencyScope("sandbox-access-token", [
-    "POST",
-    instance.id,
-  ]);
   const createPortScope = useIdempotencyScope("sandbox-preview-port-create", [
     "POST",
     instance.id,
@@ -64,9 +49,7 @@ export function SandboxAccessPanel({
     "DELETE",
     instance.id,
   ]);
-  const [token, setToken] = useState<SandboxToken>();
-  const [tokenExpiresIn, setTokenExpiresIn] = useState("15m");
-  const [tokenScopes, setTokenScopes] = useState<TokenScope[]>(["connect"]);
+  const [tokenVisible, setTokenVisible] = useState(false);
   const [portVisible, setPortVisible] = useState(false);
   const [port, setPort] = useState(8080);
   const [portName, setPortName] = useState("");
@@ -77,32 +60,6 @@ export function SandboxAccessPanel({
   const browserTemplate = getImageDisplayName(instance.image)
     .toLowerCase()
     .includes("browser");
-
-  const issueToken = useMutation({
-    mutationFn: async () => {
-      const submitData = {
-        expires_in: tokenExpiresIn,
-        scopes: tokenScopes,
-      };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/sandbox/tokens",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: tokenScope.withKey(submitData),
-        },
-      );
-      if (error || !data) {
-        throwSandboxApiError(error, response.status, "连接令牌签发失败");
-      }
-      return data;
-    },
-    onSuccess: (data) => {
-      tokenScope.reset();
-      setToken(data);
-      Message.success("短期连接令牌已签发");
-    },
-    onError: (error) => showSandboxError(error, "连接令牌签发失败"),
-  });
 
   const createPort = useMutation({
     mutationFn: async () => {
@@ -181,70 +138,15 @@ export function SandboxAccessPanel({
             <Button
               size="small"
               type="primary"
-              disabled={!running || !tokenAvailable || tokenScopes.length === 0}
-              loading={issueToken.isPending}
-              onClick={() => issueToken.mutate()}
+              disabled={!running || !tokenAvailable}
+              onClick={() => setTokenVisible(true)}
             >
               签发令牌
             </Button>
           </div>
-          <Form layout="vertical">
-            <div className="grid gap-4 lg:grid-cols-2">
-              <Form.Item label="有效期">
-                <Select
-                  value={tokenExpiresIn}
-                  onChange={setTokenExpiresIn}
-                  options={[
-                    { label: "15 分钟", value: "15m" },
-                    { label: "30 分钟", value: "30m" },
-                    { label: "1 小时", value: "1h" },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item label="授权范围">
-                <Checkbox.Group
-                  options={TOKEN_SCOPE_OPTIONS}
-                  value={tokenScopes}
-                  onChange={(value) => setTokenScopes(value as TokenScope[])}
-                />
-              </Form.Item>
-            </div>
-          </Form>
-          {token ? (
-            <div className="space-y-3 rounded-lg bg-(--color-fill-1) p-4">
-              <Alert
-                type="warning"
-                content="请立即复制并安全保存。离开本页后，令牌不会再次显示。"
-              />
-              <Input.TextArea
-                aria-label="短期连接令牌"
-                value={token.token}
-                readOnly
-                autoSize={{ minRows: 2, maxRows: 4 }}
-              />
-              <Descriptions
-                column={{ xs: 1, md: 2 }}
-                data={[
-                  {
-                    label: "过期时间",
-                    value: formatDateTime(token.expires_at),
-                  },
-                  { label: "授权范围", value: token.scopes.join("、") },
-                ]}
-              />
-              <Button
-                onClick={() => copySandboxText(token.token, "令牌已复制")}
-              >
-                复制令牌
-              </Button>
-            </div>
-          ) : (
-            <Empty
-              description={
-                running ? "尚未签发连接令牌" : "仅运行中的 Sandbox 可签发令牌"
-              }
-            />
-          )}
+          <Typography.Text type="secondary">
+            在弹窗中配置有效期与授权范围；签发结果仅显示一次。
+          </Typography.Text>
         </section>
 
         {browserTemplate ? (
@@ -347,6 +249,12 @@ export function SandboxAccessPanel({
           />
         </section>
       </Space>
+
+      <SandboxTokenIssueModal
+        instance={instance}
+        visible={tokenVisible}
+        onCancel={() => setTokenVisible(false)}
+      />
 
       <Modal
         title="开放预览端口"

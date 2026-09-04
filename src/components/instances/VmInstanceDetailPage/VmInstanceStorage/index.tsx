@@ -1,11 +1,12 @@
-import { Empty, Space, Typography } from "@arco-design/web-react";
-import { useState } from "react";
+import { Empty, Space } from "@arco-design/web-react";
+import { useState, type ReactNode } from "react";
 import type { components } from "@/api/core-schema";
 import {
   DataTable,
   DataTableRowActionButton,
   DataTableRowActions,
   StatusTag,
+  TableSectionHeader,
 } from "@/components/common";
 import {
   InstanceStorage,
@@ -23,12 +24,18 @@ export function VmInstanceStorage({
   onMountKindChange,
   onChanged,
   canRollback,
+  volumeAction,
+  filesystemAction,
+  snapshotAction,
 }: {
   instance: VmInstance;
   mountKind?: MountKind;
   onMountKindChange: (kind?: MountKind) => void;
   onChanged: () => void;
   canRollback: boolean;
+  volumeAction?: ReactNode;
+  filesystemAction?: ReactNode;
+  snapshotAction?: ReactNode;
 }) {
   const [rollbackSnapshot, setRollbackSnapshot] = useState<Snapshot>();
 
@@ -40,11 +47,11 @@ export function VmInstanceStorage({
           mountKind={mountKind}
           onMountKindChange={onMountKindChange}
           onChanged={onChanged}
+          volumeAction={volumeAction}
+          filesystemAction={filesystemAction}
         />
         <section>
-          <div className="mb-3">
-            <Typography.Title heading={6}>快照</Typography.Title>
-          </div>
+          <TableSectionHeader title="快照" extra={snapshotAction} />
           <DataTable<Snapshot>
             data={instance.snapshots ?? []}
             rowKey="id"

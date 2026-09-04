@@ -1,7 +1,6 @@
 import { Alert, Descriptions } from "@arco-design/web-react";
 import { ImageNameText } from "@/components/common";
 import {
-  COMPUTE_SPEC_BY_KEY,
   type Filesystem,
   type FormValues,
   type GpuSchedulingQueue,
@@ -47,7 +46,7 @@ export function GpuConfirmStep({
           },
           {
             label: "资源",
-            value: `${COMPUTE_SPEC_BY_KEY[values.compute_spec].label} · GPU ${gpuSpec?.display_name ?? values.spec_id} · 副本 ${values.replicas}`,
+            value: `${values.compute_spec} · GPU ${gpuSpec?.display_name ?? values.spec_id} · 副本 ${values.replicas}`,
           },
           {
             label: "调度队列",

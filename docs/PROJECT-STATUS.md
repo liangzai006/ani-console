@@ -6,6 +6,7 @@
 
 - 项目：独立 ANI Console 前端；仓库根目录已代表 Console 范围，路由和文件直接按业务领域或资源命名。
 - 后端：独立 ANI 仓库；接口契约与行为以 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
+- 临时接口补充：开始 Core API 对接前，先查询 GitNexus 索引 `ani-console对接文档补充`，纳入后端测试环境先部署、代码尚未合并期间独立整理的接口说明；发现契约差异时停止推断并请求确认。
 - API：`/api/v1`，统一通过 `src/api/client.ts` 的 `coreApi` 调用。
 - 产品原型：GitNexus 索引 `产品原型-9.03`；页面信息架构与交互布局以该版本为准。
 - UI：使用 Arco Design React 和 Arco Token，Tailwind 仅负责布局；沿用现有顶部一级导航及侧栏层级。
@@ -31,7 +32,8 @@
 
 | 日期 | 摘要 |
 |------|------|
-| 2026-09-04 | 产品原型基线升级至 `产品原型-9.03`；重做 Sandbox 实例详情，统一详情框架并移除重复概览页签，接入会话操作、访问端口、代码运行、文件、检查点和安全事件，未开放能力保持只读或空态，同步补充 Core 契约类型；实例监控按 `query_range` 材料修正内存公式、独立展示与降级语义。同期将云主机规格和块存储类型改为受限 Select，修复云主机详情跳转警告，并新增仓库级 `$project-wrap-up` Skill 用于压缩当日记录和生成提交信息。相关 Oxlint、Prettier、TypeScript 与差异格式检查通过；GitNexus 对共享监控组件的编辑前影响分析为 HIGH，监控修复变更检测为 LOW，当前累计变更检测为 HIGH。 |
+| 2026-09-04 | 对齐 `产品原型-9.03`，收敛 VM、普通容器、GPU 容器与 Sandbox 的创建和运维体验：重做 Sandbox 五步创建与详情，接入会话、访问端口、代码运行、文件、检查点、安全事件和一次性短期令牌，未开放能力保持只读或空态，资源趋势按 `query_range` 使用 Kata 专用 CPU/内存模板；统一 CPU/GPU 规格档位、创建与变配选择及四类实例列表/详情操作，块存储类型改为受限选择，普通容器补齐完整操作，GPU 恢复直接启停。VM 创建补齐 cloud-init Secret、用户名/密码（确认页不展示密码）、可选安全组与磁盘命名，创建后按 `operation_id` 轮询 `/instance-operations/{operation_id}`，并修复详情跳转与 React Strict Mode 下重复创建 VNC 会话；Registry 镜像由后端按 `system`、`container`、`gpu` purpose 过滤，Sandbox 继续由模板驱动。 |
+| 2026-09-04 | 统一详情页表格操作布局：新增公共 `TableSectionHeader`，将推理日志、知识库文档、块/文件/对象存储以及实例发布、挂载、快照、密钥等操作放到对应表格标题右侧，保留原行为、禁用规则和弹窗状态；同时固化 Core API 对接前查询 `ani-console对接文档补充` 的契约校验要求，并新增仓库级 `$project-wrap-up` Skill。本批次相关代码 Oxlint、相关文件 Prettier、TypeScript 与差异格式检查通过；GitNexus 累计工作区变更检测为 CRITICAL，风险集中在共享实例与详情组件。 |
 | 2026-09-03 | 修正云主机 VM 详情信息：SSH 地址展示与复制连接命令统一使用实例“私网 IP”字段，不再使用 SSH 元数据中的 `host`；“自动启动”读取详情响应的 `auto_start` 布尔值并显示“是/否”。本次修改文件的 Oxlint、Prettier、TypeScript 与差异格式检查通过；GitNexus 变更检测已执行，累计工作区改动风险为 CRITICAL，本次两个页面组件的编辑前影响分析均为 LOW。 |
 | 2026-09-03 | 全局统一镜像名称展示：优先原样使用 `name`，否则从完整 `image` 引用中隐藏 Registry 与租户路径并保留 Tag；镜像选择项在有 `size_bytes` 时追加向上取整的 MiB，列表继续保留省略并通过悬浮展示完整引用与大小。Registry、可启动镜像、VM/普通容器/GPU 容器/Sandbox、发布历史和推理运行镜像已接入公共 `render` 方法与展示组件。相关文件 Oxlint、Prettier 与差异格式检查通过；全量 TypeScript 检查仍仅被工作区既有概览页引用已删除 `/vm-instances/create` 路由的问题阻断。 |
 | 2026-09-03 | 普通容器创建的 CPU 与内存由独立自由输入收敛为固定规格档位选择，提供 `1C2G`、`2C4G`、`4C8G`、`8C16G`，默认 `2C4G`；创建与变配共用同一份规格定义，提交时按所选档位生成对应 `cpu` 与 `memory`。本次修改文件的 Oxlint、Prettier 与差异格式检查通过；全量 TypeScript 检查仍被工作区既有概览页引用已删除 `/vm-instances/create` 路由的问题阻断。 |

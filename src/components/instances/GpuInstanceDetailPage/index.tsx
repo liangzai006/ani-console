@@ -1,5 +1,5 @@
 import { Button, Space, Spin, Tag, Tooltip } from "@arco-design/web-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import type { components } from "@/api/core-schema";
@@ -58,6 +58,7 @@ export function GpuInstanceDetailPage({
   onTabChange: (tab: GpuInstanceDetailTabKey) => void;
 }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [mountKind, setMountKind] = useState<MountKind>();
   const detail = useQuery({
     queryKey: ["gpu-instance", instanceId],
@@ -152,6 +153,10 @@ export function GpuInstanceDetailPage({
     : "-";
   const securityGroups = instance.network?.security_groups ?? [];
   const loadBalancerRefs = instance.network?.load_balancer_refs ?? [];
+  const refreshInstance = () => {
+    void detail.refetch();
+    void queryClient.invalidateQueries({ queryKey: ["gpu-instances"] });
+  };
   const relatedItems: Array<{
     key: string;
     kind: string;
@@ -263,8 +268,14 @@ export function GpuInstanceDetailPage({
         <Space>
           <GpuInstanceActions
             instance={instance}
-            display="menu"
-            onChanged={() => detail.refetch()}
+            display="detail"
+            onChanged={refreshInstance}
+            onDeleted={() => {
+              void queryClient.invalidateQueries({
+                queryKey: ["gpu-instances"],
+              });
+              navigate({ to: "/gpu-instances" });
+            }}
           />
         </Space>
       }
@@ -382,54 +393,58 @@ export function GpuInstanceDetailPage({
         {
           key: "releases",
           label: "发布与回滚",
-          extra: (
-            <GpuInstanceActions
+          content: (
+            <InstanceReleases
               instance={instance}
-              display="release"
-              onChanged={() => detail.refetch()}
+              actions={
+                <GpuInstanceActions
+                  instance={instance}
+                  display="release"
+                  onChanged={refreshInstance}
+                />
+              }
             />
           ),
-          content: <InstanceReleases instance={instance} />,
         },
         {
           key: "storage",
           label: "存储与挂载",
-          extra: (
-            <Space>
-              <Button disabled={busy} onClick={() => setMountKind("volume")}>
-                挂载云盘
-              </Button>
-              <Button
-                disabled={busy}
-                onClick={() => setMountKind("filesystem")}
-              >
-                挂载 NFS
-              </Button>
-            </Space>
-          ),
           content: (
             <InstanceStorage
               instance={instance}
               mountKind={mountKind}
               onMountKindChange={setMountKind}
               onChanged={() => detail.refetch()}
+              volumeAction={
+                <Button disabled={busy} onClick={() => setMountKind("volume")}>
+                  挂载云盘
+                </Button>
+              }
+              filesystemAction={
+                <Button
+                  disabled={busy}
+                  onClick={() => setMountKind("filesystem")}
+                >
+                  挂载 NFS
+                </Button>
+              }
             />
           ),
         },
         {
           key: "configuration",
           label: "配置与密钥",
-          extra: (
-            <GpuInstanceActions
-              instance={instance}
-              display="configuration"
-              onChanged={() => detail.refetch()}
-            />
-          ),
           content: (
             <InstanceConfiguration
               instance={instance}
               onChanged={() => detail.refetch()}
+              secretAction={
+                <GpuInstanceActions
+                  instance={instance}
+                  display="configuration"
+                  onChanged={refreshInstance}
+                />
+              }
             />
           ),
         },

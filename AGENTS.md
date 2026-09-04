@@ -16,6 +16,7 @@
 - 本仓库根目录已经代表产品原型中的 Console 范围；路由、页面、组件及其文件或目录不得再使用 `console`、`console-*`、`*Console` 等重复表达 Console 层级的命名，应直接按业务领域或资源命名。
 - UI 实现顺序、组件复用和样式边界以 `docs/UI-CONVENTIONS.md` 为准；目录及组件组织以 `docs/CONVENTIONS.md` 为准。
 - 后端由独立的 ANI 仓库维护；接口契约与后端行为以其 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
+- 开始任何 Core API 接口对接前，必须先使用 GitNexus 查询索引 `ani-console对接文档补充`，并将命中内容作为 Core OpenAPI 与后端实现之外的临时契约补充。该补充用于覆盖“后端测试环境已经部署、对应代码尚未合并”的过渡期：部分功能会先在独立补充文档索引中整理接口说明；未完成查询不得开始对接。若补充内容与 Core OpenAPI、`ANI` 索引中的后端实现或实际测试环境表现存在差异，不得自行推断，必须停止相关对接并提示用户确认，以免产生接口偏差。
 - Core API 统一通过 `src/api/client.ts` 的 `coreApi` 调用。
 - POST 及有副作用的 PUT/PATCH 必须通过公共幂等作用域注入 `idempotency_key`：React 代码使用 `useIdempotencyScope`，非 React 流程使用 `createIdempotencyScope`；key 仅由公共幂等库使用外部 `uuid` 包生成，不得保留本地手写 UUID 实现，业务代码不得直接生成 key，也不得包装或修改 `useMutation` 的行为。
 - 幂等作用域依赖至少包含请求方法，并包含会影响请求身份、但不在实际 body 中的稳定业务参数；路由模板和实际 URL 不得作为依赖。实际提交内容必须先构造为不含 key 的 `submitData`，再以 `scope.withKey(submitData, runtimeDependencies?)` 生成最终 body。

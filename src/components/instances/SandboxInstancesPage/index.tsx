@@ -1,5 +1,3 @@
-import { Dropdown, Menu, Message, Modal } from "@arco-design/web-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import type { components } from "@/api/core-schema";
@@ -8,8 +6,6 @@ import { asUncontractedQuery } from "@/api/uncontracted-query";
 import {
   DataTableNameCell,
   ImageNameText,
-  DataTableRowActionButton,
-  DataTableRowActions,
   ListDataTable,
   ListPageFrame,
   ListPageHeader,
@@ -21,17 +17,15 @@ import {
   ToolbarSearch,
   type ListColumn,
 } from "@/components/common";
+import { SandboxInstanceActions } from "@/components/instances/SandboxInstanceActions";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { SandboxInstanceCreateModal } from "@/components/instances/SandboxInstanceCreateModal";
 
 type SandboxInstance = components["schemas"]["InstanceRecord"];
 type SandboxStatus = "all" | "running" | "paused" | "expired";
 type SearchField = "name" | "id";
-type LifecycleAction = "pause" | "resume" | "extend" | "touch_idle" | "delete";
 
 function sessionStatus(instance: SandboxInstance) {
   return instance.sandbox?.session_state ?? instance.state;
@@ -39,10 +33,6 @@ function sessionStatus(instance: SandboxInstance) {
 
 export function SandboxInstancesPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", [
-    "POST",
-  ]);
   const [status, setStatus] = useState<SandboxStatus>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
@@ -78,54 +68,7 @@ export function SandboxInstancesPage() {
     error: query.error,
   });
 
-  const lifecycle = useMutation({
-    mutationFn: async ({
-      id,
-      action,
-      duration,
-    }: {
-      id: string;
-      action: LifecycleAction;
-      duration?: string;
-    }) => {
-      const submitData = { action, duration };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: id } },
-          body: lifecycleScope.withKey(submitData, [id]),
-        },
-      );
-      if (error) {
-        throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
-          status: response.status,
-        };
-      }
-      return { action, id };
-    },
-    onSuccess: ({ action, id }) => {
-      lifecycleScope.reset([id]);
-      Message.success(action === "delete" ? "Sandbox 已销毁" : "操作已提交");
-      queryClient.invalidateQueries({ queryKey: ["sandbox-instances"] });
-      queryClient.invalidateQueries({ queryKey: ["instance"] });
-    },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
-  });
-
   useEffect(() => setPage(1), [searchField, searchText, setPage, status]);
-
-  const confirmDestroy = (instance: SandboxInstance) => {
-    Modal.confirm({
-      title: "销毁 Sandbox",
-      content: `确认销毁 ${instance.name || instance.id}？工作区和未保存数据将不可恢复。`,
-      okButtonProps: { status: "danger" },
-      onOk: () => lifecycle.mutateAsync({ id: instance.id, action: "delete" }),
-    });
-  };
 
   const rows = (query.data?.items ?? []) as SandboxInstance[];
   const statusTabs = [
@@ -211,84 +154,21 @@ export function SandboxInstancesPage() {
       title: "操作",
       width: 160,
       fixed: "right",
-      render: (_, item) => {
-        const state = sessionStatus(item);
-        const running = state === "running";
-        const more = (
-          <Menu>
-            <Menu.Item
-              key="extend"
-              disabled={state === "expired"}
-              onClick={() =>
-                lifecycle.mutate({
-                  id: item.id,
-                  action: "extend",
-                  duration: "1h",
-                })
-              }
-            >
-              延长 1 小时
-            </Menu.Item>
-            <Menu.Item
-              key="touch"
-              disabled={!running}
-              onClick={() =>
-                lifecycle.mutate({
-                  id: item.id,
-                  action: "touch_idle",
-                  duration: "30m",
-                })
-              }
-            >
-              活跃续期
-            </Menu.Item>
-            <Menu.Item
-              key="terminal"
-              disabled={!running}
-              onClick={() =>
-                navigate({
-                  to: "/sandbox-instances/$instanceId",
-                  params: { instanceId: item.id },
-                  search: { tab: "terminal" },
-                })
-              }
-            >
-              打开终端
-            </Menu.Item>
-            <Menu.Item
-              key="destroy"
-              style={{ color: "var(--color-danger-6)" }}
-              onClick={() => confirmDestroy(item)}
-            >
-              销毁
-            </Menu.Item>
-          </Menu>
-        );
-        return (
-          <DataTableRowActions>
-            <DataTableRowActionButton
-              disabled={state === "expired"}
-              onClick={() =>
-                lifecycle.mutate({
-                  id: item.id,
-                  action: running ? "pause" : "resume",
-                })
-              }
-            >
-              {running ? "暂停" : "恢复"}
-            </DataTableRowActionButton>
-            <Dropdown trigger="click" position="br" droplist={more}>
-              <DataTableRowActionButton disabled={lifecycle.isPending}>
-                更多
-                <i
-                  className="iconfont icon-down-chevron-small ml-1"
-                  aria-hidden="true"
-                />
-              </DataTableRowActionButton>
-            </Dropdown>
-          </DataTableRowActions>
-        );
-      },
+      render: (_, item) => (
+        <SandboxInstanceActions
+          instance={item}
+          display="row"
+          onChanged={refresh}
+          onDeleted={refresh}
+          onTabChange={(tab) =>
+            void navigate({
+              to: "/sandbox-instances/$instanceId",
+              params: { instanceId: item.id },
+              search: { tab },
+            })
+          }
+        />
+      ),
     },
   ];
 
@@ -357,13 +237,7 @@ export function SandboxInstancesPage() {
       <SandboxInstanceCreateModal
         visible={createVisible}
         onCancel={() => setCreateVisible(false)}
-        onCreated={(instanceId) => {
-          setCreateVisible(false);
-          navigate({
-            to: "/sandbox-instances/$instanceId",
-            params: { instanceId },
-          });
-        }}
+        onCreated={() => setCreateVisible(false)}
       />
     </ListPageFrame>
   );

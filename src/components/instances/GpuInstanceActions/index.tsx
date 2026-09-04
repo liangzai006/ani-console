@@ -57,11 +57,13 @@ const TERMINATION_PROTECTION_STOP_TOOLTIP =
 export function GpuInstanceActions({
   instance,
   onChanged,
+  onDeleted,
   display = "row",
 }: {
   instance: Instance;
   onChanged: () => void;
-  display?: "row" | "menu" | "release" | "configuration";
+  onDeleted?: () => void;
+  display?: "row" | "detail" | "release" | "configuration";
 }) {
   const navigate = useNavigate();
   const startScope = useIdempotencyScope("gpu-instance-start", [
@@ -172,6 +174,7 @@ export function GpuInstanceActions({
     instance.state !== "running" ||
     actionPending ||
     stopBlockedByTerminationProtection;
+  const canStart = instance.state === "stopped";
 
   const handleMenuAction = async (action: string) => {
     if (action === "stop") {
@@ -217,17 +220,6 @@ export function GpuInstanceActions({
 
   const moreMenu = (
     <Menu onClickMenuItem={handleMenuAction}>
-      {display === "menu" ? (
-        <Menu.Item key="stop" disabled={stopDisabled}>
-          {stopBlockedByTerminationProtection ? (
-            <Tooltip content={TERMINATION_PROTECTION_STOP_TOOLTIP}>
-              <span className="block">停止</span>
-            </Tooltip>
-          ) : (
-            "停止"
-          )}
-        </Menu.Item>
-      ) : null}
       <Menu.Item
         key="restart"
         disabled={instance.state !== "running" || actionPending}
@@ -282,37 +274,43 @@ export function GpuInstanceActions({
       </Menu.Item>
     </Menu>
   );
+  const lifecycleButton =
+    display === "row" ? (
+      <DataTableRowActionButton
+        disabled={canStart ? actionPending : stopDisabled}
+        onClick={() => {
+          if (canStart) start.mutate();
+          else setStopVisible(true);
+        }}
+      >
+        {canStart ? "启动" : "停止"}
+      </DataTableRowActionButton>
+    ) : (
+      <Button
+        disabled={canStart ? actionPending : stopDisabled}
+        loading={start.isPending}
+        onClick={() => {
+          if (canStart) start.mutate();
+          else setStopVisible(true);
+        }}
+      >
+        {canStart ? "启动" : "停止"}
+      </Button>
+    );
+  const lifecycleControl =
+    stopBlockedByTerminationProtection && instance.state === "running" ? (
+      <Tooltip content={TERMINATION_PROTECTION_STOP_TOOLTIP}>
+        <span className="inline-flex">{lifecycleButton}</span>
+      </Tooltip>
+    ) : (
+      lifecycleButton
+    );
 
   return (
     <>
       {display === "row" ? (
         <DataTableRowActions>
-          {instance.state === "stopped" ? (
-            <DataTableRowActionButton
-              disabled={actionPending}
-              onClick={() => start.mutate()}
-            >
-              启动
-            </DataTableRowActionButton>
-          ) : stopBlockedByTerminationProtection ? (
-            <Tooltip content={TERMINATION_PROTECTION_STOP_TOOLTIP}>
-              <span className="inline-flex">
-                <DataTableRowActionButton
-                  disabled={stopDisabled}
-                  onClick={() => setStopVisible(true)}
-                >
-                  停止
-                </DataTableRowActionButton>
-              </span>
-            </Tooltip>
-          ) : (
-            <DataTableRowActionButton
-              disabled={stopDisabled}
-              onClick={() => setStopVisible(true)}
-            >
-              停止
-            </DataTableRowActionButton>
-          )}
+          {lifecycleControl}
           <Dropdown trigger="click" position="br" droplist={moreMenu}>
             <DataTableRowActionButton disabled={actionPending}>
               更多
@@ -323,6 +321,16 @@ export function GpuInstanceActions({
             </DataTableRowActionButton>
           </Dropdown>
         </DataTableRowActions>
+      ) : display === "detail" ? (
+        <Space>
+          {lifecycleControl}
+          <Dropdown trigger="click" position="br" droplist={moreMenu}>
+            <Button disabled={actionPending} loading={actionPending}>
+              更多操作
+              <IconDown className="ml-1 text-xs" />
+            </Button>
+          </Dropdown>
+        </Space>
       ) : display === "release" ? (
         <Space>
           <Button
@@ -348,14 +356,7 @@ export function GpuInstanceActions({
         >
           绑定密钥
         </Button>
-      ) : (
-        <Dropdown trigger="click" position="br" droplist={moreMenu}>
-          <Button loading={actionPending}>
-            更多操作
-            <IconDown className="ml-1 text-xs" />
-          </Button>
-        </Dropdown>
-      )}
+      ) : null}
 
       {stopVisible && (
         <GpuInstanceStopModal
@@ -373,7 +374,8 @@ export function GpuInstanceActions({
           onCancel={() => setDeleteVisible(false)}
           onSubmitted={() => {
             setDeleteVisible(false);
-            onChanged();
+            if (onDeleted) onDeleted();
+            else onChanged();
           }}
         />
       )}

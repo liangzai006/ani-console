@@ -17,8 +17,13 @@ import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import type { components } from "@/api/core-schema";
 import { ImageNameText, Ipv4CidrInput } from "@/components/common";
+import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import { listOrThrow } from "@/lib/api-list";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import {
+  CPU_INSTANCE_COMPUTE_SPECS,
+  type CpuInstanceComputeSpec,
+} from "@/lib/instance-compute-specs";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import {
   optionalIpv4WithinCidrError,
@@ -43,13 +48,12 @@ type RegistryImage = {
 type RegistryImageListResponse = { items: RegistryImage[]; total: number };
 type DiskOption = "40-ssd" | "80-ssd" | "100-hdd";
 type DataDiskOption = "none" | "100-ssd" | "200-ssd";
-type SpecOption = "2c4g" | "4c8g" | "8c16g" | "16c64g";
 type VmConfig = {
   boot_image: string;
   user_data?: string;
+  cloud_init_secret?: string;
   ssh_username: string;
   ssh_key_ref?: string;
-  password_secret_ref?: string;
   network: {
     vpc_id: string;
     subnet_id: string;
@@ -58,12 +62,14 @@ type VmConfig = {
     private_ip?: string;
   };
   system_disk: {
+    name: string;
     size_gib: number;
     volume_type: string;
     delete_on_failure: boolean;
     delete_with_instance: boolean;
   };
   data_disks: Array<{
+    name: string;
     size_gib: number;
     volume_type: string;
     delete_on_failure: boolean;
@@ -80,7 +86,8 @@ type Values = {
   name: string;
   imageRef: string;
   userData: string;
-  spec: SpecOption;
+  cloudInitSecret: string;
+  spec: CpuInstanceComputeSpec;
   vpcId: string;
   subnetId: string;
   securityGroupIds: string[];
@@ -89,7 +96,7 @@ type Values = {
   loginMode: "ssh-key" | "password";
   sshUsername: string;
   sshKeyRef: string;
-  passwordSecretRef: string;
+  password: string;
   systemDisk: DiskOption;
   dataDisk: DataDiskOption;
   filesystemId: string;
@@ -101,7 +108,8 @@ const INITIAL: Values = {
   name: "",
   imageRef: "",
   userData: "",
-  spec: "4c8g",
+  cloudInitSecret: "",
+  spec: CPU_INSTANCE_COMPUTE_SPECS[2].value,
   vpcId: "",
   subnetId: "",
   securityGroupIds: [],
@@ -110,7 +118,7 @@ const INITIAL: Values = {
   loginMode: "ssh-key",
   sshUsername: "ubuntu",
   sshKeyRef: "",
-  passwordSecretRef: "",
+  password: "",
   systemDisk: "40-ssd",
   dataDisk: "none",
   filesystemId: "",
@@ -118,15 +126,6 @@ const INITIAL: Values = {
   terminationProtection: false,
 };
 const STEPS = ["基础信息", "镜像配置", "规格", "网络与 SSH", "磁盘与高级确认"];
-const SPECS: Record<
-  SpecOption,
-  { label: string; cpu: string; memory: string }
-> = {
-  "2c4g": { label: "2C4G", cpu: "2", memory: "4Gi" },
-  "4c8g": { label: "4C8G", cpu: "4", memory: "8Gi" },
-  "8c16g": { label: "8C16G", cpu: "8", memory: "16Gi" },
-  "16c64g": { label: "16C64G", cpu: "16", memory: "64Gi" },
-};
 const SYSTEM_DISKS: Record<
   DiskOption,
   { label: string; size: number; type: string }
@@ -143,6 +142,19 @@ const DATA_DISKS: Record<
   "200-ssd": { label: "200Gi · SSD", size: 200, type: "ssd" },
 };
 const optional = (value: string) => value.trim() || undefined;
+const buildPasswordCloudInit = (username: string, password: string) =>
+  [
+    "#cloud-config",
+    "users:",
+    `  - name: ${JSON.stringify(username)}`,
+    "    sudo: ALL=(ALL) NOPASSWD:ALL",
+    "    groups: sudo",
+    "    shell: /bin/bash",
+    `    plain_text_passwd: ${JSON.stringify(password)}`,
+    "    lock_passwd: false",
+    "ssh_pwauth: true",
+    "",
+  ].join("\n");
 
 export function VmInstanceCreateModal({
   visible,
@@ -176,10 +188,9 @@ export function VmInstanceCreateModal({
         options: unknown,
       ) => Promise<{ data?: RegistryImageListResponse; error?: unknown }>;
       const { data, error } = await request("/registry/images", {
-        params: { query: { limit: 100 } },
+        params: { query: { limit: 100, purpose: "system" } },
       });
       if (error) throw error;
-      // TODO: Registry 后端修正镜像类型字段并支持 purpose 筛选后，仅展示系统镜像。
       return data?.items ?? [];
     },
   });
@@ -252,26 +263,33 @@ export function VmInstanceCreateModal({
   const sshSecrets = activeSecrets.filter((secret) =>
     /ssh|key/i.test(secret.type ?? ""),
   );
-  const passwordSecrets = activeSecrets.filter((secret) =>
-    /password|credential/i.test(secret.type ?? ""),
+  const userDataSecrets = activeSecrets.filter(
+    (secret) =>
+      secret.name &&
+      secret.keys?.some((key) => key.trim().toLowerCase() === "userdata"),
   );
 
   const create = useMutation({
     mutationFn: async () => {
-      const spec = SPECS[values.spec];
+      const instanceName = values.name.trim();
+      const spec =
+        CPU_INSTANCE_COMPUTE_SPECS.find(
+          (option) => option.value === values.spec,
+        ) ?? CPU_INSTANCE_COMPUTE_SPECS[2];
       const systemDisk = SYSTEM_DISKS[values.systemDisk];
       const dataDisk =
         values.dataDisk === "none" ? undefined : DATA_DISKS[values.dataDisk];
+      const userData =
+        values.loginMode === "password"
+          ? buildPasswordCloudInit(values.sshUsername.trim(), values.password)
+          : optional(values.userData);
       const vmConfig: VmConfig = {
         boot_image: values.imageRef,
-        user_data: optional(values.userData),
+        user_data: userData,
+        cloud_init_secret: optional(values.cloudInitSecret),
         ssh_username: values.sshUsername.trim(),
         ssh_key_ref:
           values.loginMode === "ssh-key" ? values.sshKeyRef : undefined,
-        password_secret_ref:
-          values.loginMode === "password"
-            ? values.passwordSecretRef
-            : undefined,
         network: {
           vpc_id: values.vpcId,
           subnet_id: values.subnetId,
@@ -281,6 +299,7 @@ export function VmInstanceCreateModal({
             values.ipMode === "manual" ? optional(values.privateIp) : undefined,
         },
         system_disk: {
+          name: `${instanceName}-root`,
           size_gib: systemDisk.size,
           volume_type: systemDisk.type,
           delete_on_failure: true,
@@ -289,6 +308,7 @@ export function VmInstanceCreateModal({
         data_disks: dataDisk
           ? [
               {
+                name: `${instanceName}-data-1`,
                 size_gib: dataDisk.size,
                 volume_type: dataDisk.type,
                 delete_on_failure: true,
@@ -307,7 +327,7 @@ export function VmInstanceCreateModal({
           : [],
       };
       const submitData = {
-        name: values.name.trim(),
+        name: instanceName,
         kind: "vm" as const,
         instance_type: "vm" as const,
         replicas: 1,
@@ -348,11 +368,7 @@ export function VmInstanceCreateModal({
     try {
       await form.validate();
       if (step === 1 && !values.imageRef) throw new Error();
-      if (
-        step === 3 &&
-        (!values.vpcId || !values.subnetId || !values.securityGroupIds.length)
-      )
-        throw new Error();
+      if (step === 3 && (!values.vpcId || !values.subnetId)) throw new Error();
       if (
         step === 3 &&
         values.ipMode === "manual" &&
@@ -361,11 +377,7 @@ export function VmInstanceCreateModal({
         throw new Error();
       if (step === 3 && values.loginMode === "ssh-key" && !values.sshKeyRef)
         throw new Error();
-      if (
-        step === 3 &&
-        values.loginMode === "password" &&
-        !values.passwordSecretRef
-      )
+      if (step === 3 && values.loginMode === "password" && !values.password)
         throw new Error();
       setStep((current) => Math.min(STEPS.length - 1, current + 1));
     } catch {
@@ -447,26 +459,45 @@ export function VmInstanceCreateModal({
                 ) : null}
                 <Form.Item field="userData" label="cloud-init / user-data">
                   <Input.TextArea
+                    disabled={values.loginMode === "password"}
                     autoSize={{ minRows: 5, maxRows: 10 }}
-                    placeholder="#cloud-config（可选）"
+                    placeholder={
+                      values.loginMode === "password"
+                        ? "密码登录时根据用户名和密码自动生成"
+                        : "#cloud-config（可选）"
+                    }
                   />
                 </Form.Item>
+                <Form.Item
+                  field="cloudInitSecret"
+                  label="cloud-init Secret（可选）"
+                >
+                  <Select
+                    allowClear
+                    loading={secrets.isLoading}
+                    placeholder="选择包含 userdata 键的 Secret"
+                    options={userDataSecrets.map((secret) => ({
+                      value: String(secret.name),
+                      label: `${secret.name} · ${secret.type ?? "secret"}`,
+                    }))}
+                    onChange={(cloudInitSecret) => {
+                      setValue("cloudInitSecret", cloudInitSecret ?? "");
+                    }}
+                  />
+                </Form.Item>
+                <Alert
+                  type="info"
+                  content="仅显示包含 userdata 键的 Secret；可与内联 user-data 共存。密码登录时，前端会根据用户名和密码生成内联 user-data。"
+                />
               </>
             ) : null}
             {step === 2 ? (
-              <Form.Item
+              <InstanceComputeSpecSelect
                 field="spec"
+                profile="cpu"
                 label="规格档位"
-                rules={[{ required: true, message: "请选择规格档位" }]}
-              >
-                <Select
-                  placeholder="请选择规格档位"
-                  options={Object.entries(SPECS).map(([value, spec]) => ({
-                    label: spec.label,
-                    value,
-                  }))}
-                />
-              </Form.Item>
+                placeholder="请选择规格档位"
+              />
             ) : null}
             {step === 3 ? (
               <>
@@ -516,14 +547,13 @@ export function VmInstanceCreateModal({
                 </Space>
                 <Form.Item
                   field="securityGroupIds"
-                  label="安全组（可多选）"
-                  required
+                  label="安全组（可选，可多选）"
                 >
                   <Select
                     mode="multiple"
                     disabled={!values.vpcId}
                     loading={securityGroups.isLoading}
-                    placeholder="至少选择一个安全组"
+                    placeholder="可不选择安全组"
                     options={availableSecurityGroups.map((group) => ({
                       value: group.id,
                       label: `${group.name} · 规则 ${group.rule_count ?? group.rules.length}`,
@@ -569,9 +599,15 @@ export function VmInstanceCreateModal({
                   <Radio.Group
                     type="button"
                     onChange={(mode) => {
+                      if (mode === "password" && values.userData.trim()) {
+                        setValue("userData", "");
+                        Message.info(
+                          "密码登录会自动生成内联 user-data，已清除自定义内容",
+                        );
+                      }
                       setValue("loginMode", mode);
                       setValue("sshKeyRef", "");
-                      setValue("passwordSecretRef", "");
+                      setValue("password", "");
                     }}
                   >
                     <Radio value="ssh-key">SSH 密钥</Radio>
@@ -580,10 +616,10 @@ export function VmInstanceCreateModal({
                 </Form.Item>
                 <Form.Item
                   field="sshUsername"
-                  label="SSH 用户名"
+                  label="用户名"
                   rules={[{ required: true }]}
                 >
-                  <Input placeholder="ubuntu" />
+                  <Input placeholder="请输入 VM 登录用户名" />
                 </Form.Item>
                 {values.loginMode === "ssh-key" ? (
                   <Form.Item field="sshKeyRef" label="SSH 密钥" required>
@@ -597,20 +633,15 @@ export function VmInstanceCreateModal({
                     />
                   </Form.Item>
                 ) : (
-                  <Form.Item
-                    field="passwordSecretRef"
-                    label="密码凭据"
-                    required
-                  >
-                    <Select
-                      loading={secrets.isLoading}
-                      placeholder="选择密码 Secret"
-                      options={passwordSecrets.map((secret) => ({
-                        value: String(secret.id),
-                        label: `${secret.name ?? secret.id} · ${secret.type ?? "secret"}`,
-                      }))}
-                    />
-                  </Form.Item>
+                  <>
+                    <Form.Item field="password" label="密码" required>
+                      <Input.Password
+                        placeholder="请输入 VM 登录密码"
+                        maxLength={256}
+                        autoComplete="new-password"
+                      />
+                    </Form.Item>
+                  </>
                 )}
               </>
             ) : null}
@@ -689,7 +720,7 @@ export function VmInstanceCreateModal({
                         />
                       ),
                     },
-                    { label: "规格", value: SPECS[values.spec].label },
+                    { label: "规格", value: values.spec },
                     {
                       label: "网络",
                       value: `${values.vpcId || "-"} / ${values.subnetId || "-"}`,
@@ -710,7 +741,32 @@ export function VmInstanceCreateModal({
                       value:
                         values.loginMode === "ssh-key" ? "SSH 密钥" : "密码",
                     },
-                    { label: "SSH 用户名", value: values.sshUsername || "-" },
+                    { label: "用户名", value: values.sshUsername || "-" },
+                    {
+                      label: "cloud-init",
+                      value:
+                        [
+                          values.loginMode === "password"
+                            ? "内联用户名/密码 user-data"
+                            : values.userData.trim()
+                              ? "内联 user-data"
+                              : "",
+                          values.cloudInitSecret
+                            ? `Secret ${values.cloudInitSecret}`
+                            : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" + ") || "未配置",
+                    },
+                    {
+                      label: "登录凭据",
+                      value:
+                        values.loginMode === "ssh-key"
+                          ? values.sshKeyRef || "-"
+                          : values.password
+                            ? "已输入（不展示）"
+                            : "-",
+                    },
                     {
                       label: "系统盘",
                       value: SYSTEM_DISKS[values.systemDisk].label,

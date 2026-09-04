@@ -15,6 +15,10 @@ import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { servicesApi } from "@/api/services-client";
 import { showApiError } from "@/api/helpers";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import {
+  DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
+  INSTANCE_COMPUTE_SPEC_BY_VALUE,
+} from "@/lib/instance-compute-specs";
 import { getImageSelectionLabel } from "@/lib/render";
 
 const PROTOTYPE_MODEL_VERSIONS = [
@@ -67,7 +71,10 @@ const RESOURCE_PRESETS = {
     memory: "64Gi",
     accelerator: { spec_id: "A100", count_per_replica: 2 },
   },
-  cpu: { label: "2C4G CPU", cpu: "2", memory: "4Gi" },
+  cpu: {
+    label: `${DEFAULT_CPU_INSTANCE_COMPUTE_SPEC} CPU`,
+    ...INSTANCE_COMPUTE_SPEC_BY_VALUE[DEFAULT_CPU_INSTANCE_COMPUTE_SPEC],
+  },
 } as const;
 
 type ResourcePresetKey = keyof typeof RESOURCE_PRESETS;

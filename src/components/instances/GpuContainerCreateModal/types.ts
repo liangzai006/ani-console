@@ -1,29 +1,15 @@
-export const COMPUTE_SPEC_OPTIONS = [
-  { key: "cpu-4-memory-8gi", label: "4C8G", data: { cpu: "4", memory: "8Gi" } },
-  {
-    key: "cpu-8-memory-16gi",
-    label: "8C16G",
-    data: { cpu: "8", memory: "16Gi" },
-  },
-  {
-    key: "cpu-16-memory-64gi",
-    label: "16C64G",
-    data: { cpu: "16", memory: "64Gi" },
-  },
-] as const;
-
-export type ComputeSpecKey = (typeof COMPUTE_SPEC_OPTIONS)[number]["key"];
-
-export const COMPUTE_SPEC_BY_KEY = Object.fromEntries(
-  COMPUTE_SPEC_OPTIONS.map((option) => [option.key, option]),
-) as Record<ComputeSpecKey, (typeof COMPUTE_SPEC_OPTIONS)[number]>;
+import {
+  DEFAULT_GPU_INSTANCE_COMPUTE_SPEC,
+  GPU_INSTANCE_COMPUTE_SPECS,
+  type GpuInstanceComputeSpec,
+} from "@/lib/instance-compute-specs";
 
 export type FormValues = {
   name: string;
   image: string;
   spec_id: string;
   queue_name: string;
-  compute_spec: ComputeSpecKey;
+  compute_spec: GpuInstanceComputeSpec;
   replicas: string;
   vpc_id: string;
   subnet_id: string;
@@ -158,7 +144,7 @@ export const INITIAL_VALUES: FormValues = {
   image: "",
   spec_id: "",
   queue_name: "",
-  compute_spec: "cpu-4-memory-8gi",
+  compute_spec: DEFAULT_GPU_INSTANCE_COMPUTE_SPEC,
   replicas: "1",
   vpc_id: "",
   subnet_id: "",
@@ -186,7 +172,10 @@ export function buildCreateRequest(
   values: FormValues,
   securityGroupId: string,
 ): Omit<ExtendedCreateRequest, "idempotency_key"> {
-  const computeSpec = COMPUTE_SPEC_BY_KEY[values.compute_spec].data;
+  const computeSpec =
+    GPU_INSTANCE_COMPUTE_SPECS.find(
+      (option) => option.value === values.compute_spec,
+    ) ?? GPU_INSTANCE_COMPUTE_SPECS[0];
   return {
     name: values.name.trim(),
     kind: "gpu_container",

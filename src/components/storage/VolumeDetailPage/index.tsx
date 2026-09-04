@@ -4,6 +4,7 @@ import {
   DetailPagePlaceholder,
   AliIcon,
   StatusTag,
+  TableSectionHeader,
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -262,101 +263,120 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
           {
             key: "related",
             label: "关联资源",
-            extra: !mounted ? (
-              <Button type="primary" onClick={() => setAttachVisible(true)}>
-                挂载
-              </Button>
-            ) : undefined,
             content: (
-              <DataTable<MountedInstanceRow>
-                columns={[
-                  { title: "实例名称", dataIndex: "name" },
-                  { title: "实例 ID", dataIndex: "id" },
-                  { title: "实例类型", render: (_, row) => row.route || "-" },
-                  {
-                    title: "操作",
-                    render: () => (
-                      <Space>
-                        <Button
-                          type="text"
-                          size="mini"
-                          onClick={openMountedInstance}
-                        >
-                          打开
-                        </Button>
-                        <Button
-                          type="text"
-                          size="mini"
-                          status="danger"
-                          loading={detachVolume.isPending}
-                          onClick={() =>
-                            Modal.confirm({
-                              title: "卸载块存储卷",
-                              content: `确定从实例「${volume.mount_name ?? volume.mount_instance_id}」卸载该卷？`,
-                              onOk: () =>
-                                detachVolume.mutateAsync(
-                                  volume.mount_instance_id!,
-                                ),
-                            })
-                          }
-                        >
-                          卸载
-                        </Button>
-                      </Space>
-                    ),
-                  },
-                ]}
-                data={
-                  mounted
-                    ? [
-                        {
-                          id: volume.mount_instance_id!,
-                          name: volume.mount_name ?? volume.mount_instance_id!,
-                          route: volume.mount_route,
-                        },
-                      ]
-                    : []
-                }
-                pagination={false}
-                noDataElement={
-                  <Empty description="该卷当前未挂载实例，点击右上角「挂载」开始" />
-                }
-              />
+              <div>
+                <TableSectionHeader
+                  title="关联实例"
+                  extra={
+                    !mounted ? (
+                      <Button
+                        type="primary"
+                        onClick={() => setAttachVisible(true)}
+                      >
+                        挂载
+                      </Button>
+                    ) : undefined
+                  }
+                />
+                <DataTable<MountedInstanceRow>
+                  columns={[
+                    { title: "实例名称", dataIndex: "name" },
+                    { title: "实例 ID", dataIndex: "id" },
+                    { title: "实例类型", render: (_, row) => row.route || "-" },
+                    {
+                      title: "操作",
+                      render: () => (
+                        <Space>
+                          <Button
+                            type="text"
+                            size="mini"
+                            onClick={openMountedInstance}
+                          >
+                            打开
+                          </Button>
+                          <Button
+                            type="text"
+                            size="mini"
+                            status="danger"
+                            loading={detachVolume.isPending}
+                            onClick={() =>
+                              Modal.confirm({
+                                title: "卸载块存储卷",
+                                content: `确定从实例「${volume.mount_name ?? volume.mount_instance_id}」卸载该卷？`,
+                                onOk: () =>
+                                  detachVolume.mutateAsync(
+                                    volume.mount_instance_id!,
+                                  ),
+                              })
+                            }
+                          >
+                            卸载
+                          </Button>
+                        </Space>
+                      ),
+                    },
+                  ]}
+                  data={
+                    mounted
+                      ? [
+                          {
+                            id: volume.mount_instance_id!,
+                            name:
+                              volume.mount_name ?? volume.mount_instance_id!,
+                            route: volume.mount_route,
+                          },
+                        ]
+                      : []
+                  }
+                  pagination={false}
+                  noDataElement={
+                    <Empty description="该卷当前未挂载实例，点击右上角「挂载」开始" />
+                  }
+                />
+              </div>
             ),
           },
           {
             key: "snapshots",
             label: "快照",
-            extra: (
-              <Button type="primary" onClick={() => setSnapshotVisible(true)}>
-                创建快照
-              </Button>
-            ),
             content: (
-              <DataTable<VolumeSnapshot>
-                columns={[
-                  { title: "名称", dataIndex: "name" },
-                  {
-                    title: "状态",
-                    width: 120,
-                    render: (_, row) => <StatusTag status={row.status} />,
-                  },
-                  {
-                    title: "大小",
-                    render: (_, row) => formatBytes(row.size_bytes),
-                  },
-                  {
-                    title: "创建时间",
-                    render: (_, row) => formatDateTime(row.created_at),
-                  },
-                ]}
-                data={snapshotItems}
-                loading={snapshots.isLoading}
-                pagination={false}
-                noDataElement={
-                  <Empty description="暂无快照，点击右上角「创建快照」开始" />
-                }
-              />
+              <div>
+                <TableSectionHeader
+                  title="快照"
+                  extra={
+                    <Button
+                      type="primary"
+                      onClick={() => setSnapshotVisible(true)}
+                    >
+                      创建快照
+                    </Button>
+                  }
+                />
+                <DataTable<VolumeSnapshot>
+                  columns={[
+                    { title: "名称", dataIndex: "name" },
+                    {
+                      title: "状态",
+                      width: 120,
+                      render: (_, row) => <StatusTag status={row.status} />,
+                    },
+                    {
+                      title: "大小",
+                      render: (_, row) => formatBytes(row.size_bytes),
+                    },
+                    {
+                      title: "创建时间",
+                      render: (_, row) => formatDateTime(row.created_at),
+                    },
+                  ]}
+                  data={snapshotItems}
+                  loading={snapshots.isLoading}
+                  pagination={false}
+                  noDataElement={
+                    <Empty description="暂无快照，点击右上角「创建快照」开始" />
+                  }
+                />
+              </div>
             ),
           },
           {

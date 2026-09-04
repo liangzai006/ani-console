@@ -17,11 +17,13 @@ import { useEffect, useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { ImageNameText } from "@/components/common";
+import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import {
-  CONTAINER_CPU_MEMORY_SPECS,
-  type ContainerCpuMemorySpec,
-} from "@/lib/container-instance-specs";
+  CPU_INSTANCE_COMPUTE_SPECS,
+  DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
+  type CpuInstanceComputeSpec,
+} from "@/lib/instance-compute-specs";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { ContainerStorageFields } from "./ContainerStorageFields";
 import {
@@ -55,7 +57,7 @@ type RegistryImage = {
 type FormValues = ContainerStorageFormValues & {
   name: string;
   image: string;
-  compute_spec: ContainerCpuMemorySpec;
+  compute_spec: CpuInstanceComputeSpec;
   replicas: number;
   vpc_id: string;
   subnet_id: string;
@@ -69,7 +71,7 @@ type FormValues = ContainerStorageFormValues & {
 const INITIAL_VALUES: FormValues = {
   name: "",
   image: "",
-  compute_spec: "2C4G",
+  compute_spec: DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
   replicas: 1,
   vpc_id: "",
   subnet_id: "",
@@ -102,9 +104,9 @@ function parseEnv(text: string) {
 
 function buildCreateBody(values: FormValues) {
   const computeSpec =
-    CONTAINER_CPU_MEMORY_SPECS.find(
+    CPU_INSTANCE_COMPUTE_SPECS.find(
       (option) => option.value === values.compute_spec,
-    ) ?? CONTAINER_CPU_MEMORY_SPECS[1];
+    ) ?? CPU_INSTANCE_COMPUTE_SPECS[1];
 
   return {
     name: values.name.trim(),
@@ -200,7 +202,7 @@ export function ContainerInstanceCreateModal({
   const filesystems = useListQuery("/filesystems", "filesystems");
   const secrets = useListQuery("/secrets", "secrets");
   const images = useQuery({
-    queryKey: ["registry-images", "container-create"],
+    queryKey: ["registry-images", "container-create", "container"],
     enabled: visible,
     queryFn: async () => {
       const request = coreApi.GET as unknown as (
@@ -208,7 +210,9 @@ export function ContainerInstanceCreateModal({
         options: { params: { query: never } },
       ) => Promise<{ data?: { items?: RegistryImage[] }; error?: unknown }>;
       const { data, error } = await request("/registry/images", {
-        params: { query: asUncontractedQuery({ limit: 100 }) },
+        params: {
+          query: asUncontractedQuery({ limit: 100, purpose: "container" }),
+        },
       });
       if (error) throw error;
       return data?.items ?? [];
@@ -374,19 +378,7 @@ export function ContainerInstanceCreateModal({
             ) : null}
             {step === 1 ? (
               <>
-                <Form.Item
-                  field="compute_spec"
-                  label="CPU / 内存"
-                  rules={[{ required: true, message: "请选择 CPU / 内存规格" }]}
-                >
-                  <Select
-                    placeholder="请选择 CPU / 内存规格"
-                    options={CONTAINER_CPU_MEMORY_SPECS.map((option) => ({
-                      label: option.value,
-                      value: option.value,
-                    }))}
-                  />
-                </Form.Item>
+                <InstanceComputeSpecSelect field="compute_spec" profile="cpu" />
                 <Form.Item
                   field="replicas"
                   label="副本数"

@@ -24,6 +24,7 @@ export {
 export type { SearchField } from "./ListToolbar";
 export { StatusTabs } from "./StatusTabs";
 export type { ListStatusTab } from "./StatusTabs";
+export { TableSectionHeader } from "./TableSectionHeader";
 export { DetailPageFrame } from "./DetailPageFrame";
 export { DetailPagePlaceholder } from "./DetailPagePlaceholder";
 export type {

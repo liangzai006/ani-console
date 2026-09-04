@@ -1,19 +1,14 @@
-import { Alert, Form, Message, Modal, Select } from "@arco-design/web-react";
+import { Alert, Form, Message, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
+import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { CPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instance-compute-specs";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
 type Instance = components["schemas"]["InstanceRecord"];
 type Values = { spec: string };
-
-const VM_RESIZE_SPECS = [
-  { value: "2C4G", cpu: "2", memory: "4Gi" },
-  { value: "4C8G", cpu: "4", memory: "8Gi" },
-  { value: "8C16G", cpu: "8", memory: "16Gi" },
-  { value: "16C64G", cpu: "16", memory: "64Gi" },
-] as const;
 
 function getCurrentResizeSpec(instance: Instance) {
   const cpu = String(instance.compute?.cpu ?? "")
@@ -22,7 +17,7 @@ function getCurrentResizeSpec(instance: Instance) {
   const memory = String(instance.compute?.memory ?? "").trim();
   const memoryAmount = memory.match(/^(\d+(?:\.\d+)?)(?:Gi|G)?$/i)?.[1];
 
-  if (!cpu || !memoryAmount) return VM_RESIZE_SPECS[1];
+  if (!cpu || !memoryAmount) return CPU_INSTANCE_COMPUTE_SPECS[2];
 
   return {
     value: `${cpu}C${memoryAmount}G`,
@@ -42,11 +37,11 @@ export function VmInstanceResizeModal({
 }) {
   const [form] = Form.useForm<Values>();
   const currentSpec = getCurrentResizeSpec(instance);
-  const resizeSpecs = VM_RESIZE_SPECS.some(
+  const resizeSpecs = CPU_INSTANCE_COMPUTE_SPECS.some(
     (option) => option.value === currentSpec.value,
   )
-    ? [...VM_RESIZE_SPECS]
-    : [currentSpec, ...VM_RESIZE_SPECS];
+    ? [...CPU_INSTANCE_COMPUTE_SPECS]
+    : [currentSpec, ...CPU_INSTANCE_COMPUTE_SPECS];
   const scope = useIdempotencyScope("vm-instance-resize", [
     "POST",
     instance.id,
@@ -109,19 +104,16 @@ export function VmInstanceResizeModal({
           content="VM 变配要求实例处于已停止状态。"
           className="mb-4"
         />
-        <Form.Item
+        <InstanceComputeSpecSelect
           field="spec"
+          profile="cpu"
           label="规格档位"
-          rules={[{ required: true, message: "请选择规格档位" }]}
-        >
-          <Select
-            placeholder="请选择规格档位"
-            options={resizeSpecs.map((option) => ({
-              label: `${option.value}${option.value === currentSpec.value ? "（当前）" : ""}`,
-              value: option.value,
-            }))}
-          />
-        </Form.Item>
+          placeholder="请选择规格档位"
+          options={resizeSpecs.map((option) => ({
+            label: `${option.value}${option.value === currentSpec.value ? "（当前）" : ""}`,
+            value: option.value,
+          }))}
+        />
       </Form>
     </Modal>
   );

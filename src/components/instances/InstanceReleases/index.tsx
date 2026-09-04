@@ -1,6 +1,11 @@
-import { Descriptions, Empty, Space, Typography } from "@arco-design/web-react";
+import { Descriptions, Empty, Space } from "@arco-design/web-react";
+import type { ReactNode } from "react";
 import type { components } from "@/api/core-schema";
-import { DataTable, ImageNameText } from "@/components/common";
+import {
+  DataTable,
+  ImageNameText,
+  TableSectionHeader,
+} from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 
 type Instance = components["schemas"]["InstanceRecord"];
@@ -8,7 +13,13 @@ type Release = NonNullable<
   NonNullable<Instance["container"]>["history"]
 >[number];
 
-export function InstanceReleases({ instance }: { instance: Instance }) {
+export function InstanceReleases({
+  instance,
+  actions,
+}: {
+  instance: Instance;
+  actions?: ReactNode;
+}) {
   const releases = instance.container?.history ?? [];
   const rolloutLabels: Record<string, string> = {
     pending: "待发布",
@@ -44,7 +55,7 @@ export function InstanceReleases({ instance }: { instance: Instance }) {
           { label: "镜像", value: <ImageNameText image={instance.image} /> },
         ]}
       />
-      <Typography.Title heading={6}>发布历史</Typography.Title>
+      <TableSectionHeader title="发布历史" extra={actions} className="mb-0" />
       <DataTable<Release>
         data={releases}
         rowKey="revision"

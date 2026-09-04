@@ -6,12 +6,17 @@ import {
   Message,
   Modal,
   Select,
+  Space,
 } from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
+import {
+  DataTableRowActionButton,
+  DataTableRowActions,
+} from "@/components/common";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import type { SandboxInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
@@ -34,11 +39,13 @@ export function SandboxInstanceActions({
   onChanged,
   onDeleted,
   onTabChange,
+  display = "detail",
 }: {
   instance: SandboxInstance;
   onChanged: () => void;
   onDeleted: () => void;
   onTabChange: (tab: SandboxInstanceDetailTabKey) => void;
+  display?: "row" | "detail";
 }) {
   const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", [
     "POST",
@@ -124,12 +131,6 @@ export function SandboxInstanceActions({
 
   const menu = (
     <Menu onClickMenuItem={handleMenuAction}>
-      <Menu.Item
-        key={running ? "pause" : "resume"}
-        disabled={busy || (!running && !resumable)}
-      >
-        {running ? "暂停" : "恢复"}
-      </Menu.Item>
       <Menu.Item key="extend" disabled={busy || lifecycleUnavailable}>
         延长会话
       </Menu.Item>
@@ -148,15 +149,44 @@ export function SandboxInstanceActions({
       </Menu.Item>
     </Menu>
   );
+  const lifecycleDisabled = busy || (!running && !resumable);
+  const lifecycleAction = () =>
+    lifecycle.mutate({ action: running ? "pause" : "resume" });
 
   return (
     <>
-      <Dropdown trigger="click" position="br" droplist={menu}>
-        <Button loading={lifecycle.isPending}>
-          更多操作
-          <IconDown className="ml-1 text-xs" />
-        </Button>
-      </Dropdown>
+      {display === "row" ? (
+        <DataTableRowActions>
+          <DataTableRowActionButton
+            disabled={lifecycleDisabled}
+            onClick={lifecycleAction}
+          >
+            {running ? "暂停" : "恢复"}
+          </DataTableRowActionButton>
+          <Dropdown trigger="click" position="br" droplist={menu}>
+            <DataTableRowActionButton disabled={busy}>
+              更多
+              <IconDown className="ml-1 text-xs" />
+            </DataTableRowActionButton>
+          </Dropdown>
+        </DataTableRowActions>
+      ) : (
+        <Space>
+          <Button
+            disabled={lifecycleDisabled}
+            loading={lifecycle.isPending}
+            onClick={lifecycleAction}
+          >
+            {running ? "暂停" : "恢复"}
+          </Button>
+          <Dropdown trigger="click" position="br" droplist={menu}>
+            <Button disabled={busy} loading={lifecycle.isPending}>
+              更多操作
+              <IconDown className="ml-1 text-xs" />
+            </Button>
+          </Dropdown>
+        </Space>
+      )}
 
       <Modal
         title={`延长会话 · ${instance.name || instance.id}`}

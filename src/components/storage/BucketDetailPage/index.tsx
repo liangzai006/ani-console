@@ -3,11 +3,23 @@ import {
   DetailPageFrame,
   DetailPagePlaceholder,
   AliIcon,
-} from '@/components/common'
+} from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Button, Descriptions, Empty, Input, Message, Modal, Select, Space, Spin, Tag, Typography, Upload } from "@arco-design/web-react"
+  Button,
+  Descriptions,
+  Empty,
+  Input,
+  Message,
+  Modal,
+  Select,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+  Upload,
+} from "@arco-design/web-react";
 import { useEffect, useRef, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
@@ -44,11 +56,26 @@ export function BucketDetailPage({
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const uploadReservationScope = useIdempotencyScope("storage-object-upload-reserve", ["POST", bucketId]);
-  const uploadCompleteScope = useIdempotencyScope("storage-object-upload-complete", ["POST", bucketId]);
-  const createFolderScope = useIdempotencyScope("storage-bucket-prefix-create", ["POST", bucketId]);
-  const updateAclScope = useIdempotencyScope("storage-bucket-acl-update", ["PUT", bucketId]);
-  const updateClassScope = useIdempotencyScope("storage-bucket-class-update", ["PUT", bucketId]);
+  const uploadReservationScope = useIdempotencyScope(
+    "storage-object-upload-reserve",
+    ["POST", bucketId],
+  );
+  const uploadCompleteScope = useIdempotencyScope(
+    "storage-object-upload-complete",
+    ["POST", bucketId],
+  );
+  const createFolderScope = useIdempotencyScope(
+    "storage-bucket-prefix-create",
+    ["POST", bucketId],
+  );
+  const updateAclScope = useIdempotencyScope("storage-bucket-acl-update", [
+    "PUT",
+    bucketId,
+  ]);
+  const updateClassScope = useIdempotencyScope("storage-bucket-class-update", [
+    "PUT",
+    bucketId,
+  ]);
   const uploadTriggerRef = useRef<HTMLButtonElement>(null);
   const [prefix, setPrefix] = useState("/");
   const [folderVisible, setFolderVisible] = useState(false);
@@ -271,7 +298,11 @@ export function BucketDetailPage({
   if (!bucket.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[{ label: "存储" }, { label: "对象存储", to: "/objects" }, { label: bucketId }]}
+        breadcrumbs={[
+          { label: "存储" },
+          { label: "对象存储", to: "/objects" },
+          { label: bucketId },
+        ]}
         title={bucketId}
         idLabel="存储桶 ID"
         idValue={bucketId}
@@ -346,22 +377,6 @@ export function BucketDetailPage({
           {
             key: "objects",
             label: "对象浏览器",
-            extra: (
-              <Upload
-                showUploadList={false}
-                customRequest={(opt) => {
-                  upload.mutate(opt.file as File);
-                }}
-              >
-                <Button
-                  ref={uploadTriggerRef}
-                  type="primary"
-                  loading={upload.isPending}
-                >
-                  上传对象
-                </Button>
-              </Upload>
-            ),
             content: (
               <ObjectBrowser
                 bucketName={bucketInfo.name}
@@ -370,6 +385,22 @@ export function BucketDetailPage({
                 aclLabel={aclLabel}
                 loading={bucketEntries.isLoading}
                 actionLoading={generateLink.isPending}
+                primaryAction={
+                  <Upload
+                    showUploadList={false}
+                    customRequest={(opt) => {
+                      upload.mutate(opt.file as File);
+                    }}
+                  >
+                    <Button
+                      ref={uploadTriggerRef}
+                      type="primary"
+                      loading={upload.isPending}
+                    >
+                      上传对象
+                    </Button>
+                  </Upload>
+                }
                 onNavigate={navigatePrefix}
                 onCreateFolder={() => setFolderVisible(true)}
                 onCopyPath={(entry) => copyText(entry.key, "对象路径已复制")}
@@ -449,69 +480,69 @@ export function BucketDetailPage({
                   </Button>
                 </div>
                 <DataTable<LifecycleRule>
-                    columns={[
-                      { title: "名称", dataIndex: "name" },
-                      {
-                        title: "前缀",
-                        render: (_, row) => row.prefix || "全部",
-                      },
-                      {
-                        title: "转低频天数",
-                        dataIndex: "to_infrequent_days",
-                      },
-                      {
-                        title: "过期天数",
-                        dataIndex: "expire_days",
-                      },
-                      {
-                        title: "状态",
-                        width: 120,
-                        render: (_, row) => (
-                          <Tag color={row.enabled ? "green" : "gray"}>
-                            {row.enabled ? "启用" : "停用"}
-                          </Tag>
-                        ),
-                      },
-                      {
-                        title: "操作",
-                        render: (_, row) => (
-                          <Space>
-                            <Button
-                              type="text"
-                              size="mini"
-                              onClick={() => {
-                                setEditingRule(row);
-                                setRuleVisible(true);
-                              }}
-                            >
-                              编辑
-                            </Button>
-                            <Button
-                              type="text"
-                              size="mini"
-                              status="danger"
-                              onClick={() =>
-                                Modal.confirm({
-                                  title: "删除生命周期规则",
-                                  content: `确定删除规则「${row.name}」？`,
-                                  okButtonProps: { status: "danger" },
-                                  onOk: () => deleteRule.mutateAsync(row),
-                                })
-                              }
-                            >
-                              删除
-                            </Button>
-                          </Space>
-                        ),
-                      },
-                    ]}
-                    data={ruleItems}
-                    loading={lifecycleRules.isLoading}
-                    pagination={false}
-                    noDataElement={
-                      <Empty description="暂无生命周期规则，点击「添加规则」开始" />
-                    }
-                  />
+                  columns={[
+                    { title: "名称", dataIndex: "name" },
+                    {
+                      title: "前缀",
+                      render: (_, row) => row.prefix || "全部",
+                    },
+                    {
+                      title: "转低频天数",
+                      dataIndex: "to_infrequent_days",
+                    },
+                    {
+                      title: "过期天数",
+                      dataIndex: "expire_days",
+                    },
+                    {
+                      title: "状态",
+                      width: 120,
+                      render: (_, row) => (
+                        <Tag color={row.enabled ? "green" : "gray"}>
+                          {row.enabled ? "启用" : "停用"}
+                        </Tag>
+                      ),
+                    },
+                    {
+                      title: "操作",
+                      render: (_, row) => (
+                        <Space>
+                          <Button
+                            type="text"
+                            size="mini"
+                            onClick={() => {
+                              setEditingRule(row);
+                              setRuleVisible(true);
+                            }}
+                          >
+                            编辑
+                          </Button>
+                          <Button
+                            type="text"
+                            size="mini"
+                            status="danger"
+                            onClick={() =>
+                              Modal.confirm({
+                                title: "删除生命周期规则",
+                                content: `确定删除规则「${row.name}」？`,
+                                okButtonProps: { status: "danger" },
+                                onOk: () => deleteRule.mutateAsync(row),
+                              })
+                            }
+                          >
+                            删除
+                          </Button>
+                        </Space>
+                      ),
+                    },
+                  ]}
+                  data={ruleItems}
+                  loading={lifecycleRules.isLoading}
+                  pagination={false}
+                  noDataElement={
+                    <Empty description="暂无生命周期规则，点击「添加规则」开始" />
+                  }
+                />
               </Space>
             ),
           },
@@ -594,7 +625,7 @@ export function BucketDetailPage({
             content: (
               <Descriptions
                 column={1}
-                labelStyle={{ width: '120px' }}
+                labelStyle={{ width: "120px" }}
                 data={[
                   { label: "桶 ID", value: bucketInfo.id },
                   { label: "桶名称", value: bucketInfo.name },

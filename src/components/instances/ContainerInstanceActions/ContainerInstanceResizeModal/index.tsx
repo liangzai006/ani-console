@@ -1,9 +1,10 @@
-import { Alert, Form, Message, Modal, Select } from "@arco-design/web-react";
+import { Alert, Form, Message, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
+import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
-import { CONTAINER_CPU_MEMORY_SPECS } from "@/lib/container-instance-specs";
+import { CPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instance-compute-specs";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
 type Instance = components["schemas"]["InstanceRecord"];
@@ -16,7 +17,7 @@ function getCurrentResizeSpec(instance: Instance) {
   const memory = String(instance.compute?.memory ?? "").trim();
   const memoryAmount = memory.match(/^(\d+(?:\.\d+)?)(?:Gi|G)?$/i)?.[1];
 
-  if (!cpu || !memoryAmount) return CONTAINER_CPU_MEMORY_SPECS[2];
+  if (!cpu || !memoryAmount) return CPU_INSTANCE_COMPUTE_SPECS[2];
 
   return {
     value: `${cpu}C${memoryAmount}G`,
@@ -36,11 +37,11 @@ export function ContainerInstanceResizeModal({
 }) {
   const [form] = Form.useForm<Values>();
   const currentSpec = getCurrentResizeSpec(instance);
-  const resizeSpecs = CONTAINER_CPU_MEMORY_SPECS.some(
+  const resizeSpecs = CPU_INSTANCE_COMPUTE_SPECS.some(
     (option) => option.value === currentSpec.value,
   )
-    ? [...CONTAINER_CPU_MEMORY_SPECS]
-    : [currentSpec, ...CONTAINER_CPU_MEMORY_SPECS];
+    ? [...CPU_INSTANCE_COMPUTE_SPECS]
+    : [currentSpec, ...CPU_INSTANCE_COMPUTE_SPECS];
   const scope = useIdempotencyScope("container-instance-resize", [
     "POST",
     instance.id,
@@ -105,19 +106,16 @@ export function ContainerInstanceResizeModal({
           content="容器变配要求实例处于已停止状态。"
           className="mb-4"
         />
-        <Form.Item
+        <InstanceComputeSpecSelect
           field="spec"
+          profile="cpu"
           label="规格档位"
-          rules={[{ required: true, message: "请选择规格档位" }]}
-        >
-          <Select
-            placeholder="请选择规格档位"
-            options={resizeSpecs.map((option) => ({
-              label: `${option.value}${option.value === currentSpec.value ? "（当前）" : ""}`,
-              value: option.value,
-            }))}
-          />
-        </Form.Item>
+          placeholder="请选择规格档位"
+          options={resizeSpecs.map((option) => ({
+            label: `${option.value}${option.value === currentSpec.value ? "（当前）" : ""}`,
+            value: option.value,
+          }))}
+        />
       </Form>
     </Modal>
   );

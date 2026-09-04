@@ -11,10 +11,11 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
 import { showApiError } from "@/api/helpers";
-import { ApiErrorAlert } from "@/components/common";
+import { ApiErrorAlert, TableSectionHeader } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 import styles from "./index.module.css";
@@ -41,10 +42,10 @@ function metadataEntries(value: KBDocument["custom_metadata"]) {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return [["metadata", String(metadata)]] as const;
   }
-  return Object.entries(metadata).map(([key, item]) => [
-    key,
-    typeof item === "string" ? item : JSON.stringify(item),
-  ] as const);
+  return Object.entries(metadata).map(
+    ([key, item]) =>
+      [key, typeof item === "string" ? item : JSON.stringify(item)] as const,
+  );
 }
 
 function statusTag(document: KBDocument) {
@@ -78,7 +79,13 @@ function statusTag(document: KBDocument) {
   );
 }
 
-export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
+export function KnowledgeDocumentsPanel({
+  kbId,
+  action,
+}: {
+  kbId: string;
+  action?: ReactNode;
+}) {
   const qc = useQueryClient();
   const {
     query: documents,
@@ -118,6 +125,7 @@ export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
   const rows = documents.data?.items ?? [];
   return (
     <Space direction="vertical" size={16} className="w-full">
+      <TableSectionHeader title="文档列表" extra={action} className="mb-0" />
       {documents.error ? (
         <Space direction="vertical" size={8} className="w-full">
           <ApiErrorAlert error={documents.error} title="文档列表加载失败" />
@@ -128,7 +136,9 @@ export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
         bordered
         loading={documents.isLoading}
         dataSource={documents.error ? [] : rows}
-        noDataElement={<Empty description="还没有文档，上传后可进行解析和问答" />}
+        noDataElement={
+          <Empty description="还没有文档，上传后可进行解析和问答" />
+        }
         render={(item: KBDocument) => {
           const metadata = metadataEntries(item.custom_metadata);
           return (
@@ -136,8 +146,13 @@ export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
               <div className={styles.documentMainRow}>
                 <div className={styles.documentIdentity}>
                   <Typography.Text bold>{item.file_name}</Typography.Text>
-                  <Typography.Text type="secondary" className={styles.documentSummary}>
-                    {item.file_type?.toUpperCase() || "未知类型"} · {formatBytes(item.file_size_bytes)} · {item.chunk_count ?? 0} 个分块
+                  <Typography.Text
+                    type="secondary"
+                    className={styles.documentSummary}
+                  >
+                    {item.file_type?.toUpperCase() || "未知类型"} ·{" "}
+                    {formatBytes(item.file_size_bytes)} ·{" "}
+                    {item.chunk_count ?? 0} 个分块
                   </Typography.Text>
                 </div>
                 <div className={styles.documentActions}>
@@ -149,7 +164,9 @@ export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
                     type="text"
                     size="small"
                     status="danger"
-                    loading={remove.isPending && remove.variables?.id === item.id}
+                    loading={
+                      remove.isPending && remove.variables?.id === item.id
+                    }
                     onClick={() =>
                       Modal.confirm({
                         title: "删除文档",
@@ -171,7 +188,9 @@ export function KnowledgeDocumentsPanel({ kbId }: { kbId: string }) {
                     </Tag>
                   ))
                 ) : (
-                  <Typography.Text type="secondary">暂无自定义元数据</Typography.Text>
+                  <Typography.Text type="secondary">
+                    暂无自定义元数据
+                  </Typography.Text>
                 )}
               </div>
             </List.Item>

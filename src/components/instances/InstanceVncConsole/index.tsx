@@ -1,134 +1,156 @@
-import { useEffect, useRef, useState } from 'react'
-import RFB from '@novnc/novnc/lib/rfb'
-import { Alert, Button, Radio, Spin, Tag } from '@arco-design/web-react'
-import clsx from 'clsx'
-import { coreApi } from '@/api/client'
-import { getErrorMessage } from '@/lib/errors'
-import { useIdempotencyScope } from '@/hooks/useIdempotencyScope'
+import { useEffect, useRef, useState } from "react";
+import RFB from "@novnc/novnc/lib/rfb";
+import { Alert, Button, Radio, Spin, Tag } from "@arco-design/web-react";
+import clsx from "clsx";
+import { coreApi } from "@/api/client";
+import { getErrorMessage } from "@/lib/errors";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type ConsoleStatus = 'connecting' | 'connected' | 'disconnected' | 'error' | 'expired'
-type ViewMode = 'fit' | 'native'
+type ConsoleStatus =
+  "connecting" | "connected" | "disconnected" | "error" | "expired";
+type ViewMode = "fit" | "native";
 
-const VNC_SUBPROTOCOL = 'ani.vnc.v1'
+const VNC_SUBPROTOCOL = "ani.vnc.v1";
 
 const STATUS_META: Record<ConsoleStatus, { text: string; color: string }> = {
-  connecting: { text: '连接中', color: 'blue' },
-  connected: { text: '已连接', color: 'green' },
-  disconnected: { text: '已断开', color: 'gray' },
-  error: { text: '连接异常', color: 'red' },
-  expired: { text: '会话过期', color: 'orangered' },
-}
+  connecting: { text: "连接中", color: "blue" },
+  connected: { text: "已连接", color: "green" },
+  disconnected: { text: "已断开", color: "gray" },
+  error: { text: "连接异常", color: "red" },
+  expired: { text: "会话过期", color: "orangered" },
+};
 
 function isExpired(expiresAt?: string | null): boolean {
-  if (!expiresAt) return false
-  const ms = Date.parse(expiresAt)
-  return Number.isFinite(ms) && Date.now() >= ms
+  if (!expiresAt) return false;
+  const ms = Date.parse(expiresAt);
+  return Number.isFinite(ms) && Date.now() >= ms;
 }
 
 function applyViewMode(rfb: RFB, mode: ViewMode) {
-  const fit = mode === 'fit'
-  rfb.scaleViewport = fit
-  rfb.resizeSession = fit
-  rfb.clipViewport = !fit
-  rfb.dragViewport = !fit
-  rfb.focusOnClick = true
+  const fit = mode === "fit";
+  rfb.scaleViewport = fit;
+  rfb.resizeSession = fit;
+  rfb.clipViewport = !fit;
+  rfb.dragViewport = !fit;
+  rfb.focusOnClick = true;
 }
 
 export function InstanceVncConsole({
   instanceId,
-  protocol = 'novnc',
+  protocol = "novnc",
 }: {
-  instanceId: string
-  protocol?: 'vnc' | 'novnc'
+  instanceId: string;
+  protocol?: "vnc" | "novnc";
 }) {
-  const consoleScope = useIdempotencyScope('instance-vnc-session-create', ['POST', instanceId, protocol])
-  const hostRef = useRef<HTMLDivElement | null>(null)
-  const rfbRef = useRef<RFB | null>(null)
-  const expiresAtRef = useRef<string | null>(null)
-  const viewModeRef = useRef<ViewMode>('fit')
-  const [status, setStatus] = useState<ConsoleStatus>('connecting')
-  const [errorText, setErrorText] = useState<string | null>(null)
-  const [reconnectKey, setReconnectKey] = useState(0)
-  const [viewMode, setViewMode] = useState<ViewMode>('fit')
+  const consoleScope = useIdempotencyScope("instance-vnc-session-create", [
+    "POST",
+    instanceId,
+    protocol,
+  ]);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const rfbRef = useRef<RFB | null>(null);
+  const expiresAtRef = useRef<string | null>(null);
+  const viewModeRef = useRef<ViewMode>("fit");
+  const [status, setStatus] = useState<ConsoleStatus>("connecting");
+  const [errorText, setErrorText] = useState<string | null>(null);
+  const [reconnectKey, setReconnectKey] = useState(0);
+  const [viewMode, setViewMode] = useState<ViewMode>("fit");
 
   useEffect(() => {
-    viewModeRef.current = viewMode
-    const rfb = rfbRef.current
-    if (rfb) applyViewMode(rfb, viewMode)
-  }, [viewMode])
+    viewModeRef.current = viewMode;
+    const rfb = rfbRef.current;
+    if (rfb) applyViewMode(rfb, viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
-    const host = hostRef.current
-    if (!host) return
+    const host = hostRef.current;
+    if (!host) return;
 
-    let disposed = false
-    let rfb: RFB | null = null
-    expiresAtRef.current = null
+    let disposed = false;
+    let rfb: RFB | null = null;
+    const abortController = new AbortController();
+    expiresAtRef.current = null;
 
     const connect = async () => {
-      setStatus('connecting')
-      setErrorText(null)
+      setStatus("connecting");
+      setErrorText(null);
+      await new Promise<void>((resolve) =>
+        window.requestAnimationFrame(() => resolve()),
+      );
+      if (disposed) return;
+
       try {
-        const submitData = { protocol }
-        const { data, error } = await coreApi.POST('/instances/{instance_id}/console', {
-          params: { path: { instance_id: instanceId } },
-          body: consoleScope.withKey(submitData),
-        })
-        if (error) throw error
-        consoleScope.reset()
-        const connectUrl = data?.connect_url
-        if (!connectUrl) throw new Error('控制台连接地址为空')
-        expiresAtRef.current = data?.expires_at ?? null
+        const submitData = { protocol };
+        const { data, error } = await coreApi.POST(
+          "/instances/{instance_id}/console",
+          {
+            params: { path: { instance_id: instanceId } },
+            body: consoleScope.withKey(submitData),
+            signal: abortController.signal,
+          },
+        );
+        if (error) throw error;
+        consoleScope.reset();
+        const connectUrl = data?.connect_url;
+        if (!connectUrl) throw new Error("控制台连接地址为空");
+        expiresAtRef.current = data?.expires_at ?? null;
         if (isExpired(data?.expires_at)) {
-          throw new Error('控制台会话已过期，请重新申请')
+          throw new Error("控制台会话已过期，请重新申请");
         }
-        if (disposed) return
+        if (disposed) return;
 
-        rfb = new RFB(host, connectUrl, { wsProtocols: [VNC_SUBPROTOCOL] })
-        applyViewMode(rfb, viewModeRef.current)
-        rfb.background = '#0b0e16'
-        rfb.addEventListener('connect', () => {
-          if (!disposed) setStatus('connected')
-        })
-        rfb.addEventListener('disconnect', () => {
-          if (disposed) return
+        rfb = new RFB(host, connectUrl, { wsProtocols: [VNC_SUBPROTOCOL] });
+        applyViewMode(rfb, viewModeRef.current);
+        rfb.background = "#0b0e16";
+        rfb.addEventListener("connect", () => {
+          if (!disposed) setStatus("connected");
+        });
+        rfb.addEventListener("disconnect", () => {
+          if (disposed) return;
           if (isExpired(expiresAtRef.current)) {
-            setStatus('expired')
-            setErrorText('控制台会话已过期，请重新申请')
-            return
+            setStatus("expired");
+            setErrorText("控制台会话已过期，请重新申请");
+            return;
           }
-          setStatus('disconnected')
-        })
-        rfb.addEventListener('securityfailure', (event) => {
-          if (disposed) return
-          setStatus('error')
-          const detail = event instanceof CustomEvent ? event.detail : undefined
-          setErrorText(typeof detail?.reason === 'string' ? detail.reason : 'VNC 安全握手失败')
-        })
-        rfbRef.current = rfb
+          setStatus("disconnected");
+        });
+        rfb.addEventListener("securityfailure", (event) => {
+          if (disposed) return;
+          setStatus("error");
+          const detail =
+            event instanceof CustomEvent ? event.detail : undefined;
+          setErrorText(
+            typeof detail?.reason === "string"
+              ? detail.reason
+              : "VNC 安全握手失败",
+          );
+        });
+        rfbRef.current = rfb;
       } catch (e) {
-        if (disposed) return
-        const message = getErrorMessage(e, '控制台连接失败')
-        if (message.includes('过期')) {
-          setStatus('expired')
+        if (disposed) return;
+        const message = getErrorMessage(e, "控制台连接失败");
+        if (message.includes("过期")) {
+          setStatus("expired");
         } else {
-          setStatus('error')
+          setStatus("error");
         }
-        setErrorText(message)
+        setErrorText(message);
       }
-    }
+    };
 
-    void connect()
+    void connect();
 
     return () => {
-      disposed = true
-      rfbRef.current = null
-      rfb?.disconnect()
-    }
-  }, [consoleScope, instanceId, protocol, reconnectKey])
+      disposed = true;
+      abortController.abort();
+      rfbRef.current = null;
+      rfb?.disconnect();
+    };
+  }, [consoleScope, instanceId, protocol, reconnectKey]);
 
-  const meta = STATUS_META[status]
-  const canReconnect = status === 'error' || status === 'disconnected' || status === 'expired'
+  const meta = STATUS_META[status];
+  const canReconnect =
+    status === "error" || status === "disconnected" || status === "expired";
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#0b0e16] text-white">
@@ -163,11 +185,11 @@ export function InstanceVncConsole({
       ) : null}
       <div
         className={clsx(
-          'relative min-h-0 flex-1',
-          viewMode === 'native' ? 'overflow-auto' : 'overflow-hidden',
+          "relative min-h-0 flex-1",
+          viewMode === "native" ? "overflow-auto" : "overflow-hidden",
         )}
       >
-        {status === 'connecting' ? (
+        {status === "connecting" ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0b0e16]/80">
             <Spin />
           </div>
@@ -175,9 +197,13 @@ export function InstanceVncConsole({
         <div
           ref={hostRef}
           data-testid="instance-vnc-console"
-          className={viewMode === 'native' ? 'min-h-full min-w-full' : 'h-full w-full overflow-hidden'}
+          className={
+            viewMode === "native"
+              ? "min-h-full min-w-full"
+              : "h-full w-full overflow-hidden"
+          }
         />
       </div>
     </div>
-  )
+  );
 }

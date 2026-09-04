@@ -1,6 +1,6 @@
 import { Alert, Form, Input, Select, Space, Tag } from "@arco-design/web-react";
+import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import {
-  COMPUTE_SPEC_OPTIONS,
   type FormValues,
   type GpuSchedulingQueue,
   type GpuSpecOption,
@@ -18,14 +18,14 @@ const WORKLOAD_CLASS_LABELS: Record<
 
 function specStatusTag(spec: GpuSpecOption) {
   if (spec.source === "temporary") {
-    return <Tag color="blue">{spec.gpu_mode === "wholecard" ? "整卡" : "vGPU"}</Tag>;
+    return (
+      <Tag color="blue">{spec.gpu_mode === "wholecard" ? "整卡" : "vGPU"}</Tag>
+    );
   }
 
   switch (spec.availability?.status) {
     case "available":
-      return (
-        <Tag color="green">剩余 {spec.availability.available_count}</Tag>
-      );
+      return <Tag color="green">剩余 {spec.availability.available_count}</Tag>;
     case "full":
       return <Tag color="gray">配额已满</Tag>;
     case "device_full":
@@ -84,8 +84,7 @@ export function GpuResourceStep({
           className="mb-4"
         />
       ) : null}
-      {!specsLoading && !specsError &&
-      !specs.some(isGpuSpecSelectable) ? (
+      {!specsLoading && !specsError && !specs.some(isGpuSpecSelectable) ? (
         <Alert
           type="warning"
           showIcon
@@ -171,14 +170,7 @@ export function GpuResourceStep({
           ))}
         </Select>
       </Form.Item>
-      <Form.Item field="compute_spec" label="CPU / 内存">
-        <Select
-          options={COMPUTE_SPEC_OPTIONS.map(({ key, label }) => ({
-            value: key,
-            label,
-          }))}
-        />
-      </Form.Item>
+      <InstanceComputeSpecSelect field="compute_spec" profile="gpu" />
       <Form.Item
         field="replicas"
         label="副本"

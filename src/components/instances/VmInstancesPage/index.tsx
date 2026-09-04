@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import type { components } from "@/api/core-schema";
 import {
-  AsyncTaskPoller,
   DataTableNameCell,
   ImageNameText,
   ListDataTable,
@@ -20,6 +19,7 @@ import {
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
+import { InstanceOperationPoller } from "../InstanceOperationPoller";
 import { VmInstanceActions } from "../VmInstanceActions";
 import { VmInstanceCreateModal } from "../VmInstanceCreateModal";
 
@@ -196,11 +196,12 @@ export function VmInstancesPage() {
         }
       >
         {operationId ? (
-          <AsyncTaskPoller
-            taskId={operationId}
-            onComplete={() => {
-              setOperationId(null);
+          <InstanceOperationPoller
+            key={operationId}
+            operationId={operationId}
+            onComplete={(operationStatus) => {
               refresh();
+              if (operationStatus === "succeeded") setOperationId(null);
             }}
           />
         ) : null}

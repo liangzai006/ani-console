@@ -1,6 +1,13 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Empty, Modal, Space, Spin } from "@arco-design/web-react";
+import {
+  Alert,
+  Button,
+  Empty,
+  Modal,
+  Space,
+  Spin,
+} from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
@@ -21,10 +28,18 @@ import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type KnowledgeBase = components["schemas"]["KnowledgeBase"];
 type VectorStore = coreComponents["schemas"]["VectorStore"];
-type VectorStoreListResponse = coreComponents["schemas"]["VectorStoreListResponse"];
-export type KnowledgeBaseDetailTabKey = "overview" | "documents" | "chat" | "permissions" | "history";
+type VectorStoreListResponse =
+  coreComponents["schemas"]["VectorStoreListResponse"];
+export type KnowledgeBaseDetailTabKey =
+  "overview" | "documents" | "chat" | "permissions" | "history";
 
-export function KnowledgeBaseDetailPage({ kbId, tab }: { kbId: string; tab: KnowledgeBaseDetailTabKey }) {
+export function KnowledgeBaseDetailPage({
+  kbId,
+  tab,
+}: {
+  kbId: string;
+  tab: KnowledgeBaseDetailTabKey;
+}) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
@@ -74,7 +89,11 @@ export function KnowledgeBaseDetailPage({ kbId, tab }: { kbId: string; tab: Know
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[{ label: "知识库" }, { label: "知识库管理", to: "/kb" }, { label: kbId }]}
+        breadcrumbs={[
+          { label: "知识库" },
+          { label: "知识库管理", to: "/kb" },
+          { label: kbId },
+        ]}
         title={kbId}
         idLabel="知识库 ID"
         idValue={kbId}
@@ -163,13 +182,19 @@ export function KnowledgeBaseDetailPage({ kbId, tab }: { kbId: string; tab: Know
         {
           key: "documents",
           label: "文档与解析",
-          content: <KnowledgeDocumentsPanel kbId={kbId} />,
-          extra: <KnowledgeDocumentUploadButton kbId={kbId} />,
+          content: (
+            <KnowledgeDocumentsPanel
+              kbId={kbId}
+              action={<KnowledgeDocumentUploadButton kbId={kbId} />}
+            />
+          ),
         },
         {
           key: "chat",
           label: "问答",
-          content: <KnowledgeChatPanel kbId={kbId} defaultTopK={kb.top_k ?? 5} />,
+          content: (
+            <KnowledgeChatPanel kbId={kbId} defaultTopK={kb.top_k ?? 5} />
+          ),
         },
         {
           key: "permissions",
@@ -188,9 +213,7 @@ export function KnowledgeBaseDetailPage({ kbId, tab }: { kbId: string; tab: Know
         {
           key: "history",
           label: "操作历史",
-          content: (
-            <Empty description="当前后端暂未提供知识库操作历史接口" />
-          ),
+          content: <Empty description="当前后端暂未提供知识库操作历史接口" />,
         },
       ]}
       defaultTabKey={tab}
