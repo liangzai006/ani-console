@@ -74,7 +74,11 @@ export function VectorStoreDetailPage({
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[{ label: "存储" }, { label: "向量存储", to: "/vector-stores" }, { label: vectorStoreId }]}
+        breadcrumbs={[
+          { label: "存储" },
+          { label: "向量存储", to: "/vector-stores" },
+          { label: vectorStoreId },
+        ]}
         title={vectorStoreId}
         idLabel="向量存储 ID"
         idValue={vectorStoreId}
@@ -141,16 +145,8 @@ export function VectorStoreDetailPage({
           fields: store.knowledge_base_ref
             ? [
                 {
-                  label: `知识库 · ${store.knowledge_base_ref.name}`,
-                  value: (
-                    <Link
-                      to="/kb/$kbId"
-                      params={{ kbId: store.knowledge_base_ref.id }}
-                      search={{ tab: "overview" }}
-                    >
-                      打开
-                    </Link>
-                  ),
+                  label: "知识库",
+                  value: store.knowledge_base_ref.name,
                 },
               ]
             : [{ label: "暂无关联对象", value: "-" }],

@@ -57,14 +57,16 @@ export function LoadBalancersPage() {
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
       const { data, error } = await coreApi.GET("/networks/load-balancers", {
-        params: { query: asUncontractedQuery({
-          limit,
-          cursor,
-          vpc_id: vpcId || undefined,
-          status: status === "all" ? undefined : status,
-          search_field: keyword ? searchField : undefined,
-          keyword: keyword || undefined,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit,
+            cursor,
+            vpc_id: vpcId || undefined,
+            status: status === "all" ? undefined : status,
+            search_field: keyword ? searchField : undefined,
+            keyword: keyword || undefined,
+          }),
+        },
       });
       if (error || !data) throw error ?? new Error("负载均衡列表未返回结果");
       return data;
@@ -138,12 +140,13 @@ export function LoadBalancersPage() {
     {
       key: "vip",
       title: "VIP",
-      render: (_, item) => item.vip || "-",
+      dataIndex: "vip",
+      placeholder: "-",
     },
     {
       key: "listeners",
       title: "监听器",
-      render: (_, item) => item.listeners.length,
+      dataIndex: "listeners.length",
     },
     { key: "backends", title: "后端数", render: () => "-" },
     {

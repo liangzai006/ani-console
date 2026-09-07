@@ -3,13 +3,14 @@ import {
   Form,
   Input,
   Message,
+  Modal,
   Space,
-  Steps,
   Typography,
 } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
+import { WizardSteps } from "@/components/common";
 import { listOrThrow } from "@/lib/api-list";
 import {
   INITIAL_VALUES,
@@ -95,53 +96,13 @@ export function SandboxInstanceCreateForm({
   };
 
   return (
-    <div className="flex h-[560px] min-h-0 flex-col">
-      <Steps current={step + 1} style={{ marginBottom: 24 }}>
-        {STEP_TITLES.map((title) => (
-          <Steps.Step key={title} title={title} />
-        ))}
-      </Steps>
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-        <Form<FormValues>
-          form={form}
-          layout="vertical"
-          initialValues={INITIAL_VALUES}
-          requiredSymbol={{ position: "end" }}
-          onValuesChange={(changedValues) =>
-            setValues((current) => ({ ...current, ...changedValues }))
-          }
-        >
-          {step === 0 ? (
-            <>
-              <Typography.Paragraph type="secondary">
-                为 Sandbox 设置易于识别的名称。
-              </Typography.Paragraph>
-              <Form.Item
-                field="name"
-                label="名称"
-                rules={[{ required: true, message: "请输入名称" }]}
-              >
-                <Input allowClear placeholder="例如：agent-dev-sandbox" />
-              </Form.Item>
-            </>
-          ) : null}
-          {step === 1 ? (
-            <SandboxTemplateStep
-              templates={items}
-              loading={templates.isLoading}
-              error={templates.isError}
-              onRetry={() => void templates.refetch()}
-              onChange={selectTemplate}
-            />
-          ) : null}
-          {step === 2 ? <SandboxResourceStep /> : null}
-          {step === 3 ? <SandboxRuntimeStep values={values} /> : null}
-          {step === 4 && selectedTemplate ? (
-            <SandboxConfirmStep values={values} template={selectedTemplate} />
-          ) : null}
-        </Form>
-      </div>
-      <div className="flex flex-none justify-end pt-5">
+    <Modal
+      title="创建 Sandbox"
+      visible={visible}
+      onCancel={onCancel}
+      maskClosable={!submitting}
+      unmountOnExit
+      footer={
         <Space>
           <Button onClick={onCancel} disabled={submitting}>
             取消
@@ -171,7 +132,56 @@ export function SandboxInstanceCreateForm({
             {step === STEP_TITLES.length - 1 ? "提交创建" : "下一步"}
           </Button>
         </Space>
+      }
+      style={{ width: 780 }}
+    >
+      <div className="flex h-[508px] min-h-0 flex-col">
+        <WizardSteps
+          current={step + 1}
+          items={STEP_TITLES}
+          style={{ marginBottom: 24 }}
+        />
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <Form<FormValues>
+            form={form}
+            layout="vertical"
+            initialValues={INITIAL_VALUES}
+            requiredSymbol={{ position: "end" }}
+            onValuesChange={(changedValues) =>
+              setValues((current) => ({ ...current, ...changedValues }))
+            }
+          >
+            {step === 0 ? (
+              <>
+                <Typography.Paragraph type="secondary">
+                  为 Sandbox 设置易于识别的名称。
+                </Typography.Paragraph>
+                <Form.Item
+                  field="name"
+                  label="名称"
+                  rules={[{ required: true, message: "请输入名称" }]}
+                >
+                  <Input allowClear placeholder="例如：agent-dev-sandbox" />
+                </Form.Item>
+              </>
+            ) : null}
+            {step === 1 ? (
+              <SandboxTemplateStep
+                templates={items}
+                loading={templates.isLoading}
+                error={templates.isError}
+                onRetry={() => void templates.refetch()}
+                onChange={selectTemplate}
+              />
+            ) : null}
+            {step === 2 ? <SandboxResourceStep /> : null}
+            {step === 3 ? <SandboxRuntimeStep values={values} /> : null}
+            {step === 4 && selectedTemplate ? (
+              <SandboxConfirmStep values={values} template={selectedTemplate} />
+            ) : null}
+          </Form>
+        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

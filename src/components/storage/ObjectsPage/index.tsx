@@ -43,12 +43,14 @@ export function ObjectsPage() {
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
       const { data, error } = await coreApi.GET("/buckets", {
-        params: { query: asUncontractedQuery({
-          limit,
-          cursor,
-          search_field: keyword ? searchField : undefined,
-          keyword: keyword || undefined,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit,
+            cursor,
+            search_field: keyword ? searchField : undefined,
+            keyword: keyword || undefined,
+          }),
+        },
       });
       if (error || !data) throw error ?? new Error("对象存储桶列表未返回结果");
       return data;
@@ -91,12 +93,14 @@ export function ObjectsPage() {
     {
       key: "region",
       title: "Region",
-      render: (_, item) => item.region ?? "-",
+      dataIndex: "region",
+      placeholder: "-",
     },
     {
       key: "objectCount",
       title: "对象数",
-      render: (_, item) => item.object_count ?? 0,
+      dataIndex: "object_count",
+      placeholder: 0,
     },
     {
       key: "sizeBytes",

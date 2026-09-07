@@ -96,13 +96,15 @@ function ClusterList() {
       }
       const keyword = searchText.trim();
       const { data, error } = await coreApi.GET("/k8s-clusters", {
-        params: { query: asUncontractedQuery({
-          limit,
-          cursor,
-          status: status === "all" ? undefined : status,
-          search_field: keyword ? searchField : undefined,
-          keyword: keyword || undefined,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit,
+            cursor,
+            status: status === "all" ? undefined : status,
+            search_field: keyword ? searchField : undefined,
+            keyword: keyword || undefined,
+          }),
+        },
       });
       if (error || !data) throw error ?? new Error("K8s 集群列表未返回结果");
       return {
@@ -231,7 +233,8 @@ function ClusterList() {
     {
       key: "version",
       title: "Kubernetes 版本",
-      render: (_, cluster) => cluster.version ?? "-",
+      dataIndex: "version",
+      placeholder: "-",
     },
     {
       key: "createdAt",
@@ -532,7 +535,11 @@ export function ClusterDetail({
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[{ label: "算力" }, { label: "K8s 集群" }, { label: clusterId }]}
+        breadcrumbs={[
+          { label: "算力" },
+          { label: "K8s 集群" },
+          { label: clusterId },
+        ]}
         title={clusterId}
         idLabel="集群 ID"
         idValue={clusterId}
@@ -560,7 +567,11 @@ export function ClusterDetail({
         columns={[
           { title: "名称", dataIndex: "name" },
           { title: "规格", dataIndex: "instance_type" },
-          { title: "状态", width: 120, render: (_, r) => <StatusTag status={r.state} /> },
+          {
+            title: "状态",
+            width: 120,
+            render: (_, r) => <StatusTag status={r.state} />,
+          },
         ]}
         data={poolItems}
         loading={nodePools.isLoading}

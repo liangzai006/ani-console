@@ -33,7 +33,9 @@ type StatusFilter = "all" | "available";
 type SearchField = "name" | "id";
 
 export function SecurityGroupsPage() {
-  const copyScope = useIdempotencyScope("network-security-group-copy", ["POST"]);
+  const copyScope = useIdempotencyScope("network-security-group-copy", [
+    "POST",
+  ]);
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
@@ -56,14 +58,16 @@ export function SecurityGroupsPage() {
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
       const { data, error } = await coreApi.GET("/networks/security-groups", {
-        params: { query: asUncontractedQuery({
-          limit,
-          cursor,
-          vpc_id: filterVpcId || undefined,
-          status: status === "all" ? undefined : status,
-          search_field: keyword ? searchField : undefined,
-          keyword: keyword || undefined,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit,
+            cursor,
+            vpc_id: filterVpcId || undefined,
+            status: status === "all" ? undefined : status,
+            search_field: keyword ? searchField : undefined,
+            keyword: keyword || undefined,
+          }),
+        },
       });
       if (error || !data) throw error ?? new Error("安全组列表未返回结果");
       return data;
@@ -178,7 +182,8 @@ export function SecurityGroupsPage() {
     {
       key: "instances",
       title: "关联实例",
-      render: (_, item) => item.bound_instance_count ?? 0,
+      dataIndex: "bound_instance_count",
+      placeholder: 0,
     },
     {
       key: "createdAt",

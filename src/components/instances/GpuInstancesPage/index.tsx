@@ -8,7 +8,6 @@ import { GpuContainerCreateModal } from "@/components/instances/GpuContainerCrea
 import {
   ListDataTable,
   DataTableNameCell,
-  ImageNameText,
   ListPageFrame,
   ListPageHeader,
   StatusTabs,
@@ -22,6 +21,7 @@ import {
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
+import { getImageDisplayName } from "@/lib/render";
 
 type Instance = components["schemas"]["InstanceRecord"];
 type StatusFilter = "all" | "running" | "stopped" | "queued" | "failed";
@@ -132,22 +132,15 @@ export function GpuInstancesPage() {
       key: "gpu",
       title: "GPU",
       width: 220,
-      render: (_, row) => {
-        const gpu = row.compute?.gpu_type ?? "-";
-
-        return (
-          <Tooltip content={gpu}>
-            <span className="block truncate">{gpu}</span>
-          </Tooltip>
-        );
-      },
+      ellipsis: true,
+      dataIndex: "compute.gpu_type",
+      placeholder: "-",
     },
     {
       key: "image",
       title: "镜像",
-      render: (_, row) => (
-        <ImageNameText image={row.image} className="max-w-56" />
-      ),
+      ellipsis: true,
+      render: (_, row) => getImageDisplayName(row.image),
     },
     {
       key: "replicas",
@@ -170,7 +163,8 @@ export function GpuInstancesPage() {
     {
       key: "node",
       title: "节点",
-      render: (_, row) => row.compute?.node_name ?? "-",
+      dataIndex: "compute.node_name",
+      placeholder: "-",
     },
     {
       key: "created",

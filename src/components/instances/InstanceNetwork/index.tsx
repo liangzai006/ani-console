@@ -1,6 +1,7 @@
 import { Empty, Space, Typography } from "@arco-design/web-react";
 import type { components } from "@/api/core-schema";
-import { DataTable, ImageNameText } from "@/components/common";
+import { DataTable } from "@/components/common";
+import { getImageDisplayName } from "@/lib/render";
 
 type Instance = components["schemas"]["InstanceRecord"];
 type ImageRow = {
@@ -135,7 +136,8 @@ export function InstanceNetwork({ instance }: { instance: Instance }) {
           columns={[
             {
               title: "镜像",
-              render: (_, row) => <ImageNameText image={row.image} />,
+              ellipsis: true,
+              render: (_, row) => getImageDisplayName(row.image),
             },
           ]}
         />

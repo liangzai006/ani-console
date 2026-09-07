@@ -1,180 +1,300 @@
 import {
+  Button,
+  Empty,
+  Message,
+  Modal,
+  Space,
+  Spin,
+} from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { showApiError } from "@/api/helpers";
+import { servicesApi } from "@/api/services-client";
+import type { components } from "@/api/services-schema";
+import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
+import {
+  AliIcon,
   DataTable,
   DetailPageFrame,
-  AliIcon,
-} from '@/components/common'
-import { useNavigate } from "@tanstack/react-router";
+  StatusTag,
+} from "@/components/common";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { formatBytes, formatDateTime } from "@/lib/format";
 import {
-  Button, Card, Empty, Message, Space, Typography } from "@arco-design/web-react"
-import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
-import {
-  inferenceServiceItems,
-  modelCatalogItems,
-} from "@/components/ai-services/mock-data";
+  formatModelCapabilities,
+  getLatestModelVersion,
+  MODEL_SOURCE_LABELS,
+  type ModelVersion,
+} from "@/lib/model-catalog";
+
+type InferenceService = components["schemas"]["InferenceService"];
 
 export function ModelDetailPage({ modelId }: { modelId: string }) {
   const navigate = useNavigate();
-  const model = modelCatalogItems.find((item) => item.id === modelId);
-  if (!model) return <Empty description="未找到该模型演示数据" />;
-  const modelPrefix = model.name.replace(/-Instruct$/, "");
-  const relatedServices = inferenceServiceItems.filter((item) =>
-    item.modelVersion.startsWith(modelPrefix),
+  const qc = useQueryClient();
+  const [deployVisible, setDeployVisible] = useState(false);
+  const model = useQuery({
+    queryKey: ["model", modelId],
+    queryFn: async () => {
+      const { data, error } = await servicesApi.GET("/models/{model_id}", {
+        params: { path: { model_id: modelId } },
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+  const relatedServices = useQuery({
+    queryKey: ["model-related-inference-services", modelId],
+    enabled: Boolean(model.data),
+    queryFn: async () => {
+      const { data, error } = await servicesApi.GET("/inference-services");
+      if (error) throw error;
+      return data;
+    },
+  });
+  useListErrorNotification({
+    id: "model-detail:" + modelId,
+    title: "模型详情加载失败",
+    error: model.error,
+  });
+  useListErrorNotification({
+    id: "model-related-inference-services:" + modelId,
+    title: "关联推理服务加载失败",
+    error: relatedServices.error,
+  });
+  const remove = useMutation({
+    mutationFn: async () => {
+      const { error } = await servicesApi.DELETE("/models/{model_id}", {
+        params: { path: { model_id: modelId } },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      Message.success("模型已删除");
+      void qc.invalidateQueries({ queryKey: ["models"] });
+      navigate({ to: "/models" });
+    },
+    onError: (error) => showApiError(error, "删除模型失败"),
+  });
+
+  if (model.isLoading) {
+    return (
+      <div className="flex justify-center py-20">
+        <Spin size={32} />
+      </div>
+    );
+  }
+
+  if (!model.data) {
+    return (
+      <DetailPageFrame
+        breadcrumbs={[
+          { label: "AI 服务" },
+          { label: "模型仓库", to: "/models" },
+          { label: modelId },
+        ]}
+        title={modelId}
+        icon={<AliIcon name="moxing" size={28} />}
+        headerItems={[
+          { label: "模型 ID", value: modelId },
+          { label: "状态", value: "-" },
+          { label: "更新时间", value: "-" },
+        ]}
+        actions={<Button onClick={() => model.refetch()}>重新加载</Button>}
+        cards={[
+          {
+            key: "basic",
+            title: "基本信息",
+            fields: [{ label: "加载结果", value: "未能获取该模型详情" }],
+          },
+        ]}
+        onBack={() => navigate({ to: "/models" })}
+      />
+    );
+  }
+
+  const item = model.data;
+  const latestVersion = getLatestModelVersion(item);
+  const versionIds = new Set(
+    (item.versions ?? []).map((version) => version.id),
   );
-  // const planned = (name: string) => <Empty description={`${name}将在后续阶段补充`} />
+  const inferenceItems = (relatedServices.data?.items ?? []).filter(
+    (service) =>
+      service.model === item.name ||
+      Boolean(
+        service.model_version_id && versionIds.has(service.model_version_id),
+      ),
+  );
+
   return (
-    <DetailPageFrame
-      breadcrumbs={[
-        { label: "AI 服务" },
-        { label: "模型仓库", to: "/models" },
-        { label: model.name },
-      ]}
-      title={model.name}
-      status={<AiServiceStatusTag status={model.status} />}
-      icon={<AliIcon name="moxing" size={28} />}
-      headerItems={[
-        { label: "模型 ID", value: model.id },
-        { label: "最新版本", value: model.latestVersion },
-        { label: "更新时间", value: model.updatedAt },
-      ]}
-      actions={
-        <Space>
-          <Button onClick={() => Message.success("已收藏（演示）")}>
-            收藏
-          </Button>
-          <Button type="primary" onClick={() => navigate({ to: "/inference" })}>
-            部署
-          </Button>
-        </Space>
-      }
-      cards={[
-        {
-          key: "basic",
-          title: "基本信息",
-          fields: [
-            { label: "ID", value: model.id },
-            { label: "名称", value: model.name },
-            {
-              label: "状态",
-              value: <AiServiceStatusTag status={model.status} />,
-            },
-            { label: "来源", value: model.source },
-            { label: "任务", value: model.task },
-            { label: "规模", value: model.scale },
-            { label: "最新版本", value: model.latestVersion },
-            { label: "模型大小", value: model.size },
-          ],
-        },
-        {
-          key: "governance",
-          title: "Catalog 信息",
-          fields: [
-            {
-              label: "框架",
-              value:
-                model.task === "文本生成"
-                  ? "Transformers"
-                  : "Sentence Transformers",
-            },
-            {
-              label: "许可证",
-              value: model.source === "本地上传" ? "自定义" : "Apache-2.0",
-            },
-            { label: "Owner", value: model.source },
-            { label: "部署数", value: `${relatedServices.length} 个` },
-          ],
-        },
-        {
-          key: "overview",
-          title: "模型概览",
-          fields: [
-            { label: "适用场景", value: model.task },
-            {
-              label: "推荐引擎",
-              value: model.task === "文本生成" ? "vLLM" : "TEI",
-            },
-            { label: "推荐精度", value: "BF16" },
-            { label: "部署流程", value: "兼容性检查 → 部署" },
-          ],
-        },
-      ]}
-      tabs={[
-        {
-          key: "related",
-          label: "关联资源",
-          content: (
-            <DataTable
-              columns={[
-                { title: "推理服务", dataIndex: "name" },
-                {
-                  title: "状态",
-                  width: 120,
-                  render: (_, item) => (
-                    <AiServiceStatusTag status={item.status} />
-                  ),
-                },
-                { title: "引擎", dataIndex: "engine" },
-                { title: "副本 / GPU", dataIndex: "replicas" },
-              ]}
-              data={relatedServices}
-              pagination={false}
-              noDataElement={<Empty description="暂无关联推理服务" />}
-            />
-          ),
-        },
-        // { key: 'model-card', label: '模型卡片（规划）', content: planned('模型卡片') },
-        // { key: 'files', label: '文件管理（规划）', content: planned('文件管理') },
-        // { key: 'imports', label: '导入任务（规划）', content: planned('导入任务') },
-        // { key: 'versions', label: '版本生命周期（规划）', content: planned('版本生命周期') },
-        // { key: 'evaluation', label: '模型评测（规划）', content: planned('模型评测') },
-        // { key: 'optimization', label: '模型优化（规划）', content: planned('模型优化') },
-        // { key: 'security', label: '治理安全（规划）', content: planned('治理安全') },
-        // { key: 'lineage', label: '来源血缘（规划）', content: planned('来源血缘') },
-        // { key: 'retirement', label: '版本退役（规划）', content: planned('版本退役') },
-        // { key: 'feedback', label: '部署反馈（规划）', content: planned('部署反馈') },
-        // { key: 'usage', label: '调用统计（规划）', content: planned('调用统计') },
-        // { key: 'collaboration', label: '协作订阅（规划）', content: planned('协作订阅') },
-        {
-          key: "recommendation",
-          label: "推荐配置",
-          content: (
-            <Card title="推荐部署配置" size="small">
-              <Typography.Paragraph>
-                引擎：{model.task === "文本生成" ? "vLLM" : "TEI"} · 精度：BF16
-                · 最小副本：1 · 自动扩缩容：建议开启
-              </Typography.Paragraph>
-            </Card>
-          ),
-        },
-        {
-          key: "history",
-          label: "操作历史",
-          content: (
-            <DataTable
-              columns={[
-                { title: "操作", dataIndex: "action" },
-                { title: "结果", dataIndex: "result" },
-                { title: "时间", dataIndex: "time" },
-              ]}
-              data={[
-                {
-                  id: "1",
-                  action: "导入模型",
-                  result: model.status === "failed" ? "失败" : "成功",
-                  time: model.updatedAt,
-                },
-                {
-                  id: "2",
-                  action: "兼容性检查",
-                  result: model.status === "available" ? "通过" : "等待中",
-                  time: model.updatedAt,
-                },
-              ]}
-              pagination={false}
-            />
-          ),
-        },
-      ]}
-      onBack={() => navigate({ to: "/models" })}
-    />
+    <>
+      <DetailPageFrame
+        breadcrumbs={[
+          { label: "AI 服务" },
+          { label: "模型仓库", to: "/models" },
+          { label: item.display_name || item.name },
+        ]}
+        title={item.display_name || item.name}
+        status={<StatusTag status={item.status} />}
+        icon={<AliIcon name="moxing" size={28} />}
+        headerItems={[
+          { label: "模型 ID", value: item.id },
+          { label: "最新版本", value: latestVersion?.version ?? "-" },
+          { label: "更新时间", value: formatDateTime(item.updated_at) },
+        ]}
+        actions={
+          <Space>
+            <Button
+              type="primary"
+              disabled={item.status !== "ready" || !latestVersion}
+              onClick={() => setDeployVisible(true)}
+            >
+              部署
+            </Button>
+            <Button
+              status="danger"
+              loading={remove.isPending}
+              onClick={() =>
+                Modal.confirm({
+                  title: "删除模型",
+                  content:
+                    "确定删除「" +
+                    (item.display_name || item.name) +
+                    "」？有关联推理服务时后端可能拒绝删除。",
+                  okButtonProps: { status: "danger" },
+                  onOk: () => remove.mutateAsync(),
+                })
+              }
+            >
+              删除
+            </Button>
+          </Space>
+        }
+        cards={[
+          {
+            key: "basic",
+            title: "基本信息",
+            fields: [
+              { label: "ID", value: item.id },
+              { label: "名称", value: item.name },
+              {
+                label: "状态",
+                value: <StatusTag status={item.status} />,
+              },
+              { label: "来源", value: MODEL_SOURCE_LABELS[item.source] },
+              {
+                label: "任务",
+                value: formatModelCapabilities(item.capabilities),
+              },
+              { label: "描述", value: item.description || "-" },
+            ],
+          },
+          {
+            key: "catalog",
+            title: "Catalog 信息",
+            fields: [
+              { label: "最新版本", value: latestVersion?.version ?? "-" },
+              {
+                label: "版本数",
+                value: String(item.versions?.length ?? 0) + " 个",
+              },
+              { label: "模型大小", value: formatBytes(item.total_size_bytes) },
+              { label: "创建时间", value: formatDateTime(item.created_at) },
+              { label: "更新时间", value: formatDateTime(item.updated_at) },
+            ],
+          },
+        ]}
+        tabs={[
+          {
+            key: "versions",
+            label: "模型版本",
+            content: (
+              <DataTable<ModelVersion>
+                columns={[
+                  { title: "版本", dataIndex: "version" },
+                  { title: "格式", dataIndex: "format" },
+                  {
+                    title: "加密",
+                    render: (_, version) =>
+                      version.is_encrypted ? "是" : "否",
+                  },
+                  {
+                    title: "大小",
+                    render: (_, version) => formatBytes(version.size_bytes),
+                  },
+                  {
+                    title: "校验值",
+                    dataIndex: "checksum_sha256",
+                    placeholder: "-",
+                  },
+                  {
+                    title: "创建时间",
+                    render: (_, version) => formatDateTime(version.created_at),
+                  },
+                ]}
+                data={item.versions ?? []}
+                pagination={false}
+                noDataElement={<Empty description="暂无模型版本" />}
+                tableLabel="模型版本列表"
+              />
+            ),
+          },
+          {
+            key: "related",
+            label: "关联资源",
+            content: (
+              <DataTable<InferenceService>
+                columns={[
+                  {
+                    title: "推理服务",
+                    render: (_, service) => (
+                      <Link
+                        to="/inference/$serviceId"
+                        params={{ serviceId: service.id }}
+                      >
+                        {service.name}
+                      </Link>
+                    ),
+                  },
+                  {
+                    title: "状态",
+                    width: 120,
+                    render: (_, service) => (
+                      <StatusTag status={service.status} />
+                    ),
+                  },
+                  { title: "模型", dataIndex: "model" },
+                  {
+                    title: "副本",
+                    render: (_, service) =>
+                      String(service.ready_replicas) +
+                      " / " +
+                      String(service.replicas),
+                  },
+                  {
+                    title: "创建时间",
+                    render: (_, service) => formatDateTime(service.created_at),
+                  },
+                ]}
+                data={inferenceItems}
+                loading={relatedServices.isFetching}
+                pagination={false}
+                noDataElement={<Empty description="暂无关联推理服务" />}
+                tableLabel="关联推理服务列表"
+              />
+            ),
+          },
+        ]}
+        onBack={() => navigate({ to: "/models" })}
+      />
+      <CreateInferenceServiceModal
+        visible={deployVisible}
+        initialServiceName={("infer-" + item.name).slice(0, 63)}
+        initialModelId={item.id}
+        initialModelVersionId={latestVersion?.id}
+        onCancel={() => setDeployVisible(false)}
+      />
+    </>
   );
 }

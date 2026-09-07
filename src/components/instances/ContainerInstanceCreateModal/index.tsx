@@ -8,7 +8,6 @@ import {
   Modal,
   Select,
   Space,
-  Steps,
   Switch,
   Typography,
 } from "@arco-design/web-react";
@@ -16,7 +15,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { ImageNameText } from "@/components/common";
+import { ImageNameText, WizardSteps } from "@/components/common";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import {
@@ -176,9 +175,15 @@ export function ContainerInstanceCreateModal({
   const [step, setStep] = useState(0);
   const [values, setValues] = useState(INITIAL_VALUES);
 
-  const useListQuery = (path: string, key: string) =>
+  const useListQuery = (
+    path: string,
+    key: string,
+    query?: Record<string, unknown>,
+  ) =>
     useQuery({
-      queryKey: [key, "container-create"],
+      queryKey: query
+        ? [key, "container-create", query]
+        : [key, "container-create"],
       enabled: visible,
       queryFn: async () => {
         const request = coreApi.GET as unknown as (
@@ -186,7 +191,9 @@ export function ContainerInstanceCreateModal({
           options: { params: { query: never } },
         ) => Promise<{ data?: { items?: Item[] }; error?: unknown }>;
         const { data, error } = await request(path, {
-          params: { query: asUncontractedQuery({ limit: 100 }) },
+          params: {
+            query: asUncontractedQuery({ limit: 100, ...(query ?? {}) }),
+          },
         });
         if (error) throw error;
         return data?.items ?? [];
@@ -198,7 +205,7 @@ export function ContainerInstanceCreateModal({
     "/networks/security-groups",
     "network-security-groups",
   );
-  const volumes = useListQuery("/volumes", "volumes");
+  const volumes = useListQuery("/volumes", "volumes", { in_use: false });
   const filesystems = useListQuery("/filesystems", "filesystems");
   const secrets = useListQuery("/secrets", "secrets");
   const images = useQuery({
@@ -326,15 +333,36 @@ export function ContainerInstanceCreateModal({
       onCancel={close}
       maskClosable={!create.isPending}
       unmountOnExit
-      footer={null}
-      style={{ width: 820, height: 720 }}
+      footer={
+        <Space>
+          <Button onClick={close} disabled={create.isPending}>
+            取消
+          </Button>
+          {step > 0 ? (
+            <Button
+              onClick={() => setStep((current) => current - 1)}
+              disabled={create.isPending}
+            >
+              上一步
+            </Button>
+          ) : null}
+          <Button
+            type="primary"
+            loading={create.isPending}
+            onClick={step === STEP_TITLES.length - 1 ? submit : next}
+          >
+            {step === STEP_TITLES.length - 1 ? "提交创建" : "下一步"}
+          </Button>
+        </Space>
+      }
+      style={{ width: 820 }}
     >
       <div className={styles.form}>
-        <Steps current={step + 1} style={{ marginBottom: 24 }}>
-          {STEP_TITLES.map((title) => (
-            <Steps.Step key={title} title={title} />
-          ))}
-        </Steps>
+        <WizardSteps
+          current={step + 1}
+          items={STEP_TITLES}
+          style={{ marginBottom: 24 }}
+        />
         <div className={styles.content}>
           <Form<FormValues>
             form={form}
@@ -525,28 +553,6 @@ export function ContainerInstanceCreateModal({
               />
             ) : null}
           </Form>
-        </div>
-        <div className={styles.actions}>
-          <Space>
-            <Button onClick={close} disabled={create.isPending}>
-              取消
-            </Button>
-            {step > 0 ? (
-              <Button
-                onClick={() => setStep((current) => current - 1)}
-                disabled={create.isPending}
-              >
-                上一步
-              </Button>
-            ) : null}
-            <Button
-              type="primary"
-              loading={create.isPending}
-              onClick={step === STEP_TITLES.length - 1 ? submit : next}
-            >
-              {step === STEP_TITLES.length - 1 ? "提交创建" : "下一步"}
-            </Button>
-          </Space>
         </div>
       </div>
     </Modal>

@@ -5,7 +5,6 @@ import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
 import {
   DataTableNameCell,
-  ImageNameText,
   ListDataTable,
   ListPageFrame,
   ListPageHeader,
@@ -21,6 +20,7 @@ import { SandboxInstanceActions } from "@/components/instances/SandboxInstanceAc
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
+import { getImageDisplayName } from "@/lib/render";
 import { SandboxInstanceCreateModal } from "@/components/instances/SandboxInstanceCreateModal";
 
 type SandboxInstance = components["schemas"]["InstanceRecord"];
@@ -122,13 +122,15 @@ export function SandboxInstancesPage() {
       key: "template",
       title: "模板 / 镜像",
       width: 220,
-      render: (_, item) => <ImageNameText image={item.image} />,
+      ellipsis: true,
+      render: (_, item) => getImageDisplayName(item.image),
     },
     {
       key: "ttl",
       title: "会话时长",
       width: 110,
-      render: (_, item) => item.sandbox?.session_timeout ?? "-",
+      dataIndex: "sandbox.session_timeout",
+      placeholder: "-",
     },
     { key: "idle", title: "空闲剩余", width: 110, render: () => "-" },
     {
@@ -141,7 +143,8 @@ export function SandboxInstancesPage() {
       key: "egress",
       title: "出口策略",
       width: 130,
-      render: (_, item) => item.sandbox?.network_egress_policy ?? "-",
+      dataIndex: "sandbox.network_egress_policy",
+      placeholder: "-",
     },
     {
       key: "created",

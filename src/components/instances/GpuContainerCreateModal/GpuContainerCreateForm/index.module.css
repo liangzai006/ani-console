@@ -1,7 +1,7 @@
 .form {
   display: flex;
   flex-direction: column;
-  height: 560px;
+  height: 508px;
   min-height: 0;
 }
 
@@ -10,11 +10,4 @@
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
-}
-
-.actions {
-  display: flex;
-  flex: none;
-  justify-content: flex-end;
-  padding-top: 20px;
 }

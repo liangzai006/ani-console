@@ -7,6 +7,7 @@ import {
   TableSectionHeader,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
+import { getImageDisplayName } from "@/lib/render";
 
 type Instance = components["schemas"]["InstanceRecord"];
 type Release = NonNullable<
@@ -65,7 +66,8 @@ export function InstanceReleases({
           { title: "修订版本", dataIndex: "revision", fixed: "left" },
           {
             title: "镜像",
-            render: (_, release) => <ImageNameText image={release.image} />,
+            ellipsis: true,
+            render: (_, release) => getImageDisplayName(release.image),
           },
           {
             title: "发布时间",

@@ -21,7 +21,6 @@ import {
   ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ImageNameText,
   ListToolbar,
   ToolbarIconButton,
   ToolbarSearch,
@@ -29,6 +28,7 @@ import {
 } from "@/components/common";
 import { getErrorMessage } from "@/lib/errors";
 import { formatBytes, formatDateTime } from "@/lib/format";
+import { getImageDisplayName } from "@/lib/render";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
@@ -207,9 +207,10 @@ export function RegistryPage() {
     {
       key: "image",
       title: "镜像名",
+      ellipsis: true,
       render: (_, item) => (
         <div>
-          <ImageNameText image={item} className="font-medium" />
+          <span className="block font-medium">{getImageDisplayName(item)}</span>
           <Typography.Text type="secondary" className="text-xs">
             {item.repository}
           </Typography.Text>
@@ -224,9 +225,9 @@ export function RegistryPage() {
     {
       key: "project",
       title: "项目",
-      render: (_, item) => item.project,
+      dataIndex: "project",
     },
-    { key: "tag", title: "Tag", render: (_, item) => item.tag },
+    { key: "tag", title: "Tag", dataIndex: "tag" },
     {
       key: "size",
       title: "大小",

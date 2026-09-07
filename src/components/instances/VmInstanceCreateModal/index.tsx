@@ -9,14 +9,13 @@ import {
   Radio,
   Select,
   Space,
-  Steps,
   Switch,
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import type { components } from "@/api/core-schema";
-import { ImageNameText, Ipv4CidrInput } from "@/components/common";
+import { ImageNameText, Ipv4CidrInput, WizardSteps } from "@/components/common";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import { listOrThrow } from "@/lib/api-list";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
@@ -125,7 +124,14 @@ const INITIAL: Values = {
   autoStart: true,
   terminationProtection: false,
 };
-const STEPS = ["基础信息", "镜像配置", "规格", "网络与 SSH", "磁盘与高级确认"];
+const STEPS = [
+  "基础信息",
+  "镜像配置",
+  "规格",
+  "网络与 SSH",
+  "磁盘与高级选项",
+  "确认",
+];
 const SYSTEM_DISKS: Record<
   DiskOption,
   { label: string; size: number; type: string }
@@ -364,6 +370,10 @@ export function VmInstanceCreateModal({
       Message.error(getInstanceActionErrorMessage(error, "create")),
   });
 
+  const close = () => {
+    createScope.reset();
+    onCancel();
+  };
   const next = async () => {
     try {
       await form.validate();
@@ -393,21 +403,35 @@ export function VmInstanceCreateModal({
     <Modal
       title="创建云主机 VM"
       visible={visible}
-      onCancel={() => {
-        createScope.reset();
-        onCancel();
-      }}
-      footer={null}
+      onCancel={close}
+      footer={
+        <Space>
+          <Button onClick={close} disabled={create.isPending}>
+            取消
+          </Button>
+          {step > 0 ? (
+            <Button
+              onClick={() => setStep((current) => current - 1)}
+              disabled={create.isPending}
+            >
+              上一步
+            </Button>
+          ) : null}
+          <Button
+            type="primary"
+            loading={create.isPending}
+            onClick={step === STEPS.length - 1 ? () => create.mutate() : next}
+          >
+            {step === STEPS.length - 1 ? "提交创建" : "下一步"}
+          </Button>
+        </Space>
+      }
       unmountOnExit
       maskClosable={!create.isPending}
       style={{ width: 820 }}
     >
       <div className={styles.form}>
-        <Steps current={step + 1}>
-          {STEPS.map((title) => (
-            <Steps.Step key={title} title={title} />
-          ))}
-        </Steps>
+        <WizardSteps current={step + 1} items={STEPS} />
         <div className={styles.content}>
           <Form
             form={form}
@@ -501,50 +525,50 @@ export function VmInstanceCreateModal({
             ) : null}
             {step === 3 ? (
               <>
-                <Space className={styles.row} size={16}>
-                  <Form.Item field="vpcId" label="VPC" required>
-                    <Select
-                      loading={vpcs.isLoading}
-                      placeholder="选择 VPC"
-                      onChange={(vpcId) => {
-                        setValue("vpcId", vpcId);
-                        setValue("subnetId", "");
-                        setValue("securityGroupIds", []);
-                        setValue("privateIp", "");
-                      }}
-                    >
-                      {(vpcs.data?.items ?? []).map((vpc) => (
-                        <Select.Option
-                          key={String(vpc.id)}
-                          value={String(vpc.id)}
-                        >
-                          {String(vpc.name ?? vpc.id)}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                  <Form.Item field="subnetId" label="子网" required>
-                    <Select
-                      disabled={!values.vpcId}
-                      loading={subnets.isLoading}
-                      placeholder="选择子网"
-                      onChange={(subnetId) => {
-                        setValue("subnetId", subnetId);
-                        setValue("privateIp", "");
-                      }}
-                    >
-                      {availableSubnets.map((subnet) => (
-                        <Select.Option
-                          key={String(subnet.id)}
-                          value={String(subnet.id)}
-                        >
-                          {String(subnet.name ?? subnet.id)} ·{" "}
-                          {String(subnet.cidr ?? "-")}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Space>
+                <Form.Item field="vpcId" label="VPC" required>
+                  <Select
+                    allowClear
+                    loading={vpcs.isLoading}
+                    placeholder="选择 VPC"
+                    onChange={(vpcId) => {
+                      setValue("vpcId", vpcId ?? "");
+                      setValue("subnetId", "");
+                      setValue("securityGroupIds", []);
+                      setValue("privateIp", "");
+                    }}
+                  >
+                    {(vpcs.data?.items ?? []).map((vpc) => (
+                      <Select.Option
+                        key={String(vpc.id)}
+                        value={String(vpc.id)}
+                      >
+                        {String(vpc.name ?? vpc.id)}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item field="subnetId" label="子网" required>
+                  <Select
+                    allowClear
+                    disabled={!values.vpcId}
+                    loading={subnets.isLoading}
+                    placeholder="选择子网"
+                    onChange={(subnetId) => {
+                      setValue("subnetId", subnetId ?? "");
+                      setValue("privateIp", "");
+                    }}
+                  >
+                    {availableSubnets.map((subnet) => (
+                      <Select.Option
+                        key={String(subnet.id)}
+                        value={String(subnet.id)}
+                      >
+                        {String(subnet.name ?? subnet.id)} ·{" "}
+                        {String(subnet.cidr ?? "-")}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
                 <Form.Item
                   field="securityGroupIds"
                   label="安全组（可选，可多选）"
@@ -647,26 +671,24 @@ export function VmInstanceCreateModal({
             ) : null}
             {step === 4 ? (
               <>
-                <Space className={styles.row} size={16}>
-                  <Form.Item field="systemDisk" label="系统盘">
-                    <Select
-                      options={Object.entries(SYSTEM_DISKS).map(
-                        ([value, disk]) => ({ value, label: disk.label }),
-                      )}
-                    />
-                  </Form.Item>
-                  <Form.Item field="dataDisk" label="数据盘">
-                    <Select
-                      options={[
-                        { value: "none", label: "不挂载" },
-                        ...Object.entries(DATA_DISKS).map(([value, disk]) => ({
-                          value,
-                          label: disk.label,
-                        })),
-                      ]}
-                    />
-                  </Form.Item>
-                </Space>
+                <Form.Item field="systemDisk" label="系统盘">
+                  <Select
+                    options={Object.entries(SYSTEM_DISKS).map(
+                      ([value, disk]) => ({ value, label: disk.label }),
+                    )}
+                  />
+                </Form.Item>
+                <Form.Item field="dataDisk" label="数据盘">
+                  <Select
+                    options={[
+                      { value: "none", label: "不挂载" },
+                      ...Object.entries(DATA_DISKS).map(([value, disk]) => ({
+                        value,
+                        label: disk.label,
+                      })),
+                    ]}
+                  />
+                </Form.Item>
                 <Form.Item field="filesystemId" label="文件存储 NFS（可选）">
                   <Select
                     allowClear
@@ -702,123 +724,103 @@ export function VmInstanceCreateModal({
                     <Switch />
                   </Form.Item>
                 </Space>
-                <Descriptions
-                  column={1}
-                  data={[
-                    { label: "名称", value: values.name },
-                    { label: "台数", value: "1" },
-                    {
-                      label: "启动镜像",
-                      value: (
-                        <ImageNameText
-                          image={
-                            (images.data ?? []).find(
-                              (image) => image.image === values.imageRef,
-                            ) ?? values.imageRef
-                          }
-                          showSize
-                        />
-                      ),
-                    },
-                    { label: "规格", value: values.spec },
-                    {
-                      label: "网络",
-                      value: `${values.vpcId || "-"} / ${values.subnetId || "-"}`,
-                    },
-                    {
-                      label: "安全组",
-                      value: values.securityGroupIds.join("、") || "-",
-                    },
-                    {
-                      label: "私网 IP",
-                      value:
-                        values.ipMode === "auto"
-                          ? "自动分配"
-                          : values.privateIp || "-",
-                    },
-                    {
-                      label: "登录方式",
-                      value:
-                        values.loginMode === "ssh-key" ? "SSH 密钥" : "密码",
-                    },
-                    { label: "用户名", value: values.sshUsername || "-" },
-                    {
-                      label: "cloud-init",
-                      value:
-                        [
-                          values.loginMode === "password"
-                            ? "内联用户名/密码 user-data"
-                            : values.userData.trim()
-                              ? "内联 user-data"
-                              : "",
-                          values.cloudInitSecret
-                            ? `Secret ${values.cloudInitSecret}`
-                            : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" + ") || "未配置",
-                    },
-                    {
-                      label: "登录凭据",
-                      value:
-                        values.loginMode === "ssh-key"
-                          ? values.sshKeyRef || "-"
-                          : values.password
-                            ? "已输入（不展示）"
-                            : "-",
-                    },
-                    {
-                      label: "系统盘",
-                      value: SYSTEM_DISKS[values.systemDisk].label,
-                    },
-                    {
-                      label: "数据盘",
-                      value:
-                        values.dataDisk === "none"
-                          ? "不挂载"
-                          : DATA_DISKS[values.dataDisk].label,
-                    },
-                    {
-                      label: "NFS",
-                      value: values.filesystemId
-                        ? `${values.filesystemId} → /mnt/nfs`
-                        : "不挂载",
-                    },
-                    {
-                      label: "自动启动",
-                      value: values.autoStart ? "开启" : "关闭",
-                    },
-                    {
-                      label: "终止保护",
-                      value: values.terminationProtection ? "开启" : "关闭",
-                    },
-                  ]}
-                />
               </>
             ) : null}
-          </Form>
-        </div>
-        <div className={styles.actions}>
-          <Space>
-            <Button onClick={onCancel} disabled={create.isPending}>
-              取消
-            </Button>
-            {step > 0 ? (
-              <Button
-                onClick={() => setStep((current) => current - 1)}
-                disabled={create.isPending}
-              >
-                上一步
-              </Button>
+            {step === 5 ? (
+              <Descriptions
+                column={1}
+                border
+                data={[
+                  { label: "名称", value: values.name },
+                  { label: "台数", value: "1" },
+                  {
+                    label: "启动镜像",
+                    value: (
+                      <ImageNameText
+                        image={
+                          (images.data ?? []).find(
+                            (image) => image.image === values.imageRef,
+                          ) ?? values.imageRef
+                        }
+                        showSize
+                      />
+                    ),
+                  },
+                  { label: "规格", value: values.spec },
+                  {
+                    label: "网络",
+                    value: `${values.vpcId || "-"} / ${values.subnetId || "-"}`,
+                  },
+                  {
+                    label: "安全组",
+                    value: values.securityGroupIds.join("、") || "-",
+                  },
+                  {
+                    label: "私网 IP",
+                    value:
+                      values.ipMode === "auto"
+                        ? "自动分配"
+                        : values.privateIp || "-",
+                  },
+                  {
+                    label: "登录方式",
+                    value: values.loginMode === "ssh-key" ? "SSH 密钥" : "密码",
+                  },
+                  { label: "用户名", value: values.sshUsername || "-" },
+                  {
+                    label: "cloud-init",
+                    value:
+                      [
+                        values.loginMode === "password"
+                          ? "内联用户名/密码 user-data"
+                          : values.userData.trim()
+                            ? "内联 user-data"
+                            : "",
+                        values.cloudInitSecret
+                          ? `Secret ${values.cloudInitSecret}`
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" + ") || "未配置",
+                  },
+                  {
+                    label: "登录凭据",
+                    value:
+                      values.loginMode === "ssh-key"
+                        ? values.sshKeyRef || "-"
+                        : values.password
+                          ? "已输入（不展示）"
+                          : "-",
+                  },
+                  {
+                    label: "系统盘",
+                    value: SYSTEM_DISKS[values.systemDisk].label,
+                  },
+                  {
+                    label: "数据盘",
+                    value:
+                      values.dataDisk === "none"
+                        ? "不挂载"
+                        : DATA_DISKS[values.dataDisk].label,
+                  },
+                  {
+                    label: "NFS",
+                    value: values.filesystemId
+                      ? `${values.filesystemId} → /mnt/nfs`
+                      : "不挂载",
+                  },
+                  {
+                    label: "自动启动",
+                    value: values.autoStart ? "开启" : "关闭",
+                  },
+                  {
+                    label: "终止保护",
+                    value: values.terminationProtection ? "开启" : "关闭",
+                  },
+                ]}
+              />
             ) : null}
-            <Button
-              type="primary"
-              loading={create.isPending}
-              onClick={step === STEPS.length - 1 ? () => create.mutate() : next}
-            >
-              {step === STEPS.length - 1 ? "提交创建" : "下一步"}
-            </Button>
-          </Space>
+          </Form>
         </div>
       </div>
     </Modal>

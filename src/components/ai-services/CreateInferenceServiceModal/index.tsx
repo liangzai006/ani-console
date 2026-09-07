@@ -14,43 +14,14 @@ import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { servicesApi } from "@/api/services-client";
 import { showApiError } from "@/api/helpers";
+import { getErrorMessage } from "@/lib/errors";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import {
   DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
   INSTANCE_COMPUTE_SPEC_BY_VALUE,
 } from "@/lib/instance-compute-specs";
+import { getLatestModelVersion, isEmbeddingModel } from "@/lib/model-catalog";
 import { getImageSelectionLabel } from "@/lib/render";
-
-const PROTOTYPE_MODEL_VERSIONS = [
-  {
-    id: "qwen2-7b@v1.0.0",
-    model: "qwen2-7b",
-    version: "v1.0.0",
-    label: "qwen2-7b · v1.0.0",
-    kind: "chat",
-  },
-  {
-    id: "llama3-8b@v0.9.1",
-    model: "llama3-8b",
-    version: "v0.9.1",
-    label: "llama3-8b · v0.9.1",
-    kind: "chat",
-  },
-  {
-    id: "embed-bge@v2.0.0",
-    model: "embed-bge",
-    version: "v2.0.0",
-    label: "embed-bge · v2.0.0",
-    kind: "embedding",
-  },
-  {
-    id: "qwen2-72b@v1.1.0",
-    model: "qwen2-72b",
-    version: "v1.1.0",
-    label: "qwen2-72b · v1.1.0",
-    kind: "chat",
-  },
-] as const;
 
 const RESOURCE_PRESETS = {
   "a10-1": {
@@ -90,6 +61,7 @@ type CreateInferenceServiceModalProps = {
   visible: boolean;
   onCancel: () => void;
   initialServiceName?: string;
+  initialModelId?: string;
   initialModelVersionId?: string;
 };
 
@@ -97,30 +69,61 @@ export function CreateInferenceServiceModal({
   visible,
   onCancel,
   initialServiceName,
+  initialModelId,
   initialModelVersionId,
 }: CreateInferenceServiceModalProps) {
   const qc = useQueryClient();
   const createScope = useIdempotencyScope("inference-service-create", ["POST"]);
   const [name, setName] = useState("");
-  const [modelVersionId, setModelVersionId] = useState<string>(
-    PROTOTYPE_MODEL_VERSIONS[0].id,
-  );
+  const [modelId, setModelId] = useState("");
+  const [modelVersionId, setModelVersionId] = useState("");
   const [replicas, setReplicas] = useState(1);
   const [resourcePreset, setResourcePreset] =
     useState<ResourcePresetKey>("a10-1");
   const [inferenceEngine, setInferenceEngine] =
     useState<InferenceEngine>("vllm");
-  const selectedModel = useMemo(
-    () => PROTOTYPE_MODEL_VERSIONS.find((item) => item.id === modelVersionId),
-    [modelVersionId],
+  const models = useQuery({
+    queryKey: ["models", "inference-service-create"],
+    enabled: visible,
+    queryFn: async () => {
+      const { data, error } = await servicesApi.GET("/models", {
+        params: { query: { status: "ready", limit: 100 } },
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+  const selectedModelSummary = useMemo(
+    () => (models.data?.items ?? []).find((item) => item.id === modelId),
+    [modelId, models.data?.items],
   );
-  const isEmbeddingModel = selectedModel?.kind === "embedding";
-  const runtimeImageKeyword = isEmbeddingModel
+  const modelDetail = useQuery({
+    queryKey: ["model", modelId],
+    enabled: visible && Boolean(modelId),
+    queryFn: async () => {
+      const { data, error } = await servicesApi.GET("/models/{model_id}", {
+        params: { path: { model_id: modelId } },
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+  const selectedModel = modelDetail.data ?? selectedModelSummary;
+  const modelVersions = useMemo(
+    () => modelDetail.data?.versions ?? [],
+    [modelDetail.data?.versions],
+  );
+  const selectedModelVersion = useMemo(
+    () => modelVersions.find((item) => item.id === modelVersionId),
+    [modelVersionId, modelVersions],
+  );
+  const embeddingModel = isEmbeddingModel(selectedModel);
+  const runtimeImageKeyword = embeddingModel
     ? "tei"
     : inferenceEngine === "sglang"
       ? "sglang"
       : "vllm";
-  const recommendedEngine = isEmbeddingModel
+  const recommendedEngine = embeddingModel
     ? "TEI"
     : inferenceEngine === "sglang"
       ? "SGLang"
@@ -128,7 +131,7 @@ export function CreateInferenceServiceModal({
 
   const runtimeImages = useQuery({
     queryKey: ["inference-runtime-images", runtimeImageKeyword],
-    enabled: visible,
+    enabled: visible && Boolean(selectedModelVersion),
     queryFn: async () => {
       const { data: projectData, error: projectError } = await coreApi.GET(
         "/registry/projects",
@@ -181,10 +184,10 @@ export function CreateInferenceServiceModal({
     },
   });
 
-  const compatible = Boolean(selectedModel);
+  const compatible = Boolean(selectedModelVersion);
   // TODO: Registry 后端确认按运行引擎过滤镜像后，移除此处创建表单的本地兜底过滤。
   const runtimeImage = useMemo(() => {
-    const keywords = isEmbeddingModel
+    const keywords = embeddingModel
       ? ["text-embedding", "tei"]
       : inferenceEngine === "sglang"
         ? ["sglang"]
@@ -192,20 +195,43 @@ export function CreateInferenceServiceModal({
     return (runtimeImages.data ?? []).find((image) =>
       keywords.some((keyword) => image.repository.includes(keyword)),
     );
-  }, [inferenceEngine, isEmbeddingModel, runtimeImages.data]);
+  }, [embeddingModel, inferenceEngine, runtimeImages.data]);
 
   useEffect(() => {
     if (!visible) return;
     setName(initialServiceName ?? "");
-    setModelVersionId(
-      PROTOTYPE_MODEL_VERSIONS.some((item) => item.id === initialModelVersionId)
-        ? initialModelVersionId!
-        : PROTOTYPE_MODEL_VERSIONS[0].id,
-    );
+    setModelId(initialModelId ?? "");
+    setModelVersionId(initialModelVersionId ?? "");
     setReplicas(1);
     setResourcePreset("a10-1");
     setInferenceEngine("vllm");
-  }, [initialModelVersionId, initialServiceName, visible]);
+  }, [initialModelId, initialModelVersionId, initialServiceName, visible]);
+
+  useEffect(() => {
+    const items = models.data?.items ?? [];
+    if (!visible || items.length === 0) return;
+    setModelId((current) => {
+      if (initialModelId && items.some((item) => item.id === initialModelId)) {
+        return initialModelId;
+      }
+      if (items.some((item) => item.id === current)) return current;
+      return items[0].id;
+    });
+  }, [initialModelId, models.data?.items, visible]);
+
+  useEffect(() => {
+    if (!visible || !modelDetail.data || modelVersions.length === 0) return;
+    setModelVersionId((current) => {
+      if (
+        initialModelVersionId &&
+        modelVersions.some((item) => item.id === initialModelVersionId)
+      ) {
+        return initialModelVersionId;
+      }
+      if (modelVersions.some((item) => item.id === current)) return current;
+      return getLatestModelVersion(modelDetail.data)?.id ?? modelVersions[0].id;
+    });
+  }, [initialModelVersionId, modelDetail.data, modelVersions, visible]);
 
   const create = useMutation({
     mutationFn: async () => {
@@ -219,9 +245,9 @@ export function CreateInferenceServiceModal({
         "accelerator" in preset ? preset.accelerator : undefined;
       const submitData = {
         name: name.trim(),
-        model: selectedModel?.model ?? modelVersionId,
+        model: selectedModel?.name ?? modelVersionId,
         model_version_id: modelVersionId,
-        served_model_name: selectedModel?.model,
+        served_model_name: selectedModel?.name,
         image_id: runtimeImage.id,
         replicas,
         placement_mode: "auto" as const,
@@ -249,7 +275,7 @@ export function CreateInferenceServiceModal({
   return (
     <Modal
       visible={visible}
-      title="一键部署推理服务"
+      title="部署推理服务"
       okText="开始部署"
       onCancel={() => {
         createScope.reset();
@@ -268,16 +294,53 @@ export function CreateInferenceServiceModal({
             maxLength={63}
           />
         </Form.Item>
+        <Form.Item label="模型" required>
+          <Select
+            value={modelId}
+            loading={models.isLoading}
+            disabled={(models.data?.items.length ?? 0) === 0}
+            placeholder="请选择已就绪的模型"
+            options={(models.data?.items ?? []).map((item) => ({
+              value: item.id,
+              label: item.display_name || item.name,
+            }))}
+            onChange={(value) => {
+              setModelId(value);
+              setModelVersionId("");
+            }}
+          />
+        </Form.Item>
         <Form.Item label="模型版本" required>
           <Select
             value={modelVersionId}
             onChange={setModelVersionId}
-            options={PROTOTYPE_MODEL_VERSIONS.map((item) => ({
+            loading={modelDetail.isLoading}
+            disabled={modelVersions.length === 0}
+            placeholder="请选择已就绪的模型版本"
+            options={modelVersions.map((item) => ({
               value: item.id,
-              label: item.label,
+              label: item.version,
             }))}
           />
         </Form.Item>
+        {models.error ? (
+          <Alert
+            type="warning"
+            showIcon
+            content={getErrorMessage(models.error, "模型列表加载失败")}
+          />
+        ) : modelDetail.error ? (
+          <Alert
+            type="warning"
+            showIcon
+            content={getErrorMessage(modelDetail.error, "模型版本加载失败")}
+          />
+        ) : !models.isLoading &&
+          !modelDetail.isLoading &&
+          selectedModel &&
+          modelVersions.length === 0 ? (
+          <Alert type="warning" showIcon content="所选模型暂无可部署版本" />
+        ) : null}
         <Form.Item label="兼容性检查">
           <Alert
             type={compatible ? "success" : "warning"}
@@ -289,7 +352,7 @@ export function CreateInferenceServiceModal({
           />
         </Form.Item>
         <Form.Item label="推理引擎">
-          {isEmbeddingModel ? (
+          {embeddingModel ? (
             <Input value={compatible ? "TEI" : "-"} readOnly />
           ) : (
             <Select

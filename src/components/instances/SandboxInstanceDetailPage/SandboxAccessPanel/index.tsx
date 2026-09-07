@@ -10,7 +10,6 @@ import {
   Select,
   Space,
   Tag,
-  Tooltip,
   Typography,
 } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
@@ -183,11 +182,12 @@ export function SandboxAccessPanel({
                 width: 100,
                 render: (_, item) => `:${item.port}`,
               },
-              { title: "名称", render: (_, item) => item.name ?? "-" },
+              { title: "名称", dataIndex: "name", placeholder: "-" },
               {
                 title: "协议",
                 width: 100,
-                render: (_, item) => item.protocol ?? "tcp",
+                dataIndex: "protocol",
+                placeholder: "tcp",
               },
               {
                 title: "状态",
@@ -200,18 +200,17 @@ export function SandboxAccessPanel({
               },
               {
                 title: "预览地址",
+                ellipsis: true,
                 render: (_, item) =>
                   item.preview_url ? (
-                    <Tooltip content={item.preview_url}>
-                      <a
-                        href={item.preview_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block max-w-96 truncate text-[rgb(var(--link-6))]"
-                      >
-                        {item.preview_url}
-                      </a>
-                    </Tooltip>
+                    <a
+                      href={item.preview_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[rgb(var(--link-6))]"
+                    >
+                      {item.preview_url}
+                    </a>
                   ) : (
                     "-"
                   ),

@@ -16,12 +16,13 @@ import {
 import { useRef, useState } from "react";
 import { coreApi } from "@/api/client";
 import { PageHeader } from "@/components/shell/AppShell";
-import { DataTable, ImageNameText, StatusTag } from "@/components/common";
+import { DataTable, StatusTag } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
 import { showApiError } from "@/api/helpers";
 import { getErrorMessage } from "@/lib/errors";
+import { getImageDisplayName } from "@/lib/render";
 import {
   suggestImageSizeGib,
   uploadImageFile,
@@ -159,9 +160,8 @@ export function ImagesPage() {
         columns={[
           {
             title: "名称",
-            render: (_, r) => (
-              <ImageNameText image={{ name: r.name, id: r.id }} />
-            ),
+            ellipsis: true,
+            render: (_, r) => getImageDisplayName({ name: r.name, id: r.id }),
           },
           { title: "格式", dataIndex: "format" },
           { title: "容量 GiB", dataIndex: "size_gib" },
@@ -180,7 +180,11 @@ export function ImagesPage() {
               </Space>
             ),
           },
-          { title: "存储类", render: (_, r) => r.storage_class || "-" },
+          {
+            title: "存储类",
+            dataIndex: "storage_class",
+            placeholder: "-",
+          },
           { title: "更新时间", render: (_, r) => formatDateTime(r.updated_at) },
           {
             title: "操作",

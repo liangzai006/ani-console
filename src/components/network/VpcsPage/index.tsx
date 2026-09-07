@@ -64,13 +64,15 @@ function VpcList() {
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
       const { data, error } = await coreApi.GET("/networks/vpcs", {
-        params: { query: asUncontractedQuery({
-          limit,
-          cursor,
-          status: status === "all" ? undefined : status,
-          search_field: keyword ? searchField : undefined,
-          keyword: keyword || undefined,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit,
+            cursor,
+            status: status === "all" ? undefined : status,
+            search_field: keyword ? searchField : undefined,
+            keyword: keyword || undefined,
+          }),
+        },
       });
       if (error || !data) throw error ?? new Error("VPC 列表未返回结果");
       return data;
@@ -131,7 +133,10 @@ function VpcList() {
     onError: (error) => showApiError(error),
   });
 
-  const items = useMemo(() => (vpcs.data?.items ?? []) as Vpc[], [vpcs.data?.items]);
+  const items = useMemo(
+    () => (vpcs.data?.items ?? []) as Vpc[],
+    [vpcs.data?.items],
+  );
   const subnetCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const subnet of (subnets.data?.items ?? []) as Subnet[])
@@ -185,7 +190,7 @@ function VpcList() {
       width: 120,
       render: (_, vpc) => <StatusTag status={vpc.state} />,
     },
-    { key: "cidr", title: "CIDR", render: (_, vpc) => vpc.cidr },
+    { key: "cidr", title: "CIDR", dataIndex: "cidr" },
     {
       key: "subnets",
       title: "子网数",

@@ -307,7 +307,11 @@ export function SecurityGroupDetailPage({
                 </Tag>
               ),
             },
-            { title: "描述", render: (_, rule) => rule.description || "-" },
+            {
+              title: "描述",
+              dataIndex: "description",
+              placeholder: "-",
+            },
             {
               title: "操作",
               render: (_, rule) => (

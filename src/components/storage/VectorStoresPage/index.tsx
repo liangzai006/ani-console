@@ -33,7 +33,9 @@ type SearchField = "name" | "id";
 
 export function VectorStoresPage() {
   const qc = useQueryClient();
-  const rebuildScope = useIdempotencyScope("storage-vector-store-rebuild", ["POST"]);
+  const rebuildScope = useIdempotencyScope("storage-vector-store-rebuild", [
+    "POST",
+  ]);
   const navigate = useNavigate();
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -53,13 +55,15 @@ export function VectorStoresPage() {
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
       const { data, error } = await coreApi.GET("/vector-stores", {
-        params: { query: asUncontractedQuery({
-          limit,
-          cursor,
-          status: status === "all" ? undefined : status,
-          search_field: keyword ? searchField : undefined,
-          keyword: keyword || undefined,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit,
+            cursor,
+            status: status === "all" ? undefined : status,
+            search_field: keyword ? searchField : undefined,
+            keyword: keyword || undefined,
+          }),
+        },
       });
       if (error || !data) throw error ?? new Error("向量存储列表未返回结果");
       return data;
@@ -99,7 +103,10 @@ export function VectorStoresPage() {
     },
     onError: (error) => showApiError(error),
   });
-  const items = useMemo(() => (stores.data?.items ?? []) as VectorStore[], [stores.data?.items]);
+  const items = useMemo(
+    () => (stores.data?.items ?? []) as VectorStore[],
+    [stores.data?.items],
+  );
   const counts = useMemo(
     () => ({
       all: items.length,
@@ -142,7 +149,7 @@ export function VectorStoresPage() {
     {
       key: "dimension",
       title: "维度",
-      render: (_, item) => item.dimension,
+      dataIndex: "dimension",
     },
     {
       key: "metric",
@@ -152,17 +159,20 @@ export function VectorStoresPage() {
     {
       key: "embeddingModel",
       title: "Embedding 模型",
-      render: (_, item) => item.embedding_model || "-",
+      dataIndex: "embedding_model",
+      placeholder: "-",
     },
     {
       key: "vectorCount",
       title: "向量数",
-      render: (_, item) => item.vector_count ?? 0,
+      dataIndex: "vector_count",
+      placeholder: 0,
     },
     {
       key: "knowledgeBase",
       title: "关联知识库",
-      render: (_, item) => item.knowledge_base_ref?.name || "未关联",
+      dataIndex: "knowledge_base_ref.name",
+      placeholder: "未关联",
     },
     {
       key: "createdAt",
@@ -236,7 +246,11 @@ export function VectorStoresPage() {
               render: (_value, item) => (
                 <DataTableRowActions>
                   <Tooltip
-                    content={item.state === "ready" ? undefined : "仅可用状态支持检索测试"}
+                    content={
+                      item.state === "ready"
+                        ? undefined
+                        : "仅可用状态支持检索测试"
+                    }
                   >
                     <span>
                       <DataTableRowActionButton
@@ -254,12 +268,19 @@ export function VectorStoresPage() {
                     </span>
                   </Tooltip>
                   <Tooltip
-                    content={item.state === "ready" ? undefined : "仅可用状态支持重建索引"}
+                    content={
+                      item.state === "ready"
+                        ? undefined
+                        : "仅可用状态支持重建索引"
+                    }
                   >
                     <span>
                       <DataTableRowActionButton
                         disabled={item.state !== "ready"}
-                        loading={rebuildIndex.isPending && rebuildIndex.variables?.id === item.id}
+                        loading={
+                          rebuildIndex.isPending &&
+                          rebuildIndex.variables?.id === item.id
+                        }
                         onClick={() =>
                           Modal.confirm({
                             title: "重建索引",
@@ -272,7 +293,11 @@ export function VectorStoresPage() {
                       </DataTableRowActionButton>
                     </span>
                   </Tooltip>
-                  <Tooltip content={item.knowledge_base_ref ? undefined : "当前未关联知识库"}>
+                  <Tooltip
+                    content={
+                      item.knowledge_base_ref ? undefined : "当前未关联知识库"
+                    }
+                  >
                     <span>
                       <DataTableRowActionButton
                         disabled={!item.knowledge_base_ref}
@@ -291,7 +316,9 @@ export function VectorStoresPage() {
                   </Tooltip>
                   <Tooltip
                     content={
-                      item.knowledge_base_ref ? "请先解除知识库关联后再删除" : undefined
+                      item.knowledge_base_ref
+                        ? "请先解除知识库关联后再删除"
+                        : undefined
                     }
                   >
                     <span>

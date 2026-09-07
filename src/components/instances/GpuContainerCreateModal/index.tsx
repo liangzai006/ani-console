@@ -1,4 +1,4 @@
-import { Message, Modal } from "@arco-design/web-react";
+import { Message } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { coreApi } from "@/api/client";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
@@ -18,7 +18,9 @@ export function GpuContainerCreateModal({
   onCreated,
 }: Props) {
   const queryClient = useQueryClient();
-  const createScope = useIdempotencyScope("gpu-container-instance-create", ["POST"]);
+  const createScope = useIdempotencyScope("gpu-container-instance-create", [
+    "POST",
+  ]);
   const create = useMutation({
     mutationFn: async ({
       values,
@@ -63,23 +65,13 @@ export function GpuContainerCreateModal({
   };
 
   return (
-    <Modal
-      title="创建 GPU 容器实例"
+    <GpuContainerCreateForm
       visible={visible}
+      submitting={create.isPending}
       onCancel={close}
-      maskClosable={!create.isPending}
-      unmountOnExit
-      footer={null}
-      style={{ width: 780, height: 680 }}
-    >
-      <GpuContainerCreateForm
-        visible={visible}
-        submitting={create.isPending}
-        onCancel={close}
-        onSubmit={(values, securityGroupId) =>
-          create.mutate({ values, securityGroupId })
-        }
-      />
-    </Modal>
+      onSubmit={(values, securityGroupId) =>
+        create.mutate({ values, securityGroupId })
+      }
+    />
   );
 }

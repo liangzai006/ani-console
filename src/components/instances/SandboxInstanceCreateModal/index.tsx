@@ -1,4 +1,4 @@
-import { Message, Modal } from "@arco-design/web-react";
+import { Message } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { coreApi } from "@/api/client";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
@@ -61,21 +61,11 @@ export function SandboxInstanceCreateModal({
   };
 
   return (
-    <Modal
-      title="创建 Sandbox"
+    <SandboxInstanceCreateForm
       visible={visible}
+      submitting={create.isPending}
       onCancel={close}
-      maskClosable={!create.isPending}
-      unmountOnExit
-      footer={null}
-      style={{ width: 780, height: 680 }}
-    >
-      <SandboxInstanceCreateForm
-        visible={visible}
-        submitting={create.isPending}
-        onCancel={close}
-        onSubmit={(values, template) => create.mutate({ values, template })}
-      />
-    </Modal>
+      onSubmit={(values, template) => create.mutate({ values, template })}
+    />
   );
 }

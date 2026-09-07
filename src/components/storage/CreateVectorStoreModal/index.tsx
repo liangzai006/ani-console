@@ -8,24 +8,16 @@ import {
   Select,
   Typography,
 } from "@arco-design/web-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import { listOrThrow } from "@/lib/api-list";
+import { servicesApi } from "@/api/services-client";
 import { getErrorMessage } from "@/lib/errors";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type VectorStore = components["schemas"]["VectorStore"];
 type VectorMetric = components["schemas"]["CreateVectorStoreRequest"]["metric"];
-type Model = components["schemas"]["ModelCatalogItem"];
-
-const DEFAULT_EMBEDDING_MODELS = [
-  "bge-m3",
-  "text-embedding-v3",
-  "gte-large-zh",
-];
 
 export function CreateVectorStoreModal({
   visible,
@@ -37,38 +29,39 @@ export function CreateVectorStoreModal({
   onCreated?: (store: VectorStore) => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("storage-vector-store-create", ["POST"]);
+  const createScope = useIdempotencyScope("storage-vector-store-create", [
+    "POST",
+  ]);
   const [name, setName] = useState("");
-  const [embeddingModel, setEmbeddingModel] = useState("bge-m3");
+  const [embeddingModel, setEmbeddingModel] = useState("");
   const [dimension, setDimension] = useState(1536);
   const [metric, setMetric] = useState<VectorMetric>("cosine");
   const models = useQuery({
     queryKey: ["models", "vector-store-create"],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/models", {
-          params: { query: asUncontractedQuery({ limit: 100, capability: "embedding" }) },
-        }),
-      ),
+    queryFn: async () => {
+      const { data, error } = await servicesApi.GET("/models", {
+        params: {
+          query: { limit: 100, capability: "embedding", status: "ready" },
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
     enabled: visible,
   });
-  // TODO: 模型接口确认按 capability 过滤后，移除此处创建表单的本地兜底过滤。
-  const modelOptions = Array.from(
-    new Set([
-      ...((models.data?.items ?? []) as Model[])
-        .filter(
-          (item) =>
-            item.capabilities.includes("embedding") ||
-            /embed|bge|gte/i.test(item.name),
-        )
-        .map((item) => item.name),
-      ...DEFAULT_EMBEDDING_MODELS,
-    ]),
+  const modelOptions = useMemo(
+    () =>
+      Array.from(new Set((models.data?.items ?? []).map((item) => item.name))),
+    [models.data?.items],
   );
+  useEffect(() => {
+    if (!visible || embeddingModel || !modelOptions[0]) return;
+    setEmbeddingModel(modelOptions[0]);
+  }, [embeddingModel, modelOptions, visible]);
   const reset = () => {
     createScope.reset();
     setName("");
-    setEmbeddingModel("bge-m3");
+    setEmbeddingModel("");
     setDimension(1536);
     setMetric("cosine");
   };
@@ -142,8 +135,14 @@ export function CreateVectorStoreModal({
             showIcon
             content={getErrorMessage(
               models.error,
-              "模型列表加载失败，当前展示默认 Embedding 模型",
+              "Embedding 模型列表加载失败",
             )}
+          />
+        ) : !models.isLoading && modelOptions.length === 0 ? (
+          <Alert
+            type="warning"
+            showIcon
+            content="暂无已就绪的 Embedding 模型"
           />
         ) : null}
         <Form.Item label="向量维度" required>

@@ -9,7 +9,6 @@ import {
   Modal,
   Space,
   Tag,
-  Tooltip,
   Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -214,11 +213,8 @@ export function SandboxFilesPanel({
             columns={[
               {
                 title: "路径",
-                render: (_, item) => (
-                  <Tooltip content={item.path}>
-                    <span className="block max-w-lg truncate">{item.path}</span>
-                  </Tooltip>
-                ),
+                ellipsis: true,
+                dataIndex: "path",
               },
               {
                 title: "类型",

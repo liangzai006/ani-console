@@ -1,0 +1,64 @@
+.steps {
+  width: 100%;
+}
+
+.steps :global(.arco-steps-item) {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-right: 0;
+  overflow: visible;
+}
+
+.steps :global(.arco-steps-item-icon) {
+  flex: 0 0 auto;
+}
+
+.steps :global(.arco-steps-item-content) {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 24px;
+  overflow: hidden;
+}
+
+.steps :global(.arco-steps-item-title) {
+  display: block;
+  min-width: 0;
+  padding-right: 0;
+  overflow: hidden;
+}
+
+.steps :global(.arco-steps-item-title::after) {
+  display: none;
+}
+
+.steps :global(.arco-steps-item:not(:last-child)::after) {
+  display: block;
+  flex: 1 0 6px;
+  height: 1px;
+  margin: 13.5px 12px 0;
+  background-color: var(--color-neutral-3);
+  content: "";
+}
+
+.steps :global(.arco-steps-item-finish:not(:last-child)::after) {
+  background-color: rgb(var(--primary-6));
+}
+
+.steps :global(.arco-steps-item-next-error:not(:last-child)::after) {
+  background-color: rgb(var(--danger-6));
+}
+
+.steps:global(.arco-steps-size-small)
+  :global(.arco-steps-item:not(:last-child)::after) {
+  margin-top: 11.5px;
+}
+
+.title {
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+}

@@ -58,13 +58,15 @@ export function VolumesPage() {
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
       const { data, error } = await coreApi.GET("/volumes", {
-        params: { query: asUncontractedQuery({
-          limit,
-          cursor,
-          status: status === "all" ? undefined : status,
-          search_field: keyword ? searchField : undefined,
-          keyword: keyword || undefined,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit,
+            cursor,
+            status: status === "all" ? undefined : status,
+            search_field: keyword ? searchField : undefined,
+            keyword: keyword || undefined,
+          }),
+        },
       });
       if (error || !data) throw error ?? new Error("块存储卷列表未返回结果");
       return data;
@@ -86,12 +88,18 @@ export function VolumesPage() {
   const detachVolume = useMutation({
     mutationFn: async (item: Volume) => {
       if (!item.mount_instance_id) throw new Error("块存储卷未挂载实例");
-      const submitData = { action: "detach_volume" as const, volume_id: item.id };
+      const submitData = {
+        action: "detach_volume" as const,
+        volume_id: item.id,
+      };
       const { error } = await coreApi.POST(
         "/instances/{instance_id}/lifecycle",
         {
           params: { path: { instance_id: item.mount_instance_id } },
-          body: detachScope.withKey(submitData, [item.mount_instance_id, item.id]),
+          body: detachScope.withKey(submitData, [
+            item.mount_instance_id,
+            item.id,
+          ]),
         },
       );
       if (error) throw error;
@@ -104,7 +112,10 @@ export function VolumesPage() {
     },
     onError: (error) => showApiError(error),
   });
-  const items = useMemo(() => (volumes.data?.items ?? []) as Volume[], [volumes.data?.items]);
+  const items = useMemo(
+    () => (volumes.data?.items ?? []) as Volume[],
+    [volumes.data?.items],
+  );
   const isMounted = (item: Volume) => Boolean(item.mount_instance_id);
   const statusCounts = useMemo(
     () => ({
@@ -148,12 +159,12 @@ export function VolumesPage() {
     {
       key: "size",
       title: "容量 (GiB)",
-      render: (_, item) => item.size_gib,
+      dataIndex: "size_gib",
     },
     {
       key: "storageClass",
       title: "类型",
-      render: (_, item) => item.storage_class,
+      dataIndex: "storage_class",
     },
     {
       key: "encrypted",
@@ -163,7 +174,8 @@ export function VolumesPage() {
     {
       key: "zone",
       title: "可用区",
-      render: (_, item) => item.zone ?? "-",
+      dataIndex: "zone",
+      placeholder: "-",
     },
     {
       key: "mountInstance",
@@ -269,14 +281,20 @@ export function VolumesPage() {
                       卸载
                     </DataTableRowActionButton>
                   ) : (
-                    <DataTableRowActionButton onClick={() => setAttachTarget(item)}>
+                    <DataTableRowActionButton
+                      onClick={() => setAttachTarget(item)}
+                    >
                       挂载
                     </DataTableRowActionButton>
                   )}
-                  <DataTableRowActionButton onClick={() => setExpandTarget(item)}>
+                  <DataTableRowActionButton
+                    onClick={() => setExpandTarget(item)}
+                  >
                     扩容
                   </DataTableRowActionButton>
-                  <DataTableRowActionButton onClick={() => setSnapshotTarget(item)}>
+                  <DataTableRowActionButton
+                    onClick={() => setSnapshotTarget(item)}
+                  >
                     创建快照
                   </DataTableRowActionButton>
                   <DataTableRowActionButton

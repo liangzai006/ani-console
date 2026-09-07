@@ -81,14 +81,16 @@ export function SubnetsPage() {
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
       const { data, error } = await coreApi.GET("/networks/subnets", {
-        params: { query: asUncontractedQuery({
-          limit,
-          cursor,
-          vpc_id: filterVpcId || undefined,
-          status: status === "all" ? undefined : status,
-          search_field: keyword ? searchField : undefined,
-          keyword: keyword || undefined,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit,
+            cursor,
+            vpc_id: filterVpcId || undefined,
+            status: status === "all" ? undefined : status,
+            search_field: keyword ? searchField : undefined,
+            keyword: keyword || undefined,
+          }),
+        },
       });
       if (error || !data) throw error ?? new Error("子网列表未返回结果");
       return data;
@@ -162,7 +164,10 @@ export function SubnetsPage() {
     onError: (error) => showApiError(error),
   });
 
-  const items = useMemo(() => (subnets.data?.items ?? []) as Subnet[], [subnets.data?.items]);
+  const items = useMemo(
+    () => (subnets.data?.items ?? []) as Subnet[],
+    [subnets.data?.items],
+  );
   const vpcNames = useMemo(
     () =>
       new Map(
@@ -231,12 +236,13 @@ export function SubnetsPage() {
     {
       key: "cidr",
       title: "CIDR",
-      render: (_, subnet) => subnet.cidr,
+      dataIndex: "cidr",
     },
     {
       key: "gateway",
       title: "网关",
-      render: (_, subnet) => subnet.gateway ?? "-",
+      dataIndex: "gateway",
+      placeholder: "-",
     },
     {
       key: "createdAt",

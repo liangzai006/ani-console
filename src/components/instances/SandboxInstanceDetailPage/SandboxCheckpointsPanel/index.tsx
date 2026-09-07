@@ -226,11 +226,8 @@ export function SandboxCheckpointsPanel({
             columns={[
               {
                 title: "名称",
-                render: (_, item) => (
-                  <Tooltip content={item.id}>
-                    <span className="block max-w-72 truncate">{item.name}</span>
-                  </Tooltip>
-                ),
+                ellipsis: true,
+                dataIndex: "name",
               },
               {
                 title: "状态",

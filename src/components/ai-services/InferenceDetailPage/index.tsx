@@ -3,6 +3,7 @@ import {
   DetailPageFrame,
   ImageNameText,
   AliIcon,
+  StatusTag,
   TableSectionHeader,
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
@@ -24,7 +25,6 @@ import { useState } from "react";
 import type { components } from "@/api/services-schema";
 import { servicesApi } from "@/api/services-client";
 import { showApiError } from "@/api/helpers";
-import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
@@ -234,11 +234,11 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const serviceStatus = statusDetail ? (
     <Tooltip content={statusDetail}>
       <span className="inline-flex">
-        <AiServiceStatusTag status={item.status} />
+        <StatusTag status={item.status} />
       </span>
     </Tooltip>
   ) : (
-    <AiServiceStatusTag status={item.status} />
+    <StatusTag status={item.status} />
   );
 
   return (
@@ -411,7 +411,8 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
                       { title: "级别", dataIndex: "level" },
                       {
                         title: "容器",
-                        render: (_, row) => row.container ?? "-",
+                        dataIndex: "container",
+                        placeholder: "-",
                       },
                       { title: "消息", dataIndex: "message" },
                     ]}
@@ -449,7 +450,8 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
                   },
                   {
                     title: "错误",
-                    render: (_, row) => row.error_message ?? "-",
+                    dataIndex: "error_message",
+                    placeholder: "-",
                   },
                 ]}
               />

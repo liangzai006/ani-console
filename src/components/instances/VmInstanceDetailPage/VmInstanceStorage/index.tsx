@@ -72,7 +72,8 @@ export function VmInstanceStorage({
               },
               {
                 title: "状态说明",
-                render: (_, snapshot) => snapshot.reason ?? "-",
+                dataIndex: "reason",
+                placeholder: "-",
               },
               {
                 key: "__actions",

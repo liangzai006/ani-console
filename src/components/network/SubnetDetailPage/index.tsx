@@ -3,16 +3,16 @@ import {
   DetailPageFrame,
   DetailPagePlaceholder,
   AliIcon,
+  type ListColumn,
   StatusTag,
+  TableSectionHeader,
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   Button,
-  Card,
   Empty,
-  List,
   Modal,
   Space,
   Spin,
@@ -216,6 +216,31 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
       if (instance) navigateToInstanceDetail(navigate, instance);
     }
   };
+  const relatedResourceColumns: Array<
+    ListColumn<(typeof relatedResources)[number]>
+  > = [
+    {
+      title: "类型",
+      width: 120,
+      render: (_, item) => <Tag>{item.kind}</Tag>,
+    },
+    { title: "名称", dataIndex: "name" },
+    { title: "资源 ID", dataIndex: "id" },
+    {
+      title: "状态",
+      width: 120,
+      render: (_, item) => <StatusTag status={item.status} />,
+    },
+    {
+      title: "操作",
+      width: 80,
+      render: (_, item) => (
+        <Button type="text" size="mini" onClick={() => openRelated(item)}>
+          打开
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <DetailPageFrame
@@ -277,16 +302,8 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
             ? [{ label: "加载中…", value: "-" }]
             : summaryItems.length
               ? summaryItems.slice(0, 5).map((item) => ({
-                  label: `${item.kind} · ${item.name}`,
-                  value: (
-                    <Button
-                      type="text"
-                      size="mini"
-                      onClick={() => openRelated(item)}
-                    >
-                      打开
-                    </Button>
-                  ),
+                  label: item.kind,
+                  value: item.name,
                 }))
               : [{ label: "暂无关联对象", value: "-" }],
         },
@@ -296,42 +313,24 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
           key: "related",
           label: "关联资源",
           content: (
-            <Space direction="vertical" size={12} className="w-full">
-              <Typography.Text>
-                共{" "}
-                <Typography.Text bold>
-                  {relatedResources.length}
-                </Typography.Text>{" "}
-                个关联对象
-              </Typography.Text>
-              <Card title={`关联资源 ${relatedResources.length}`} size="small">
-                <List
-                  loading={instances.isLoading}
-                  dataSource={relatedResources}
-                  noDataElement={<Empty description="暂无关联资源" />}
-                  render={(item) => (
-                    <div className="flex w-full items-center gap-3 px-5 py-3">
-                      <Tag className="shrink-0">{item.kind}</Tag>
-                      <span className="min-w-0 flex-1 truncate">
-                        {item.name}
-                      </span>
-                      <Typography.Text className="shrink-0" type="secondary">
-                        {item.id}
-                      </Typography.Text>
-                      <StatusTag status={item.status} />
-                      <Button
-                        className="shrink-0"
-                        type="text"
-                        size="mini"
-                        onClick={() => openRelated(item)}
-                      >
-                        打开
-                      </Button>
-                    </div>
-                  )}
-                />
-              </Card>
-            </Space>
+            <section>
+              <TableSectionHeader
+                title="关联资源"
+                extra={
+                  <Typography.Text type="secondary">
+                    {relatedResources.length} 个
+                  </Typography.Text>
+                }
+              />
+              <DataTable<(typeof relatedResources)[number]>
+                columns={relatedResourceColumns}
+                data={relatedResources}
+                loading={instances.isLoading}
+                noDataElement={<Empty description="暂无关联资源" />}
+                pagination={false}
+                tableLabel="子网关联资源"
+              />
+            </section>
           ),
         },
         {

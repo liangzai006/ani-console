@@ -3,15 +3,15 @@ import {
   DetailPageFrame,
   DetailPagePlaceholder,
   AliIcon,
+  type ListColumn,
   StatusTag,
+  TableSectionHeader,
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
-  Card,
   Empty,
-  List,
   Modal,
   Space,
   Spin,
@@ -249,6 +249,33 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
     }
     navigate({ to: resource.route });
   };
+  const relatedResourceColumns: Array<ListColumn<RelatedResource>> = [
+    {
+      title: "类型",
+      width: 120,
+      render: (_, resource) => <Tag>{resource.kind}</Tag>,
+    },
+    { title: "名称", dataIndex: "name" },
+    { title: "资源 ID", dataIndex: "id" },
+    {
+      title: "状态",
+      width: 120,
+      render: (_, resource) => <StatusTag status={resource.status} />,
+    },
+    {
+      title: "操作",
+      width: 80,
+      render: (_, resource) => (
+        <Button
+          type="text"
+          size="mini"
+          onClick={() => openRelatedResource(resource)}
+        >
+          打开
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <DetailPageFrame
@@ -303,16 +330,8 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
             ? [{ label: "加载中…", value: "-" }]
             : relatedResources.length
               ? relatedResources.slice(0, 5).map((resource) => ({
-                  label: `${resource.kind} · ${resource.name}`,
-                  value: (
-                    <Button
-                      type="text"
-                      size="mini"
-                      onClick={() => openRelatedResource(resource)}
-                    >
-                      打开
-                    </Button>
-                  ),
+                  label: resource.kind,
+                  value: resource.name,
                 }))
               : [{ label: "暂无关联对象", value: "-" }],
         },
@@ -326,7 +345,11 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
               columns={[
                 { title: "名称", dataIndex: "name" },
                 { title: "CIDR", dataIndex: "cidr" },
-                { title: "网关", render: (_, item) => item.gateway ?? "-" },
+                {
+                  title: "网关",
+                  dataIndex: "gateway",
+                  placeholder: "-",
+                },
                 {
                   title: "状态",
                   width: 120,
@@ -349,7 +372,11 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
                 { title: "目标 CIDR", dataIndex: "destination_cidr" },
                 { title: "下一跳类型", dataIndex: "next_hop_type" },
                 { title: "下一跳", dataIndex: "next_hop_id" },
-                { title: "描述", render: (_, item) => item.description ?? "-" },
+                {
+                  title: "描述",
+                  dataIndex: "description",
+                  placeholder: "-",
+                },
               ]}
               data={vpcRoutes}
               loading={routes.isLoading}
@@ -362,74 +389,43 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
           key: "related",
           label: "关联资源",
           content: (
-            <Space direction="vertical" size={12} className="w-full">
-              <Typography.Text>
-                共{" "}
-                <Typography.Text bold>
-                  {relatedResources.length}
-                </Typography.Text>{" "}
-                个关联对象
-              </Typography.Text>
-              <Card
-                title={`网络关联 ${networkRelatedResources.length}`}
-                size="small"
-              >
-                <List
+            <Space direction="vertical" size={24} className="w-full">
+              <section>
+                <TableSectionHeader
+                  title="网络关联"
+                  extra={
+                    <Typography.Text type="secondary">
+                      {networkRelatedResources.length} 个
+                    </Typography.Text>
+                  }
+                />
+                <DataTable<RelatedResource>
+                  columns={relatedResourceColumns}
+                  data={networkRelatedResources}
                   loading={relatedLoading}
-                  dataSource={networkRelatedResources}
                   noDataElement={<Empty description="暂无网络关联资源" />}
-                  render={(resource) => (
-                    <div className="flex w-full items-center gap-3 px-5 py-3">
-                      <Tag className="shrink-0">{resource.kind}</Tag>
-                      <span className="min-w-0 flex-1 truncate">
-                        {resource.name}
-                      </span>
-                      <Typography.Text className="shrink-0" type="secondary">
-                        {resource.id}
-                      </Typography.Text>
-                      <StatusTag status={resource.status} />
-                      <Button
-                        className="shrink-0"
-                        type="text"
-                        size="mini"
-                        onClick={() => openRelatedResource(resource)}
-                      >
-                        打开
-                      </Button>
-                    </div>
-                  )}
+                  pagination={false}
+                  tableLabel="VPC 网络关联资源"
                 />
-              </Card>
-              <Card
-                title={`算力关联 ${computeRelatedResources.length}`}
-                size="small"
-              >
-                <List
+              </section>
+              <section>
+                <TableSectionHeader
+                  title="算力关联"
+                  extra={
+                    <Typography.Text type="secondary">
+                      {computeRelatedResources.length} 个
+                    </Typography.Text>
+                  }
+                />
+                <DataTable<RelatedResource>
+                  columns={relatedResourceColumns}
+                  data={computeRelatedResources}
                   loading={relatedLoading}
-                  dataSource={computeRelatedResources}
                   noDataElement={<Empty description="暂无算力关联资源" />}
-                  render={(resource) => (
-                    <div className="flex w-full items-center gap-3 px-5 py-3">
-                      <Tag className="shrink-0">{resource.kind}</Tag>
-                      <span className="min-w-0 flex-1 truncate">
-                        {resource.name}
-                      </span>
-                      <Typography.Text className="shrink-0" type="secondary">
-                        {resource.id}
-                      </Typography.Text>
-                      <StatusTag status={resource.status} />
-                      <Button
-                        className="shrink-0"
-                        type="text"
-                        size="mini"
-                        onClick={() => openRelatedResource(resource)}
-                      >
-                        打开
-                      </Button>
-                    </div>
-                  )}
+                  pagination={false}
+                  tableLabel="VPC 算力关联资源"
                 />
-              </Card>
+              </section>
             </Space>
           ),
         },

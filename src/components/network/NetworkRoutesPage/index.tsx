@@ -135,12 +135,12 @@ export function NetworkRoutesPage() {
     {
       key: "destination",
       title: "目标网段",
-      render: (_, item) => item.destination_cidr,
+      dataIndex: "destination_cidr",
     },
     {
       key: "nextHop",
       title: "下一跳",
-      render: (_, item) => item.next_hop_id,
+      dataIndex: "next_hop_id",
     },
     {
       key: "nextHopType",

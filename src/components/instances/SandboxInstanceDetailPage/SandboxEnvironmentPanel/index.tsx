@@ -51,7 +51,7 @@ export function SandboxEnvironmentPanel({
             {
               title: "密钥引用",
               dataIndex: "secret_ref",
-              render: (_, item) => item.secret_ref ?? "-",
+              placeholder: "-",
             },
           ]}
         />

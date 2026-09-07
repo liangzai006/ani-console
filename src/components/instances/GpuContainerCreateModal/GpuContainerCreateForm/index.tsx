@@ -3,14 +3,15 @@ import {
   Form,
   Input,
   Message,
+  Modal,
   Space,
-  Steps,
   Typography,
 } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
+import { WizardSteps } from "@/components/common";
 import { listOrThrow } from "@/lib/api-list";
 import type {
   Filesystem,
@@ -190,83 +191,13 @@ export function GpuContainerCreateForm({
   };
 
   return (
-    <div className={styles.form}>
-      <Steps current={step + 1} style={{ marginBottom: 24 }}>
-        {STEP_TITLES.map((title) => (
-          <Steps.Step key={title} title={title} />
-        ))}
-      </Steps>
-      <div className={styles.content}>
-        <Form<FormValues>
-          form={form}
-          layout="vertical"
-          initialValues={INITIAL_VALUES}
-          requiredSymbol={{ position: "end" }}
-          onValuesChange={(changedValues) =>
-            setValues((current) => ({ ...current, ...changedValues }))
-          }
-        >
-          {step === 0 ? (
-            <>
-              <Typography.Paragraph type="secondary">
-                为 GPU 容器实例设置易于识别的名称。
-              </Typography.Paragraph>
-              <Form.Item
-                field="name"
-                label="名称"
-                rules={[{ required: true, message: "请输入名称" }]}
-              >
-                <Input allowClear />
-              </Form.Item>
-            </>
-          ) : null}
-          {step === 1 ? (
-            <GpuImageStep
-              images={images.data ?? []}
-              loading={images.isLoading}
-            />
-          ) : null}
-          {step === 2 ? (
-            <GpuResourceStep
-              values={values}
-              specs={gpuSpecs}
-              queues={schedulingQueues}
-              quotaRemaining={gpuSpecAvailability.data?.quota_remaining ?? 0}
-              specsLoading={gpuSpecAvailability.isLoading}
-              queuesLoading={gpuSchedulingQueues.isLoading}
-              specsError={gpuSpecAvailability.isError}
-              queuesError={gpuSchedulingQueues.isError}
-              usingTemporarySpecs={usingTemporaryGpuSpecs}
-            />
-          ) : null}
-          {step === 3 ? (
-            <GpuNetworkStorageStep
-              onFieldValueChange={setFieldValue}
-              values={values}
-              vpcs={(vpcs.data?.items ?? []) as NetworkItem[]}
-              subnets={(subnets.data?.items ?? []) as NetworkItem[]}
-              filesystems={(filesystems.data?.items ?? []) as Filesystem[]}
-              defaultSecurityGroup={
-                defaultSecurityGroup as NetworkItem | undefined
-              }
-              networkLoading={vpcs.isLoading || subnets.isLoading}
-            />
-          ) : null}
-          {step === 4 ? (
-            <GpuConfirmStep
-              values={values}
-              image={selectedImage}
-              filesystem={selectedFilesystem}
-              gpuSpec={selectedGpuSpec}
-              schedulingQueue={selectedSchedulingQueue}
-              securityGroupName={String(
-                defaultSecurityGroup?.name ?? "平台自动配置",
-              )}
-            />
-          ) : null}
-        </Form>
-      </div>
-      <div className={styles.actions}>
+    <Modal
+      title="创建 GPU 容器实例"
+      visible={visible}
+      onCancel={onCancel}
+      maskClosable={!submitting}
+      unmountOnExit
+      footer={
         <Space>
           <Button onClick={onCancel} disabled={submitting}>
             取消
@@ -301,7 +232,86 @@ export function GpuContainerCreateForm({
             {step === STEP_TITLES.length - 1 ? "提交创建" : "下一步"}
           </Button>
         </Space>
+      }
+      style={{ width: 780 }}
+    >
+      <div className={styles.form}>
+        <WizardSteps
+          current={step + 1}
+          items={STEP_TITLES}
+          style={{ marginBottom: 24 }}
+        />
+        <div className={styles.content}>
+          <Form<FormValues>
+            form={form}
+            layout="vertical"
+            initialValues={INITIAL_VALUES}
+            requiredSymbol={{ position: "end" }}
+            onValuesChange={(changedValues) =>
+              setValues((current) => ({ ...current, ...changedValues }))
+            }
+          >
+            {step === 0 ? (
+              <>
+                <Typography.Paragraph type="secondary">
+                  为 GPU 容器实例设置易于识别的名称。
+                </Typography.Paragraph>
+                <Form.Item
+                  field="name"
+                  label="名称"
+                  rules={[{ required: true, message: "请输入名称" }]}
+                >
+                  <Input allowClear />
+                </Form.Item>
+              </>
+            ) : null}
+            {step === 1 ? (
+              <GpuImageStep
+                images={images.data ?? []}
+                loading={images.isLoading}
+              />
+            ) : null}
+            {step === 2 ? (
+              <GpuResourceStep
+                values={values}
+                specs={gpuSpecs}
+                queues={schedulingQueues}
+                quotaRemaining={gpuSpecAvailability.data?.quota_remaining ?? 0}
+                specsLoading={gpuSpecAvailability.isLoading}
+                queuesLoading={gpuSchedulingQueues.isLoading}
+                specsError={gpuSpecAvailability.isError}
+                queuesError={gpuSchedulingQueues.isError}
+                usingTemporarySpecs={usingTemporaryGpuSpecs}
+              />
+            ) : null}
+            {step === 3 ? (
+              <GpuNetworkStorageStep
+                onFieldValueChange={setFieldValue}
+                values={values}
+                vpcs={(vpcs.data?.items ?? []) as NetworkItem[]}
+                subnets={(subnets.data?.items ?? []) as NetworkItem[]}
+                filesystems={(filesystems.data?.items ?? []) as Filesystem[]}
+                defaultSecurityGroup={
+                  defaultSecurityGroup as NetworkItem | undefined
+                }
+                networkLoading={vpcs.isLoading || subnets.isLoading}
+              />
+            ) : null}
+            {step === 4 ? (
+              <GpuConfirmStep
+                values={values}
+                image={selectedImage}
+                filesystem={selectedFilesystem}
+                gpuSpec={selectedGpuSpec}
+                schedulingQueue={selectedSchedulingQueue}
+                securityGroupName={String(
+                  defaultSecurityGroup?.name ?? "平台自动配置",
+                )}
+              />
+            ) : null}
+          </Form>
+        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

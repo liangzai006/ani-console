@@ -113,17 +113,20 @@ export function KnowledgeBasesPage() {
     {
       key: "docs",
       title: "文档数",
-      render: (_, item) => item.doc_count ?? 0,
+      dataIndex: "doc_count",
+      placeholder: 0,
     },
     {
       key: "model",
       title: "Embedding 模型",
-      render: (_, item) => item.embedding_model || "-",
+      dataIndex: "embedding_model",
+      placeholder: "-",
     },
     {
       key: "topk",
       title: "TopK",
-      render: (_, item) => item.top_k ?? "-",
+      dataIndex: "top_k",
+      placeholder: "-",
     },
     {
       key: "created",

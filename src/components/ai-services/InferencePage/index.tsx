@@ -15,7 +15,6 @@ import type { components } from "@/api/services-schema";
 import { servicesApi } from "@/api/services-client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { showApiError } from "@/api/helpers";
-import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
   ListDataTable,
@@ -25,6 +24,7 @@ import {
   DataTableRowActionButton,
   DataTableRowActions,
   ListToolbar,
+  StatusTag,
   StatusTabs,
   ToolbarButton,
   ToolbarIconButton,
@@ -45,8 +45,12 @@ type SearchField = "name" | "id";
 
 export function InferencePage() {
   const qc = useQueryClient();
-  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", ["POST"]);
-  const resizeScope = useIdempotencyScope("inference-service-resize", ["PATCH"]);
+  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", [
+    "POST",
+  ]);
+  const resizeScope = useIdempotencyScope("inference-service-resize", [
+    "PATCH",
+  ]);
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
@@ -68,14 +72,16 @@ export function InferencePage() {
         options: { params: { query: never } },
       ) => Promise<{ data?: InferenceServiceListResponse; error?: unknown }>;
       const { data, error } = await request("/inference-services", {
-        params: { query: asUncontractedQuery({
-          limit: pageSize,
-          offset: (page - 1) * pageSize,
-          status: status === "all" ? undefined : status,
-          model: model === "all" ? undefined : model,
-          search_field: keyword ? searchField : undefined,
-          keyword: keyword || undefined,
-        }) },
+        params: {
+          query: asUncontractedQuery({
+            limit: pageSize,
+            offset: (page - 1) * pageSize,
+            status: status === "all" ? undefined : status,
+            model: model === "all" ? undefined : model,
+            search_field: keyword ? searchField : undefined,
+            keyword: keyword || undefined,
+          }),
+        },
       });
       if (error) throw error;
       return data;
@@ -143,7 +149,10 @@ export function InferencePage() {
     },
     onError: (error) => showApiError(error),
   });
-  const items = useMemo(() => services.data?.items ?? [], [services.data?.items]);
+  const items = useMemo(
+    () => services.data?.items ?? [],
+    [services.data?.items],
+  );
   useListErrorNotification({
     id: "inference-services-list",
     title: "推理服务列表加载失败",
@@ -191,12 +200,12 @@ export function InferencePage() {
       key: "status",
       title: "状态",
       width: 120,
-      render: (_, item) => <AiServiceStatusTag status={item.status} raw />,
+      render: (_, item) => <StatusTag status={item.status} />,
     },
     {
       key: "model",
       title: "模型版本",
-      render: (_, item) => item.model,
+      dataIndex: "model",
     },
     {
       key: "engine",
@@ -204,13 +213,20 @@ export function InferencePage() {
       render: (_, item) => item.engine?.command?.join(" ") || "-",
     },
     {
-      key: "replicasGpu",
-      title: "副本 / GPU",
+      key: "replicas",
+      title: "副本",
+      render: (_, item) => `${item.ready_replicas} / ${item.replicas}`,
+    },
+    {
+      key: "gpu",
+      title: "GPU",
+      ellipsis: true,
       render: (_, item) => {
         const accelerator = item.resources?.accelerator;
         const gpuType = item.gpu_type ?? accelerator?.spec_id;
-        const gpuCount = item.gpu_count_per_pod || accelerator?.count_per_replica;
-        return `${item.ready_replicas} / ${item.replicas} / ${gpuType && gpuCount ? `${gpuType} × ${gpuCount}` : "-"}`;
+        const gpuCount =
+          item.gpu_count_per_pod || accelerator?.count_per_replica;
+        return gpuType && gpuCount ? `${gpuType} × ${gpuCount}` : "-";
       },
     },
     {
@@ -311,8 +327,12 @@ export function InferencePage() {
                     </DataTableRowActionButton>
                   ) : (
                     <DataTableRowActionButton
-                      disabled={item.status !== "stopped" || lifecycle.isPending}
-                      onClick={() => lifecycle.mutate({ item, action: "start" })}
+                      disabled={
+                        item.status !== "stopped" || lifecycle.isPending
+                      }
+                      onClick={() =>
+                        lifecycle.mutate({ item, action: "start" })
+                      }
                     >
                       启动
                     </DataTableRowActionButton>
@@ -337,7 +357,10 @@ export function InferencePage() {
                           });
                         }}
                       >
-                        <Menu.Item key="resize" disabled={item.status !== "running"}>
+                        <Menu.Item
+                          key="resize"
+                          disabled={item.status !== "running"}
+                        >
                           变配
                         </Menu.Item>
                         <Menu.Item key="update-model-binding-policy" disabled>
@@ -391,7 +414,9 @@ export function InferencePage() {
           if (resizeTarget) resizeScope.reset([resizeTarget.id]);
           setResizeTarget(undefined);
         }}
-        onOk={() => (resizeTarget ? resize.mutateAsync(resizeTarget) : undefined)}
+        onOk={() =>
+          resizeTarget ? resize.mutateAsync(resizeTarget) : undefined
+        }
         confirmLoading={resize.isPending}
         unmountOnExit
       >

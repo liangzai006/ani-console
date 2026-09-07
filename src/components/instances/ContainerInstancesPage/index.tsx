@@ -6,7 +6,6 @@ import {
   ListPageFrame,
   ListPageHeader,
   DataTableNameCell,
-  ImageNameText,
   ListToolbar,
   StatusTabs,
   ToolbarButton,
@@ -17,6 +16,7 @@ import {
 } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
+import { getImageDisplayName } from "@/lib/render";
 import { ContainerInstanceActions } from "@/components/instances/ContainerInstanceActions";
 import { ContainerInstanceCreateModal } from "@/components/instances/ContainerInstanceCreateModal";
 import { containerInstanceDataSource } from "./data-source";
@@ -119,17 +119,18 @@ export function ContainerInstancesPage({
       key: "image",
       title: COLUMN_LABELS.image,
       width: 220,
-      render: (_, row) => <ImageNameText image={row.record.image} />,
+      ellipsis: true,
+      render: (_, row) => getImageDisplayName(row.record.image),
     },
     {
       key: "cpuMemory",
       title: COLUMN_LABELS.cpuMemory,
-      render: (_, row) => row.cpuMemory,
+      dataIndex: "cpuMemory",
     },
     {
       key: "replicas",
       title: COLUMN_LABELS.replicas,
-      render: (_, row) => row.replicas,
+      dataIndex: "replicas",
     },
     {
       key: "rolloutStatus",
@@ -140,12 +141,12 @@ export function ContainerInstancesPage({
     {
       key: "node",
       title: COLUMN_LABELS.node,
-      render: (_, row) => row.node,
+      dataIndex: "node",
     },
     {
       key: "endpoint",
       title: COLUMN_LABELS.endpoint,
-      render: (_, row) => row.endpoint,
+      dataIndex: "endpoint",
     },
     {
       key: "createdAt",

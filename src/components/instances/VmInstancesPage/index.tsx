@@ -4,7 +4,6 @@ import { coreApi } from "@/api/client";
 import type { components } from "@/api/core-schema";
 import {
   DataTableNameCell,
-  ImageNameText,
   ListDataTable,
   ListPageFrame,
   ListPageHeader,
@@ -19,6 +18,7 @@ import {
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
+import { getImageDisplayName } from "@/lib/render";
 import { InstanceOperationPoller } from "../InstanceOperationPoller";
 import { VmInstanceActions } from "../VmInstanceActions";
 import { VmInstanceCreateModal } from "../VmInstanceCreateModal";
@@ -115,17 +115,20 @@ export function VmInstancesPage() {
       key: "image",
       title: "镜像",
       width: 220,
-      render: (_, row) => <ImageNameText image={row.image} />,
+      ellipsis: true,
+      render: (_, row) => getImageDisplayName(row.image),
     },
     {
       key: "ip",
       title: "私网 IP",
-      render: (_, row) => row.network?.private_ip ?? "-",
+      dataIndex: "network.private_ip",
+      placeholder: "-",
     },
     {
       key: "node",
       title: "节点",
-      render: (_, row) => row.compute?.node_name ?? "-",
+      dataIndex: "compute.node_name",
+      placeholder: "-",
     },
     {
       key: "protection",

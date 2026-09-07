@@ -244,16 +244,8 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
             fields: mounted
               ? [
                   {
-                    label: `实例 · ${volume.mount_name ?? volume.mount_instance_id}`,
-                    value: (
-                      <Button
-                        type="text"
-                        size="mini"
-                        onClick={openMountedInstance}
-                      >
-                        打开
-                      </Button>
-                    ),
+                    label: "实例",
+                    value: volume.mount_name ?? volume.mount_instance_id,
                   },
                 ]
               : [{ label: "暂无关联实例", value: "-" }],
@@ -282,7 +274,11 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                   columns={[
                     { title: "实例名称", dataIndex: "name" },
                     { title: "实例 ID", dataIndex: "id" },
-                    { title: "实例类型", render: (_, row) => row.route || "-" },
+                    {
+                      title: "实例类型",
+                      dataIndex: "route",
+                      placeholder: "-",
+                    },
                     {
                       title: "操作",
                       render: () => (

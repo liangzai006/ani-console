@@ -7,16 +7,16 @@
 - 项目：独立 ANI Console 前端；仓库根目录已代表 Console 范围，路由和文件直接按业务领域或资源命名。
 - 后端：独立 ANI 仓库；接口契约与行为以 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
 - 临时接口补充：开始 Core API 对接前，先查询 GitNexus 索引 `ani-console对接文档补充`，纳入后端测试环境先部署、代码尚未合并期间独立整理的接口说明；发现契约差异时停止推断并请求确认。
-- API：`/api/v1`，统一通过 `src/api/client.ts` 的 `coreApi` 调用。
+- API：Core `/api/v1` 通过 `src/api/client.ts` 的 `coreApi` 调用；Services `/api/v1/svc` 通过 `src/api/services-client.ts` 的 `servicesApi` 调用。
 - 产品原型：GitNexus 索引 `产品原型-9.03`；页面信息架构与交互布局以该版本为准。
 - UI：使用 Arco Design React 和 Arco Token，Tailwind 仅负责布局；沿用现有顶部一级导航及侧栏层级。
-- 验证：任何新增或修改完成后必须运行 `pnpm lint`、TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不运行 `pnpm run verify`、production build 或干预用户的 `pnpm dev`。
+- 验证：任何新增或修改完成后必须对变更代码运行 Oxlint、对变更文件运行项目内 Prettier，并运行 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不运行 `pnpm run verify`、production build 或干预用户的 `pnpm dev`。
 - 测试：快速迭代阶段不保留自动化测试资产，页面与交互由用户手动验证。
 
 ## 模块状态
 
 - 计算：资源概览、云主机、容器、GPU 容器、Sandbox、GPU 算力管理和 K8s 集群。
-- AI：模型、推理服务、知识库、向量存储和 Registry；模型仓库接口未就绪时保持明确空态。
+- AI：模型、推理服务、知识库、向量存储和 Registry；模型仓库已接入 Services 列表、详情、导入和删除接口。
 - 存储：块、文件、对象和向量存储的列表、详情及 ANI 已开放的生命周期操作。
 - 网络：VPC、子网、安全组、路由和负载均衡的列表、创建与详情。
 - 基础能力：租户账密登录、统一列表与详情骨架、游标分页、状态提示、幂等写请求及操作详情。
@@ -26,12 +26,15 @@
 - Bare Metal、Notifications、Audit 仍为占位页面，等待后端契约。
 - OIDC 登录入口暂时隐藏；当前使用租户账密登录。
 - 文件存储权限、部分监控/事件等 ANI 未开放能力保持空态，不提供虚假操作。
+- 模型导入虽已接入 Services 接口，但测试环境当前仍返回 `FEATURE_NOT_AVAILABLE`；模型收藏和新增版本也因缺少状态及操作契约保持禁用。
 - 浏览器自动化回归暂时移除。
 
 ## 最近变更
 
 | 日期 | 摘要 |
 |------|------|
+| 2026-09-07 | 完成模型仓库与推理服务联调：模型仓库改接 Services `/api/v1/svc/models` 的列表、详情、异步导入和删除，导入使用公共幂等作用域；列表提供“部署”主操作及“更多”菜单，可用模型即使列表未返回版本也可进入部署，并从详情加载真实版本，收藏和新增版本按缺失契约禁用，任务与最新版本列在数据稳定前暂时隐藏；推理部署和向量存储创建移除演示模型兜底，只使用真实可用模型。模型及推理列表/详情统一以公共 `StatusTag` 展示后端原始状态，推理列表将副本和 GPU 拆列；测试环境的模型导入仍返回 `FEATURE_NOT_AVAILABLE`。 |
+| 2026-09-07 | 收敛实例、网络、存储及全局表格交互：新增公共 `WizardSteps`，统一 VM、普通容器、GPU 容器与 Sandbox 创建向导及 `Modal.footer`，VM 拆分高级选项和确认步骤并完善 VPC/子网联动；普通容器只加载未被活跃实例占用的 RWO 块存储卷，文件系统继续支持共享。VPC、子网等资源详情的关联信息改为统一表格或只读名称；各资源表格的纯字段、嵌套字段和空值改用 `dataIndex`/`placeholder`，长文本改用列级 `ellipsis`，仅保留语义型 Tooltip，并清理停用的 Core API mock 脚本。相关代码 Oxlint、变更文件 Prettier、TypeScript 与差异格式检查通过，`WizardSteps` 已完成浏览器交互验证；GitNexus 累计变更风险为 CRITICAL，影响集中在多模块列表、详情及共享实例流程，仍需通过现有开发服务完成其余手动验证。 |
 | 2026-09-04 | 对齐 `产品原型-9.03`，收敛 VM、普通容器、GPU 容器与 Sandbox 的创建和运维体验：重做 Sandbox 五步创建与详情，接入会话、访问端口、代码运行、文件、检查点、安全事件和一次性短期令牌，未开放能力保持只读或空态，资源趋势按 `query_range` 使用 Kata 专用 CPU/内存模板；统一 CPU/GPU 规格档位、创建与变配选择及四类实例列表/详情操作，块存储类型改为受限选择，普通容器补齐完整操作，GPU 恢复直接启停。VM 创建补齐 cloud-init Secret、用户名/密码（确认页不展示密码）、可选安全组与磁盘命名，创建后按 `operation_id` 轮询 `/instance-operations/{operation_id}`，并修复详情跳转与 React Strict Mode 下重复创建 VNC 会话；Registry 镜像由后端按 `system`、`container`、`gpu` purpose 过滤，Sandbox 继续由模板驱动。 |
 | 2026-09-04 | 统一详情页表格操作布局：新增公共 `TableSectionHeader`，将推理日志、知识库文档、块/文件/对象存储以及实例发布、挂载、快照、密钥等操作放到对应表格标题右侧，保留原行为、禁用规则和弹窗状态；同时固化 Core API 对接前查询 `ani-console对接文档补充` 的契约校验要求，并新增仓库级 `$project-wrap-up` Skill。本批次相关代码 Oxlint、相关文件 Prettier、TypeScript 与差异格式检查通过；GitNexus 累计工作区变更检测为 CRITICAL，风险集中在共享实例与详情组件。 |
 | 2026-09-03 | 修正云主机 VM 详情信息：SSH 地址展示与复制连接命令统一使用实例“私网 IP”字段，不再使用 SSH 元数据中的 `host`；“自动启动”读取详情响应的 `auto_start` 布尔值并显示“是/否”。本次修改文件的 Oxlint、Prettier、TypeScript 与差异格式检查通过；GitNexus 变更检测已执行，累计工作区改动风险为 CRITICAL，本次两个页面组件的编辑前影响分析均为 LOW。 |

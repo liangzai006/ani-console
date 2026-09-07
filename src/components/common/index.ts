@@ -46,3 +46,5 @@ export { Ipv4CidrInput } from "./Ipv4CidrInput";
 export { ImageNameText } from "./ImageNameText";
 export { NotFoundPage } from "./NotFoundPage";
 export { StatusTag } from "./StatusTag";
+export { WizardSteps } from "./WizardSteps";
+export type { WizardStepsProps } from "./WizardSteps";

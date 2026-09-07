@@ -484,7 +484,8 @@ export function BucketDetailPage({
                     { title: "名称", dataIndex: "name" },
                     {
                       title: "前缀",
-                      render: (_, row) => row.prefix || "全部",
+                      dataIndex: "prefix",
+                      placeholder: "全部",
                     },
                     {
                       title: "转低频天数",

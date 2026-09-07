@@ -213,7 +213,8 @@ export function InstanceStorage({
               { title: "类型", dataIndex: "kind", width: 150 },
               {
                 title: "挂载路径",
-                render: (_, volume) => volume.mount_path ?? "-",
+                dataIndex: "mount_path",
+                placeholder: "-",
               },
               {
                 title: "访问模式",
@@ -242,7 +243,8 @@ export function InstanceStorage({
               { title: "文件系统 ID", dataIndex: "resource_id" },
               {
                 title: "挂载路径",
-                render: (_, filesystem) => filesystem.mount_path ?? "-",
+                dataIndex: "mount_path",
+                placeholder: "-",
               },
               {
                 title: "访问模式",

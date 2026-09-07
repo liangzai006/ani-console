@@ -1,113 +1,153 @@
-import { Message, Select, Space } from "@arco-design/web-react";
-import { useMemo, useState } from "react";
-import type { components } from "@/api/core-schema";
-import { AiServiceStatusTag } from "@/components/ai-services/AiServiceStatusTag";
-import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
-  ListDataTable,
+  Dropdown,
+  Menu,
+  Message,
+  Modal,
+  Select,
+  Space,
+} from "@arco-design/web-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { useRef, useState } from "react";
+import { showApiError } from "@/api/helpers";
+import { servicesApi } from "@/api/services-client";
+import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
+import { ImportModelModal } from "@/components/ai-services/ImportModelModal";
+import {
   DataTableNameCell,
-  ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
+  ListDataTable,
+  ListPageFrame,
+  ListPageHeader,
   ListToolbar,
+  StatusTag,
   StatusTabs,
+  ToolbarButton,
   ToolbarIconButton,
   ToolbarSearch,
   type ListColumn,
 } from "@/components/common";
+import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatBytes, formatDateTime } from "@/lib/format";
+import { MODEL_SOURCE_LABELS, type Model } from "@/lib/model-catalog";
 
-type ModelCatalogItem = components["schemas"]["ModelCatalogItem"];
 type StatusFilter = "all" | "available" | "importing" | "failed";
-type SearchField = "name" | "id";
+type SearchField = "name";
+type SourceFilter = "all" | Model["source"];
+type CapabilityFilter =
+  "all" | "text-generation" | "embedding" | "speech-to-text";
 
-const EMPTY_MODEL_ITEMS: ModelCatalogItem[] = [];
-
-const SOURCE_LABELS: Record<string, string> = {
-  upload: "本地上传",
-  huggingface: "HuggingFace",
-  modelscope: "ModelScope",
-  builtin: "内置",
-};
-
-const CAPABILITY_LABELS: Record<string, string> = {
-  "text-generation": "文本生成",
-  embedding: "文本向量化",
-  reranking: "重排序",
-  "speech-to-text": "语音识别",
-  ocr: "OCR",
-};
+function getApiStatus(status: StatusFilter) {
+  if (status === "available") return "ready" as const;
+  if (status === "importing") return "downloading" as const;
+  if (status === "failed") return "error" as const;
+  return undefined;
+}
 
 export function ModelsPage() {
-  const [deployModel, setDeployModel] = useState<ModelCatalogItem | null>(null);
+  const qc = useQueryClient();
+  const [deployModel, setDeployModel] = useState<Model | null>(null);
+  const [importVisible, setImportVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
-  const [source, setSource] = useState("all");
-  const [task, setTask] = useState("all");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  // TODO: 模型仓库接口准备完成后恢复 useCursorPaginatedQuery 与 /models 请求。
-  const items = EMPTY_MODEL_ITEMS;
-  const counts = useMemo(
-    () => ({
-      all: items.length,
-      available: items.filter((item) => item.status === "ready").length,
-      importing: items.filter(
-        (item) => item.status === "pending" || item.status === "downloading",
-      ).length,
-      failed: items.filter((item) => item.status === "error").length,
-    }),
-    [items],
-  );
-  // TODO: 模型仓库接口接入后传递 status/source/task/searchField/searchText，目前不做本地过滤。
-  const paginationTotal = 0;
-  const columns: Array<ListColumn<ModelCatalogItem>> = [
+  const [source, setSource] = useState<SourceFilter>("all");
+  const [capability, setCapability] = useState<CapabilityFilter>("all");
+  const cursorPageRef = useRef(new Map<string, number>());
+  const cursorScope = [status, searchText.trim(), source, capability].join(":");
+  const {
+    query: models,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    resetPagination,
+    refresh,
+  } = useCursorPaginatedQuery<Model>({
+    queryKey: ["models", { status, searchText, source, capability }],
+    cursorScope,
+    fetchPage: async ({ cursor, limit }) => {
+      const { data, error } = await servicesApi.GET("/models", {
+        params: {
+          query: {
+            limit,
+            cursor,
+            keyword: searchText.trim() || undefined,
+            source: source === "all" ? undefined : source,
+            capability: capability === "all" ? undefined : capability,
+            status: getApiStatus(status),
+          },
+        },
+      });
+      if (error || !data) throw error ?? new Error("模型列表未返回结果");
+      const currentPage = cursor
+        ? (cursorPageRef.current.get(cursorScope + ":" + cursor) ?? 1)
+        : 1;
+      if (data.next_cursor) {
+        cursorPageRef.current.set(
+          cursorScope + ":" + data.next_cursor,
+          currentPage + 1,
+        );
+      }
+      const total =
+        data.total ??
+        (currentPage - 1) * limit +
+          data.items.length +
+          (data.next_cursor ? 1 : 0);
+      return { ...data, total };
+    },
+  });
+  const items = models.data?.items ?? [];
+  const paginationTotal = models.data?.total ?? items.length;
+
+  useListErrorNotification({
+    id: "models-list",
+    title: "模型列表加载失败",
+    error: models.error,
+  });
+  const remove = useMutation({
+    mutationFn: async (item: Model) => {
+      const { error } = await servicesApi.DELETE("/models/{model_id}", {
+        params: { path: { model_id: item.id } },
+      });
+      if (error) throw error;
+      return item;
+    },
+    onSuccess: (item) => {
+      Message.success("模型「" + (item.display_name || item.name) + "」已删除");
+      void qc.invalidateQueries({ queryKey: ["models"] });
+      refresh();
+    },
+    onError: (error) => showApiError(error, "删除模型失败"),
+  });
+
+  const columns: Array<ListColumn<Model>> = [
     {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <DataTableNameCell name={item.display_name || item.name} id={item.id} />
+        <DataTableNameCell
+          name={
+            <Link to="/models/$modelId" params={{ modelId: item.id }}>
+              {item.display_name || item.name}
+            </Link>
+          }
+          id={item.id}
+        />
       ),
     },
     {
       key: "status",
       title: "状态",
       width: 120,
-      render: (_, item) => (
-        <AiServiceStatusTag
-          status={
-            item.status === "ready"
-              ? "available"
-              : item.status === "error"
-                ? "failed"
-                : item.status === "pending" || item.status === "downloading"
-                  ? "importing"
-                  : item.status
-          }
-        />
-      ),
+      render: (_, item) => <StatusTag status={item.status} />,
     },
     {
       key: "source",
       title: "来源",
-      render: (_, item) => SOURCE_LABELS[item.source] ?? item.source,
-    },
-    {
-      key: "task",
-      title: "任务",
-      render: (_, item) =>
-        item.capabilities
-          .map((capability) => CAPABILITY_LABELS[capability] ?? capability)
-          .join("、") || "-",
-    },
-    { key: "scale", title: "规模", render: () => "-" },
-    {
-      key: "version",
-      title: "最新版本",
-      render: (_, item) =>
-        item.versions[item.versions.length - 1]?.version ?? "-",
+      render: (_, item) => MODEL_SOURCE_LABELS[item.source],
     },
     {
       key: "size",
@@ -120,6 +160,7 @@ export function ModelsPage() {
       render: (_, item) => formatDateTime(item.updated_at),
     },
   ];
+
   return (
     <>
       <ListPageFrame
@@ -128,6 +169,15 @@ export function ModelsPage() {
             iconClassName="icon-moxing"
             title="模型仓库"
             subtitle="统一管理模型 Catalog、版本与部署入口"
+            extra={
+              <ToolbarButton
+                variant="primary"
+                iconClassName="icon-add-1"
+                onClick={() => setImportVisible(true)}
+              >
+                导入模型
+              </ToolbarButton>
+            }
           />
         }
         tabs={
@@ -135,10 +185,10 @@ export function ModelsPage() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: "all", label: "全部", count: counts.all },
-              { value: "available", label: "可用", count: counts.available },
-              { value: "importing", label: "导入中", count: counts.importing },
-              { value: "failed", label: "失败", count: counts.failed },
+              { value: "all", label: "全部" },
+              { value: "available", label: "可用" },
+              { value: "importing", label: "导入中" },
+              { value: "failed", label: "失败" },
             ]}
           />
         }
@@ -147,10 +197,7 @@ export function ModelsPage() {
             filters={
               <Space wrap>
                 <ToolbarSearch
-                  fields={[
-                    { value: "name", label: "名称" },
-                    { value: "id", label: "ID" },
-                  ]}
+                  fields={[{ value: "name", label: "名称" }]}
                   field={searchField}
                   value={searchText}
                   onFieldChange={setSearchField}
@@ -169,16 +216,14 @@ export function ModelsPage() {
                   ]}
                 />
                 <Select
-                  value={task}
-                  onChange={setTask}
+                  value={capability}
+                  onChange={setCapability}
                   className="w-[140px]"
                   options={[
                     { value: "all", label: "全部任务" },
                     { value: "text-generation", label: "文本生成" },
                     { value: "embedding", label: "文本向量化" },
-                    { value: "reranking", label: "重排序" },
                     { value: "speech-to-text", label: "语音识别" },
-                    { value: "ocr", label: "OCR" },
                   ]}
                 />
               </Space>
@@ -186,8 +231,9 @@ export function ModelsPage() {
             tools={
               <ToolbarIconButton
                 iconClassName="icon-refresh-1"
-                label="模型仓库接口尚未准备好"
-                disabled
+                label="刷新"
+                spinning={models.isFetching}
+                onClick={refresh}
               />
             }
           />
@@ -204,43 +250,103 @@ export function ModelsPage() {
               render: (_value, item) => (
                 <DataTableRowActions>
                   <DataTableRowActionButton
-                    disabled={
-                      item.status !== "ready" || item.versions.length === 0
-                    }
+                    disabled={item.status !== "ready"}
                     onClick={() => setDeployModel(item)}
                   >
-                    一键部署
+                    部署
                   </DataTableRowActionButton>
-                  <DataTableRowActionButton
-                    onClick={() => Message.success("已收藏")}
+                  <Dropdown
+                    trigger="click"
+                    position="br"
+                    droplist={
+                      <Menu>
+                        <Menu.Item
+                          key="favorite"
+                          disabled
+                          title="等待后端开放收藏状态与操作接口"
+                        >
+                          收藏
+                        </Menu.Item>
+                        <Menu.Item
+                          key="add-version"
+                          disabled
+                          title="等待后端确认测试环境的版本文件上传接口"
+                        >
+                          新增版本
+                        </Menu.Item>
+                        <Menu.Item
+                          key="delete"
+                          disabled={
+                            item.status === "deleted" || remove.isPending
+                          }
+                          style={{ color: "var(--color-danger-6)" }}
+                          onClick={() =>
+                            Modal.confirm({
+                              title: "删除模型",
+                              content:
+                                "确定删除「" +
+                                (item.display_name || item.name) +
+                                "」？有关联推理服务时后端将拒绝删除。",
+                              okButtonProps: { status: "danger" },
+                              onOk: () => remove.mutateAsync(item),
+                            })
+                          }
+                        >
+                          删除
+                        </Menu.Item>
+                      </Menu>
+                    }
                   >
-                    收藏
-                  </DataTableRowActionButton>
+                    <DataTableRowActionButton disabled={remove.isPending}>
+                      更多
+                      <i
+                        className="iconfont icon-down-chevron-small ml-1"
+                        aria-hidden="true"
+                      />
+                    </DataTableRowActionButton>
+                  </Dropdown>
                 </DataTableRowActions>
               ),
             },
           ]}
-          loading={false}
+          loading={models.isFetching}
           preserveTableOnEmpty
           emptyIconClassName="icon-moxing"
-          emptyText="模型仓库接口尚未准备好"
+          emptyText={
+            status !== "all" ||
+            searchText ||
+            source !== "all" ||
+            capability !== "all"
+              ? "没有符合条件的模型"
+              : "暂无模型，可通过“导入模型”添加"
+          }
           tableLabel="模型仓库列表"
           pagination={{
             page,
             pageSize,
             total: paginationTotal,
             onPageChange: setPage,
-            onPageSizeChange: setPageSize,
+            onPageSizeChange: (next) => {
+              setPageSize(next);
+              setPage(1);
+            },
           }}
         />
       </ListPageFrame>
+      <ImportModelModal
+        visible={importVisible}
+        onCancel={() => setImportVisible(false)}
+        onSubmitted={() => {
+          setStatus("all");
+          resetPagination();
+          refresh();
+        }}
+      />
       <CreateInferenceServiceModal
         visible={deployModel !== null}
+        initialModelId={deployModel?.id}
         initialServiceName={
-          deployModel ? `infer-${deployModel.name}`.slice(0, 63) : undefined
-        }
-        initialModelVersionId={
-          deployModel?.versions[deployModel.versions.length - 1]?.id
+          deployModel ? ("infer-" + deployModel.name).slice(0, 63) : undefined
         }
         onCancel={() => setDeployModel(null)}
       />
