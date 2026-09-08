@@ -5,8 +5,8 @@ import {
   InputNumber,
   Message,
   Modal,
+  Radio,
   Select,
-  Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -17,45 +17,73 @@ import { showApiError } from "@/api/helpers";
 import { getErrorMessage } from "@/lib/errors";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import {
-  DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
+  DEFAULT_GPU_INSTANCE_COMPUTE_SPEC,
+  GPU_INSTANCE_COMPUTE_SPECS,
   INSTANCE_COMPUTE_SPEC_BY_VALUE,
+  type GpuInstanceComputeSpec,
 } from "@/lib/instance-compute-specs";
-import { getLatestModelVersion, isEmbeddingModel } from "@/lib/model-catalog";
+import { getLatestModelVersion } from "@/lib/model-catalog";
 import { getImageSelectionLabel } from "@/lib/render";
-
-const RESOURCE_PRESETS = {
-  "a10-1": {
-    label: "1×A10",
-    cpu: "4",
-    memory: "16Gi",
-    accelerator: { spec_id: "A10", count_per_replica: 1 },
-  },
-  "a100-1": {
-    label: "1×A100",
-    cpu: "8",
-    memory: "32Gi",
-    accelerator: { spec_id: "A100", count_per_replica: 1 },
-  },
-  "a100-2": {
-    label: "2×A100",
-    cpu: "16",
-    memory: "64Gi",
-    accelerator: { spec_id: "A100", count_per_replica: 2 },
-  },
-  cpu: {
-    label: `${DEFAULT_CPU_INSTANCE_COMPUTE_SPEC} CPU`,
-    ...INSTANCE_COMPUTE_SPEC_BY_VALUE[DEFAULT_CPU_INSTANCE_COMPUTE_SPEC],
-  },
-} as const;
-
-type ResourcePresetKey = keyof typeof RESOURCE_PRESETS;
-type InferenceEngine = "vllm" | "sglang";
 
 type RuntimeImage = {
   id: string;
-  repository: string;
   label: string;
 };
+
+type RuntimeImageMode = "registry" | "manual";
+
+type GpuSpec = {
+  id: string;
+  name: string;
+  gpu_type: string;
+  gpu_mode?: string;
+  memory_total_mb?: number;
+  shares: number;
+  mb_per_share: number;
+  available: boolean;
+};
+
+type GpuSpecListResponse = {
+  items: GpuSpec[];
+};
+
+type GpuSpecAvailability = {
+  spec_id: string;
+  status: "available" | "full" | "device_full" | "unavailable";
+  available_count: number;
+  gpu_count?: number;
+};
+
+type GpuSpecAvailabilityListResponse = {
+  items: GpuSpecAvailability[];
+  quota_remaining: number;
+};
+
+function isGpuSpecSelectable(
+  spec: GpuSpec,
+  availability?: GpuSpecAvailability,
+) {
+  return (
+    spec.available &&
+    availability?.status === "available" &&
+    availability.available_count > 0
+  );
+}
+
+function gpuSpecLabel(spec: GpuSpec, availability?: GpuSpecAvailability) {
+  const name = spec.name || spec.gpu_type || spec.id;
+  const mode = spec.gpu_mode === "vgpu" ? "vGPU" : "整卡";
+  if (!availability) return `${name} · ${mode} · 暂无可用性数据`;
+  if (availability.status === "available") {
+    return `${name} · ${mode} · 剩余 ${availability.available_count}`;
+  }
+  const statusLabels = {
+    full: "配额已满",
+    device_full: "设备已满",
+    unavailable: "暂无匹配节点",
+  } as const;
+  return `${name} · ${mode} · ${statusLabels[availability.status]}`;
+}
 
 type CreateInferenceServiceModalProps = {
   visible: boolean;
@@ -78,10 +106,14 @@ export function CreateInferenceServiceModal({
   const [modelId, setModelId] = useState("");
   const [modelVersionId, setModelVersionId] = useState("");
   const [replicas, setReplicas] = useState(1);
-  const [resourcePreset, setResourcePreset] =
-    useState<ResourcePresetKey>("a10-1");
-  const [inferenceEngine, setInferenceEngine] =
-    useState<InferenceEngine>("vllm");
+  const [computeSpec, setComputeSpec] = useState<GpuInstanceComputeSpec>(
+    DEFAULT_GPU_INSTANCE_COMPUTE_SPEC,
+  );
+  const [acceleratorSpecId, setAcceleratorSpecId] = useState("");
+  const [runtimeImageMode, setRuntimeImageMode] =
+    useState<RuntimeImageMode>("registry");
+  const [runtimeImageId, setRuntimeImageId] = useState("");
+  const [runtimeImageRef, setRuntimeImageRef] = useState("");
   const models = useQuery({
     queryKey: ["models", "inference-service-create"],
     enabled: visible,
@@ -117,21 +149,64 @@ export function CreateInferenceServiceModal({
     () => modelVersions.find((item) => item.id === modelVersionId),
     [modelVersionId, modelVersions],
   );
-  const embeddingModel = isEmbeddingModel(selectedModel);
-  const runtimeImageKeyword = embeddingModel
-    ? "tei"
-    : inferenceEngine === "sglang"
-      ? "sglang"
-      : "vllm";
-  const recommendedEngine = embeddingModel
-    ? "TEI"
-    : inferenceEngine === "sglang"
-      ? "SGLang"
-      : "vLLM";
+
+  const gpuSpecs = useQuery({
+    queryKey: ["gpu-specs", "inference-service-create"],
+    enabled: visible,
+    queryFn: async () => {
+      const request = coreApi.GET as unknown as (
+        path: string,
+        options: { params: { query: never } },
+      ) => Promise<{ data?: GpuSpecListResponse; error?: unknown }>;
+      const { data, error } = await request("/gpu-specs", {
+        params: {
+          query: asUncontractedQuery({ available: true, limit: 100 }),
+        },
+      });
+      if (error || !data) throw error ?? new Error("GPU 规格列表未返回结果");
+      return data;
+    },
+  });
+
+  const gpuSpecAvailability = useQuery({
+    queryKey: ["gpu-specs", "availability", "inference-service-create"],
+    enabled: visible,
+    queryFn: async () => {
+      const request = coreApi.GET as unknown as (path: string) => Promise<{
+        data?: GpuSpecAvailabilityListResponse;
+        error?: unknown;
+      }>;
+      const { data, error } = await request("/gpu-specs/availability");
+      if (error || !data) {
+        throw error ?? new Error("GPU 规格可用性未返回结果");
+      }
+      return data;
+    },
+  });
+
+  const availabilityBySpecId = useMemo(
+    () =>
+      new Map(
+        (gpuSpecAvailability.data?.items ?? []).map((item) => [
+          item.spec_id,
+          item,
+        ]),
+      ),
+    [gpuSpecAvailability.data?.items],
+  );
+  const selectedGpuSpec = (gpuSpecs.data?.items ?? []).find(
+    (item) => item.id === acceleratorSpecId,
+  );
+  const selectedGpuAvailability = selectedGpuSpec
+    ? availabilityBySpecId.get(selectedGpuSpec.id)
+    : undefined;
 
   const runtimeImages = useQuery({
-    queryKey: ["inference-runtime-images", runtimeImageKeyword],
-    enabled: visible && Boolean(selectedModelVersion),
+    queryKey: ["inference-runtime-images"],
+    enabled:
+      visible &&
+      runtimeImageMode === "registry" &&
+      Boolean(selectedModelVersion),
     queryFn: async () => {
       const { data: projectData, error: projectError } = await coreApi.GET(
         "/registry/projects",
@@ -145,11 +220,7 @@ export function CreateInferenceServiceModal({
           {
             params: {
               path: { project: project.name },
-              query: asUncontractedQuery({
-                limit: 50,
-                search_field: "name",
-                keyword: runtimeImageKeyword,
-              }),
+              query: { limit: 50 },
             },
           },
         );
@@ -167,35 +238,28 @@ export function CreateInferenceServiceModal({
             );
           if (artifactError) throw artifactError;
           for (const artifact of artifactData?.items ?? []) {
-            const tag = artifact.tags[0];
-            if (!tag) continue;
-            images.push({
-              id: `${artifact.project}/${artifact.repository}:${tag}`,
-              repository: artifact.repository.toLowerCase(),
-              label: getImageSelectionLabel({
-                image: `${artifact.project}/${artifact.repository}:${tag}`,
-                size_bytes: artifact.size_bytes,
-              }),
-            });
+            for (const tag of artifact.tags) {
+              const id = `${artifact.project}/${artifact.repository}:${tag}`;
+              images.push({
+                id,
+                label: getImageSelectionLabel({
+                  image: id,
+                  size_bytes: artifact.size_bytes,
+                }),
+              });
+            }
           }
         }
       }
-      return images;
+      return Array.from(
+        new Map(images.map((image) => [image.id, image])).values(),
+      );
     },
   });
 
-  const compatible = Boolean(selectedModelVersion);
-  // TODO: Registry 后端确认按运行引擎过滤镜像后，移除此处创建表单的本地兜底过滤。
-  const runtimeImage = useMemo(() => {
-    const keywords = embeddingModel
-      ? ["text-embedding", "tei"]
-      : inferenceEngine === "sglang"
-        ? ["sglang"]
-        : ["vllm"];
-    return (runtimeImages.data ?? []).find((image) =>
-      keywords.some((keyword) => image.repository.includes(keyword)),
-    );
-  }, [embeddingModel, inferenceEngine, runtimeImages.data]);
+  const runtimeImage = (runtimeImages.data ?? []).find(
+    (image) => image.id === runtimeImageId,
+  );
 
   useEffect(() => {
     if (!visible) return;
@@ -203,8 +267,11 @@ export function CreateInferenceServiceModal({
     setModelId(initialModelId ?? "");
     setModelVersionId(initialModelVersionId ?? "");
     setReplicas(1);
-    setResourcePreset("a10-1");
-    setInferenceEngine("vllm");
+    setComputeSpec(DEFAULT_GPU_INSTANCE_COMPUTE_SPEC);
+    setAcceleratorSpecId("");
+    setRuntimeImageMode("registry");
+    setRuntimeImageId("");
+    setRuntimeImageRef("");
   }, [initialModelId, initialModelVersionId, initialServiceName, visible]);
 
   useEffect(() => {
@@ -233,27 +300,88 @@ export function CreateInferenceServiceModal({
     });
   }, [initialModelVersionId, modelDetail.data, modelVersions, visible]);
 
+  useEffect(() => {
+    if (!visible || !gpuSpecs.data || !gpuSpecAvailability.data) return;
+    const specs = gpuSpecs.data.items;
+    setAcceleratorSpecId((current) => {
+      if (current === "cpu") return current;
+      const currentSpec = specs.find((spec) => spec.id === current);
+      if (
+        currentSpec &&
+        isGpuSpecSelectable(
+          currentSpec,
+          availabilityBySpecId.get(currentSpec.id),
+        )
+      ) {
+        return current;
+      }
+      return (
+        specs.find((spec) =>
+          isGpuSpecSelectable(spec, availabilityBySpecId.get(spec.id)),
+        )?.id ?? "cpu"
+      );
+    });
+  }, [availabilityBySpecId, gpuSpecAvailability.data, gpuSpecs.data, visible]);
+
   const create = useMutation({
     mutationFn: async () => {
       if (!name.trim() || !modelVersionId)
         throw new Error("请完整填写服务名称并选择模型版本");
-      if (!compatible) throw new Error("所选模型版本未通过兼容性检查");
-      if (!runtimeImage)
-        throw new Error(`Registry 中没有可用的 ${recommendedEngine} 运行镜像`);
-      const preset = RESOURCE_PRESETS[resourcePreset];
-      const accelerator =
-        "accelerator" in preset ? preset.accelerator : undefined;
+      if (!selectedModelVersion) throw new Error("请选择有效的模型版本");
+      const manualImageRef = runtimeImageRef.trim();
+      if (runtimeImageMode === "registry" && !runtimeImage) {
+        throw new Error("请选择 Registry 运行镜像");
+      }
+      if (runtimeImageMode === "manual" && !manualImageRef) {
+        throw new Error("请输入运行镜像地址");
+      }
+      if (!Number.isInteger(replicas) || replicas < 1) {
+        throw new Error("副本必须是大于 0 的整数");
+      }
+      const resources = INSTANCE_COMPUTE_SPEC_BY_VALUE[computeSpec];
+      let accelerator:
+        | {
+            spec_id: string;
+            count_per_replica: number;
+            memory?: number;
+          }
+        | undefined;
+      if (acceleratorSpecId !== "cpu") {
+        if (
+          !selectedGpuSpec ||
+          !isGpuSpecSelectable(selectedGpuSpec, selectedGpuAvailability)
+        ) {
+          throw new Error("请选择当前可用的 GPU 规格");
+        }
+        const memory =
+          selectedGpuSpec.gpu_mode === "vgpu"
+            ? selectedGpuSpec.mb_per_share
+            : undefined;
+        if (selectedGpuSpec.gpu_mode === "vgpu" && !memory) {
+          throw new Error("所选 vGPU 规格缺少显存份额信息");
+        }
+        accelerator = {
+          spec_id: selectedGpuSpec.id,
+          count_per_replica: Math.max(
+            1,
+            selectedGpuAvailability?.gpu_count ?? 1,
+          ),
+          ...(memory ? { memory } : {}),
+        };
+      }
       const submitData = {
         name: name.trim(),
-        model: selectedModel?.name ?? modelVersionId,
+        model: modelVersionId,
         model_version_id: modelVersionId,
         served_model_name: selectedModel?.name,
-        image_id: runtimeImage.id,
+        ...(runtimeImageMode === "registry"
+          ? { image_id: runtimeImage!.id }
+          : { image_ref: manualImageRef }),
         replicas,
         placement_mode: "auto" as const,
         resources: {
-          cpu: preset.cpu,
-          memory: preset.memory,
+          cpu: resources.cpu,
+          memory: resources.memory,
           ...(accelerator ? { accelerator } : {}),
         },
       };
@@ -341,54 +469,117 @@ export function CreateInferenceServiceModal({
           modelVersions.length === 0 ? (
           <Alert type="warning" showIcon content="所选模型暂无可部署版本" />
         ) : null}
-        <Form.Item label="兼容性检查">
-          <Alert
-            type={compatible ? "success" : "warning"}
-            content={
-              compatible
-                ? `已通过 · ${recommendedEngine} / ${RESOURCE_PRESETS[resourcePreset].label}`
-                : "请选择已就绪的模型版本"
-            }
-          />
+        <Form.Item label="镜像来源" required>
+          <Radio.Group
+            type="button"
+            value={runtimeImageMode}
+            onChange={setRuntimeImageMode}
+          >
+            <Radio value="registry">镜像仓库</Radio>
+            <Radio value="manual">手动输入</Radio>
+          </Radio.Group>
         </Form.Item>
-        <Form.Item label="推理引擎">
-          {embeddingModel ? (
-            <Input value={compatible ? "TEI" : "-"} readOnly />
-          ) : (
+        {runtimeImageMode === "registry" ? (
+          <Form.Item label="运行镜像" required>
             <Select
-              value={inferenceEngine}
-              onChange={setInferenceEngine}
-              disabled={!compatible}
-              options={[
-                { value: "vllm", label: "vLLM" },
-                { value: "sglang", label: "SGLang" },
-              ]}
-            />
-          )}
-        </Form.Item>
-        {runtimeImages.isLoading ? (
-          <Alert type="info" content="正在匹配租户 Registry 中的运行镜像…" />
-        ) : runtimeImage ? (
-          <Alert
-            type="success"
-            content={`运行镜像已匹配：${runtimeImage.label}`}
-          />
-        ) : (
-          <Alert
-            type="warning"
-            content={`未找到 ${recommendedEngine} 运行镜像，请先在 Registry 中准备对应镜像后再部署。`}
-          />
-        )}
-        <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
-          <Form.Item label="资源规格" required>
-            <Select
-              value={resourcePreset}
-              onChange={setResourcePreset}
-              options={Object.entries(RESOURCE_PRESETS).map(
-                ([value, preset]) => ({ value, label: preset.label }),
-              )}
+              value={runtimeImageId}
+              onChange={setRuntimeImageId}
+              loading={runtimeImages.isLoading}
+              disabled={(runtimeImages.data?.length ?? 0) === 0}
+              placeholder="请选择 Registry 中的运行镜像"
+              showSearch
+              options={(runtimeImages.data ?? []).map((image) => ({
+                value: image.id,
+                label: image.label,
+              }))}
             />
           </Form.Item>
+        ) : (
+          <Form.Item
+            label="镜像地址"
+            required
+            extra="建议填写 digest 固定地址（image@sha256:...）。Tag 地址只能由当前租户 Registry 解析；外部私有镜像还需集群具备相应拉取权限。"
+          >
+            <Input
+              value={runtimeImageRef}
+              onChange={setRuntimeImageRef}
+              placeholder="例如 registry.example.com/project/image@sha256:..."
+            />
+          </Form.Item>
+        )}
+        {runtimeImageMode === "registry" && runtimeImages.error ? (
+          <Alert
+            type="warning"
+            showIcon
+            content={getErrorMessage(runtimeImages.error, "运行镜像加载失败")}
+          />
+        ) : runtimeImageMode === "registry" &&
+          !runtimeImages.isLoading &&
+          selectedModelVersion &&
+          (runtimeImages.data?.length ?? 0) === 0 ? (
+          <Alert
+            type="warning"
+            showIcon
+            content="Registry 中暂无可选运行镜像"
+          />
+        ) : null}
+        <Form.Item label="推理引擎">
+          <Input value="平台默认启动命令与环境" readOnly />
+        </Form.Item>
+        <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
+          <Form.Item label="加速器规格" required>
+            <Select
+              value={acceleratorSpecId}
+              onChange={setAcceleratorSpecId}
+              loading={gpuSpecs.isLoading || gpuSpecAvailability.isLoading}
+              placeholder="请选择 CPU 或可用 GPU 规格"
+              showSearch
+              options={[
+                { value: "cpu", label: "CPU（不申请 GPU）" },
+                ...(gpuSpecs.data?.items ?? []).map((spec) => {
+                  const availability = availabilityBySpecId.get(spec.id);
+                  return {
+                    value: spec.id,
+                    label: gpuSpecLabel(spec, availability),
+                    disabled: !isGpuSpecSelectable(spec, availability),
+                  };
+                }),
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="CPU / 内存" required>
+            <Select
+              value={computeSpec}
+              onChange={setComputeSpec}
+              options={GPU_INSTANCE_COMPUTE_SPECS.map((spec) => ({
+                value: spec.value,
+                label: spec.label,
+              }))}
+            />
+          </Form.Item>
+        </div>
+        {gpuSpecs.error || gpuSpecAvailability.error ? (
+          <Alert
+            type="warning"
+            showIcon
+            content={getErrorMessage(
+              gpuSpecs.error ?? gpuSpecAvailability.error,
+              "GPU 规格加载失败，可改用 CPU 规格后重试",
+            )}
+            className="mb-4"
+          />
+        ) : selectedGpuSpec ? (
+          <Alert
+            type="info"
+            showIcon
+            content={`提交 GPU 型号 ${selectedGpuSpec.gpu_type}，每副本 ${Math.max(
+              1,
+              selectedGpuAvailability?.gpu_count ?? 1,
+            )} 卡${selectedGpuSpec.gpu_mode === "vgpu" ? `，显存 ${selectedGpuSpec.mb_per_share} MiB` : ""}；租户剩余配额 ${gpuSpecAvailability.data?.quota_remaining ?? 0} 卡`}
+            className="mb-4"
+          />
+        ) : null}
+        <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
           <Form.Item label="副本" required>
             <InputNumber
               value={replicas}
@@ -398,19 +589,10 @@ export function CreateInferenceServiceModal({
               className="w-full"
             />
           </Form.Item>
-        </div>
-        <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
-          <Form.Item label="VPC / 子网">
-            <Input value="平台自动分配（后端暂未开放选择）" readOnly />
-          </Form.Item>
-          <Form.Item label="调用鉴权">
-            <Input value="使用租户 API Key" readOnly />
+          <Form.Item label="放置模式">
+            <Input value="自动（auto）" readOnly />
           </Form.Item>
         </div>
-        <Typography.Text type="secondary">
-          部署后通过 OpenAI 兼容 API 调用；请求提交后服务将依次进入 pending /
-          deploying / running。
-        </Typography.Text>
       </Form>
     </Modal>
   );

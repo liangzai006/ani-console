@@ -206,15 +206,18 @@ export function InferencePage() {
       key: "model",
       title: "模型版本",
       dataIndex: "model",
+      ellipsis: true,
     },
     {
       key: "engine",
       title: "引擎",
       render: (_, item) => item.engine?.command?.join(" ") || "-",
+      ellipsis: true,
     },
     {
       key: "replicas",
       title: "副本",
+      width: 80,
       render: (_, item) => `${item.ready_replicas} / ${item.replicas}`,
     },
     {
@@ -289,7 +292,7 @@ export function InferencePage() {
                 <Select
                   value={model}
                   onChange={setModel}
-                  className="w-[220px]"
+                  className="w-55"
                   options={[
                     { value: "all", label: "全部模型" },
                     ...modelOptions,
