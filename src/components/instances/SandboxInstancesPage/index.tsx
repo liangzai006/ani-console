@@ -72,26 +72,10 @@ export function SandboxInstancesPage() {
 
   const rows = (query.data?.items ?? []) as SandboxInstance[];
   const statusTabs = [
-    {
-      value: "all" as const,
-      label: "全部",
-      count: query.data?.total ?? rows.length,
-    },
-    {
-      value: "running" as const,
-      label: "运行中",
-      count: rows.filter((item) => sessionStatus(item) === "running").length,
-    },
-    {
-      value: "paused" as const,
-      label: "已暂停",
-      count: rows.filter((item) => sessionStatus(item) === "stopped").length,
-    },
-    {
-      value: "expired" as const,
-      label: "已过期",
-      count: rows.filter((item) => sessionStatus(item) === "expired").length,
-    },
+    { value: "all" as const, label: "全部" },
+    { value: "running" as const, label: "运行中" },
+    { value: "paused" as const, label: "已暂停" },
+    { value: "expired" as const, label: "已过期" },
   ];
 
   const columns: Array<ListColumn<SandboxInstance>> = [

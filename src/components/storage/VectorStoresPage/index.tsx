@@ -107,14 +107,6 @@ export function VectorStoresPage() {
     () => (stores.data?.items ?? []) as VectorStore[],
     [stores.data?.items],
   );
-  const counts = useMemo(
-    () => ({
-      all: items.length,
-      ready: items.filter((item) => item.state === "ready").length,
-      pending: items.filter((item) => item.state === "pending").length,
-    }),
-    [items],
-  );
   const paginationTotal = stores.data?.total ?? items.length;
   useListErrorNotification({
     id: "vector-stores-list",
@@ -204,9 +196,9 @@ export function VectorStoresPage() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: "all", label: "全部", count: counts.all },
-              { value: "ready", label: "可用", count: counts.ready },
-              { value: "pending", label: "创建中", count: counts.pending },
+              { value: "all", label: "全部" },
+              { value: "ready", label: "可用" },
+              { value: "pending", label: "创建中" },
             ]}
           />
         }

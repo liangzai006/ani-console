@@ -87,14 +87,6 @@ export function FilesystemsPage() {
     () => (filesystems.data?.items ?? []) as Filesystem[],
     [filesystems.data?.items],
   );
-  const counts = useMemo(
-    () => ({
-      all: items.length,
-      available: items.filter((item) => item.state === "available").length,
-      pending: items.filter((item) => item.state === "pending").length,
-    }),
-    [items],
-  );
   const paginationTotal = filesystems.data?.total ?? items.length;
   useListErrorNotification({
     id: "filesystems-list",
@@ -200,9 +192,9 @@ export function FilesystemsPage() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: "all", label: "全部", count: counts.all },
-              { value: "available", label: "可用", count: counts.available },
-              { value: "pending", label: "创建中", count: counts.pending },
+              { value: "all", label: "全部" },
+              { value: "available", label: "可用" },
+              { value: "pending", label: "创建中" },
             ]}
           />
         }

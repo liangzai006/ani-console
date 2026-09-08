@@ -1,38 +1,35 @@
 import {
-  DataTable,
-  DetailPageFrame,
-  ImageNameText,
-  AliIcon,
-  StatusTag,
-  TableSectionHeader,
-} from "@/components/common";
-import { useNavigate } from "@tanstack/react-router";
-import {
-  Alert,
   Button,
   Empty,
   InputNumber,
   Message,
   Modal,
-  Select,
   Space,
   Spin,
   Tooltip,
   Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import type { components } from "@/api/services-schema";
-import { servicesApi } from "@/api/services-client";
 import { showApiError } from "@/api/helpers";
+import { servicesApi } from "@/api/services-client";
+import {
+  AliIcon,
+  DetailPageFrame,
+  ImageNameText,
+  StatusTag,
+} from "@/components/common";
+import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
-import { getImageDisplayName } from "@/lib/render";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { InferenceInvocationTest } from "./InferenceInvocationTest";
+import { InferenceLogs } from "./InferenceLogs";
+import { InferencePolicies } from "./InferencePolicies";
+import { InferenceRelatedResources } from "./InferenceRelatedResources";
 
 type LifecycleAction = "start" | "stop" | "restart";
-type InferenceLog = components["schemas"]["InferenceServiceLog"];
 
 export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const navigate = useNavigate();
@@ -47,9 +44,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   ]);
   const [scaleVisible, setScaleVisible] = useState(false);
   const [replicas, setReplicas] = useState(1);
-  const [logLevel, setLogLevel] = useState<
-    "all" | "debug" | "info" | "warn" | "error"
-  >("all");
+
   const service = useQuery({
     queryKey: ["inference-service", serviceId],
     queryFn: async () => {
@@ -61,26 +56,11 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
       return data;
     },
   });
-  useListErrorNotification({
-    id: `inference-service-detail:${serviceId}`,
-    title: "推理服务详情加载失败",
-    error: service.error,
-  });
-  const logs = useQuery({
-    queryKey: ["inference-service-logs", serviceId, logLevel],
+  const models = useQuery({
+    queryKey: ["inference-service-related-model", serviceId],
+    enabled: Boolean(service.data),
     queryFn: async () => {
-      const { data, error } = await servicesApi.GET(
-        "/inference-services/{service_id}/logs",
-        {
-          params: {
-            path: { service_id: serviceId },
-            query: {
-              limit: 200,
-              ...(logLevel === "all" ? {} : { level: logLevel }),
-            },
-          },
-        },
-      );
+      const { data, error } = await servicesApi.GET("/models");
       if (error) throw error;
       return data;
     },
@@ -98,6 +78,13 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
       return data;
     },
   });
+
+  useListErrorNotification({
+    id: `inference-service-detail:${serviceId}`,
+    title: "推理服务详情加载失败",
+    error: service.error,
+  });
+
   const lifecycle = useMutation({
     mutationFn: async (action: LifecycleAction) => {
       const submitData = { action };
@@ -114,7 +101,9 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
     onSuccess: () => {
       lifecycleScope.reset();
       Message.success("生命周期操作已提交");
-      void qc.invalidateQueries({ queryKey: ["inference-service", serviceId] });
+      void qc.invalidateQueries({
+        queryKey: ["inference-service", serviceId],
+      });
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
     },
     onError: (error) => showApiError(error),
@@ -134,9 +123,11 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
     },
     onSuccess: () => {
       scaleScope.reset();
-      Message.success("扩缩容操作已提交");
+      Message.success("副本调整已提交");
       setScaleVisible(false);
-      void qc.invalidateQueries({ queryKey: ["inference-service", serviceId] });
+      void qc.invalidateQueries({
+        queryKey: ["inference-service", serviceId],
+      });
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
     },
     onError: (error) => showApiError(error),
@@ -158,17 +149,19 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
     onError: (error) => showApiError(error),
   });
 
-  if (service.isLoading)
+  if (service.isLoading) {
     return (
       <div className="flex justify-center py-20">
         <Spin size={32} />
       </div>
     );
-  if (!service.data)
+  }
+
+  if (!service.data) {
     return (
       <DetailPageFrame
         breadcrumbs={[
-          { label: "AI" },
+          { label: "AI 服务" },
           { label: "推理服务", to: "/inference" },
           { label: serviceId },
         ]}
@@ -179,28 +172,64 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
           { label: "状态", value: "-" },
           { label: "创建时间", value: "-" },
         ]}
+        actions={<Button onClick={() => service.refetch()}>重新加载</Button>}
         cards={[
           {
             key: "basic",
             title: "基本信息",
-            fields: [{ label: "服务 ID", value: serviceId }],
+            fields: [{ label: "加载结果", value: "未能获取该推理服务详情" }],
           },
         ]}
+        onBack={() => navigate({ to: "/inference" })}
       />
     );
+  }
+
   const item = service.data;
   const resources = item.resources;
   const accelerator = resources?.accelerator;
+  const relatedModel = models.data?.items.find(
+    (model) =>
+      model.name === item.model ||
+      model.versions?.some((version) => version.id === item.model_version_id),
+  );
+  const statusDetail = [item.status_reason, item.status_message]
+    .filter(Boolean)
+    .join("：");
+  const serviceStatus = statusDetail ? (
+    <Tooltip content={statusDetail}>
+      <span className="inline-flex">
+        <StatusTag status={item.status} />
+      </span>
+    </Tooltip>
+  ) : (
+    <StatusTag status={item.status} />
+  );
   const actions = (
     <Space wrap>
       {item.status === "running" ? (
-        <Button onClick={() => lifecycle.mutate("stop")}>停止</Button>
+        <Button
+          loading={lifecycle.isPending}
+          onClick={() => lifecycle.mutate("stop")}
+        >
+          停止
+        </Button>
       ) : null}
       {item.status === "stopped" ? (
-        <Button onClick={() => lifecycle.mutate("start")}>启动</Button>
+        <Button
+          loading={lifecycle.isPending}
+          onClick={() => lifecycle.mutate("start")}
+        >
+          启动
+        </Button>
       ) : null}
       {item.status === "running" || item.status === "failed" ? (
-        <Button onClick={() => lifecycle.mutate("restart")}>重启</Button>
+        <Button
+          loading={lifecycle.isPending}
+          onClick={() => lifecycle.mutate("restart")}
+        >
+          重启
+        </Button>
       ) : null}
       {item.status === "running" ? (
         <Button
@@ -209,11 +238,12 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
             setScaleVisible(true);
           }}
         >
-          扩缩容
+          调整副本
         </Button>
       ) : null}
       <Button
         status="danger"
+        loading={remove.isPending}
         onClick={() =>
           Modal.confirm({
             title: "删除推理服务",
@@ -226,19 +256,6 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
         删除
       </Button>
     </Space>
-  );
-
-  const statusDetail = [item.status_reason, item.status_message]
-    .filter(Boolean)
-    .join("：");
-  const serviceStatus = statusDetail ? (
-    <Tooltip content={statusDetail}>
-      <span className="inline-flex">
-        <StatusTag status={item.status} />
-      </span>
-    </Tooltip>
-  ) : (
-    <StatusTag status={item.status} />
   );
 
   return (
@@ -268,11 +285,20 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
             fields: [
               { label: "ID", value: item.id },
               { label: "名称", value: item.name },
+              { label: "状态", value: serviceStatus },
               {
-                label: "状态",
-                value: serviceStatus,
+                label: "模型",
+                value: relatedModel ? (
+                  <Link
+                    to="/models/$modelId"
+                    params={{ modelId: relatedModel.id }}
+                  >
+                    {relatedModel.display_name || relatedModel.name}
+                  </Link>
+                ) : (
+                  item.model
+                ),
               },
-              { label: "模型版本", value: item.model },
               { label: "模型版本 ID", value: item.model_version_id ?? "-" },
               { label: "服务模型名", value: item.served_model_name || "-" },
             ],
@@ -295,24 +321,74 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
               {
                 label: "部署模式",
                 value:
-                  { auto: "自动", single_node: "单节点", multi_node: "多节点" }[
-                    item.placement_mode
-                  ] ?? item.placement_mode,
+                  {
+                    auto: "自动",
+                    single_node: "单节点",
+                    multi_node: "多节点",
+                  }[item.placement_mode] ?? item.placement_mode,
               },
               { label: "期望副本", value: item.replicas },
               { label: "就绪副本", value: item.ready_replicas },
             ],
           },
+          ...(operationId
+            ? [
+                {
+                  key: "operation",
+                  title: "当前操作",
+                  fields: operation.error
+                    ? [
+                        {
+                          label: "加载结果",
+                          value: getErrorMessage(
+                            operation.error,
+                            "操作状态加载失败",
+                          ),
+                        },
+                      ]
+                    : operation.isLoading
+                      ? [{ label: "状态", value: <Spin size={16} /> }]
+                      : operation.data
+                        ? [
+                            {
+                              label: "任务类型",
+                              value: operation.data.task_type,
+                            },
+                            {
+                              label: "状态",
+                              value: (
+                                <StatusTag status={operation.data.status} />
+                              ),
+                            },
+                            {
+                              label: "进度",
+                              value: `${operation.data.progress_pct}%`,
+                            },
+                            {
+                              label: "创建时间",
+                              value: formatDateTime(operation.data.created_at),
+                            },
+                            {
+                              label: "错误",
+                              value: operation.data.error_message ?? "-",
+                            },
+                          ]
+                        : [{ label: "状态", value: "暂无操作信息" }],
+                },
+              ]
+            : []),
           {
             key: "runtime",
-            title: "运行信息",
+            title: "运行与访问",
+            defaultCollapsed: true,
             fields: [
               { label: "镜像 ID", value: item.image_id ?? "-" },
               {
                 label: "镜像引用",
                 value: <ImageNameText image={item.image_ref} />,
               },
-              { label: "调用地址", value: item.invocation_url ?? "尚未提供" },
+              { label: "调用地址", value: item.invocation_url ?? "-" },
+              { label: "端点地址", value: item.endpoint_url ?? "-" },
               { label: "配置代次", value: item.generation },
               { label: "已观察代次", value: item.observed_generation },
               { label: "更新时间", value: formatDateTime(item.updated_at) },
@@ -321,141 +397,55 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
         ]}
         tabs={[
           {
-            key: "configuration",
-            label: "运行配置",
+            key: "related",
+            label: "关联资源",
             content: (
-              <DataTable
-                data={[
-                  {
-                    id: "resource",
-                    type: "资源",
-                    name: `${resources?.cpu ?? "-"} CPU / ${resources?.memory ?? "-"}`,
-                    detail: accelerator
-                      ? `${accelerator.spec_id} × ${accelerator.count_per_replica}`
-                      : "CPU",
-                  },
-                  {
-                    id: "image",
-                    type: "镜像",
-                    name: getImageDisplayName(item.image_ref ?? item.image_id),
-                    detail: item.placement_mode,
-                  },
-                  {
-                    id: "model",
-                    type: "模型版本",
-                    name: item.model,
-                    detail: item.model_version_id ?? "-",
-                  },
-                ]}
-                pagination={false}
-                columns={[
-                  { title: "类型", dataIndex: "type" },
-                  { title: "名称", dataIndex: "name" },
-                  { title: "说明", dataIndex: "detail" },
-                ]}
+              <InferenceRelatedResources
+                service={item}
+                model={relatedModel}
+                loading={models.isFetching}
+                error={models.error}
               />
+            ),
+          },
+          {
+            key: "invocation-test",
+            label: "调用测试",
+            content: (
+              <InferenceInvocationTest
+                servedModelName={item.served_model_name || item.name}
+                status={item.status}
+                endpointUrl={item.invocation_url ?? item.endpoint_url}
+              />
+            ),
+          },
+          {
+            key: "monitoring",
+            label: "监控",
+            content: (
+              <div className="flex min-h-[240px] items-center justify-center">
+                <Empty description="暂无监控数据，监控能力尚未开放" />
+              </div>
             ),
           },
           {
             key: "logs",
             label: "日志",
+            content: <InferenceLogs serviceId={item.id} />,
+          },
+          {
+            key: "events",
+            label: "事件",
             content: (
-              <div>
-                <TableSectionHeader
-                  title="推理日志"
-                  extra={
-                    <Space>
-                      <Select
-                        size="small"
-                        value={logLevel}
-                        onChange={setLogLevel}
-                        className="w-[120px]"
-                        options={[
-                          { value: "all", label: "全部级别" },
-                          { value: "debug", label: "Debug" },
-                          { value: "info", label: "Info" },
-                          { value: "warn", label: "Warn" },
-                          { value: "error", label: "Error" },
-                        ]}
-                      />
-                      <Button
-                        size="small"
-                        loading={logs.isFetching}
-                        onClick={() => void logs.refetch()}
-                      >
-                        刷新
-                      </Button>
-                    </Space>
-                  }
-                />
-                {logs.error ? (
-                  <Alert
-                    type="error"
-                    showIcon
-                    content={getErrorMessage(logs.error, "日志加载失败")}
-                  />
-                ) : (
-                  <DataTable<InferenceLog>
-                    loading={logs.isFetching}
-                    data={logs.data?.items ?? []}
-                    rowKey={(row) =>
-                      `${row.timestamp}-${row.container}-${row.message}`
-                    }
-                    pagination={false}
-                    noDataElement={<Empty description="暂无日志" />}
-                    columns={[
-                      {
-                        title: "时间",
-                        render: (_, row) => formatDateTime(row.timestamp),
-                      },
-                      { title: "级别", dataIndex: "level" },
-                      {
-                        title: "容器",
-                        dataIndex: "container",
-                        placeholder: "-",
-                      },
-                      { title: "消息", dataIndex: "message" },
-                    ]}
-                  />
-                )}
+              <div className="flex min-h-[240px] items-center justify-center">
+                <Empty description="暂无服务事件，事件查询能力尚未开放" />
               </div>
             ),
           },
           {
-            key: "operation",
-            label: "当前操作",
-            content: !operationId ? (
-              <Empty description="当前没有执行中的操作" />
-            ) : operation.error ? (
-              <Alert
-                type="error"
-                showIcon
-                content={getErrorMessage(operation.error, "操作状态加载失败")}
-              />
-            ) : operation.isLoading ? (
-              <div className="flex justify-center py-12">
-                <Spin />
-              </div>
-            ) : (
-              <DataTable
-                data={operation.data ? [operation.data] : []}
-                pagination={false}
-                columns={[
-                  { title: "任务类型", dataIndex: "task_type" },
-                  { title: "状态", width: 120, dataIndex: "status" },
-                  { title: "进度", render: (_, row) => `${row.progress_pct}%` },
-                  {
-                    title: "创建时间",
-                    render: (_, row) => formatDateTime(row.created_at),
-                  },
-                  {
-                    title: "错误",
-                    dataIndex: "error_message",
-                    placeholder: "-",
-                  },
-                ]}
-              />
-            ),
+            key: "policies",
+            label: "策略",
+            content: <InferencePolicies serviceId={item.id} />,
           },
         ]}
         onBack={() => navigate({ to: "/inference" })}
@@ -463,7 +453,10 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
       <Modal
         visible={scaleVisible}
         title="调整副本数"
-        onCancel={() => setScaleVisible(false)}
+        onCancel={() => {
+          setScaleVisible(false);
+          scaleScope.reset();
+        }}
         onOk={() => scale.mutateAsync()}
         confirmLoading={scale.isPending}
       >
@@ -477,7 +470,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
             className="w-full"
           />
           <Typography.Text type="secondary">
-            扩缩容请求将异步执行，可在“当前操作”中查看进度。
+            调整请求将异步执行，可在详情栏的“当前操作”中查看进度。
           </Typography.Text>
         </Space>
       </Modal>

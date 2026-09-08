@@ -153,15 +153,6 @@ function VpcList() {
     }
     return names;
   }, [routes.data?.items]);
-  const statusCounts = useMemo(
-    () => ({
-      all: items.length,
-      available: items.filter((item) => item.state === "available").length,
-      pending: items.filter((item) => item.state === "pending").length,
-      failed: items.filter((item) => item.state === "failed").length,
-    }),
-    [items],
-  );
   const paginationTotal = vpcs.data?.total ?? items.length;
   useListErrorNotification({
     id: "vpcs-list",
@@ -234,18 +225,10 @@ function VpcList() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: "all", label: "全部", count: statusCounts.all },
-              {
-                value: "available",
-                label: "可用",
-                count: statusCounts.available,
-              },
-              {
-                value: "pending",
-                label: "创建中",
-                count: statusCounts.pending,
-              },
-              { value: "failed", label: "异常", count: statusCounts.failed },
+              { value: "all", label: "全部" },
+              { value: "available", label: "可用" },
+              { value: "pending", label: "创建中" },
+              { value: "failed", label: "异常" },
             ]}
           />
         }

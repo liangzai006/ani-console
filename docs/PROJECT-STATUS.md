@@ -8,7 +8,7 @@
 - 后端：独立 ANI 仓库；接口契约与行为以 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
 - 临时接口补充：开始 Core API 对接前，先查询 GitNexus 索引 `ani-console对接文档补充`，纳入后端测试环境先部署、代码尚未合并期间独立整理的接口说明；发现契约差异时停止推断并请求确认。
 - API：Core `/api/v1` 通过 `src/api/client.ts` 的 `coreApi` 调用；Services `/api/v1/svc` 通过 `src/api/services-client.ts` 的 `servicesApi` 调用。
-- 产品原型：GitNexus 索引 `产品原型-9.03`；页面信息架构与交互布局以该版本为准。
+- 产品原型：GitNexus 索引 `产品原型-9.08`；页面信息架构与交互布局以该版本为准。
 - UI：使用 Arco Design React 和 Arco Token，Tailwind 仅负责布局；沿用现有顶部一级导航及侧栏层级。
 - 验证：任何新增或修改完成后必须对变更代码运行 Oxlint、对变更文件运行项目内 Prettier，并运行 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不运行 `pnpm run verify`、production build 或干预用户的 `pnpm dev`。
 - 测试：快速迭代阶段不保留自动化测试资产，页面与交互由用户手动验证。
@@ -33,6 +33,8 @@
 
 | 日期 | 摘要 |
 |------|------|
+| 2026-09-08 | 将产品原型基准更新为 `产品原型-9.08`，并完成 GPU 算力管理、模型仓库与推理服务详情重做：GPU 页面改为租户视角总览，展示 `gpu_count` 配额、本租户预留、平台空闲与异常、占用分布、规格准入、型号库存及真实故障/维护项，创建入口复用 GPU 容器弹窗；Core 尚无配额申请写接口，因此“申请扩容”保持禁用。模型与推理详情将概览和操作收敛到左侧，右侧按领域拆分关联资源、调用测试、监控、日志、事件与策略；日志和绑定策略使用真实 Services 接口，推荐配置、调用测试、监控与事件按当前契约缺口保留明确空态，不注入演示数据。 |
+| 2026-09-08 | 统一资源列表与挂载筛选：公共 `StatusTabs` 及推理、容器/GPU/Sandbox、K8s、网络和存储等 13 个页面不再展示基于当前页计算的状态数量，状态筛选与分页保持不变；VM、普通容器和 GPU 详情的挂载 NFS 候选查询不再向 `/filesystems` 传递 `status`，仍保留 NFS 协议、实例可挂载条件及前端可用态兜底。变更代码 Oxlint、变更文件 Prettier、TypeScript 与差异格式检查通过；GitNexus 累计工作区变更为 CRITICAL，来自公共 `StatusTabs` 的 16 个直接调用面及 GPU、模型与推理详情的跨模块改动。 |
 | 2026-09-07 | 按当前 ANI 推理服务契约重做“一键部署”：模型与 `model_version_id` 统一提交稳定版本 UUID；运行镜像支持在租户 Registry 的真实 Tag 与手动 `image_ref` 间切换，仓库模式不默认选中镜像，手动模式通过字段补充说明提示优先使用 digest 固定地址，两种模式分别只提交 `image_id` 或 `image_ref`；资源规格改为读取 `/gpu-specs` 与 `/gpu-specs/availability`，提交真实 `spec_id`、每副本卡数及 vGPU 显存，并保留 CPU 部署。移除硬编码 A10/A100 与 vLLM/SGLang/TEI 枚举；一键部署不覆盖平台默认 `engine` 命令和环境。为控制弹窗高度，移除推理引擎及网络/鉴权的接口现状提示。相关代码 Oxlint、变更文件 Prettier 与 TypeScript 检查通过。 |
 | 2026-09-07 | 完成模型仓库与推理服务联调：模型仓库改接 Services `/api/v1/svc/models` 的列表、详情、异步导入和删除，导入使用公共幂等作用域；列表提供“部署”主操作及“更多”菜单，可用模型即使列表未返回版本也可进入部署，并从详情加载真实版本，收藏和新增版本按缺失契约禁用，任务与最新版本列在数据稳定前暂时隐藏；推理部署和向量存储创建移除演示模型兜底，只使用真实可用模型。模型及推理列表/详情统一以公共 `StatusTag` 展示后端原始状态，推理列表将副本和 GPU 拆列；测试环境的模型导入仍返回 `FEATURE_NOT_AVAILABLE`。 |
 | 2026-09-07 | 收敛实例、网络、存储及全局表格交互：新增公共 `WizardSteps`，统一 VM、普通容器、GPU 容器与 Sandbox 创建向导及 `Modal.footer`，VM 拆分高级选项和确认步骤并完善 VPC/子网联动；普通容器只加载未被活跃实例占用的 RWO 块存储卷，文件系统继续支持共享。VPC、子网等资源详情的关联信息改为统一表格或只读名称；各资源表格的纯字段、嵌套字段和空值改用 `dataIndex`/`placeholder`，长文本改用列级 `ellipsis`，仅保留语义型 Tooltip，并清理停用的 Core API mock 脚本。相关代码 Oxlint、变更文件 Prettier、TypeScript 与差异格式检查通过，`WizardSteps` 已完成浏览器交互验证；GitNexus 累计变更风险为 CRITICAL，影响集中在多模块列表、详情及共享实例流程，仍需通过现有开发服务完成其余手动验证。 |

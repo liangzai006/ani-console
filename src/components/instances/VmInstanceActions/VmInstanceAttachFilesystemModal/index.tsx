@@ -46,7 +46,6 @@ export function VmInstanceAttachFilesystemModal({
             query: asUncontractedQuery({
               limit: 100,
               protocol: "nfs",
-              status: "available",
               available_for_instance_id: instance.id,
             }),
           },

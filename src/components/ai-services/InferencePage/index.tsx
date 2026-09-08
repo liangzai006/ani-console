@@ -158,20 +158,6 @@ export function InferencePage() {
     title: "推理服务列表加载失败",
     error: services.error,
   });
-  const counts = useMemo(
-    () => ({
-      all: items.length,
-      running: items.filter((item) => item.status === "running").length,
-      deploying: items.filter(
-        (item) => item.status === "pending" || item.status === "deploying",
-      ).length,
-      stopped: items.filter(
-        (item) => item.status === "stopping" || item.status === "stopped",
-      ).length,
-      failed: items.filter((item) => item.status === "failed").length,
-    }),
-    [items],
-  );
   const modelOptions = useMemo(
     () =>
       Array.from(new Set(items.map((item) => item.model))).map((value) => ({
@@ -267,11 +253,11 @@ export function InferencePage() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: "all", label: "全部", count: counts.all },
-              { value: "running", label: "运行中", count: counts.running },
-              { value: "deploying", label: "部署中", count: counts.deploying },
-              { value: "stopped", label: "已停止", count: counts.stopped },
-              { value: "failed", label: "异常", count: counts.failed },
+              { value: "all", label: "全部" },
+              { value: "running", label: "运行中" },
+              { value: "deploying", label: "部署中" },
+              { value: "stopped", label: "已停止" },
+              { value: "failed", label: "异常" },
             ]}
           />
         }

@@ -130,13 +130,6 @@ export function SecurityGroupsPage() {
       ),
     [vpcs.data?.items],
   );
-  const statusCounts = useMemo(
-    () => ({
-      all: items.length,
-      available: items.filter((item) => item.state === "available").length,
-    }),
-    [items],
-  );
   const paginationTotal = securityGroups.data?.total ?? items.length;
   useListErrorNotification({
     id: "security-groups-list",
@@ -216,12 +209,8 @@ export function SecurityGroupsPage() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: "all", label: "全部", count: statusCounts.all },
-              {
-                value: "available",
-                label: "可用",
-                count: statusCounts.available,
-              },
+              { value: "all", label: "全部" },
+              { value: "available", label: "可用" },
             ]}
           />
         }

@@ -117,17 +117,6 @@ export function VolumesPage() {
     [volumes.data?.items],
   );
   const isMounted = (item: Volume) => Boolean(item.mount_instance_id);
-  const statusCounts = useMemo(
-    () => ({
-      all: items.length,
-      available: items.filter(
-        (item) => item.state === "available" && !isMounted(item),
-      ).length,
-      mounted: items.filter((item) => isMounted(item)).length,
-      failed: items.filter((item) => item.state === "failed").length,
-    }),
-    [items],
-  );
   const paginationTotal = volumes.data?.total ?? items.length;
   useListErrorNotification({
     id: "volumes-list",
@@ -213,18 +202,10 @@ export function VolumesPage() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: "all", label: "全部", count: statusCounts.all },
-              {
-                value: "available",
-                label: "可用",
-                count: statusCounts.available,
-              },
-              {
-                value: "mounted",
-                label: "已挂载",
-                count: statusCounts.mounted,
-              },
-              { value: "failed", label: "异常", count: statusCounts.failed },
+              { value: "all", label: "全部" },
+              { value: "available", label: "可用" },
+              { value: "mounted", label: "已挂载" },
+              { value: "failed", label: "异常" },
             ]}
           />
         }

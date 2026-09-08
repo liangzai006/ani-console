@@ -16,7 +16,6 @@
   align-items: center;
   height: 40px;
   padding: 0 16px;
-  gap: 8px;
   border: 0;
   border-radius: 4px;
   outline: 0;
@@ -48,14 +47,5 @@
   height: 2px;
   transform: translateX(-50%);
   background: var(--list-primary);
-  content: '';
-}
-
-.statusTabCount {
-  color: var(--list-text-secondary);
-  font-size: 12px;
-}
-
-.statusTabActive .statusTabCount {
-  color: var(--list-primary);
+  content: "";
 }

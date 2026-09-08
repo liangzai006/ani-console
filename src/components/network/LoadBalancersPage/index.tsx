@@ -99,14 +99,6 @@ export function LoadBalancersPage() {
     () => (loadBalancers.data?.items ?? []) as LoadBalancer[],
     [loadBalancers.data?.items],
   );
-  const statusCounts = useMemo(
-    () => ({
-      all: items.length,
-      running: items.filter((item) => item.state === "available").length,
-      error: items.filter((item) => item.state === "failed").length,
-    }),
-    [items],
-  );
   const paginationTotal = loadBalancers.data?.total ?? items.length;
   useListErrorNotification({
     id: "load-balancers-list",
@@ -179,13 +171,9 @@ export function LoadBalancersPage() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: "all", label: "全部", count: statusCounts.all },
-              {
-                value: "running",
-                label: "运行中",
-                count: statusCounts.running,
-              },
-              { value: "error", label: "异常", count: statusCounts.error },
+              { value: "all", label: "全部" },
+              { value: "running", label: "运行中" },
+              { value: "error", label: "异常" },
             ]}
           />
         }

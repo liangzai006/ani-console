@@ -7,17 +7,16 @@ import {
   Spin,
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { showApiError } from "@/api/helpers";
 import { servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
   AliIcon,
-  DataTable,
   DetailPageFrame,
   StatusTag,
+  type DetailCard,
 } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatBytes, formatDateTime } from "@/lib/format";
@@ -25,10 +24,8 @@ import {
   formatModelCapabilities,
   getLatestModelVersion,
   MODEL_SOURCE_LABELS,
-  type ModelVersion,
 } from "@/lib/model-catalog";
-
-type InferenceService = components["schemas"]["InferenceService"];
+import { ModelRelatedResources } from "./ModelRelatedResources";
 
 export function ModelDetailPage({ modelId }: { modelId: string }) {
   const navigate = useNavigate();
@@ -126,6 +123,40 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
         service.model_version_id && versionIds.has(service.model_version_id),
       ),
   );
+  const detailCards: DetailCard[] = [
+    {
+      key: "basic",
+      title: "基本信息",
+      fields: [
+        { label: "ID", value: item.id },
+        { label: "名称", value: item.name },
+        {
+          label: "状态",
+          value: <StatusTag status={item.status} />,
+        },
+        { label: "来源", value: MODEL_SOURCE_LABELS[item.source] },
+        {
+          label: "任务",
+          value: formatModelCapabilities(item.capabilities),
+        },
+        { label: "描述", value: item.description || "-" },
+      ],
+    },
+    {
+      key: "catalog",
+      title: "版本信息",
+      fields: [
+        { label: "最新版本", value: latestVersion?.version ?? "-" },
+        {
+          label: "版本数",
+          value: String(item.versions?.length ?? 0) + " 个",
+        },
+        { label: "模型大小", value: formatBytes(item.total_size_bytes) },
+        { label: "创建时间", value: formatDateTime(item.created_at) },
+        { label: "更新时间", value: formatDateTime(item.updated_at) },
+      ],
+    },
+  ];
 
   return (
     <>
@@ -144,7 +175,7 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
           { label: "更新时间", value: formatDateTime(item.updated_at) },
         ]}
         actions={
-          <Space>
+          <Space wrap>
             <Button
               type="primary"
               disabled={item.status !== "ready" || !latestVersion}
@@ -171,118 +202,34 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
             </Button>
           </Space>
         }
-        cards={[
-          {
-            key: "basic",
-            title: "基本信息",
-            fields: [
-              { label: "ID", value: item.id },
-              { label: "名称", value: item.name },
-              {
-                label: "状态",
-                value: <StatusTag status={item.status} />,
-              },
-              { label: "来源", value: MODEL_SOURCE_LABELS[item.source] },
-              {
-                label: "任务",
-                value: formatModelCapabilities(item.capabilities),
-              },
-              { label: "描述", value: item.description || "-" },
-            ],
-          },
-          {
-            key: "catalog",
-            title: "Catalog 信息",
-            fields: [
-              { label: "最新版本", value: latestVersion?.version ?? "-" },
-              {
-                label: "版本数",
-                value: String(item.versions?.length ?? 0) + " 个",
-              },
-              { label: "模型大小", value: formatBytes(item.total_size_bytes) },
-              { label: "创建时间", value: formatDateTime(item.created_at) },
-              { label: "更新时间", value: formatDateTime(item.updated_at) },
-            ],
-          },
-        ]}
+        cards={detailCards}
         tabs={[
-          {
-            key: "versions",
-            label: "模型版本",
-            content: (
-              <DataTable<ModelVersion>
-                columns={[
-                  { title: "版本", dataIndex: "version" },
-                  { title: "格式", dataIndex: "format" },
-                  {
-                    title: "加密",
-                    render: (_, version) =>
-                      version.is_encrypted ? "是" : "否",
-                  },
-                  {
-                    title: "大小",
-                    render: (_, version) => formatBytes(version.size_bytes),
-                  },
-                  {
-                    title: "校验值",
-                    dataIndex: "checksum_sha256",
-                    placeholder: "-",
-                  },
-                  {
-                    title: "创建时间",
-                    render: (_, version) => formatDateTime(version.created_at),
-                  },
-                ]}
-                data={item.versions ?? []}
-                pagination={false}
-                noDataElement={<Empty description="暂无模型版本" />}
-                tableLabel="模型版本列表"
-              />
-            ),
-          },
           {
             key: "related",
             label: "关联资源",
             content: (
-              <DataTable<InferenceService>
-                columns={[
-                  {
-                    title: "推理服务",
-                    render: (_, service) => (
-                      <Link
-                        to="/inference/$serviceId"
-                        params={{ serviceId: service.id }}
-                      >
-                        {service.name}
-                      </Link>
-                    ),
-                  },
-                  {
-                    title: "状态",
-                    width: 120,
-                    render: (_, service) => (
-                      <StatusTag status={service.status} />
-                    ),
-                  },
-                  { title: "模型", dataIndex: "model" },
-                  {
-                    title: "副本",
-                    render: (_, service) =>
-                      String(service.ready_replicas) +
-                      " / " +
-                      String(service.replicas),
-                  },
-                  {
-                    title: "创建时间",
-                    render: (_, service) => formatDateTime(service.created_at),
-                  },
-                ]}
-                data={inferenceItems}
+              <ModelRelatedResources
+                services={inferenceItems}
                 loading={relatedServices.isFetching}
-                pagination={false}
-                noDataElement={<Empty description="暂无关联推理服务" />}
-                tableLabel="关联推理服务列表"
               />
+            ),
+          },
+          {
+            key: "recommended-configuration",
+            label: "推荐配置",
+            content: (
+              <div className="flex min-h-[240px] items-center justify-center">
+                <Empty description="推荐配置接口尚未开放" />
+              </div>
+            ),
+          },
+          {
+            key: "operation-history",
+            label: "操作历史",
+            content: (
+              <div className="flex min-h-[240px] items-center justify-center">
+                <Empty description="暂无模型操作记录" />
+              </div>
             ),
           },
         ]}

@@ -11,7 +11,6 @@ import type {
   ContainerInstanceQuery,
   ContainerInstanceRecord,
   ContainerInstanceStatus,
-  ContainerInstanceStatusCounts,
 } from "./types";
 
 const API_PAGE_SIZE = 100;
@@ -79,27 +78,6 @@ function mapContainerInstance(
   };
 }
 
-function countStatuses(
-  items: ContainerInstance[],
-): ContainerInstanceStatusCounts {
-  return items.reduce<ContainerInstanceStatusCounts>(
-    (counts, item) => {
-      counts.all += 1;
-      if (
-        item.status === "running" ||
-        item.status === "stopped" ||
-        item.status === "failed"
-      ) {
-        counts[item.status] += 1;
-      } else if (DEPLOYING_STATES.has(item.status)) {
-        counts.deploying += 1;
-      }
-      return counts;
-    },
-    { all: 0, running: 0, stopped: 0, deploying: 0, failed: 0 },
-  );
-}
-
 async function fetchContainerInstancePage(
   cursor?: string,
   filters?: ContainerInstanceQuery,
@@ -154,7 +132,6 @@ export function createContainerInstanceDataSource(
       return {
         items: allItems.slice(start, start + query.pageSize),
         total: allItems.length,
-        statusCounts: countStatuses(allItems),
         hasTransitioningInstances: allItems.some((item) =>
           DEPLOYING_STATES.has(item.status),
         ),

@@ -2,11 +2,7 @@ import type { components } from "@/api/core-schema";
 export type ContainerInstanceRecord = components["schemas"]["InstanceRecord"];
 export type ContainerInstanceStatus = ContainerInstanceRecord["state"];
 export type ContainerInstanceStatusFilter =
-  | "all"
-  | "running"
-  | "stopped"
-  | "deploying"
-  | "failed";
+  "all" | "running" | "stopped" | "deploying" | "failed";
 export type ContainerInstanceSearchField = "name" | "id";
 
 export type ContainerInstance = {
@@ -35,15 +31,9 @@ export type ContainerInstanceQuery = {
   pageSize: number;
 };
 
-export type ContainerInstanceStatusCounts = Record<
-  ContainerInstanceStatusFilter,
-  number
->;
-
 export type ContainerInstanceListResult = {
   items: ContainerInstance[];
   total: number;
-  statusCounts: ContainerInstanceStatusCounts;
   hasTransitioningInstances: boolean;
 };
 

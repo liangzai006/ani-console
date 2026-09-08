@@ -70,29 +70,11 @@ export function GpuInstancesPage() {
   const allItems = (query.data?.items ?? []) as Instance[];
   const items = allItems;
   const tabs = [
-    { value: "all" as const, label: "全部", count: allItems.length },
-    {
-      value: "running" as const,
-      label: "运行中",
-      count: allItems.filter((item) => item.state === "running").length,
-    },
-    {
-      value: "stopped" as const,
-      label: "已停止",
-      count: allItems.filter((item) => item.state === "stopped").length,
-    },
-    {
-      value: "queued" as const,
-      label: "排队中",
-      count: allItems.filter((item) =>
-        ["pending", "provisioning", "starting"].includes(item.state),
-      ).length,
-    },
-    {
-      value: "failed" as const,
-      label: "异常",
-      count: allItems.filter((item) => item.state === "failed").length,
-    },
+    { value: "all" as const, label: "全部" },
+    { value: "running" as const, label: "运行中" },
+    { value: "stopped" as const, label: "已停止" },
+    { value: "queued" as const, label: "排队中" },
+    { value: "failed" as const, label: "异常" },
   ];
   const columns: Array<ListColumn<Instance>> = [
     {

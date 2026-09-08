@@ -54,6 +54,9 @@ export interface paths {
   "/inference-services/{service_id}/logs": {
     get: operations["listInferenceServiceLogs"];
   };
+  "/inference-services/{service_id}/policies": {
+    get: operations["listInferenceServicePolicies"];
+  };
   "/inference-operations/{operation_id}": {
     get: operations["getInferenceOperation"];
   };
@@ -273,6 +276,46 @@ export interface components {
     InferenceServiceLogListResponse: {
       items: components["schemas"]["InferenceServiceLog"][];
       next_cursor?: string | null;
+    };
+    InferenceAccessPolicyScope: {
+      type:
+        | "tenant_default"
+        | "inference_service"
+        | "api_key"
+        | "inference_service_api_key";
+      inference_service_ids?: string[];
+      api_key_ids?: string[];
+    };
+    InferenceAccessPolicyAccess: {
+      allow_all_tenant_keys: boolean;
+      allow_api_key_ids?: string[];
+      deny_api_key_ids?: string[];
+    };
+    InferenceAccessPolicyRateLimits: {
+      qps?: number | null;
+      rpm?: number | null;
+    };
+    InferenceAccessPolicyConcurrency: {
+      max_in_flight?: number | null;
+      lease_ttl_seconds?: number;
+    };
+    InferenceAccessPolicy: {
+      id: string;
+      tenant_id: string;
+      name: string;
+      status: "enabled" | "disabled";
+      description?: string | null;
+      priority: number;
+      scope: components["schemas"]["InferenceAccessPolicyScope"];
+      access: components["schemas"]["InferenceAccessPolicyAccess"];
+      rate_limits: components["schemas"]["InferenceAccessPolicyRateLimits"];
+      concurrency: components["schemas"]["InferenceAccessPolicyConcurrency"];
+      created_at: string;
+      updated_at?: string | null;
+    };
+    InferenceServicePolicies: {
+      service_id: string;
+      policies: components["schemas"]["InferenceAccessPolicy"][];
     };
   };
 }
@@ -740,6 +783,24 @@ export interface operations {
         };
       };
       400: ErrorContent;
+      404: ErrorContent;
+    };
+  };
+  listInferenceServicePolicies: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: { service_id: string };
+      cookie?: never;
+    };
+    responses: {
+      200: {
+        headers: Record<string, unknown>;
+        content: {
+          "application/json": components["schemas"]["InferenceServicePolicies"];
+        };
+      };
+      401: ErrorContent;
       404: ErrorContent;
     };
   };

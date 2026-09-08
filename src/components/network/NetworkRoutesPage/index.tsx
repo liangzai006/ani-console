@@ -98,10 +98,6 @@ export function NetworkRoutesPage() {
       ),
     [vpcs.data?.items],
   );
-  const statusCounts = useMemo(
-    () => ({ all: items.length, available: items.length }),
-    [items.length],
-  );
   const paginationTotal = routes.data?.total ?? items.length;
   useListErrorNotification({
     id: "network-routes-list",
@@ -179,12 +175,8 @@ export function NetworkRoutesPage() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: "all", label: "全部", count: statusCounts.all },
-              {
-                value: "available",
-                label: "可用",
-                count: statusCounts.available,
-              },
+              { value: "all", label: "全部" },
+              { value: "available", label: "可用" },
             ]}
           />
         }

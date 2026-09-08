@@ -189,16 +189,6 @@ function ClusterList() {
   });
 
   const items = useMemo(() => (data?.items ?? []) as Cluster[], [data?.items]);
-  const statusCounts = useMemo(
-    () => ({
-      all: items.length,
-      provisioning: items.filter((item) => item.state === "provisioning")
-        .length,
-      running: items.filter((item) => item.state === "running").length,
-      deleting: items.filter((item) => item.state === "deleting").length,
-    }),
-    [items],
-  );
   const paginationTotal = data?.total ?? items.length;
 
   useEffect(() => {
@@ -272,22 +262,10 @@ function ClusterList() {
             value={status}
             onChange={setStatus}
             items={[
-              { value: "all", label: "全部", count: statusCounts.all },
-              {
-                value: "running",
-                label: "运行中",
-                count: statusCounts.running,
-              },
-              {
-                value: "provisioning",
-                label: "创建中",
-                count: statusCounts.provisioning,
-              },
-              {
-                value: "deleting",
-                label: "删除中",
-                count: statusCounts.deleting,
-              },
+              { value: "all", label: "全部" },
+              { value: "running", label: "运行中" },
+              { value: "provisioning", label: "创建中" },
+              { value: "deleting", label: "删除中" },
             ]}
           />
         }
