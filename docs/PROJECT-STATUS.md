@@ -8,7 +8,7 @@
 - 后端：独立 ANI 仓库；接口契约与行为以 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
 - 临时接口补充：开始 Core API 对接前，先查询 GitNexus 索引 `ani-console对接文档补充`，纳入后端测试环境先部署、代码尚未合并期间独立整理的接口说明；发现契约差异时停止推断并请求确认。
 - API：Core `/api/v1` 通过 `src/api/client.ts` 的 `coreApi` 调用；Services `/api/v1/svc` 通过 `src/api/services-client.ts` 的 `servicesApi` 调用。
-- 产品原型：GitNexus 索引 `产品原型-9.08`；页面信息架构与交互布局以该版本为准。
+- 产品原型：GitNexus 索引 `产品原型-9.08 v2`；页面信息架构与交互布局以该版本为准。
 - UI：使用 Arco Design React 和 Arco Token，Tailwind 仅负责布局；沿用现有顶部一级导航及侧栏层级。
 - 验证：任何新增或修改完成后必须对变更代码运行 Oxlint、通过 `pnpm fmt` 对全仓运行项目内 oxfmt，并运行 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不运行 production build 或干预用户的 `pnpm dev`。
 - 测试：快速迭代阶段不保留自动化测试资产，页面与交互由用户手动验证。
@@ -27,12 +27,14 @@
 - OIDC 登录入口暂时隐藏；当前使用租户账密登录。
 - 文件存储权限、部分监控/事件等 ANI 未开放能力保持空态，不提供虚假操作。
 - 模型导入虽已接入 Services 接口，但测试环境当前仍返回 `FEATURE_NOT_AVAILABLE`；模型收藏和新增版本也因缺少状态及操作契约保持禁用。
+- 知识库 `/config`、`/rebuild` 和库级 `/models` 已出现在 Services OpenAPI，但 ANI 网关当前未注册对应路由；暂不接入，待后端实现与契约一致后继续。
 - 浏览器自动化回归暂时移除。
 
 ## 最近变更
 
 | 日期 | 摘要 |
 |------|------|
+| 2026-09-09 | 对齐 `产品原型-9.08 v2` 并完善 AI 管理：知识库创建改为选择 `ready` 且具备 `embedding` 能力的真实模型，成功后留在列表；详情接入服务端多会话、历史消息、删除、引用回溯、权限白名单、文档分块和失败重解析，问答按编排、会话展示和请求适配拆分，文档解析改为表格。后端 `/models` 目前仅落实状态过滤，前端保留能力兜底与 TODO；OpenAPI 已声明但网关未注册的 `/config`、`/rebuild` 和库级 `/models` 暂未接入。推理服务详情收敛基本信息与关联摘要，展示引擎/精度、OpenAI 兼容信息、调用地址、QPS/并发并可直达策略页，右侧统一关联资源、策略、调用测试、监控、日志和事件。变更代码 Oxlint、全仓 oxfmt、TypeScript 与差异格式检查通过；GitNexus 累计工作区变更检测为 HIGH。 |
 | 2026-09-09 | 将项目格式化工具由 Prettier 迁移至 oxfmt 0.67，新增 `fmt` 与只读 `fmt:check` 脚本并移除 `verify` 脚本；已统一格式化全仓代码与配置文件，后续任何修改完成后均运行 `pnpm fmt`，并同步开发与验证约定。全仓 oxfmt、`fmt:check`、Oxlint、TypeScript 与差异格式检查通过；GitNexus 累计变更为 CRITICAL，来自全仓格式迁移对 287 个索引文件、726 个符号及 185 条执行流的广泛命中。 |
 | 2026-09-08 | 将产品原型基准更新为 `产品原型-9.08`，并完成 GPU 算力管理、模型仓库与推理服务详情重做：GPU 页面改为租户视角总览，展示 `gpu_count` 配额、本租户预留、平台空闲与异常、占用分布、规格准入、型号库存及真实故障/维护项，创建入口复用 GPU 容器弹窗；Core 尚无配额申请写接口，因此“申请扩容”保持禁用。模型与推理详情将概览和操作收敛到左侧，右侧按领域拆分关联资源、调用测试、监控、日志、事件与策略；日志和绑定策略使用真实 Services 接口，推荐配置、调用测试、监控与事件按当前契约缺口保留明确空态，不注入演示数据。 |
 | 2026-09-08 | 统一资源列表与挂载筛选：公共 `StatusTabs` 及推理、容器/GPU/Sandbox、K8s、网络和存储等 13 个页面不再展示基于当前页计算的状态数量，状态筛选与分页保持不变；VM、普通容器和 GPU 详情的挂载 NFS 候选查询不再向 `/filesystems` 传递 `status`，仍保留 NFS 协议、实例可挂载条件及前端可用态兜底。变更代码 Oxlint、变更文件 Prettier、TypeScript 与差异格式检查通过；GitNexus 累计工作区变更为 CRITICAL，来自公共 `StatusTabs` 的 16 个直接调用面及 GPU、模型与推理详情的跨模块改动。 |

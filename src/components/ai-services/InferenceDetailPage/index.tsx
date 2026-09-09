@@ -2,6 +2,7 @@ import {
   Button,
   Empty,
   InputNumber,
+  Link as ArcoLink,
   Message,
   Modal,
   Space,
@@ -17,7 +18,6 @@ import { servicesApi } from "@/api/services-client";
 import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import { InferenceInvocationTest } from "./InferenceInvocationTest";
 import { InferenceLogs } from "./InferenceLogs";
@@ -33,6 +33,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const scaleScope = useIdempotencyScope("inference-service-scale", ["PATCH", serviceId]);
   const [scaleVisible, setScaleVisible] = useState(false);
   const [replicas, setReplicas] = useState(1);
+  const [activeTabKey, setActiveTabKey] = useState("related");
 
   const service = useQuery({
     queryKey: ["inference-service", serviceId],
@@ -53,13 +54,12 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
       return data;
     },
   });
-  const operationId = service.data?.current_operation_id ?? undefined;
-  const operation = useQuery({
-    queryKey: ["inference-operation", operationId],
-    enabled: Boolean(operationId),
+  const policies = useQuery({
+    queryKey: ["inference-service-policies", serviceId],
+    enabled: Boolean(service.data),
     queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/inference-operations/{operation_id}", {
-        params: { path: { operation_id: operationId! } },
+      const { data, error } = await servicesApi.GET("/inference-services/{service_id}/policies", {
+        params: { path: { service_id: serviceId } },
       });
       if (error) throw error;
       return data;
@@ -166,13 +166,57 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   }
 
   const item = service.data;
-  const resources = item.resources;
-  const accelerator = resources?.accelerator;
   const relatedModel = models.data?.items.find(
     (model) =>
       model.name === item.model ||
       model.versions?.some((version) => version.id === item.model_version_id),
   );
+  const relatedModelVersion = relatedModel?.versions?.find(
+    (version) => version.id === item.model_version_id,
+  );
+  const invocationUrl = item.invocation_url ?? item.endpoint_url;
+  const compatibilityPath = (() => {
+    if (!invocationUrl) return "-";
+    try {
+      return new URL(invocationUrl).pathname;
+    } catch {
+      return invocationUrl.startsWith("/") ? invocationUrl : "-";
+    }
+  })();
+  const engineCommand = item.engine?.command ?? [];
+  const engineCommandText = engineCommand.join(" ");
+  const engineSource = `${engineCommandText} ${item.image_ref ?? ""}`;
+  const engineName = /\bvllm\b/i.test(engineSource)
+    ? "vLLM"
+    : /\btei\b|text-embeddings-inference/i.test(engineSource)
+      ? "TEI"
+      : engineCommand[0] || "-";
+  const engineEnvironment = new Map(
+    (item.engine?.env ?? []).map((entry) => [entry.name.toUpperCase(), entry.value]),
+  );
+  const precisionArgument = engineCommand.find(
+    (_argument, index) =>
+      index > 0 && ["--dtype", "--torch-dtype", "--precision"].includes(engineCommand[index - 1]),
+  );
+  const precision =
+    precisionArgument ??
+    engineEnvironment.get("VLLM_DTYPE") ??
+    engineEnvironment.get("TORCH_DTYPE") ??
+    engineEnvironment.get("PRECISION");
+  const normalizedPrecision = precision
+    ?.replace(/^float16$/i, "fp16")
+    .replace(/^float32$/i, "fp32")
+    .replace(/^bfloat16$/i, "bf16");
+  const engineLabel = [engineName, normalizedPrecision].filter(Boolean).join(" · ");
+  const requestPolicy =
+    policies.data?.policies.find(
+      (policy) => policy.status === "enabled" && policy.rate_limits.qps != null,
+    ) ??
+    policies.data?.policies.find((policy) => policy.status === "enabled") ??
+    policies.data?.policies[0];
+  const qpsLabel = policies.isLoading
+    ? "QPS 加载中…"
+    : `QPS ${requestPolicy?.rate_limits.qps ?? "-"}`;
   const statusDetail = [item.status_reason, item.status_message].filter(Boolean).join("：");
   const serviceStatus = statusDetail ? (
     <Tooltip content={statusDetail}>
@@ -253,8 +297,8 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
             title: "基本信息",
             fields: [
               { label: "ID", value: item.id },
-              { label: "名称", value: item.name },
               { label: "状态", value: serviceStatus },
+              { label: "规格", value: "-" },
               {
                 label: "模型",
                 value: relatedModel ? (
@@ -265,95 +309,90 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
                   item.model
                 ),
               },
-              { label: "模型版本 ID", value: item.model_version_id ?? "-" },
-              { label: "服务模型名", value: item.served_model_name || "-" },
+              {
+                label: "推理引擎",
+                value: engineLabel,
+              },
+              {
+                label: "OpenAI 兼容",
+                value: (
+                  <Space size={4} wrap>
+                    <Typography.Text code>{compatibilityPath}</Typography.Text>
+                    <Typography.Text type="secondary">·</Typography.Text>
+                    <Typography.Text>
+                      model=<strong>{item.served_model_name || item.name}</strong>
+                    </Typography.Text>
+                  </Space>
+                ),
+              },
+              {
+                label: "调用地址",
+                value: invocationUrl ? (
+                  <Space size={4} wrap>
+                    <ArcoLink href={invocationUrl} target="_blank" rel="noreferrer">
+                      {invocationUrl}
+                    </ArcoLink>
+                    <Button
+                      type="text"
+                      size="mini"
+                      onClick={() => {
+                        void navigator.clipboard
+                          .writeText(invocationUrl)
+                          .then(() => Message.success("调用地址已复制"))
+                          .catch(() => Message.error("复制失败，请手动复制调用地址"));
+                      }}
+                    >
+                      复制
+                    </Button>
+                  </Space>
+                ) : (
+                  "-"
+                ),
+              },
+              {
+                label: "请求限流",
+                value: (
+                  <Space size={4} wrap>
+                    <Typography.Text>{qpsLabel}</Typography.Text>
+                    <Typography.Text type="secondary">·</Typography.Text>
+                    <Typography.Text>并发 {item.max_concurrency ?? "-"}</Typography.Text>
+                    <Typography.Text type="secondary">·</Typography.Text>
+                    <Button type="text" size="mini" onClick={() => setActiveTabKey("policies")}>
+                      配置
+                    </Button>
+                  </Space>
+                ),
+              },
+              { label: "创建时间", value: formatDateTime(item.created_at) },
             ],
           },
           {
-            key: "resources",
-            title: "资源与部署",
-            fields: [
-              { label: "CPU", value: resources?.cpu ?? "-" },
-              { label: "内存", value: resources?.memory ?? "-" },
-              { label: "GPU 规格", value: accelerator?.spec_id ?? "-" },
-              {
-                label: "每副本 GPU",
-                value: accelerator?.count_per_replica ?? "-",
-              },
-              {
-                label: "GPU 显存",
-                value: accelerator?.memory ? `${accelerator.memory} MiB` : "-",
-              },
-              {
-                label: "部署模式",
-                value:
-                  {
-                    auto: "自动",
-                    single_node: "单节点",
-                    multi_node: "多节点",
-                  }[item.placement_mode] ?? item.placement_mode,
-              },
-              { label: "期望副本", value: item.replicas },
-              { label: "就绪副本", value: item.ready_replicas },
-            ],
-          },
-          ...(operationId
-            ? [
-                {
-                  key: "operation",
-                  title: "当前操作",
-                  fields: operation.error
-                    ? [
-                        {
-                          label: "加载结果",
-                          value: getErrorMessage(operation.error, "操作状态加载失败"),
-                        },
-                      ]
-                    : operation.isLoading
-                      ? [{ label: "状态", value: <Spin size={16} /> }]
-                      : operation.data
-                        ? [
-                            {
-                              label: "任务类型",
-                              value: operation.data.task_type,
-                            },
-                            {
-                              label: "状态",
-                              value: <StatusTag status={operation.data.status} />,
-                            },
-                            {
-                              label: "进度",
-                              value: `${operation.data.progress_pct}%`,
-                            },
-                            {
-                              label: "创建时间",
-                              value: formatDateTime(operation.data.created_at),
-                            },
-                            {
-                              label: "错误",
-                              value: operation.data.error_message ?? "-",
-                            },
-                          ]
-                        : [{ label: "状态", value: "暂无操作信息" }],
-                },
-              ]
-            : []),
-          {
-            key: "runtime",
-            title: "运行与访问",
-            defaultCollapsed: true,
-            fields: [
-              { label: "镜像 ID", value: item.image_id ?? "-" },
-              {
-                label: "镜像引用",
-                value: <ImageNameText image={item.image_ref} />,
-              },
-              { label: "调用地址", value: item.invocation_url ?? "-" },
-              { label: "端点地址", value: item.endpoint_url ?? "-" },
-              { label: "配置代次", value: item.generation },
-              { label: "已观察代次", value: item.observed_generation },
-              { label: "更新时间", value: formatDateTime(item.updated_at) },
-            ],
+            key: "related-summary",
+            title: "关联摘要",
+            fields: models.isLoading
+              ? [{ label: "加载中…", value: "-" }]
+              : models.error
+                ? [{ label: "加载结果", value: "关联信息加载失败" }]
+                : [
+                    {
+                      label: "模型",
+                      value: relatedModel ? (
+                        <Link to="/models/$modelId" params={{ modelId: relatedModel.id }}>
+                          {relatedModel.display_name || relatedModel.name}
+                        </Link>
+                      ) : (
+                        item.model
+                      ),
+                    },
+                    {
+                      label: "模型版本",
+                      value: relatedModelVersion?.version ?? item.model_version_id ?? "-",
+                    },
+                    {
+                      label: "运行镜像",
+                      value: <ImageNameText image={item.image_ref ?? item.image_id} />,
+                    },
+                  ],
           },
         ]}
         tabs={[
@@ -368,6 +407,11 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
                 error={models.error}
               />
             ),
+          },
+          {
+            key: "policies",
+            label: "策略",
+            content: <InferencePolicies serviceId={item.id} />,
           },
           {
             key: "invocation-test",
@@ -403,12 +447,9 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
               </div>
             ),
           },
-          {
-            key: "policies",
-            label: "策略",
-            content: <InferencePolicies serviceId={item.id} />,
-          },
         ]}
+        activeTabKey={activeTabKey}
+        onTabChange={setActiveTabKey}
         onBack={() => navigate({ to: "/inference" })}
       />
       <Modal

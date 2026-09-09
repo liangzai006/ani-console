@@ -17,6 +17,12 @@ export interface paths {
   "/knowledge-bases/{kb_id}/documents/{doc_id}": {
     delete: operations["deleteKnowledgeBaseDocument"];
   };
+  "/knowledge-bases/{kb_id}/documents/{doc_id}/chunks": {
+    get: operations["listKnowledgeBaseDocumentChunks"];
+  };
+  "/knowledge-bases/{kb_id}/documents/{doc_id}/reparse": {
+    post: operations["reparseKnowledgeBaseDocument"];
+  };
   "/knowledge-bases/{kb_id}/query": {
     post: operations["queryKnowledgeBase"];
   };
@@ -25,6 +31,19 @@ export interface paths {
   };
   "/knowledge-bases/{kb_id}/citations": {
     get: operations["listKnowledgeBaseCitations"];
+  };
+  "/knowledge-bases/{kb_id}/sessions": {
+    get: operations["listKnowledgeBaseSessions"];
+  };
+  "/knowledge-bases/{kb_id}/sessions/{session_id}": {
+    delete: operations["deleteKnowledgeBaseSession"];
+  };
+  "/knowledge-bases/{kb_id}/sessions/{session_id}/messages": {
+    get: operations["listKnowledgeBaseSessionMessages"];
+  };
+  "/knowledge-bases/{kb_id}/permissions": {
+    get: operations["getKnowledgeBasePermissions"];
+    put: operations["updateKnowledgeBasePermissions"];
   };
   "/models": {
     get: operations["listModels"];
@@ -114,10 +133,71 @@ export interface components {
       content: string;
       score?: number | null;
       created_at: string;
+      message_id?: string | null;
+      session_id?: string | null;
     };
     KBCitationListResponse: {
       items: components["schemas"]["KBCitation"][];
       next_cursor?: string | null;
+    };
+    KBSession: {
+      id: string;
+      kb_id: string;
+      message_count?: number;
+      last_query?: string | null;
+      created_at: string;
+      last_active_at?: string | null;
+    };
+    KBSessionListResponse: {
+      items: components["schemas"]["KBSession"][];
+      next_cursor?: string | null;
+    };
+    KBSourceChunk: {
+      doc_id?: string;
+      file_name?: string;
+      page?: number | null;
+      content?: string;
+      score?: number | null;
+    };
+    KBSessionMessage: {
+      id: string;
+      session_id: string;
+      role: "user" | "assistant";
+      content: string;
+      sources?: components["schemas"]["KBSourceChunk"][] | null;
+      input_tokens?: number | null;
+      output_tokens?: number | null;
+      duration_ms?: number | null;
+      created_at: string;
+    };
+    KBSessionMessageListResponse: {
+      items: components["schemas"]["KBSessionMessage"][];
+      next_cursor?: string | null;
+    };
+    KBChunk: {
+      id: string;
+      doc_id: string;
+      kb_id: string;
+      parent_chunk_id?: string | null;
+      chunk_type: "child" | "parent" | "doc_summary";
+      content: string;
+      parent_content?: string | null;
+      page_number?: number | null;
+      content_type?: string;
+      file_name: string;
+      token_count?: number;
+      custom_metadata?: Record<string, unknown> | null;
+      created_at: string;
+    };
+    KBChunkListResponse: {
+      items: components["schemas"]["KBChunk"][];
+      next_cursor?: string | null;
+    };
+    KBPermissions: {
+      kb_id: string;
+      public_read: boolean;
+      allowed_user_ids: string[];
+      updated_at?: string | null;
     };
     DocumentUploadURLResponse: {
       doc_id: string;
@@ -494,6 +574,49 @@ export interface operations {
       404: ErrorContent;
     };
   };
+  listKnowledgeBaseDocumentChunks: {
+    parameters: {
+      query?: {
+        limit?: number;
+        cursor?: string;
+        chunk_type?: "child" | "parent" | "doc_summary";
+      };
+      header?: never;
+      path: { kb_id: string; doc_id: string };
+      cookie?: never;
+    };
+    responses: {
+      200: {
+        headers: Record<string, unknown>;
+        content: { "application/json": components["schemas"]["KBChunkListResponse"] };
+      };
+      401: ErrorContent;
+      403: ErrorContent;
+      404: ErrorContent;
+    };
+  };
+  reparseKnowledgeBaseDocument: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: { kb_id: string; doc_id: string };
+      cookie?: never;
+    };
+    requestBody: {
+      content: { "application/json": { idempotency_key: string } };
+    };
+    responses: {
+      202: {
+        headers: Record<string, unknown>;
+        content: { "application/json": Record<string, unknown> };
+      };
+      400: ErrorContent;
+      401: ErrorContent;
+      403: ErrorContent;
+      404: ErrorContent;
+      409: ErrorContent;
+    };
+  };
   queryKnowledgeBase: {
     parameters: {
       query?: never;
@@ -554,6 +677,100 @@ export interface operations {
           "application/json": components["schemas"]["KBCitationListResponse"];
         };
       };
+      401: ErrorContent;
+      403: ErrorContent;
+      404: ErrorContent;
+    };
+  };
+  listKnowledgeBaseSessions: {
+    parameters: {
+      query?: { limit?: number; cursor?: string };
+      header?: never;
+      path: { kb_id: string };
+      cookie?: never;
+    };
+    responses: {
+      200: {
+        headers: Record<string, unknown>;
+        content: { "application/json": components["schemas"]["KBSessionListResponse"] };
+      };
+      401: ErrorContent;
+      403: ErrorContent;
+      404: ErrorContent;
+    };
+  };
+  deleteKnowledgeBaseSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: { kb_id: string; session_id: string };
+      cookie?: never;
+    };
+    responses: {
+      204: { headers: Record<string, unknown>; content?: never };
+      401: ErrorContent;
+      403: ErrorContent;
+      404: ErrorContent;
+    };
+  };
+  listKnowledgeBaseSessionMessages: {
+    parameters: {
+      query?: { limit?: number; cursor?: string };
+      header?: never;
+      path: { kb_id: string; session_id: string };
+      cookie?: never;
+    };
+    responses: {
+      200: {
+        headers: Record<string, unknown>;
+        content: {
+          "application/json": components["schemas"]["KBSessionMessageListResponse"];
+        };
+      };
+      401: ErrorContent;
+      403: ErrorContent;
+      404: ErrorContent;
+    };
+  };
+  getKnowledgeBasePermissions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: { kb_id: string };
+      cookie?: never;
+    };
+    responses: {
+      200: {
+        headers: Record<string, unknown>;
+        content: { "application/json": components["schemas"]["KBPermissions"] };
+      };
+      401: ErrorContent;
+      403: ErrorContent;
+      404: ErrorContent;
+    };
+  };
+  updateKnowledgeBasePermissions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: { kb_id: string };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          idempotency_key: string;
+          public_read?: boolean;
+          allowed_user_ids?: string[];
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: Record<string, unknown>;
+        content: { "application/json": components["schemas"]["KnowledgeBase"] };
+      };
+      400: ErrorContent;
       401: ErrorContent;
       403: ErrorContent;
       404: ErrorContent;

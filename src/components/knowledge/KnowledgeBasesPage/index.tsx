@@ -246,17 +246,7 @@ export function KnowledgeBasesPage() {
           }}
         />
       </ListPageFrame>
-      <CreateKnowledgeBaseModal
-        visible={createVisible}
-        onCancel={() => setCreateVisible(false)}
-        onCreated={(item) =>
-          navigate({
-            to: "/kb/$kbId",
-            params: { kbId: item.id },
-            search: { tab: "overview" },
-          })
-        }
-      />
+      <CreateKnowledgeBaseModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
     </>
   );
 }

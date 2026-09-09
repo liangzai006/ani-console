@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Empty, Modal, Space, Spin } from "@arco-design/web-react";
+import { Button, Empty, Modal, Spin } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
@@ -10,6 +10,7 @@ import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/co
 import { KnowledgeChatPanel } from "@/components/knowledge/KnowledgeChatPanel";
 import { KnowledgeDocumentsPanel } from "@/components/knowledge/KnowledgeDocumentsPanel";
 import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeDocumentUploadButton";
+import { KnowledgePermissionsPanel } from "@/components/knowledge/KnowledgePermissionsPanel";
 import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -179,16 +180,7 @@ export function KnowledgeBaseDetailPage({
         {
           key: "permissions",
           label: "权限",
-          content: (
-            <Space direction="vertical" size={12} className="w-full">
-              <Alert
-                type="info"
-                showIcon
-                content="权限用于控制知识库是否公开可读以及指定成员的访问范围。"
-              />
-              <Empty description="当前后端权限能力尚未完成，暂不提供配置入口" />
-            </Space>
-          ),
+          content: <KnowledgePermissionsPanel kbId={kbId} />,
         },
         {
           key: "history",

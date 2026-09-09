@@ -1,14 +1,23 @@
-import { Form, Input, InputNumber, Message, Modal } from "@arco-design/web-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Message,
+  Modal,
+  Select,
+} from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
 import { showApiError } from "@/api/helpers";
+import { getErrorMessage } from "@/lib/errors";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type KnowledgeBase = components["schemas"]["KnowledgeBase"];
-
-// TODO: 后端支持按传入模型确定实际 Embedding 能力与向量维度后，恢复为真实模型选择。
-const FIXED_EMBEDDING_MODEL = "bge-m3";
+type Model = components["schemas"]["Model"];
 
 export function CreateKnowledgeBaseModal({
   visible,
@@ -22,19 +31,49 @@ export function CreateKnowledgeBaseModal({
   const [form] = Form.useForm();
   const qc = useQueryClient();
   const createScope = useIdempotencyScope("knowledge-base-create", ["POST"]);
+  const models = useQuery({
+    queryKey: ["models", "knowledge-base-create"],
+    enabled: visible,
+    queryFn: async () => {
+      const { data, error } = await servicesApi.GET("/models", {
+        params: { query: { limit: 100, capability: "embedding", status: "ready" } },
+      });
+      if (error || !data) throw error ?? new Error("Embedding 模型列表未返回结果");
+      return data;
+    },
+  });
+  const modelOptions = useMemo(() => {
+    const byName = new Map<string, Model>();
+    // TODO: ANI /models currently only applies status in the gateway/model-service.
+    // TODO: Remove this defensive client filter after capability is also enforced server-side.
+    for (const model of models.data?.items ?? []) {
+      if (model.status !== "ready" || !model.capabilities?.includes("embedding")) continue;
+      byName.set(model.name, model);
+    }
+    return Array.from(byName.values()).map((model) => ({
+      value: model.name,
+      label:
+        model.display_name && model.display_name !== model.name
+          ? `${model.display_name}（${model.name}）`
+          : model.name,
+    }));
+  }, [models.data?.items]);
+  useEffect(() => {
+    if (!visible || form.getFieldValue("embedding_model") || !modelOptions[0]) return;
+    form.setFieldsValue({ embedding_model: modelOptions[0].value });
+  }, [form, modelOptions, visible]);
   const create = useMutation({
     mutationFn: async (values: {
       name: string;
       description?: string;
+      embedding_model: string;
       chunk_size: number;
       top_k: number;
-      score_threshold: number;
     }) => {
       const submitData = {
         ...values,
         name: values.name.trim(),
         description: values.description?.trim() || undefined,
-        embedding_model: FIXED_EMBEDDING_MODEL,
       };
       const { data, error } = await servicesApi.POST("/knowledge-bases", {
         body: createScope.withKey(submitData),
@@ -59,19 +98,19 @@ export function CreateKnowledgeBaseModal({
       confirmLoading={create.isPending}
       onCancel={() => {
         createScope.reset();
+        form.resetFields();
         onCancel();
       }}
       onOk={() => form.validate().then((values) => create.mutate(values))}
+      okButtonProps={{ disabled: models.isLoading || modelOptions.length === 0 }}
       unmountOnExit
     >
       <Form
         form={form}
         layout="vertical"
         initialValues={{
-          embedding_model: FIXED_EMBEDDING_MODEL,
-          chunk_size: 1024,
+          chunk_size: 800,
           top_k: 5,
-          score_threshold: 0.3,
         }}
       >
         <Form.Item
@@ -87,19 +126,39 @@ export function CreateKnowledgeBaseModal({
         <Form.Item
           label="Embedding 模型"
           field="embedding_model"
-          tooltip="当前由后端固定使用，后续开放模型选择"
+          rules={[{ required: true, message: "请选择 Embedding 模型" }]}
         >
-          <Input disabled />
+          <Select
+            loading={models.isLoading}
+            options={modelOptions}
+            showSearch
+            placeholder="请选择已就绪的 Embedding 模型"
+          />
         </Form.Item>
-        <div className="grid grid-cols-3 gap-4">
+        {models.error ? (
+          <div className="flex flex-col items-start gap-2">
+            <Alert
+              type="warning"
+              showIcon
+              content={getErrorMessage(models.error, "Embedding 模型列表加载失败")}
+            />
+            <Button size="small" onClick={() => void models.refetch()}>
+              重新加载模型
+            </Button>
+          </div>
+        ) : !models.isLoading && modelOptions.length === 0 ? (
+          <Alert
+            type="warning"
+            showIcon
+            content="暂无已就绪的 Embedding 模型，暂时无法创建知识库"
+          />
+        ) : null}
+        <div className="grid grid-cols-2 gap-4">
           <Form.Item label="分块大小" field="chunk_size" rules={[{ required: true }]}>
-            <InputNumber min={1} max={8192} />
+            <InputNumber min={1} max={8192} className="w-full" />
           </Form.Item>
           <Form.Item label="默认 TopK" field="top_k" rules={[{ required: true }]}>
-            <InputNumber min={1} max={20} />
-          </Form.Item>
-          <Form.Item label="相似度阈值" field="score_threshold" rules={[{ required: true }]}>
-            <InputNumber min={0} max={1} step={0.05} />
+            <InputNumber min={1} max={20} className="w-full" />
           </Form.Item>
         </div>
       </Form>
