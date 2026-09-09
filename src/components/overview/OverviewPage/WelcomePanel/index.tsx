@@ -1,16 +1,16 @@
-import { Dropdown, Menu } from '@arco-design/web-react'
-import { IconDown, IconPlus } from '@arco-design/web-react/icon'
-import { Link } from '@tanstack/react-router'
-import clsx from 'clsx'
-import { AliIcon } from '@/components/common'
-import type { HomeOverviewData } from '../types'
-import styles from '../index.module.css'
+import { Dropdown, Menu } from "@arco-design/web-react";
+import { IconDown, IconPlus } from "@arco-design/web-react/icon";
+import { Link } from "@tanstack/react-router";
+import clsx from "clsx";
+import { AliIcon } from "@/components/common";
+import type { HomeOverviewData } from "../types";
+import styles from "../index.module.css";
 
 export function WelcomePanel({
   user,
   quickCreateItems,
   recentItems,
-}: Pick<HomeOverviewData, 'user' | 'quickCreateItems' | 'recentItems'>) {
+}: Pick<HomeOverviewData, "user" | "quickCreateItems" | "recentItems">) {
   const quickCreateMenu = (
     <Menu className={styles.quickCreateMenu}>
       {quickCreateItems.map((item) => (
@@ -22,7 +22,7 @@ export function WelcomePanel({
         </Menu.Item>
       ))}
     </Menu>
-  )
+  );
 
   return (
     <section className={clsx(styles.panel, styles.welcomePanel)} aria-label="用户快捷入口">
@@ -57,5 +57,5 @@ export function WelcomePanel({
         <span className={styles.recentPlaceholder} aria-hidden="true" />
       </div>
     </section>
-  )
+  );
 }

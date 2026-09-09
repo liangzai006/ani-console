@@ -9,8 +9,7 @@ export const computeInstanceDetailTabKeys = [
   "terminal",
 ] as const;
 
-export type ComputeInstanceDetailTabKey =
-  (typeof computeInstanceDetailTabKeys)[number];
+export type ComputeInstanceDetailTabKey = (typeof computeInstanceDetailTabKeys)[number];
 
 export const containerInstanceDetailTabKeys = [
   "release",
@@ -24,8 +23,7 @@ export const containerInstanceDetailTabKeys = [
   "operations",
 ] as const;
 
-export type ContainerInstanceDetailTabKey =
-  (typeof containerInstanceDetailTabKeys)[number];
+export type ContainerInstanceDetailTabKey = (typeof containerInstanceDetailTabKeys)[number];
 
 export const gpuInstanceDetailTabKeys = [
   "releases",
@@ -55,5 +53,4 @@ export const sandboxInstanceDetailTabKeys = [
   "operations",
 ] as const;
 
-export type SandboxInstanceDetailTabKey =
-  (typeof sandboxInstanceDetailTabKeys)[number];
+export type SandboxInstanceDetailTabKey = (typeof sandboxInstanceDetailTabKeys)[number];

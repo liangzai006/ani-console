@@ -32,11 +32,7 @@ export function InstanceComputeSpecSelect({
   placeholder = "请选择 CPU / 内存规格",
 }: Props) {
   return (
-    <Form.Item
-      field={field}
-      label={label}
-      rules={[{ required: true, message: placeholder }]}
-    >
+    <Form.Item field={field} label={label} rules={[{ required: true, message: placeholder }]}>
       <Select placeholder={placeholder} options={options.map((item) => item)} />
     </Form.Item>
   );

@@ -13,12 +13,7 @@ import {
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import {
-  DetailPageFrame,
-  DetailPagePlaceholder,
-  AliIcon,
-  StatusTag,
-} from "@/components/common";
+import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { VectorStoreWorkbench } from "@/components/storage/VectorStoreWorkbench";
 import { formatDateTime } from "@/lib/format";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -38,10 +33,9 @@ export function VectorStoreDetailPage({
   const detail = useQuery({
     queryKey: ["vector-store", vectorStoreId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/vector-stores/{vector_store_id}",
-        { params: { path: { vector_store_id: vectorStoreId } } },
-      );
+      const { data, error } = await coreApi.GET("/vector-stores/{vector_store_id}", {
+        params: { path: { vector_store_id: vectorStoreId } },
+      });
       if (error) throw error;
       return data;
     },
@@ -53,10 +47,9 @@ export function VectorStoreDetailPage({
   });
   const remove = useMutation({
     mutationFn: async (_: undefined) => {
-      const { error } = await coreApi.DELETE(
-        "/vector-stores/{vector_store_id}",
-        { params: { path: { vector_store_id: vectorStoreId } } },
-      );
+      const { error } = await coreApi.DELETE("/vector-stores/{vector_store_id}", {
+        params: { path: { vector_store_id: vectorStoreId } },
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -172,9 +165,7 @@ export function VectorStoreDetailPage({
                 { label: "向量数", value: store.vector_count ?? 0 },
                 {
                   label: "最近索引",
-                  value: store.last_indexed_at
-                    ? formatDateTime(store.last_indexed_at)
-                    : "-",
+                  value: store.last_indexed_at ? formatDateTime(store.last_indexed_at) : "-",
                 },
               ]}
             />
@@ -190,11 +181,7 @@ export function VectorStoreDetailPage({
           label: "关联",
           content: (
             <Space direction="vertical" size={12} className="w-full">
-              <Alert
-                type="info"
-                showIcon
-                content="删除向量存储前须解除知识库关联。"
-              />
+              <Alert type="info" showIcon content="删除向量存储前须解除知识库关联。" />
               <Descriptions
                 column={1}
                 data={[
@@ -222,9 +209,7 @@ export function VectorStoreDetailPage({
           label: "事件",
           content: (
             <Space direction="vertical" size={12} className="w-full">
-              {store.reason ? (
-                <Alert type="warning" showIcon content={store.reason} />
-              ) : null}
+              {store.reason ? <Alert type="warning" showIcon content={store.reason} /> : null}
               <Empty description="当前 Core API 暂未提供向量存储事件列表" />
             </Space>
           ),

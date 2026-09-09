@@ -1,7 +1,7 @@
 /* Tailwind：仅 theme + utilities；不引入 preflight，避免与 Arco 重置冲突 */
 @layer theme, base, components, utilities;
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
 
 /* 壳层基础：与 Arco Token 对齐，不另起色板 */
 html,
@@ -55,7 +55,7 @@ body {
   overscroll-behavior: contain;
 }
 
-[data-component='page-scroll-region'] {
+[data-component="page-scroll-region"] {
   overscroll-behavior: contain;
 }
 
@@ -171,8 +171,14 @@ body {
 .sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header .ali-icon {
   color: var(--color-text-3, rgba(0, 0, 0, 0.4));
 }
-.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header.arco-menu-selected .arco-icon,
-.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header.arco-menu-selected .arco-menu-icon-suffix {
+.sidebar-menu.arco-menu
+  .sidebar-menu-group
+  > .arco-menu-inline-header.arco-menu-selected
+  .arco-icon,
+.sidebar-menu.arco-menu
+  .sidebar-menu-group
+  > .arco-menu-inline-header.arco-menu-selected
+  .arco-menu-icon-suffix {
   color: var(--color-text-3, rgba(0, 0, 0, 0.4));
 }
 .sidebar-menu.arco-menu .sidebar-menu-leaf:hover:not(.arco-menu-selected),
@@ -181,8 +187,14 @@ body {
   background-color: var(--sidebar-active-bg);
   color: var(--color-text-1, rgba(0, 0, 0, 0.85));
 }
-.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header.arco-menu-selected:hover .arco-icon,
-.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header.arco-menu-selected:hover .arco-menu-icon-suffix {
+.sidebar-menu.arco-menu
+  .sidebar-menu-group
+  > .arco-menu-inline-header.arco-menu-selected:hover
+  .arco-icon,
+.sidebar-menu.arco-menu
+  .sidebar-menu-group
+  > .arco-menu-inline-header.arco-menu-selected:hover
+  .arco-menu-icon-suffix {
   color: var(--color-text-3, rgba(0, 0, 0, 0.4));
 }
 
@@ -253,7 +265,8 @@ body {
 }
 
 .sidebar-menu.sidebar-menu--collapsed .sidebar-menu-group.arco-menu-pop-header:hover,
-.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-group.arco-menu-pop-header.arco-menu-selected:hover {
+.sidebar-menu.sidebar-menu--collapsed
+  .sidebar-menu-group.arco-menu-pop-header.arco-menu-selected:hover {
   color: var(--color-text-1, rgba(0, 0, 0, 0.85));
   background-color: var(--sidebar-active-bg);
 }
@@ -301,13 +314,15 @@ body {
   background-color: var(--sidebar-active-bg);
 }
 
-.sidebar-menu-popup-trigger .sidebar-menu-group.arco-dropdown-menu-pop-header.arco-dropdown-menu-selected {
+.sidebar-menu-popup-trigger
+  .sidebar-menu-group.arco-dropdown-menu-pop-header.arco-dropdown-menu-selected {
   color: var(--color-text-1);
   font-weight: 400;
   background-color: transparent;
 }
 
-.sidebar-menu-popup-trigger .sidebar-menu-group.arco-dropdown-menu-pop-header.arco-dropdown-menu-selected:hover {
+.sidebar-menu-popup-trigger
+  .sidebar-menu-group.arco-dropdown-menu-pop-header.arco-dropdown-menu-selected:hover {
   background-color: var(--sidebar-active-bg);
 }
 

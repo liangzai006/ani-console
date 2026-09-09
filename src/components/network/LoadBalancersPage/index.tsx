@@ -49,10 +49,7 @@ export function LoadBalancersPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<LoadBalancer>({
-    queryKey: [
-      "network-load-balancers",
-      { status, searchField, searchText, vpcId },
-    ],
+    queryKey: ["network-load-balancers", { status, searchField, searchText, vpcId }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${vpcId}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
@@ -75,18 +72,13 @@ export function LoadBalancersPage() {
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "load-balancer-list"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
   });
   const deleteLoadBalancer = useMutation({
     mutationFn: async (item: LoadBalancer) => {
-      const { error } = await coreApi.DELETE(
-        "/networks/load-balancers/{load_balancer_id}",
-        {
-          params: { path: { load_balancer_id: item.id } },
-        },
-      );
+      const { error } = await coreApi.DELETE("/networks/load-balancers/{load_balancer_id}", {
+        params: { path: { load_balancer_id: item.id } },
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -112,10 +104,7 @@ export function LoadBalancersPage() {
       render: (_, item) => (
         <DataTableNameCell
           name={
-            <Link
-              to="/load-balancers/$loadBalancerId"
-              params={{ loadBalancerId: item.id }}
-            >
+            <Link to="/load-balancers/$loadBalancerId" params={{ loadBalancerId: item.id }}>
               {item.name}
             </Link>
           }
@@ -298,10 +287,7 @@ export function LoadBalancersPage() {
           }}
         />
       </ListPageFrame>
-      <CreateLoadBalancerModal
-        visible={createVisible}
-        onCancel={() => setCreateVisible(false)}
-      />
+      <CreateLoadBalancerModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
     </>
   );
 }

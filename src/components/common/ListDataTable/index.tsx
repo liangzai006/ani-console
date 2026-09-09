@@ -2,10 +2,7 @@ import clsx from "clsx";
 import { DataTable, type DataTableProps } from "../DataTable";
 import styles from "./index.module.css";
 
-export type ListDataTableProps<T> = Omit<
-  DataTableProps<T>,
-  "className" | "noDataElement"
-> & {
+export type ListDataTableProps<T> = Omit<DataTableProps<T>, "className" | "noDataElement"> & {
   className?: string;
   emptyIconClassName?: string;
   emptyText?: string;
@@ -18,16 +15,13 @@ const DEFAULT_ACTION_COLUMN_WIDTH = 180;
 
 function getHeaderMinWidth(title: string) {
   const textWidth = Array.from(title).reduce(
-    (width, character) =>
-      width + ((character.codePointAt(0) ?? 0) <= 0xff ? 9 : 14),
+    (width, character) => width + ((character.codePointAt(0) ?? 0) <= 0xff ? 9 : 14),
     0,
   );
   return textWidth + 32;
 }
 
-function getDefaultColumnWidth<T>(
-  column: DataTableProps<T>["columns"][number],
-) {
+function getDefaultColumnWidth<T>(column: DataTableProps<T>["columns"][number]) {
   if (typeof column.width === "number") return column.width;
   if (column.key === "name") return DEFAULT_NAME_COLUMN_WIDTH;
   if (column.key === "__actions") return DEFAULT_ACTION_COLUMN_WIDTH;
@@ -77,18 +71,12 @@ export function ListDataTable<T>({
     };
   });
   const tableScroll = scroll ?? {
-    x: columns.reduce(
-      (width, column) => width + getDefaultColumnWidth(column),
-      0,
-    ),
+    x: columns.reduce((width, column) => width + getDefaultColumnWidth(column), 0),
     y: true,
   };
   const noDataElement = (
     <div className={styles.tableState}>
-      <i
-        className={clsx("iconfont", emptyIconClassName, styles.emptyIcon)}
-        aria-hidden="true"
-      />
+      <i className={clsx("iconfont", emptyIconClassName, styles.emptyIcon)} aria-hidden="true" />
       <span>{emptyText}</span>
     </div>
   );

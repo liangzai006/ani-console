@@ -1,34 +1,34 @@
-import { Breadcrumb, Button, Tabs, Tooltip } from '@arco-design/web-react'
-import { Link } from '@tanstack/react-router'
-import clsx from 'clsx'
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import { AliIcon } from '../AliIcon'
-import styles from './index.module.css'
-import type { DetailBreadcrumbItem, DetailCard, DetailHeaderItems, DetailTab } from './types'
+import { Breadcrumb, Button, Tabs, Tooltip } from "@arco-design/web-react";
+import { Link } from "@tanstack/react-router";
+import clsx from "clsx";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { AliIcon } from "../AliIcon";
+import styles from "./index.module.css";
+import type { DetailBreadcrumbItem, DetailCard, DetailHeaderItems, DetailTab } from "./types";
 
 type DetailPageFrameProps = {
-  breadcrumbs: DetailBreadcrumbItem[]
-  title: ReactNode
-  status?: ReactNode
-  icon?: ReactNode
-  headerItems: DetailHeaderItems
-  actions?: ReactNode
-  cards: DetailCard[]
-  tabs?: DetailTab[]
-  onBack?: () => void
-  leftWidth?: number
-  defaultTabKey?: string
-  activeTabKey?: string
-  onTabChange?: (key: string) => void
-}
+  breadcrumbs: DetailBreadcrumbItem[];
+  title: ReactNode;
+  status?: ReactNode;
+  icon?: ReactNode;
+  headerItems: DetailHeaderItems;
+  actions?: ReactNode;
+  cards: DetailCard[];
+  tabs?: DetailTab[];
+  onBack?: () => void;
+  leftWidth?: number;
+  defaultTabKey?: string;
+  activeTabKey?: string;
+  onTabChange?: (key: string) => void;
+};
 
 function buildInitialCollapsed(cardsSignature: string) {
-  const cardEntries = JSON.parse(cardsSignature) as Array<[string, boolean]>
-  const initial = Object.fromEntries(cardEntries) as Record<string, boolean>
-  const visibleCount = Object.values(initial).filter((value) => !value).length
-  if (visibleCount > 0) return initial
-  const [firstCard] = cardEntries
-  return firstCard ? { ...initial, [firstCard[0]]: false } : initial
+  const cardEntries = JSON.parse(cardsSignature) as Array<[string, boolean]>;
+  const initial = Object.fromEntries(cardEntries) as Record<string, boolean>;
+  const visibleCount = Object.values(initial).filter((value) => !value).length;
+  if (visibleCount > 0) return initial;
+  const [firstCard] = cardEntries;
+  return firstCard ? { ...initial, [firstCard[0]]: false } : initial;
 }
 
 export function DetailPageFrame({
@@ -46,39 +46,46 @@ export function DetailPageFrame({
   activeTabKey: controlledActiveTabKey,
   onTabChange,
 }: DetailPageFrameProps) {
-  const visibleBreadcrumbs = breadcrumbs.filter((item) => item.to !== '/')
-  const hasTabs = Boolean(tabs?.length)
-  const cardsSignature = JSON.stringify(cards.map((card) => [card.key, Boolean(card.defaultCollapsed)]))
-  const initialCollapsed = useMemo(() => buildInitialCollapsed(cardsSignature), [cardsSignature])
-  const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>(initialCollapsed)
-  const [leftCollapsed, setLeftCollapsed] = useState(false)
-  const [internalActiveTabKey, setInternalActiveTabKey] = useState(defaultTabKey ?? tabs?.[0]?.key ?? '')
-  const activeTabKey = controlledActiveTabKey ?? internalActiveTabKey
+  const visibleBreadcrumbs = breadcrumbs.filter((item) => item.to !== "/");
+  const hasTabs = Boolean(tabs?.length);
+  const cardsSignature = JSON.stringify(
+    cards.map((card) => [card.key, Boolean(card.defaultCollapsed)]),
+  );
+  const initialCollapsed = useMemo(() => buildInitialCollapsed(cardsSignature), [cardsSignature]);
+  const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>(initialCollapsed);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [internalActiveTabKey, setInternalActiveTabKey] = useState(
+    defaultTabKey ?? tabs?.[0]?.key ?? "",
+  );
+  const activeTabKey = controlledActiveTabKey ?? internalActiveTabKey;
 
   useEffect(() => {
-    setCollapsedCards(initialCollapsed)
-  }, [initialCollapsed])
+    setCollapsedCards(initialCollapsed);
+  }, [initialCollapsed]);
 
   useEffect(() => {
-    if (!tabs?.length) return
+    if (!tabs?.length) return;
     if (!tabs.some((tab) => tab.key === activeTabKey)) {
-      setInternalActiveTabKey(defaultTabKey ?? tabs[0].key)
+      setInternalActiveTabKey(defaultTabKey ?? tabs[0].key);
     }
-  }, [activeTabKey, defaultTabKey, tabs])
+  }, [activeTabKey, defaultTabKey, tabs]);
 
-  const activeTab = tabs?.find((tab) => tab.key === activeTabKey) ?? tabs?.[0]
-  const expandedCardCount = cards.reduce((count, card) => count + (collapsedCards[card.key] ? 0 : 1), 0)
+  const activeTab = tabs?.find((tab) => tab.key === activeTabKey) ?? tabs?.[0];
+  const expandedCardCount = cards.reduce(
+    (count, card) => count + (collapsedCards[card.key] ? 0 : 1),
+    0,
+  );
 
   const toggleCard = (key: string) => {
     setCollapsedCards((current) => {
-      const isCollapsed = Boolean(current[key])
-      const visibleCount = cards.reduce((count, card) => count + (current[card.key] ? 0 : 1), 0)
-      if (!isCollapsed && visibleCount <= 1) return current
-      return { ...current, [key]: !isCollapsed }
-    })
-  }
+      const isCollapsed = Boolean(current[key]);
+      const visibleCount = cards.reduce((count, card) => count + (current[card.key] ? 0 : 1), 0);
+      if (!isCollapsed && visibleCount <= 1) return current;
+      return { ...current, [key]: !isCollapsed };
+    });
+  };
 
-  const workspaceStyle = { ['--detail-left-width' as string]: `${leftWidth}px` } as CSSProperties
+  const workspaceStyle = { ["--detail-left-width" as string]: `${leftWidth}px` } as CSSProperties;
 
   return (
     <div className={styles.page}>
@@ -96,18 +103,24 @@ export function DetailPageFrame({
         </Tooltip>
         <Breadcrumb className={styles.breadcrumbs} aria-label="详情面包屑">
           {visibleBreadcrumbs.map((item, index) => {
-            const isLast = index === visibleBreadcrumbs.length - 1
+            const isLast = index === visibleBreadcrumbs.length - 1;
             return (
               <Breadcrumb.Item key={`${index}-${String(item.label)}`}>
                 {item.to && !isLast ? (
-                  <Link to={item.to as any} params={item.params as any} className={styles.breadcrumbLink}>
+                  <Link
+                    to={item.to as any}
+                    params={item.params as any}
+                    className={styles.breadcrumbLink}
+                  >
                     {item.label}
                   </Link>
                 ) : (
-                  <span className={isLast ? styles.breadcrumbCurrent : styles.breadcrumbText}>{item.label}</span>
+                  <span className={isLast ? styles.breadcrumbCurrent : styles.breadcrumbText}>
+                    {item.label}
+                  </span>
                 )}
               </Breadcrumb.Item>
-            )
+            );
           })}
         </Breadcrumb>
       </div>
@@ -125,7 +138,7 @@ export function DetailPageFrame({
           {headerItems.map((item, index) => (
             <div key={`${index}-${String(item.label)}`} className={styles.headerItem}>
               <span className={styles.headerItemLabel}>{item.label}</span>
-              <span className={styles.headerItemValue}>{item.value ?? '-'}</span>
+              <span className={styles.headerItemValue}>{item.value ?? "-"}</span>
             </div>
           ))}
         </div>
@@ -150,8 +163,8 @@ export function DetailPageFrame({
         >
           <div className={styles.cardStack}>
             {cards.map((card) => {
-              const isCollapsed = Boolean(collapsedCards[card.key])
-              const bodyId = `detail-card-${card.key}`
+              const isCollapsed = Boolean(collapsedCards[card.key]);
+              const bodyId = `detail-card-${card.key}`;
               return (
                 <section
                   key={card.key}
@@ -165,7 +178,7 @@ export function DetailPageFrame({
                     className={styles.cardHeader}
                     aria-expanded={!isCollapsed}
                     aria-controls={bodyId}
-                    aria-label={`${isCollapsed ? '展开' : '折叠'}${String(card.title)}`}
+                    aria-label={`${isCollapsed ? "展开" : "折叠"}${String(card.title)}`}
                     onClick={() => toggleCard(card.key)}
                   >
                     <span className={styles.cardAccent} />
@@ -182,25 +195,25 @@ export function DetailPageFrame({
                         <div key={`${card.key}-${index}`} className={styles.fieldRow}>
                           <div className={styles.fieldLabel}>{field.label}</div>
                           <div className={clsx(styles.fieldValue, field.valueClassName)}>
-                            {field.value ?? '-'}
+                            {field.value ?? "-"}
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : null}
                 </section>
-              )
+              );
             })}
           </div>
         </aside>
 
         {hasTabs ? (
-          <Tooltip content={leftCollapsed ? '展开详情栏' : '收起详情栏'}>
+          <Tooltip content={leftCollapsed ? "展开详情栏" : "收起详情栏"}>
             <Button
               type="text"
               shape="circle"
               className={styles.paneToggle}
-              aria-label={leftCollapsed ? '展开详情栏' : '收起详情栏'}
+              aria-label={leftCollapsed ? "展开详情栏" : "收起详情栏"}
               onClick={() => setLeftCollapsed((current) => !current)}
             >
               <AliIcon name="left-chevron" size={16} />
@@ -217,8 +230,8 @@ export function DetailPageFrame({
               inkBarSize={{ width: 16 }}
               activeTab={activeTab?.key}
               onChange={(key) => {
-                if (controlledActiveTabKey === undefined) setInternalActiveTabKey(key)
-                onTabChange?.(key)
+                if (controlledActiveTabKey === undefined) setInternalActiveTabKey(key);
+                onTabChange?.(key);
               }}
               extra={activeTab?.extra}
               overflow="scroll"
@@ -236,5 +249,5 @@ export function DetailPageFrame({
         ) : null}
       </div>
     </div>
-  )
+  );
 }

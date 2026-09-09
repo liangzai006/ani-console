@@ -32,14 +32,7 @@ export const INITIAL_VALUES: FormValues = {
   auto_start: true,
 };
 
-export const SESSION_TIMEOUT_OPTIONS = [
-  "30m",
-  "45m",
-  "60m",
-  "90m",
-  "120m",
-  "240m",
-];
+export const SESSION_TIMEOUT_OPTIONS = ["30m", "45m", "60m", "90m", "120m", "240m"];
 export const IDLE_TIMEOUT_OPTIONS = ["5m", "10m", "15m", "30m", "60m"];
 
 export function parseEgressAllowlist(value: string) {
@@ -49,9 +42,7 @@ export function parseEgressAllowlist(value: string) {
     .filter(Boolean);
 }
 
-export function getTemplateComputeSpec(
-  template?: SandboxTemplate,
-): CpuInstanceComputeSpec {
+export function getTemplateComputeSpec(template?: SandboxTemplate): CpuInstanceComputeSpec {
   if (!template?.cpu_cores || !template.memory_gb) {
     return INITIAL_VALUES.compute_spec;
   }
@@ -59,8 +50,7 @@ export function getTemplateComputeSpec(
   return (
     CPU_INSTANCE_COMPUTE_SPECS.find(
       (option) =>
-        option.cpu === String(template.cpu_cores) &&
-        option.memory === `${template.memory_gb}Gi`,
+        option.cpu === String(template.cpu_cores) && option.memory === `${template.memory_gb}Gi`,
     )?.value ?? INITIAL_VALUES.compute_spec
   );
 }
@@ -70,9 +60,8 @@ export function buildCreateRequest(
   template: SandboxTemplate,
 ): Omit<components["schemas"]["CreateInstanceRequest"], "idempotency_key"> {
   const computeSpec =
-    CPU_INSTANCE_COMPUTE_SPECS.find(
-      (option) => option.value === values.compute_spec,
-    ) ?? CPU_INSTANCE_COMPUTE_SPECS[1];
+    CPU_INSTANCE_COMPUTE_SPECS.find((option) => option.value === values.compute_spec) ??
+    CPU_INSTANCE_COMPUTE_SPECS[1];
 
   return {
     name: values.name.trim(),
@@ -93,9 +82,7 @@ export function buildCreateRequest(
       on_timeout: values.on_timeout,
       network_egress_policy: values.egress_policy,
       egress_allowlist:
-        values.egress_policy === "allowlist"
-          ? parseEgressAllowlist(values.egress_allowlist)
-          : [],
+        values.egress_policy === "allowlist" ? parseEgressAllowlist(values.egress_allowlist) : [],
     },
   };
 }

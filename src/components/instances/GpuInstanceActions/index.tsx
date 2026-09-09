@@ -1,21 +1,11 @@
-import {
-  Button,
-  Dropdown,
-  Menu,
-  Message,
-  Space,
-  Tooltip,
-} from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Message, Space, Tooltip } from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { coreApi } from "@/api/client";
 import type { components } from "@/api/core-schema";
-import {
-  DataTableRowActionButton,
-  DataTableRowActions,
-} from "@/components/common";
+import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { GpuInstanceAttachFilesystemModal } from "./GpuInstanceAttachFilesystemModal";
@@ -43,16 +33,9 @@ type ModalAction =
   | "bind_secret"
   | "change_security_groups";
 
-const BUSY_STATES = new Set([
-  "pending",
-  "provisioning",
-  "starting",
-  "stopping",
-  "deleting",
-]);
+const BUSY_STATES = new Set(["pending", "provisioning", "starting", "stopping", "deleting"]);
 
-const TERMINATION_PROTECTION_STOP_TOOLTIP =
-  "已开启终止保护，请先关闭终止保护后再关机";
+const TERMINATION_PROTECTION_STOP_TOOLTIP = "已开启终止保护，请先关闭终止保护后再关机";
 
 export function GpuInstanceActions({
   instance,
@@ -66,18 +49,12 @@ export function GpuInstanceActions({
   display?: "row" | "detail" | "release" | "configuration";
 }) {
   const navigate = useNavigate();
-  const startScope = useIdempotencyScope("gpu-instance-start", [
+  const startScope = useIdempotencyScope("gpu-instance-start", ["POST", instance.id]);
+  const restartScope = useIdempotencyScope("gpu-instance-restart", ["POST", instance.id]);
+  const protectionScope = useIdempotencyScope("gpu-instance-termination-protection", [
     "POST",
     instance.id,
   ]);
-  const restartScope = useIdempotencyScope("gpu-instance-restart", [
-    "POST",
-    instance.id,
-  ]);
-  const protectionScope = useIdempotencyScope(
-    "gpu-instance-termination-protection",
-    ["POST", instance.id],
-  );
   const [modalAction, setModalAction] = useState<ModalAction>();
   const [stopVisible, setStopVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
@@ -85,18 +62,13 @@ export function GpuInstanceActions({
   const start = useMutation({
     mutationFn: async () => {
       const submitData = { action: "start" as const };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: startScope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: startScope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -105,24 +77,18 @@ export function GpuInstanceActions({
       Message.success("启动已提交");
       onChanged();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const restart = useMutation({
     mutationFn: async () => {
       const submitData = { action: "restart" as const };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: restartScope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: restartScope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -131,8 +97,7 @@ export function GpuInstanceActions({
       Message.success("重启已提交");
       onChanged();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const terminationProtection = useMutation({
     mutationFn: async (enabled: boolean) => {
@@ -140,18 +105,13 @@ export function GpuInstanceActions({
         action: "set_termination_protection" as const,
         enabled,
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: protectionScope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: protectionScope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -160,20 +120,15 @@ export function GpuInstanceActions({
       Message.success("终止保护已更新");
       onChanged();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
-  const actionPending =
-    start.isPending || restart.isPending || terminationProtection.isPending;
+  const actionPending = start.isPending || restart.isPending || terminationProtection.isPending;
   const busy = BUSY_STATES.has(instance.state) || actionPending;
-  const stopBlockedByTerminationProtection =
-    instance.termination_protection === true;
+  const stopBlockedByTerminationProtection = instance.termination_protection === true;
   const terminalAvailable =
     instance.state === "running" && instance.access?.exec_available !== false;
   const stopDisabled =
-    instance.state !== "running" ||
-    actionPending ||
-    stopBlockedByTerminationProtection;
+    instance.state !== "running" || actionPending || stopBlockedByTerminationProtection;
   const canStart = instance.state === "stopped";
 
   const handleMenuAction = async (action: string) => {
@@ -220,10 +175,7 @@ export function GpuInstanceActions({
 
   const moreMenu = (
     <Menu onClickMenuItem={handleMenuAction}>
-      <Menu.Item
-        key="restart"
-        disabled={instance.state !== "running" || actionPending}
-      >
+      <Menu.Item key="restart" disabled={instance.state !== "running" || actionPending}>
         重启
       </Menu.Item>
       <Menu.Item key="scale" disabled={busy}>
@@ -314,10 +266,7 @@ export function GpuInstanceActions({
           <Dropdown trigger="click" position="br" droplist={moreMenu}>
             <DataTableRowActionButton disabled={actionPending}>
               更多
-              <i
-                className="iconfont icon-down-chevron-small ml-1"
-                aria-hidden="true"
-              />
+              <i className="iconfont icon-down-chevron-small ml-1" aria-hidden="true" />
             </DataTableRowActionButton>
           </Dropdown>
         </DataTableRowActions>
@@ -333,11 +282,7 @@ export function GpuInstanceActions({
         </Space>
       ) : display === "release" ? (
         <Space>
-          <Button
-            size="small"
-            disabled={busy}
-            onClick={() => setModalAction("update_image")}
-          >
+          <Button size="small" disabled={busy} onClick={() => setModalAction("update_image")}>
             更新镜像
           </Button>
           <Button
@@ -349,11 +294,7 @@ export function GpuInstanceActions({
           </Button>
         </Space>
       ) : display === "configuration" ? (
-        <Button
-          size="small"
-          disabled={busy}
-          onClick={() => setModalAction("bind_secret")}
-        >
+        <Button size="small" disabled={busy} onClick={() => setModalAction("bind_secret")}>
           绑定密钥
         </Button>
       ) : null}

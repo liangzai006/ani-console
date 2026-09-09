@@ -1,11 +1,7 @@
 import { Message } from "@arco-design/web-react";
 import { getErrorMessage } from "@/lib/errors";
 
-export function throwSandboxApiError(
-  error: unknown,
-  status: number,
-  fallback: string,
-): never {
+export function throwSandboxApiError(error: unknown, status: number, fallback: string): never {
   if (error && typeof error === "object") {
     throw { ...error, status };
   }

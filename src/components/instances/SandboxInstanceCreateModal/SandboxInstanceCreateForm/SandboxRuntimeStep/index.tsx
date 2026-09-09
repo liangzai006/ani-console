@@ -1,16 +1,5 @@
-import {
-  Alert,
-  Form,
-  Input,
-  Select,
-  Switch,
-  Typography,
-} from "@arco-design/web-react";
-import {
-  IDLE_TIMEOUT_OPTIONS,
-  SESSION_TIMEOUT_OPTIONS,
-  type FormValues,
-} from "../../types";
+import { Alert, Form, Input, Select, Switch, Typography } from "@arco-design/web-react";
+import { IDLE_TIMEOUT_OPTIONS, SESSION_TIMEOUT_OPTIONS, type FormValues } from "../../types";
 
 export function SandboxRuntimeStep({ values }: { values: FormValues }) {
   return (
@@ -64,10 +53,7 @@ export function SandboxRuntimeStep({ values }: { values: FormValues }) {
         </Form.Item>
       ) : null}
       <Form.Item field="auto_start" label="自动启动" triggerPropName="checked">
-        <Switch />{" "}
-        <Typography.Text type="secondary">
-          创建后立即启动 Sandbox
-        </Typography.Text>
+        <Switch /> <Typography.Text type="secondary">创建后立即启动 Sandbox</Typography.Text>
       </Form.Item>
       <Alert
         type="info"

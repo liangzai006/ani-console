@@ -13,10 +13,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
-import {
-  DataTableRowActionButton,
-  DataTableRowActions,
-} from "@/components/common";
+import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import type { SandboxInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
@@ -47,40 +44,25 @@ export function SandboxInstanceActions({
   onTabChange: (tab: SandboxInstanceDetailTabKey) => void;
   display?: "row" | "detail";
 }) {
-  const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", [
-    "POST",
-    instance.id,
-  ]);
+  const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", ["POST", instance.id]);
   const [extendVisible, setExtendVisible] = useState(false);
   const [extendDuration, setExtendDuration] = useState("1h");
   const sandbox = instance.sandbox;
   const sessionState = sandbox?.session_state ?? instance.state;
   const running = sessionState === "running";
   const resumable = sessionState === "paused" || sessionState === "stopped";
-  const terminalAvailable =
-    running && instance.access?.exec_available !== false;
+  const terminalAvailable = running && instance.access?.exec_available !== false;
 
   const lifecycle = useMutation({
-    mutationFn: async ({
-      action,
-      duration,
-    }: {
-      action: LifecycleAction;
-      duration?: string;
-    }) => {
+    mutationFn: async ({ action, duration }: { action: LifecycleAction; duration?: string }) => {
       const submitData = { action, duration };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: lifecycleScope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: lifecycleScope.withKey(submitData),
+      });
       if (error) {
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
       }
@@ -100,12 +82,10 @@ export function SandboxInstanceActions({
       if (action === "delete") onDeleted();
       else onChanged();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
-  const busy =
-    lifecycle.isPending || BUSY_INSTANCE_STATES.has(instance.state ?? "");
+  const busy = lifecycle.isPending || BUSY_INSTANCE_STATES.has(instance.state ?? "");
   const lifecycleUnavailable = TERMINAL_STATES.has(sessionState);
 
   const handleMenuAction = (action: string) => {
@@ -150,17 +130,13 @@ export function SandboxInstanceActions({
     </Menu>
   );
   const lifecycleDisabled = busy || (!running && !resumable);
-  const lifecycleAction = () =>
-    lifecycle.mutate({ action: running ? "pause" : "resume" });
+  const lifecycleAction = () => lifecycle.mutate({ action: running ? "pause" : "resume" });
 
   return (
     <>
       {display === "row" ? (
         <DataTableRowActions>
-          <DataTableRowActionButton
-            disabled={lifecycleDisabled}
-            onClick={lifecycleAction}
-          >
+          <DataTableRowActionButton disabled={lifecycleDisabled} onClick={lifecycleAction}>
             {running ? "暂停" : "恢复"}
           </DataTableRowActionButton>
           <Dropdown trigger="click" position="br" droplist={menu}>

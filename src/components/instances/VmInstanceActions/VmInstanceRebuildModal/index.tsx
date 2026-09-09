@@ -16,20 +16,14 @@ export function VmInstanceRebuildModal({
   onCancel: () => void;
   onSubmitted: (operationId: string) => void;
 }) {
-  const scope = useIdempotencyScope("vm-instance-rebuild", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("vm-instance-rebuild", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async () => {
       const submitData = { action: "rebuild" as const };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error || !data)
         throw {
           ...(typeof error === "object" && error
@@ -44,8 +38,7 @@ export function VmInstanceRebuildModal({
       Message.success("重建已提交");
       onSubmitted(operationId);
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal

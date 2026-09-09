@@ -17,28 +17,20 @@ export function GpuInstanceDetachVolumeModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<{ volumeId: string }>();
-  const scope = useIdempotencyScope("gpu-instance-detach-volume", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("gpu-instance-detach-volume", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async ({ volumeId }: { volumeId: string }) => {
       const submitData = {
         action: "detach_volume" as const,
         volume_id: volumeId.trim(),
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -47,8 +39,7 @@ export function GpuInstanceDetachVolumeModal({
       Message.success("卸载云盘已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal

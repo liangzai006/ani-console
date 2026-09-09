@@ -1,18 +1,12 @@
 import { Descriptions, Empty, Space } from "@arco-design/web-react";
 import type { ReactNode } from "react";
 import type { components } from "@/api/core-schema";
-import {
-  DataTable,
-  ImageNameText,
-  TableSectionHeader,
-} from "@/components/common";
+import { DataTable, ImageNameText, TableSectionHeader } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 
 type Instance = components["schemas"]["InstanceRecord"];
-type Release = NonNullable<
-  NonNullable<Instance["container"]>["history"]
->[number];
+type Release = NonNullable<NonNullable<Instance["container"]>["history"]>[number];
 
 export function InstanceReleases({
   instance,
@@ -43,9 +37,7 @@ export function InstanceReleases({
           },
           {
             label: "发布状态",
-            value: rolloutStatus
-              ? (rolloutLabels[rolloutStatus] ?? rolloutStatus)
-              : "-",
+            value: rolloutStatus ? (rolloutLabels[rolloutStatus] ?? rolloutStatus) : "-",
           },
           {
             label: "就绪副本",

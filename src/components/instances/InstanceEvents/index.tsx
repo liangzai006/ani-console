@@ -12,15 +12,12 @@ export function InstanceEvents({ instanceId }: { instanceId: string }) {
   const events = useQuery({
     queryKey: ["instance-events", instanceId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/instances/{instance_id}/events",
-        {
-          params: {
-            path: { instance_id: instanceId },
-            query: { limit: 100 },
-          },
+      const { data, error } = await coreApi.GET("/instances/{instance_id}/events", {
+        params: {
+          path: { instance_id: instanceId },
+          query: { limit: 100 },
         },
-      );
+      });
       if (error || !data) throw error ?? new Error("事件列表未返回结果");
       return data.items as InstanceEvent[];
     },
@@ -42,9 +39,7 @@ export function InstanceEvents({ instanceId }: { instanceId: string }) {
           title: "类型",
           width: 100,
           render: (_, event) => (
-            <Tag color={event.type === "Warning" ? "orangered" : "green"}>
-              {event.type}
-            </Tag>
+            <Tag color={event.type === "Warning" ? "orangered" : "green"}>{event.type}</Tag>
           ),
         },
         { title: "原因", dataIndex: "reason", width: 180 },

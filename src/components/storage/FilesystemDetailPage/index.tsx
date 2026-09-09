@@ -8,15 +8,7 @@ import {
 } from "@/components/common";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Empty,
-  Modal,
-  Space,
-  Spin,
-  Tooltip,
-} from "@arco-design/web-react";
+import { Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { useState } from "react";
 import { showApiError } from "@/api/helpers";
@@ -31,11 +23,7 @@ import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 type Filesystem = components["schemas"]["StorageFilesystem"];
 type MountTarget = components["schemas"]["FilesystemMountTarget"];
 
-export function FilesystemDetailPage({
-  filesystemId,
-}: {
-  filesystemId: string;
-}) {
+export function FilesystemDetailPage({ filesystemId }: { filesystemId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [expandVisible, setExpandVisible] = useState(false);
@@ -43,10 +31,9 @@ export function FilesystemDetailPage({
   const detail = useQuery({
     queryKey: ["filesystem", filesystemId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/filesystems/{filesystem_id}",
-        { params: { path: { filesystem_id: filesystemId } } },
-      );
+      const { data, error } = await coreApi.GET("/filesystems/{filesystem_id}", {
+        params: { path: { filesystem_id: filesystemId } },
+      });
       if (error) throw error;
       return data;
     },
@@ -109,9 +96,7 @@ export function FilesystemDetailPage({
 
   const filesystem = detail.data as Filesystem;
   const mountItems = (mounts.data?.items ?? []) as MountTarget[];
-  const unavailable = (description: string) => (
-    <Empty description={description} />
-  );
+  const unavailable = (description: string) => <Empty description={description} />;
   const filesystemStatus = filesystem.reason ? (
     <Tooltip content={filesystem.reason}>
       <span className="inline-flex">
@@ -209,10 +194,7 @@ export function FilesystemDetailPage({
                 <TableSectionHeader
                   title="挂载目标"
                   extra={
-                    <Button
-                      type="primary"
-                      onClick={() => setMountTargetVisible(true)}
-                    >
+                    <Button type="primary" onClick={() => setMountTargetVisible(true)}>
                       创建挂载目标
                     </Button>
                   }
@@ -229,10 +211,7 @@ export function FilesystemDetailPage({
                       title: "VPC",
                       render: (_, row) =>
                         row.vpc_id ? (
-                          <Link
-                            to="/vpcs/$vpcId"
-                            params={{ vpcId: row.vpc_id }}
-                          >
+                          <Link to="/vpcs/$vpcId" params={{ vpcId: row.vpc_id }}>
                             {row.vpc_id}
                           </Link>
                         ) : (
@@ -242,10 +221,7 @@ export function FilesystemDetailPage({
                     {
                       title: "子网",
                       render: (_, row) => (
-                        <Link
-                          to="/subnets/$subnetId"
-                          params={{ subnetId: row.subnet_id }}
-                        >
+                        <Link to="/subnets/$subnetId" params={{ subnetId: row.subnet_id }}>
                           {row.subnet_id}
                         </Link>
                       ),
@@ -259,9 +235,7 @@ export function FilesystemDetailPage({
                   data={mountItems}
                   loading={mounts.isLoading}
                   pagination={false}
-                  noDataElement={
-                    <Empty description="暂无挂载目标，请创建挂载目标后获取访问地址" />
-                  }
+                  noDataElement={<Empty description="暂无挂载目标，请创建挂载目标后获取访问地址" />}
                 />
               </div>
             ),

@@ -23,11 +23,7 @@ import { formatDateTime } from "@/lib/format";
 import { showApiError } from "@/api/helpers";
 import { getErrorMessage } from "@/lib/errors";
 import { getImageDisplayName } from "@/lib/render";
-import {
-  suggestImageSizeGib,
-  uploadImageFile,
-  type ImageUploadProgress,
-} from "@/lib/image-upload";
+import { suggestImageSizeGib, uploadImageFile, type ImageUploadProgress } from "@/lib/image-upload";
 import type { components } from "@/api/core-schema";
 
 type ImageRecord = components["schemas"]["Image"];
@@ -55,9 +51,7 @@ function formatBytes(bytes?: number): string | null {
 
 export function ImagesPage() {
   const qc = useQueryClient();
-  const uploadScope = useIdempotencyScope("registry-image-upload-session", [
-    "POST",
-  ]);
+  const uploadScope = useIdempotencyScope("registry-image-upload-session", ["POST"]);
   const [visible, setVisible] = useState(false);
   const [form, setForm] = useState<UploadFormState>(defaultUploadForm);
   const [progress, setProgress] = useState<ImageUploadProgress | null>(null);
@@ -173,8 +167,7 @@ export function ImagesPage() {
                 <StatusTag status={r.state} />
                 {r.state === "failed" ? (
                   <Typography.Text type="error" className="text-xs">
-                    {[r.reason, r.message].filter(Boolean).join("：") ||
-                      "导入失败"}
+                    {[r.reason, r.message].filter(Boolean).join("：") || "导入失败"}
                   </Typography.Text>
                 ) : null}
               </Space>
@@ -259,8 +252,7 @@ export function ImagesPage() {
             </Upload>
             {form.file ? (
               <Typography.Text className="mt-2 block text-xs" type="secondary">
-                已选：{form.file.name}（
-                {(form.file.size / 1024 ** 3).toFixed(2)} GiB）
+                已选：{form.file.name}（{(form.file.size / 1024 ** 3).toFixed(2)} GiB）
               </Typography.Text>
             ) : null}
           </Form.Item>
@@ -325,19 +317,14 @@ export function ImagesPage() {
                 </Typography.Text>
               ) : null}
               {progress.phase === "uploading" ? (
-                <Typography.Text
-                  className="mt-1 block text-xs"
-                  type="secondary"
-                >
+                <Typography.Text className="mt-1 block text-xs" type="secondary">
                   本地发送进度，不等于入库完成
                 </Typography.Text>
               ) : null}
             </Form.Item>
           ) : null}
           {uploadIso.isError ? (
-            <Typography.Text type="error">
-              {getErrorMessage(uploadIso.error)}
-            </Typography.Text>
+            <Typography.Text type="error">{getErrorMessage(uploadIso.error)}</Typography.Text>
           ) : null}
         </Form>
       </Modal>

@@ -46,10 +46,7 @@ export function NetworkRoutesPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<NetworkRoute>({
-    queryKey: [
-      "network-routes",
-      { status, searchField, searchText, filterVpcId },
-    ],
+    queryKey: ["network-routes", { status, searchField, searchText, filterVpcId }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
@@ -72,9 +69,7 @@ export function NetworkRoutesPage() {
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "route-list"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
   });
   const deleteRoute = useMutation({
     mutationFn: async (item: NetworkRoute) => {
@@ -92,10 +87,7 @@ export function NetworkRoutesPage() {
 
   const items = (routes.data?.items ?? []) as NetworkRoute[];
   const vpcNames = useMemo(
-    () =>
-      new Map(
-        ((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => [vpc.id, vpc.name]),
-      ),
+    () => new Map(((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => [vpc.id, vpc.name])),
     [vpcs.data?.items],
   );
   const paginationTotal = routes.data?.total ?? items.length;
@@ -142,11 +134,7 @@ export function NetworkRoutesPage() {
       key: "nextHopType",
       title: "类型",
       render: (_, item) =>
-        item.next_hop_type === "instance"
-          ? "实例"
-          : item.next_hop_type === "nat"
-            ? "NAT"
-            : "网关",
+        item.next_hop_type === "instance" ? "实例" : item.next_hop_type === "nat" ? "NAT" : "网关",
     },
     { key: "priority", title: "下一跳优先级", render: () => "-" },
   ];
@@ -270,10 +258,7 @@ export function NetworkRoutesPage() {
           }}
         />
       </ListPageFrame>
-      <CreateRouteModal
-        visible={createVisible}
-        onCancel={() => setCreateVisible(false)}
-      />
+      <CreateRouteModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
     </>
   );
 }

@@ -105,16 +105,10 @@ export function VmInstanceDetailPage({
 
   const instance = detail.data;
   if (instance.kind !== "vm") {
-    return (
-      <ApiErrorAlert
-        error={new Error("当前资源不是云主机 VM")}
-        title="资源类型不匹配"
-      />
-    );
+    return <ApiErrorAlert error={new Error("当前资源不是云主机 VM")} title="资源类型不匹配" />;
   }
 
-  const autoStart = (instance as VmInstance & { auto_start?: boolean | null })
-    .auto_start;
+  const autoStart = (instance as VmInstance & { auto_start?: boolean | null }).auto_start;
   const busy = BUSY_STATES.has(instance.state);
   const stable = instance.state === "running" || instance.state === "stopped";
   const running = instance.state === "running";
@@ -256,24 +250,16 @@ export function VmInstanceDetailPage({
               { label: "CPU / 内存", value: specLabel(instance) },
               {
                 label: "私网 IP",
-                value:
-                  instance.network?.private_ip ?? instance.private_ip ?? "-",
+                value: instance.network?.private_ip ?? instance.private_ip ?? "-",
               },
               {
                 label: "自动启动",
-                value:
-                  typeof autoStart === "boolean"
-                    ? autoStart
-                      ? "是"
-                      : "否"
-                    : "-",
+                value: typeof autoStart === "boolean" ? (autoStart ? "是" : "否") : "-",
               },
               {
                 label: "安全组",
                 value: securityGroups.length
-                  ? securityGroups
-                      .map((group) => group.name ?? group.id)
-                      .join(" · ")
+                  ? securityGroups.map((group) => group.name ?? group.id).join(" · ")
                   : "-",
               },
               { label: "创建时间", value: formatDateTime(instance.created_at) },
@@ -291,9 +277,7 @@ export function VmInstanceDetailPage({
                     label: item.kind,
                     value: (
                       <Tooltip content={summary}>
-                        <span className="block min-w-0 truncate">
-                          {summary}
-                        </span>
+                        <span className="block min-w-0 truncate">{summary}</span>
                       </Tooltip>
                     ),
                   };
@@ -323,26 +307,17 @@ export function VmInstanceDetailPage({
                 onChanged={refreshDetail}
                 canRollback={stable && !busy}
                 volumeAction={
-                  <Button
-                    disabled={!stable || busy}
-                    onClick={() => setMountKind("volume")}
-                  >
+                  <Button disabled={!stable || busy} onClick={() => setMountKind("volume")}>
                     挂载云盘
                   </Button>
                 }
                 filesystemAction={
-                  <Button
-                    disabled={!stable || busy}
-                    onClick={() => setMountKind("filesystem")}
-                  >
+                  <Button disabled={!stable || busy} onClick={() => setMountKind("filesystem")}>
                     挂载 NFS
                   </Button>
                 }
                 snapshotAction={
-                  <Button
-                    disabled={!stable || busy}
-                    onClick={() => setSnapshotVisible(true)}
-                  >
+                  <Button disabled={!stable || busy} onClick={() => setSnapshotVisible(true)}>
                     创建快照
                   </Button>
                 }
@@ -357,19 +332,12 @@ export function VmInstanceDetailPage({
           {
             key: "monitoring",
             label: "监控",
-            content: (
-              <InstanceMetrics instanceId={instance.id} instanceKind="vm" />
-            ),
+            content: <InstanceMetrics instanceId={instance.id} instanceKind="vm" />,
           },
           {
             key: "logs",
             label: "日志",
-            content: (
-              <InstanceLogsPanel
-                instanceId={instance.id}
-                active={tab === "logs"}
-              />
-            ),
+            content: <InstanceLogsPanel instanceId={instance.id} active={tab === "logs"} />,
           },
           {
             key: "events",

@@ -87,8 +87,7 @@ export function isGpuSpecSelectable(spec: GpuSpecOption) {
 
   return (
     spec.source === "temporary" ||
-    (spec.availability?.status === "available" &&
-      spec.availability.available_count > 0)
+    (spec.availability?.status === "available" && spec.availability.available_count > 0)
   );
 }
 
@@ -173,9 +172,8 @@ export function buildCreateRequest(
   securityGroupId: string,
 ): Omit<ExtendedCreateRequest, "idempotency_key"> {
   const computeSpec =
-    GPU_INSTANCE_COMPUTE_SPECS.find(
-      (option) => option.value === values.compute_spec,
-    ) ?? GPU_INSTANCE_COMPUTE_SPECS[0];
+    GPU_INSTANCE_COMPUTE_SPECS.find((option) => option.value === values.compute_spec) ??
+    GPU_INSTANCE_COMPUTE_SPECS[0];
   return {
     name: values.name.trim(),
     kind: "gpu_container",

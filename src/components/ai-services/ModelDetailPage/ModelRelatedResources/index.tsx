@@ -39,8 +39,7 @@ export function ModelRelatedResources({
           {
             title: "副本",
             width: 120,
-            render: (_, service) =>
-              `${service.ready_replicas} / ${service.replicas}`,
+            render: (_, service) => `${service.ready_replicas} / ${service.replicas}`,
           },
           {
             title: "创建时间",

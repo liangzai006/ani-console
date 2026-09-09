@@ -1,9 +1,4 @@
-import {
-  DataTable,
-  DetailPageFrame,
-  DetailPagePlaceholder,
-  AliIcon,
-} from "@/components/common";
+import { DataTable, DetailPageFrame, DetailPagePlaceholder, AliIcon } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -56,37 +51,25 @@ export function BucketDetailPage({
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const uploadReservationScope = useIdempotencyScope(
-    "storage-object-upload-reserve",
-    ["POST", bucketId],
-  );
-  const uploadCompleteScope = useIdempotencyScope(
-    "storage-object-upload-complete",
-    ["POST", bucketId],
-  );
-  const createFolderScope = useIdempotencyScope(
-    "storage-bucket-prefix-create",
-    ["POST", bucketId],
-  );
-  const updateAclScope = useIdempotencyScope("storage-bucket-acl-update", [
-    "PUT",
+  const uploadReservationScope = useIdempotencyScope("storage-object-upload-reserve", [
+    "POST",
     bucketId,
   ]);
-  const updateClassScope = useIdempotencyScope("storage-bucket-class-update", [
-    "PUT",
+  const uploadCompleteScope = useIdempotencyScope("storage-object-upload-complete", [
+    "POST",
     bucketId,
   ]);
+  const createFolderScope = useIdempotencyScope("storage-bucket-prefix-create", ["POST", bucketId]);
+  const updateAclScope = useIdempotencyScope("storage-bucket-acl-update", ["PUT", bucketId]);
+  const updateClassScope = useIdempotencyScope("storage-bucket-class-update", ["PUT", bucketId]);
   const uploadTriggerRef = useRef<HTMLButtonElement>(null);
   const [prefix, setPrefix] = useState("/");
   const [folderVisible, setFolderVisible] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [ruleVisible, setRuleVisible] = useState(false);
-  const [editingRule, setEditingRule] = useState<LifecycleRule | undefined>(
-    undefined,
-  );
+  const [editingRule, setEditingRule] = useState<LifecycleRule | undefined>(undefined);
   const [aclDraft, setAclDraft] = useState<Bucket["acl"]>("private");
-  const [classDraft, setClassDraft] =
-    useState<Bucket["storage_class"]>("standard");
+  const [classDraft, setClassDraft] = useState<Bucket["storage_class"]>("standard");
 
   const bucket = useQuery({
     queryKey: ["bucket", bucketId],
@@ -209,20 +192,11 @@ export function BucketDetailPage({
     onError: (error) => showApiError(error),
   });
   const generateLink = useMutation({
-    mutationFn: async ({
-      entry,
-      action,
-    }: {
-      entry: BucketEntry;
-      action: "download" | "copy";
-    }) => {
-      const { data, error } = await coreApi.POST(
-        "/buckets/{bucket_id}/objects/presigned-url",
-        {
-          params: { path: { bucket_id: bucketId } },
-          body: { key: entry.key, method: "GET", expires_hours: 24 },
-        },
-      );
+    mutationFn: async ({ entry, action }: { entry: BucketEntry; action: "download" | "copy" }) => {
+      const { data, error } = await coreApi.POST("/buckets/{bucket_id}/objects/presigned-url", {
+        params: { path: { bucket_id: bucketId } },
+        body: { key: entry.key, method: "GET", expires_hours: 24 },
+      });
       if (error) throw error;
       return { data, action };
     },
@@ -256,13 +230,10 @@ export function BucketDetailPage({
   const updateClass = useMutation({
     mutationFn: async (_: undefined) => {
       const submitData = { storage_class: classDraft ?? "standard" };
-      const { data, error } = await coreApi.PUT(
-        "/buckets/{bucket_id}/storage-class",
-        {
-          params: { path: { bucket_id: bucketId } },
-          body: updateClassScope.withKey(submitData),
-        },
-      );
+      const { data, error } = await coreApi.PUT("/buckets/{bucket_id}/storage-class", {
+        params: { path: { bucket_id: bucketId } },
+        body: updateClassScope.withKey(submitData),
+      });
       if (error) throw error;
       return data;
     },
@@ -274,12 +245,9 @@ export function BucketDetailPage({
   });
   const deleteRule = useMutation({
     mutationFn: async (rule: LifecycleRule) => {
-      const { error } = await coreApi.DELETE(
-        "/buckets/{bucket_id}/lifecycle-rules/{rule_id}",
-        {
-          params: { path: { bucket_id: bucketId, rule_id: rule.id } },
-        },
-      );
+      const { error } = await coreApi.DELETE("/buckets/{bucket_id}/lifecycle-rules/{rule_id}", {
+        params: { path: { bucket_id: bucketId, rule_id: rule.id } },
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -317,8 +285,7 @@ export function BucketDetailPage({
     setFolderName("");
   };
   const aclLabel = bucketInfo.acl === "tenant_read" ? "租户内读" : "私有";
-  const storageClassLabel =
-    bucketInfo.storage_class === "infrequent_access" ? "低频" : "标准";
+  const storageClassLabel = bucketInfo.storage_class === "infrequent_access" ? "低频" : "标准";
   const copyText = async (text: string, successMessage: string) => {
     await navigator.clipboard.writeText(text);
     Message.success(successMessage);
@@ -333,11 +300,7 @@ export function BucketDetailPage({
           { label: bucketInfo.name },
         ]}
         title={bucketInfo.name}
-        status={
-          <Tag color={bucketInfo.acl === "tenant_read" ? "blue" : "gray"}>
-            {aclLabel}
-          </Tag>
-        }
+        status={<Tag color={bucketInfo.acl === "tenant_read" ? "blue" : "gray"}>{aclLabel}</Tag>}
         icon={<AliIcon name="duixiangcunchu1" size={28} />}
         headerItems={[
           { label: "桶 ID", value: bucketInfo.id },
@@ -392,11 +355,7 @@ export function BucketDetailPage({
                       upload.mutate(opt.file as File);
                     }}
                   >
-                    <Button
-                      ref={uploadTriggerRef}
-                      type="primary"
-                      loading={upload.isPending}
-                    >
+                    <Button ref={uploadTriggerRef} type="primary" loading={upload.isPending}>
                       上传对象
                     </Button>
                   </Upload>
@@ -404,12 +363,8 @@ export function BucketDetailPage({
                 onNavigate={navigatePrefix}
                 onCreateFolder={() => setFolderVisible(true)}
                 onCopyPath={(entry) => copyText(entry.key, "对象路径已复制")}
-                onDownload={(entry) =>
-                  generateLink.mutateAsync({ entry, action: "download" })
-                }
-                onCopyLink={(entry) =>
-                  generateLink.mutateAsync({ entry, action: "copy" })
-                }
+                onDownload={(entry) => generateLink.mutateAsync({ entry, action: "download" })}
+                onCopyLink={(entry) => generateLink.mutateAsync({ entry, action: "copy" })}
                 onDelete={(entry) =>
                   Modal.confirm({
                     title: entry.kind === "prefix" ? "删除文件夹" : "删除对象",
@@ -427,14 +382,9 @@ export function BucketDetailPage({
             content: (
               <Space direction="vertical" size={20} className="w-full">
                 <Typography.Text type="secondary">
-                  P0 支持私有与租户内读两档权限；跨账户 ACL
-                  与桶策略编辑暂不在当前范围内。
+                  P0 支持私有与租户内读两档权限；跨账户 ACL 与桶策略编辑暂不在当前范围内。
                 </Typography.Text>
-                <Descriptions
-                  column={1}
-                  border
-                  data={[{ label: "当前权限", value: aclLabel }]}
-                />
+                <Descriptions column={1} border data={[{ label: "当前权限", value: aclLabel }]} />
                 <Space>
                   <Select
                     value={aclDraft ?? "private"}
@@ -447,9 +397,7 @@ export function BucketDetailPage({
                   <Button
                     type="primary"
                     loading={updateAcl.isPending}
-                    disabled={
-                      (aclDraft ?? "private") === (bucketInfo.acl ?? "private")
-                    }
+                    disabled={(aclDraft ?? "private") === (bucketInfo.acl ?? "private")}
                     onClick={() => updateAcl.mutateAsync(undefined)}
                   >
                     保存权限
@@ -465,9 +413,7 @@ export function BucketDetailPage({
               <Space direction="vertical" size={12} className="w-full">
                 <div className="flex w-full items-center justify-between">
                   <Typography.Text>
-                    共{" "}
-                    <Typography.Text bold>{ruleItems.length}</Typography.Text>{" "}
-                    条生命周期规则
+                    共 <Typography.Text bold>{ruleItems.length}</Typography.Text> 条生命周期规则
                   </Typography.Text>
                   <Button
                     type="primary"
@@ -540,9 +486,7 @@ export function BucketDetailPage({
                   data={ruleItems}
                   loading={lifecycleRules.isLoading}
                   pagination={false}
-                  noDataElement={
-                    <Empty description="暂无生命周期规则，点击「添加规则」开始" />
-                  }
+                  noDataElement={<Empty description="暂无生命周期规则，点击「添加规则」开始" />}
                 />
               </Space>
             ),
@@ -553,8 +497,7 @@ export function BucketDetailPage({
             content: (
               <Space direction="vertical" size={20} className="w-full">
                 <Typography.Text type="secondary">
-                  以下信息用于 S3 兼容 SDK 与 CLI
-                  接入。访问凭据由租户管理员统一提供。
+                  以下信息用于 S3 兼容 SDK 与 CLI 接入。访问凭据由租户管理员统一提供。
                 </Typography.Text>
                 <Descriptions
                   column={1}
@@ -565,19 +508,12 @@ export function BucketDetailPage({
                       label: "Endpoint",
                       value: (
                         <Space>
-                          <Typography.Text code>
-                            {bucketInfo.endpoint ?? "-"}
-                          </Typography.Text>
+                          <Typography.Text code>{bucketInfo.endpoint ?? "-"}</Typography.Text>
                           {bucketInfo.endpoint ? (
                             <Button
                               type="text"
                               size="mini"
-                              onClick={() =>
-                                copyText(
-                                  bucketInfo.endpoint!,
-                                  "Endpoint 已复制",
-                                )
-                              }
+                              onClick={() => copyText(bucketInfo.endpoint!, "Endpoint 已复制")}
                             >
                               复制
                             </Button>
@@ -588,8 +524,7 @@ export function BucketDetailPage({
                     { label: "桶名", value: bucketInfo.name },
                     {
                       label: "版本控制",
-                      value:
-                        bucketInfo.versioning === "enabled" ? "开启" : "关闭",
+                      value: bucketInfo.versioning === "enabled" ? "开启" : "关闭",
                     },
                     { label: "存储类型", value: storageClassLabel },
                   ]}
@@ -601,16 +536,13 @@ export function BucketDetailPage({
                     style={{ width: 180 }}
                   >
                     <Select.Option value="standard">标准</Select.Option>
-                    <Select.Option value="infrequent_access">
-                      低频
-                    </Select.Option>
+                    <Select.Option value="infrequent_access">低频</Select.Option>
                   </Select>
                   <Button
                     type="primary"
                     loading={updateClass.isPending}
                     disabled={
-                      (classDraft ?? "standard") ===
-                      (bucketInfo.storage_class ?? "standard")
+                      (classDraft ?? "standard") === (bucketInfo.storage_class ?? "standard")
                     }
                     onClick={() => updateClass.mutateAsync(undefined)}
                   >
@@ -643,8 +575,7 @@ export function BucketDetailPage({
                   { label: "Region", value: bucketInfo.region ?? "-" },
                   {
                     label: "版本控制",
-                    value:
-                      bucketInfo.versioning === "enabled" ? "开启" : "关闭",
+                    value: bucketInfo.versioning === "enabled" ? "开启" : "关闭",
                   },
                   {
                     label: "创建时间",

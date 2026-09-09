@@ -87,8 +87,7 @@ export function ObjectsPage() {
     {
       key: "storageClass",
       title: "存储类型",
-      render: (_, item) =>
-        item.storage_class === "infrequent_access" ? "低频" : "标准",
+      render: (_, item) => (item.storage_class === "infrequent_access" ? "低频" : "标准"),
     },
     {
       key: "region",
@@ -214,11 +213,7 @@ export function ObjectsPage() {
           ]}
           loading={buckets.isFetching}
           emptyIconClassName="icon-duixiangcunchu1"
-          emptyText={
-            searchText
-              ? "没有符合条件的存储桶"
-              : "还没有存储桶，点击「创建存储桶」开始"
-          }
+          emptyText={searchText ? "没有符合条件的存储桶" : "还没有存储桶，点击「创建存储桶」开始"}
           tableLabel="对象存储桶列表"
           preserveTableOnEmpty
           pagination={{
@@ -230,10 +225,7 @@ export function ObjectsPage() {
           }}
         />
       </ListPageFrame>
-      <CreateBucketModal
-        visible={createVisible}
-        onCancel={() => setCreateVisible(false)}
-      />
+      <CreateBucketModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
     </>
   );
 }

@@ -45,12 +45,8 @@ type SearchField = "name" | "id";
 
 export function InferencePage() {
   const qc = useQueryClient();
-  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", [
-    "POST",
-  ]);
-  const resizeScope = useIdempotencyScope("inference-service-resize", [
-    "PATCH",
-  ]);
+  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", ["POST"]);
+  const resizeScope = useIdempotencyScope("inference-service-resize", ["PATCH"]);
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
@@ -61,10 +57,7 @@ export function InferencePage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const services = useQuery({
-    queryKey: [
-      "inference-services",
-      { status, searchField, searchText, model, page, pageSize },
-    ],
+    queryKey: ["inference-services", { status, searchField, searchText, model, page, pageSize }],
     queryFn: async () => {
       const keyword = searchText.trim();
       const request = servicesApi.GET as unknown as (
@@ -96,13 +89,10 @@ export function InferencePage() {
       action: "start" | "stop" | "restart";
     }) => {
       const submitData = { action };
-      const { data, error } = await servicesApi.POST(
-        "/inference-services/{service_id}/lifecycle",
-        {
-          params: { path: { service_id: item.id } },
-          body: lifecycleScope.withKey(submitData, [item.id]),
-        },
-      );
+      const { data, error } = await servicesApi.POST("/inference-services/{service_id}/lifecycle", {
+        params: { path: { service_id: item.id } },
+        body: lifecycleScope.withKey(submitData, [item.id]),
+      });
       if (error) throw error;
       return data;
     },
@@ -115,10 +105,9 @@ export function InferencePage() {
   });
   const remove = useMutation({
     mutationFn: async (item: InferenceService) => {
-      const { data, error } = await servicesApi.DELETE(
-        "/inference-services/{service_id}",
-        { params: { path: { service_id: item.id } } },
-      );
+      const { data, error } = await servicesApi.DELETE("/inference-services/{service_id}", {
+        params: { path: { service_id: item.id } },
+      });
       if (error) throw error;
       return data;
     },
@@ -131,13 +120,10 @@ export function InferencePage() {
   const resize = useMutation({
     mutationFn: async (item: InferenceService) => {
       const submitData = { replicas };
-      const { data, error } = await servicesApi.PATCH(
-        "/inference-services/{service_id}",
-        {
-          params: { path: { service_id: item.id } },
-          body: resizeScope.withKey(submitData, [item.id]),
-        },
-      );
+      const { data, error } = await servicesApi.PATCH("/inference-services/{service_id}", {
+        params: { path: { service_id: item.id } },
+        body: resizeScope.withKey(submitData, [item.id]),
+      });
       if (error) throw error;
       return data;
     },
@@ -149,10 +135,7 @@ export function InferencePage() {
     },
     onError: (error) => showApiError(error),
   });
-  const items = useMemo(
-    () => services.data?.items ?? [],
-    [services.data?.items],
-  );
+  const items = useMemo(() => services.data?.items ?? [], [services.data?.items]);
   useListErrorNotification({
     id: "inference-services-list",
     title: "推理服务列表加载失败",
@@ -213,8 +196,7 @@ export function InferencePage() {
       render: (_, item) => {
         const accelerator = item.resources?.accelerator;
         const gpuType = item.gpu_type ?? accelerator?.spec_id;
-        const gpuCount =
-          item.gpu_count_per_pod || accelerator?.count_per_replica;
+        const gpuCount = item.gpu_count_per_pod || accelerator?.count_per_replica;
         return gpuType && gpuCount ? `${gpuType} × ${gpuCount}` : "-";
       },
     },
@@ -279,10 +261,7 @@ export function InferencePage() {
                   value={model}
                   onChange={setModel}
                   className="w-55"
-                  options={[
-                    { value: "all", label: "全部模型" },
-                    ...modelOptions,
-                  ]}
+                  options={[{ value: "all", label: "全部模型" }, ...modelOptions]}
                 />
               </Space>
             }
@@ -316,12 +295,8 @@ export function InferencePage() {
                     </DataTableRowActionButton>
                   ) : (
                     <DataTableRowActionButton
-                      disabled={
-                        item.status !== "stopped" || lifecycle.isPending
-                      }
-                      onClick={() =>
-                        lifecycle.mutate({ item, action: "start" })
-                      }
+                      disabled={item.status !== "stopped" || lifecycle.isPending}
+                      onClick={() => lifecycle.mutate({ item, action: "start" })}
                     >
                       启动
                     </DataTableRowActionButton>
@@ -346,10 +321,7 @@ export function InferencePage() {
                           });
                         }}
                       >
-                        <Menu.Item
-                          key="resize"
-                          disabled={item.status !== "running"}
-                        >
+                        <Menu.Item key="resize" disabled={item.status !== "running"}>
                           变配
                         </Menu.Item>
                         <Menu.Item key="update-model-binding-policy" disabled>
@@ -361,10 +333,7 @@ export function InferencePage() {
                   >
                     <DataTableRowActionButton disabled={lifecycle.isPending}>
                       更多
-                      <i
-                        className="iconfont icon-down-chevron-small ml-1"
-                        aria-hidden="true"
-                      />
+                      <i className="iconfont icon-down-chevron-small ml-1" aria-hidden="true" />
                     </DataTableRowActionButton>
                   </Dropdown>
                 </DataTableRowActions>
@@ -403,9 +372,7 @@ export function InferencePage() {
           if (resizeTarget) resizeScope.reset([resizeTarget.id]);
           setResizeTarget(undefined);
         }}
-        onOk={() =>
-          resizeTarget ? resize.mutateAsync(resizeTarget) : undefined
-        }
+        onOk={() => (resizeTarget ? resize.mutateAsync(resizeTarget) : undefined)}
         confirmLoading={resize.isPending}
         unmountOnExit
       >

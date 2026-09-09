@@ -149,7 +149,7 @@
   left: 0;
   width: 1px;
   background: var(--color-border-1);
-  content: '';
+  content: "";
 }
 
 .headerItemLabel {
@@ -186,7 +186,9 @@
   display: grid;
   min-width: 0;
   min-height: 0;
-  transition: grid-template-columns 0.3s ease, gap 0.3s ease;
+  transition:
+    grid-template-columns 0.3s ease,
+    gap 0.3s ease;
 }
 
 .workspaceSplit {
@@ -289,7 +291,9 @@
 .cardChevronCollapsed {
   flex: 0 0 auto;
   color: var(--color-text-2);
-  transition: transform 0.2s ease, color 0.15s ease;
+  transition:
+    transform 0.2s ease,
+    color 0.15s ease;
 }
 
 .cardHeader:hover .cardChevron,
@@ -357,7 +361,9 @@
   background: var(--color-fill-2);
   color: var(--color-text-2);
   box-shadow: 0 0 6px rgba(0, 73, 128, 0.07);
-  transition: left 0.3s ease, transform 0.3s ease;
+  transition:
+    left 0.3s ease,
+    transform 0.3s ease;
 }
 
 .paneToggle:hover {
@@ -413,7 +419,9 @@
 }
 
 .tabs
-  :global(.arco-tabs-header-nav-line .arco-tabs-header-title:hover .arco-tabs-header-title-text::before) {
+  :global(
+    .arco-tabs-header-nav-line .arco-tabs-header-title:hover .arco-tabs-header-title-text::before
+  ) {
   background: transparent;
 }
 

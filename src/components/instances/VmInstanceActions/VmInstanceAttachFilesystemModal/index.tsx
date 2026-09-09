@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Checkbox,
-  Form,
-  Input,
-  Message,
-  Modal,
-  Select,
-} from "@arco-design/web-react";
+import { Alert, Checkbox, Form, Input, Message, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import type { components } from "@/api/core-schema";
@@ -33,10 +25,7 @@ export function VmInstanceAttachFilesystemModal({
 }) {
   const [form] = Form.useForm<Values>();
   const [selectedId, setSelectedId] = useState("");
-  const scope = useIdempotencyScope("vm-instance-attach-filesystem", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("vm-instance-attach-filesystem", ["POST", instance.id]);
   const filesystems = useQuery({
     queryKey: ["filesystems", "vm-instance-attach-filesystem", instance.id],
     queryFn: () =>
@@ -55,17 +44,13 @@ export function VmInstanceAttachFilesystemModal({
   const mountTargets = useQuery({
     queryKey: ["filesystem-mount-targets", selectedId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/filesystems/{filesystem_id}/mount-targets",
-        {
-          params: {
-            path: { filesystem_id: selectedId },
-            query: { limit: 100 },
-          },
+      const { data, error } = await coreApi.GET("/filesystems/{filesystem_id}/mount-targets", {
+        params: {
+          path: { filesystem_id: selectedId },
+          query: { limit: 100 },
         },
-      );
-      if (error || !data)
-        throw error ?? new Error("文件系统挂载目标未返回结果");
+      });
+      if (error || !data) throw error ?? new Error("文件系统挂载目标未返回结果");
       return data.items as FilesystemMountTarget[];
     },
     enabled: Boolean(selectedId),
@@ -78,13 +63,10 @@ export function VmInstanceAttachFilesystemModal({
         mount_path: values.mountPath.trim(),
         read_only: values.readOnly ?? false,
       };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error || !data)
         throw {
           ...(typeof error === "object" && error
@@ -99,21 +81,15 @@ export function VmInstanceAttachFilesystemModal({
       Message.success("挂载 NFS 已提交");
       onSubmitted(operationId);
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const attachedIds = new Set(
     (instance.storage_attachments ?? [])
       .filter((item) => item.resource_type === "filesystem")
       .map((item) => item.resource_id),
   );
-  const options = (
-    (filesystems.data?.items ?? []) as StorageFilesystem[]
-  ).filter(
-    (item) =>
-      item.protocol === "nfs" &&
-      item.state === "available" &&
-      !attachedIds.has(item.id),
+  const options = ((filesystems.data?.items ?? []) as StorageFilesystem[]).filter(
+    (item) => item.protocol === "nfs" && item.state === "available" && !attachedIds.has(item.id),
   );
   const hasMountTarget = Boolean(
     mountTargets.data?.some((target) => target.status === "available"),
@@ -124,8 +100,7 @@ export function VmInstanceAttachFilesystemModal({
       visible
       confirmLoading={mutation.isPending}
       okButtonProps={{
-        disabled:
-          Boolean(selectedId) && (mountTargets.isLoading || !hasMountTarget),
+        disabled: Boolean(selectedId) && (mountTargets.isLoading || !hasMountTarget),
       }}
       onCancel={() => {
         scope.reset();
@@ -163,17 +138,11 @@ export function VmInstanceAttachFilesystemModal({
           <Alert
             type="error"
             showIcon
-            content={getErrorMessage(
-              mountTargets.error,
-              "NFS 挂载目标检查失败",
-            )}
+            content={getErrorMessage(mountTargets.error, "NFS 挂载目标检查失败")}
             className="mb-4"
           />
         ) : null}
-        {selectedId &&
-        !mountTargets.isLoading &&
-        !mountTargets.error &&
-        !hasMountTarget ? (
+        {selectedId && !mountTargets.isLoading && !mountTargets.error && !hasMountTarget ? (
           <Alert
             type="warning"
             showIcon

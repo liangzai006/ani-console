@@ -1,10 +1,6 @@
 import { Alert, Descriptions } from "@arco-design/web-react";
 import { ImageNameText } from "@/components/common";
-import {
-  parseEgressAllowlist,
-  type FormValues,
-  type SandboxTemplate,
-} from "../../types";
+import { parseEgressAllowlist, type FormValues, type SandboxTemplate } from "../../types";
 
 const EGRESS_LABELS: Record<FormValues["egress_policy"], string> = {
   deny_all: "禁止访问外部网络",
@@ -43,18 +39,13 @@ export function SandboxConfirmStep({
           },
           {
             label: "到期策略",
-            value:
-              values.on_timeout === "kill"
-                ? "销毁 Sandbox"
-                : "暂停并保留工作区",
+            value: values.on_timeout === "kill" ? "销毁 Sandbox" : "暂停并保留工作区",
           },
           { label: "网络出口", value: EGRESS_LABELS[values.egress_policy] },
           {
             label: "出口白名单",
             value:
-              values.egress_policy === "allowlist" && allowlist.length
-                ? allowlist.join("、")
-                : "-",
+              values.egress_policy === "allowlist" && allowlist.length ? allowlist.join("、") : "-",
           },
           { label: "自动启动", value: values.auto_start ? "开" : "关" },
         ]}

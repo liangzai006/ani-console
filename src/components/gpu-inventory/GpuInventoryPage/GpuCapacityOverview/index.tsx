@@ -3,10 +3,7 @@ import type { EChartsOption } from "echarts";
 import type { components } from "@/api/core-schema";
 import { ApiErrorAlert, CorePieChart } from "@/components/common";
 import { MetricCard } from "@/components/common/MetricCard";
-import type {
-  GpuSpecAvailabilityListResponse,
-  TenantQuotaResponse,
-} from "../types";
+import type { GpuSpecAvailabilityListResponse, TenantQuotaResponse } from "../types";
 import { GpuAdmissionSummary } from "./GpuAdmissionSummary";
 import { GpuAnomalyList } from "./GpuAnomalyList";
 import { GpuModelInventory } from "./GpuModelInventory";
@@ -69,9 +66,7 @@ export function GpuCapacityOverview({
   const fault = occupancy?.fault ?? 0;
   const maintenance = Math.max(0, total - inUse - available - fault);
   const unavailable = fault + maintenance;
-  const gpuQuota = quota?.items.find(
-    (item) => item.resource_type === "gpu_count",
-  );
+  const gpuQuota = quota?.items.find((item) => item.resource_type === "gpu_count");
   const chart: EChartsOption = {
     tooltip: { trigger: "item" },
     legend: { bottom: 0 },
@@ -95,9 +90,7 @@ export function GpuCapacityOverview({
       {occupancyError ? (
         <ApiErrorAlert error={occupancyError} title="GPU 占用数据加载失败" />
       ) : null}
-      {quotaError ? (
-        <ApiErrorAlert error={quotaError} title="租户 GPU 配额加载失败" />
-      ) : null}
+      {quotaError ? <ApiErrorAlert error={quotaError} title="租户 GPU 配额加载失败" /> : null}
       {occupancy?.dev_profile.real_provider === false ? (
         <Alert
           className="mb-4"
@@ -165,18 +158,10 @@ export function GpuCapacityOverview({
         </Grid.Col>
       </Grid.Row>
 
-      <GpuModelInventory
-        occupancy={occupancy}
-        loading={occupancyLoading}
-        onCreate={onCreate}
-      />
+      <GpuModelInventory occupancy={occupancy} loading={occupancyLoading} onCreate={onCreate} />
 
       <section className="mt-5">
-        <GpuAnomalyList
-          items={anomalies}
-          loading={anomaliesLoading}
-          error={anomaliesError}
-        />
+        <GpuAnomalyList items={anomalies} loading={anomaliesLoading} error={anomaliesError} />
       </section>
     </div>
   );

@@ -31,14 +31,7 @@ import {
 } from "./ContainerStorageFields/storage";
 import styles from "./index.module.css";
 
-const STEP_TITLES = [
-  "基本信息",
-  "资源规格",
-  "网络",
-  "存储与挂载",
-  "配置与密钥",
-  "确认",
-];
+const STEP_TITLES = ["基本信息", "资源规格", "网络", "存储与挂载", "配置与密钥", "确认"];
 
 type Item = {
   id: string;
@@ -103,9 +96,8 @@ function parseEnv(text: string) {
 
 function buildCreateBody(values: FormValues) {
   const computeSpec =
-    CPU_INSTANCE_COMPUTE_SPECS.find(
-      (option) => option.value === values.compute_spec,
-    ) ?? CPU_INSTANCE_COMPUTE_SPECS[1];
+    CPU_INSTANCE_COMPUTE_SPECS.find((option) => option.value === values.compute_spec) ??
+    CPU_INSTANCE_COMPUTE_SPECS[1];
 
   return {
     name: values.name.trim(),
@@ -126,9 +118,7 @@ function buildCreateBody(values: FormValues) {
           ? {
               vpc_id: values.vpc_id,
               subnet_id: values.subnet_id,
-              security_group_ids: values.security_group_id
-                ? [values.security_group_id]
-                : [],
+              security_group_ids: values.security_group_id ? [values.security_group_id] : [],
             }
           : undefined,
       env: parseEnv(values.env_text),
@@ -165,25 +155,14 @@ export function ContainerInstanceCreateModal({
 }) {
   const [form] = Form.useForm<FormValues>();
   const queryClient = useQueryClient();
-  const createScope = useIdempotencyScope("container-instance-create", [
-    "POST",
-  ]);
-  const bindSecretScope = useIdempotencyScope(
-    "container-instance-secret-bind",
-    ["POST"],
-  );
+  const createScope = useIdempotencyScope("container-instance-create", ["POST"]);
+  const bindSecretScope = useIdempotencyScope("container-instance-secret-bind", ["POST"]);
   const [step, setStep] = useState(0);
   const [values, setValues] = useState(INITIAL_VALUES);
 
-  const useListQuery = (
-    path: string,
-    key: string,
-    query?: Record<string, unknown>,
-  ) =>
+  const useListQuery = (path: string, key: string, query?: Record<string, unknown>) =>
     useQuery({
-      queryKey: query
-        ? [key, "container-create", query]
-        : [key, "container-create"],
+      queryKey: query ? [key, "container-create", query] : [key, "container-create"],
       enabled: visible,
       queryFn: async () => {
         const request = coreApi.GET as unknown as (
@@ -201,10 +180,7 @@ export function ContainerInstanceCreateModal({
     });
   const vpcs = useListQuery("/networks/vpcs", "network-vpcs");
   const subnets = useListQuery("/networks/subnets", "network-subnets");
-  const securityGroups = useListQuery(
-    "/networks/security-groups",
-    "network-security-groups",
-  );
+  const securityGroups = useListQuery("/networks/security-groups", "network-security-groups");
   const volumes = useListQuery("/volumes", "volumes", { in_use: false });
   const filesystems = useListQuery("/filesystems", "filesystems");
   const secrets = useListQuery("/secrets", "secrets");
@@ -226,10 +202,7 @@ export function ContainerInstanceCreateModal({
     },
   });
   const availableSubnets = useMemo(
-    () =>
-      subnets.data?.filter(
-        (item) => !values.vpc_id || item.vpc_id === values.vpc_id,
-      ) ?? [],
+    () => subnets.data?.filter((item) => !values.vpc_id || item.vpc_id === values.vpc_id) ?? [],
     [subnets.data, values.vpc_id],
   );
 
@@ -260,9 +233,7 @@ export function ContainerInstanceCreateModal({
       });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
       const instanceId = data?.instance?.id;
@@ -272,11 +243,13 @@ export function ContainerInstanceCreateModal({
           secret_id: values.secret_id,
           binding_type: values.secret_binding_type,
         };
-        const { error: bindingError, response: bindingResponse } =
-          await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        const { error: bindingError, response: bindingResponse } = await coreApi.POST(
+          "/instances/{instance_id}/lifecycle",
+          {
             params: { path: { instance_id: instanceId } },
             body: bindSecretScope.withKey(bindData, [instanceId]),
-          });
+          },
+        );
         if (bindingError)
           throw {
             ...(typeof bindingError === "object" && bindingError
@@ -293,8 +266,7 @@ export function ContainerInstanceCreateModal({
       void queryClient.invalidateQueries({ queryKey: ["container-instances"] });
       onCreated();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "create")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "create")),
   });
 
   const close = () => {
@@ -339,10 +311,7 @@ export function ContainerInstanceCreateModal({
             取消
           </Button>
           {step > 0 ? (
-            <Button
-              onClick={() => setStep((current) => current - 1)}
-              disabled={create.isPending}
-            >
+            <Button onClick={() => setStep((current) => current - 1)} disabled={create.isPending}>
               上一步
             </Button>
           ) : null}
@@ -358,20 +327,14 @@ export function ContainerInstanceCreateModal({
       style={{ width: 820 }}
     >
       <div className={styles.form}>
-        <WizardSteps
-          current={step + 1}
-          items={STEP_TITLES}
-          style={{ marginBottom: 24 }}
-        />
+        <WizardSteps current={step + 1} items={STEP_TITLES} style={{ marginBottom: 24 }} />
         <div className={styles.content}>
           <Form<FormValues>
             form={form}
             layout="vertical"
             initialValues={INITIAL_VALUES}
             requiredSymbol={{ position: "end" }}
-            onValuesChange={(changed) =>
-              setValues((current) => ({ ...current, ...changed }))
-            }
+            onValuesChange={(changed) => setValues((current) => ({ ...current, ...changed }))}
           >
             {step === 0 ? (
               <>
@@ -390,11 +353,7 @@ export function ContainerInstanceCreateModal({
                   label="镜像"
                   rules={[{ required: true, message: "请选择镜像" }]}
                 >
-                  <Select
-                    loading={images.isLoading}
-                    showSearch
-                    placeholder="选择容器镜像"
-                  >
+                  <Select loading={images.isLoading} showSearch placeholder="选择容器镜像">
                     {images.data?.map((item) => (
                       <Select.Option key={item.image} value={item.image}>
                         <ImageNameText image={item} showSize />
@@ -407,11 +366,7 @@ export function ContainerInstanceCreateModal({
             {step === 1 ? (
               <>
                 <InstanceComputeSpecSelect field="compute_spec" profile="cpu" />
-                <Form.Item
-                  field="replicas"
-                  label="副本数"
-                  rules={[{ required: true }]}
-                >
+                <Form.Item field="replicas" label="副本数" rules={[{ required: true }]}>
                   <InputNumber min={1} precision={0} />
                 </Form.Item>
               </>
@@ -434,11 +389,7 @@ export function ContainerInstanceCreateModal({
                   </Select>
                 </Form.Item>
                 <Form.Item field="subnet_id" label="子网">
-                  <Select
-                    allowClear
-                    disabled={!values.vpc_id}
-                    loading={subnets.isLoading}
-                  >
+                  <Select allowClear disabled={!values.vpc_id} loading={subnets.isLoading}>
                     {availableSubnets.map((item) => (
                       <Select.Option key={item.id} value={item.id}>
                         {item.name ?? item.id}
@@ -489,11 +440,7 @@ export function ContainerInstanceCreateModal({
                     </Select>
                   </Form.Item>
                 ) : null}
-                <Form.Item
-                  field="auto_start"
-                  label="自动启动"
-                  triggerPropName="checked"
-                >
+                <Form.Item field="auto_start" label="自动启动" triggerPropName="checked">
                   <Switch />
                 </Form.Item>
               </>
@@ -509,9 +456,7 @@ export function ContainerInstanceCreateModal({
                     value: (
                       <ImageNameText
                         image={
-                          images.data?.find(
-                            (item) => item.image === values.image,
-                          ) ?? values.image
+                          images.data?.find((item) => item.image === values.image) ?? values.image
                         }
                         showSize
                       />

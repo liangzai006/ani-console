@@ -1,12 +1,4 @@
-import {
-  Button,
-  Form,
-  Input,
-  Message,
-  Modal,
-  Space,
-  Typography,
-} from "@arco-design/web-react";
+import { Button, Form, Input, Message, Modal, Space, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
@@ -22,11 +14,7 @@ import type {
   GpuSpecOption,
   RegistryImage,
 } from "../types";
-import {
-  INITIAL_VALUES,
-  isGpuSpecSelectable,
-  TEMPORARY_RTX4090_GPU_SPEC_OPTIONS,
-} from "../types";
+import { INITIAL_VALUES, isGpuSpecSelectable, TEMPORARY_RTX4090_GPU_SPEC_OPTIONS } from "../types";
 import { GpuConfirmStep } from "./GpuConfirmStep";
 import { GpuImageStep } from "./GpuImageStep";
 import { GpuNetworkStorageStep } from "./GpuNetworkStorageStep";
@@ -44,21 +32,14 @@ type Props = {
   onSubmit: (values: FormValues, securityGroupId: string) => void;
 };
 
-export function GpuContainerCreateForm({
-  visible,
-  submitting,
-  onCancel,
-  onSubmit,
-}: Props) {
+export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit }: Props) {
   const [form] = Form.useForm<FormValues>();
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "select"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/vpcs", { params: { query: { limit: 50 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 50 } } })),
     enabled: visible,
   });
   const subnets = useQuery({
@@ -84,9 +65,7 @@ export function GpuContainerCreateForm({
   const filesystems = useQuery({
     queryKey: ["filesystems", "select"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/filesystems", { params: { query: { limit: 50 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/filesystems", { params: { query: { limit: 50 } } })),
     enabled: visible,
   });
   const images = useQuery({
@@ -138,15 +117,12 @@ export function GpuContainerCreateForm({
   const defaultSecurityGroup = (securityGroups.data?.items ?? []).find(
     (item) => !values.vpc_id || item.vpc_id === values.vpc_id,
   );
-  const selectedImage = images.data?.find(
-    (item) => item.image === values.image,
-  );
+  const selectedImage = images.data?.find((item) => item.image === values.image);
   const selectedFilesystem = (filesystems.data?.items ?? []).find(
     (item) => String(item.id) === values.filesystem_id,
   ) as Filesystem | undefined;
   const apiGpuSpecs = gpuSpecAvailability.data?.items ?? [];
-  const usingTemporaryGpuSpecs =
-    gpuSpecAvailability.isSuccess && apiGpuSpecs.length === 0;
+  const usingTemporaryGpuSpecs = gpuSpecAvailability.isSuccess && apiGpuSpecs.length === 0;
   const gpuSpecs: GpuSpecOption[] = usingTemporaryGpuSpecs
     ? TEMPORARY_RTX4090_GPU_SPEC_OPTIONS
     : apiGpuSpecs.map((spec) => ({
@@ -155,18 +131,11 @@ export function GpuContainerCreateForm({
         source: "api" as const,
         availability: spec,
       }));
-  const schedulingQueues = (gpuSchedulingQueues.data?.items ??
-    []) as GpuSchedulingQueue[];
-  const selectedGpuSpec = gpuSpecs.find(
-    (item) => item.spec_id === values.spec_id,
-  );
-  const selectedSchedulingQueue = schedulingQueues.find(
-    (item) => item.name === values.queue_name,
-  );
+  const schedulingQueues = (gpuSchedulingQueues.data?.items ?? []) as GpuSchedulingQueue[];
+  const selectedGpuSpec = gpuSpecs.find((item) => item.spec_id === values.spec_id);
+  const selectedSchedulingQueue = schedulingQueues.find((item) => item.name === values.queue_name);
   const hasAvailableGpuSpec = gpuSpecs.some(isGpuSpecSelectable);
-  const hasAvailableQueue = schedulingQueues.some(
-    (item) => item.status?.state !== "closed",
-  );
+  const hasAvailableQueue = schedulingQueues.some((item) => item.status?.state !== "closed");
 
   useEffect(() => {
     if (visible) {
@@ -203,10 +172,7 @@ export function GpuContainerCreateForm({
             取消
           </Button>
           {step > 0 ? (
-            <Button
-              onClick={() => setStep((current) => current - 1)}
-              disabled={submitting}
-            >
+            <Button onClick={() => setStep((current) => current - 1)} disabled={submitting}>
               上一步
             </Button>
           ) : null}
@@ -236,11 +202,7 @@ export function GpuContainerCreateForm({
       style={{ width: 780 }}
     >
       <div className={styles.form}>
-        <WizardSteps
-          current={step + 1}
-          items={STEP_TITLES}
-          style={{ marginBottom: 24 }}
-        />
+        <WizardSteps current={step + 1} items={STEP_TITLES} style={{ marginBottom: 24 }} />
         <div className={styles.content}>
           <Form<FormValues>
             form={form}
@@ -266,10 +228,7 @@ export function GpuContainerCreateForm({
               </>
             ) : null}
             {step === 1 ? (
-              <GpuImageStep
-                images={images.data ?? []}
-                loading={images.isLoading}
-              />
+              <GpuImageStep images={images.data ?? []} loading={images.isLoading} />
             ) : null}
             {step === 2 ? (
               <GpuResourceStep
@@ -291,9 +250,7 @@ export function GpuContainerCreateForm({
                 vpcs={(vpcs.data?.items ?? []) as NetworkItem[]}
                 subnets={(subnets.data?.items ?? []) as NetworkItem[]}
                 filesystems={(filesystems.data?.items ?? []) as Filesystem[]}
-                defaultSecurityGroup={
-                  defaultSecurityGroup as NetworkItem | undefined
-                }
+                defaultSecurityGroup={defaultSecurityGroup as NetworkItem | undefined}
                 networkLoading={vpcs.isLoading || subnets.isLoading}
               />
             ) : null}
@@ -304,9 +261,7 @@ export function GpuContainerCreateForm({
                 filesystem={selectedFilesystem}
                 gpuSpec={selectedGpuSpec}
                 schedulingQueue={selectedSchedulingQueue}
-                securityGroupName={String(
-                  defaultSecurityGroup?.name ?? "平台自动配置",
-                )}
+                securityGroupName={String(defaultSecurityGroup?.name ?? "平台自动配置")}
               />
             ) : null}
           </Form>

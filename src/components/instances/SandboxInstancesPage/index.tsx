@@ -56,8 +56,7 @@ export function SandboxInstancesPage() {
             }),
           },
         });
-        if (error || !data)
-          throw error ?? new Error("Sandbox 实例列表未返回结果");
+        if (error || !data) throw error ?? new Error("Sandbox 实例列表未返回结果");
         return data;
       },
     });
@@ -85,10 +84,7 @@ export function SandboxInstancesPage() {
       render: (_, item) => (
         <DataTableNameCell
           name={
-            <Link
-              to="/sandbox-instances/$instanceId"
-              params={{ instanceId: item.id }}
-            >
+            <Link to="/sandbox-instances/$instanceId" params={{ instanceId: item.id }}>
               {item.name || item.id}
             </Link>
           }
@@ -177,9 +173,7 @@ export function SandboxInstancesPage() {
           }
         />
       }
-      tabs={
-        <StatusTabs items={statusTabs} value={status} onChange={setStatus} />
-      }
+      tabs={<StatusTabs items={statusTabs} value={status} onChange={setStatus} />}
       toolbar={
         <ListToolbar
           filters={

@@ -3,8 +3,7 @@ import type { components } from "@/api/core-schema";
 
 type InstanceRecord = components["schemas"]["InstanceRecord"];
 
-export type ContainerDetailPowerAction =
-  "start" | "stop" | "restart" | "delete";
+export type ContainerDetailPowerAction = "start" | "stop" | "restart" | "delete";
 type LifecycleRequest = components["schemas"]["InstanceLifecycleRequest"];
 
 export type ContainerDetailInstance = InstanceRecord & { kind: "container" };

@@ -1,10 +1,10 @@
-import { Notification } from '@arco-design/web-react'
+import { Notification } from "@arco-design/web-react";
 
 type ErrorNotificationOptions = {
-  id: string
-  title: string
-  content: string
-}
+  id: string;
+  title: string;
+  content: string;
+};
 
 export function showErrorNotification({ id, title, content }: ErrorNotificationOptions) {
   Notification.error({
@@ -13,9 +13,9 @@ export function showErrorNotification({ id, title, content }: ErrorNotificationO
     content,
     duration: 5000,
     closable: true,
-  })
+  });
 }
 
 export function closeNotification(id: string) {
-  Notification.remove(id)
+  Notification.remove(id);
 }

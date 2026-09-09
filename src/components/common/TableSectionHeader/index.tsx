@@ -12,12 +12,7 @@ export function TableSectionHeader({
   className?: string;
 }) {
   return (
-    <div
-      className={clsx(
-        "flex min-w-0 items-center justify-between gap-3",
-        className,
-      )}
-    >
+    <div className={clsx("flex min-w-0 items-center justify-between gap-3", className)}>
       <Typography.Title heading={6} className="!m-0">
         {title}
       </Typography.Title>

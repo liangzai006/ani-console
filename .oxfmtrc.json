@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": [
+    "**/*.md",
+    "src/api/core-schema.d.ts",
+    "src/api/services-schema.d.ts",
+    "routeTree.gen.ts"
+  ]
+}

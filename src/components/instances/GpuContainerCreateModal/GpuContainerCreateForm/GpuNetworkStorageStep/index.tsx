@@ -1,10 +1,4 @@
-import {
-  Form,
-  Input,
-  Select,
-  Switch,
-  Typography,
-} from "@arco-design/web-react";
+import { Form, Input, Select, Switch, Typography } from "@arco-design/web-react";
 import type { Filesystem, FormValues } from "../../types";
 
 export type NetworkItem = {
@@ -15,10 +9,7 @@ export type NetworkItem = {
 };
 
 type Props = {
-  onFieldValueChange: (
-    field: keyof FormValues,
-    value: string | boolean,
-  ) => void;
+  onFieldValueChange: (field: keyof FormValues, value: string | boolean) => void;
   values: FormValues;
   vpcs: NetworkItem[];
   subnets: NetworkItem[];
@@ -42,11 +33,7 @@ export function GpuNetworkStorageStep({
   );
   return (
     <>
-      <Form.Item
-        field="vpc_id"
-        label="VPC"
-        rules={[{ required: true, message: "请选择 VPC" }]}
-      >
+      <Form.Item field="vpc_id" label="VPC" rules={[{ required: true, message: "请选择 VPC" }]}>
         <Select
           loading={networkLoading}
           placeholder="选择 VPC"
@@ -59,11 +46,7 @@ export function GpuNetworkStorageStep({
           ))}
         </Select>
       </Form.Item>
-      <Form.Item
-        field="subnet_id"
-        label="子网"
-        rules={[{ required: true, message: "请选择子网" }]}
-      >
+      <Form.Item field="subnet_id" label="子网" rules={[{ required: true, message: "请选择子网" }]}>
         <Select
           loading={networkLoading}
           disabled={!values.vpc_id}
@@ -106,8 +89,7 @@ export function GpuNetworkStorageStep({
         </Select>
       </Form.Item>
       <Form.Item field="auto_start" label="自动启动" triggerPropName="checked">
-        <Switch />{" "}
-        <Typography.Text type="secondary">创建后自动拉起副本</Typography.Text>
+        <Switch /> <Typography.Text type="secondary">创建后自动拉起副本</Typography.Text>
       </Form.Item>
     </>
   );

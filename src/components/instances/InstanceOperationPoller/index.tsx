@@ -8,11 +8,7 @@ import { StatusTag } from "@/components/common";
 type InstanceOperation = components["schemas"]["InstanceOperation"];
 type OperationStatus = InstanceOperation["status"];
 
-const TERMINAL_STATUSES: OperationStatus[] = [
-  "succeeded",
-  "failed",
-  "cancelled",
-];
+const TERMINAL_STATUSES: OperationStatus[] = ["succeeded", "failed", "cancelled"];
 
 export function InstanceOperationPoller({
   operationId,
@@ -25,10 +21,9 @@ export function InstanceOperationPoller({
   const { data, isLoading, error } = useQuery({
     queryKey: ["instance-operation", operationId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/instance-operations/{operation_id}",
-        { params: { path: { operation_id: operationId } } },
-      );
+      const { data, error } = await coreApi.GET("/instance-operations/{operation_id}", {
+        params: { path: { operation_id: operationId } },
+      });
       if (error || !data) throw error ?? new Error("实例操作状态未返回结果");
       return data;
     },
@@ -49,13 +44,7 @@ export function InstanceOperationPoller({
   const failureMessage = data?.failure_message ?? data?.failure_reason;
   return (
     <Alert
-      type={
-        data?.status === "failed"
-          ? "error"
-          : data?.status === "succeeded"
-            ? "success"
-            : "info"
-      }
+      type={data?.status === "failed" ? "error" : data?.status === "succeeded" ? "success" : "info"}
       content={
         <>
           操作 {operationId.slice(0, 8)}… 状态：

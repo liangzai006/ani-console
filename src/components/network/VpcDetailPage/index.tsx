@@ -9,15 +9,7 @@ import {
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Button,
-  Empty,
-  Modal,
-  Space,
-  Spin,
-  Tag,
-  Typography,
-} from "@arco-design/web-react";
+import { Button, Empty, Modal, Space, Spin, Tag, Typography } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { showApiError } from "@/api/helpers";
@@ -161,11 +153,7 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "网络" },
-          { label: "VPC", to: "/vpcs" },
-          { label: vpcId },
-        ]}
+        breadcrumbs={[{ label: "网络" }, { label: "VPC", to: "/vpcs" }, { label: vpcId }]}
         title={vpcId}
         idLabel="VPC ID"
         idValue={vpcId}
@@ -175,10 +163,8 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
   const vpc = detail.data as Vpc;
   const vpcSubnets = (subnets.data?.items ?? []) as Subnet[];
   const vpcRoutes = (routes.data?.items ?? []) as NetworkRoute[];
-  const associatedSecurityGroups = (securityGroups.data?.items ??
-    []) as SecurityGroup[];
-  const associatedLoadBalancers = (loadBalancers.data?.items ??
-    []) as LoadBalancer[];
+  const associatedSecurityGroups = (securityGroups.data?.items ?? []) as SecurityGroup[];
+  const associatedLoadBalancers = (loadBalancers.data?.items ?? []) as LoadBalancer[];
   const associatedInstances = (instances.data?.items ?? []) as Instance[];
   const relatedResources: RelatedResource[] = [
     ...vpcSubnets.map((item) => ({
@@ -223,12 +209,8 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
       instance: item,
     })),
   ];
-  const networkRelatedResources = relatedResources.filter(
-    (resource) => resource.group === "网络",
-  );
-  const computeRelatedResources = relatedResources.filter(
-    (resource) => resource.group === "算力",
-  );
+  const networkRelatedResources = relatedResources.filter((resource) => resource.group === "网络");
+  const computeRelatedResources = relatedResources.filter((resource) => resource.group === "算力");
   const relatedLoading =
     subnets.isLoading ||
     securityGroups.isLoading ||
@@ -266,11 +248,7 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
       title: "操作",
       width: 80,
       render: (_, resource) => (
-        <Button
-          type="text"
-          size="mini"
-          onClick={() => openRelatedResource(resource)}
-        >
+        <Button type="text" size="mini" onClick={() => openRelatedResource(resource)}>
           打开
         </Button>
       ),
@@ -279,11 +257,7 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
 
   return (
     <DetailPageFrame
-      breadcrumbs={[
-        { label: "网络" },
-        { label: "VPC", to: "/vpcs" },
-        { label: vpc.name },
-      ]}
+      breadcrumbs={[{ label: "网络" }, { label: "VPC", to: "/vpcs" }, { label: vpc.name }]}
       title={vpc.name}
       status={<StatusTag status={vpc.state} />}
       icon={<AliIcon name="VPCwangluo" size={28} />}

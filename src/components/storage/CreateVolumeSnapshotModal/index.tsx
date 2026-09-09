@@ -63,9 +63,7 @@ export function CreateVolumeSnapshotModal({
             showWordLimit
           />
         </Form.Item>
-        <Typography.Text type="secondary">
-          快照用于在任意时间点恢复块存储卷数据。
-        </Typography.Text>
+        <Typography.Text type="secondary">快照用于在任意时间点恢复块存储卷数据。</Typography.Text>
       </Form>
     </Modal>
   );

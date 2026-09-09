@@ -27,10 +27,9 @@ export function InferencePolicies({ serviceId }: { serviceId: string }) {
   const policies = useQuery({
     queryKey: ["inference-service-policies", serviceId],
     queryFn: async () => {
-      const { data, error } = await servicesApi.GET(
-        "/inference-services/{service_id}/policies",
-        { params: { path: { service_id: serviceId } } },
-      );
+      const { data, error } = await servicesApi.GET("/inference-services/{service_id}/policies", {
+        params: { path: { service_id: serviceId } },
+      });
       if (error) throw error;
       return data;
     },
@@ -96,8 +95,7 @@ export function InferencePolicies({ serviceId }: { serviceId: string }) {
             {
               title: "更新时间",
               width: 180,
-              render: (_, policy) =>
-                formatDateTime(policy.updated_at ?? policy.created_at),
+              render: (_, policy) => formatDateTime(policy.updated_at ?? policy.created_at),
             },
           ]}
           tableLabel="推理服务访问策略列表"

@@ -26,9 +26,7 @@ function shortReference(reference: string) {
   return reference.slice(reference.lastIndexOf("/") + 1);
 }
 
-export function getImageDisplayName(
-  source?: ImageDisplaySource | string | null,
-): string {
+export function getImageDisplayName(source?: ImageDisplaySource | string | null): string {
   if (typeof source !== "string") {
     const name = nonEmpty(source?.name);
     if (name) return name;
@@ -37,36 +35,23 @@ export function getImageDisplayName(
   return reference ? shortReference(reference) : "-";
 }
 
-export function getImageFullReference(
-  source?: ImageDisplaySource | string | null,
-): string {
+export function getImageFullReference(source?: ImageDisplaySource | string | null): string {
   return imageReference(source) ?? "-";
 }
 
 export function formatImageSize(sizeBytes?: number | null): string | undefined {
-  if (sizeBytes == null || !Number.isFinite(sizeBytes) || sizeBytes < 0)
-    return undefined;
+  if (sizeBytes == null || !Number.isFinite(sizeBytes) || sizeBytes < 0) return undefined;
   return `${Math.ceil(sizeBytes / MEBIBYTE)} MiB`;
 }
 
-export function getImageSelectionLabel(
-  source?: ImageDisplaySource | string | null,
-): string {
+export function getImageSelectionLabel(source?: ImageDisplaySource | string | null): string {
   const name = getImageDisplayName(source);
-  const size =
-    typeof source === "string"
-      ? undefined
-      : formatImageSize(source?.size_bytes);
+  const size = typeof source === "string" ? undefined : formatImageSize(source?.size_bytes);
   return size ? `${name} · ${size}` : name;
 }
 
-export function getImageTooltip(
-  source?: ImageDisplaySource | string | null,
-): string {
+export function getImageTooltip(source?: ImageDisplaySource | string | null): string {
   const reference = getImageFullReference(source);
-  const size =
-    typeof source === "string"
-      ? undefined
-      : formatImageSize(source?.size_bytes);
+  const size = typeof source === "string" ? undefined : formatImageSize(source?.size_bytes);
   return size ? `${reference} · ${size}` : reference;
 }

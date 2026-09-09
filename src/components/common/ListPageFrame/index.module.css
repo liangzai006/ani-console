@@ -41,7 +41,7 @@
   width: 5px;
   height: 32px;
   background: var(--list-primary);
-  content: '';
+  content: "";
 }
 
 .pageHeaderIcon {

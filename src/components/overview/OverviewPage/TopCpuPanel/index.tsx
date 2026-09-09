@@ -1,19 +1,19 @@
-import { IconRight } from '@arco-design/web-react/icon'
-import { Link } from '@tanstack/react-router'
-import clsx from 'clsx'
-import { useState } from 'react'
-import type { HomeCpuItem, HomeMonitorSource } from '../types'
-import styles from '../index.module.css'
+import { IconRight } from "@arco-design/web-react/icon";
+import { Link } from "@tanstack/react-router";
+import clsx from "clsx";
+import { useState } from "react";
+import type { HomeCpuItem, HomeMonitorSource } from "../types";
+import styles from "../index.module.css";
 
 function tone(value: number) {
-  if (value > 90) return 'danger'
-  if (value >= 70) return 'warning'
-  return 'normal'
+  if (value > 90) return "danger";
+  if (value >= 70) return "warning";
+  return "normal";
 }
 
 export function TopCpuPanel({ data }: { data: Record<HomeMonitorSource, HomeCpuItem[]> }) {
-  const [source, setSource] = useState<HomeMonitorSource>('external')
-  const items = data[source]
+  const [source, setSource] = useState<HomeMonitorSource>("external");
+  const items = data[source];
 
   return (
     <section className={clsx(styles.panel, styles.topCpuPanel)} data-testid="top-cpu-panel">
@@ -22,17 +22,17 @@ export function TopCpuPanel({ data }: { data: Record<HomeMonitorSource, HomeCpuI
         <div className={styles.monitorSwitch} role="group" aria-label="监控来源">
           <button
             type="button"
-            aria-pressed={source === 'external'}
-            className={source === 'external' ? styles.monitorButtonActive : ''}
-            onClick={() => setSource('external')}
+            aria-pressed={source === "external"}
+            className={source === "external" ? styles.monitorButtonActive : ""}
+            onClick={() => setSource("external")}
           >
             外部监控
           </button>
           <button
             type="button"
-            aria-pressed={source === 'internal'}
-            className={source === 'internal' ? styles.monitorButtonActive : ''}
-            onClick={() => setSource('internal')}
+            aria-pressed={source === "internal"}
+            className={source === "internal" ? styles.monitorButtonActive : ""}
+            onClick={() => setSource("internal")}
           >
             内部监控
           </button>
@@ -40,11 +40,17 @@ export function TopCpuPanel({ data }: { data: Record<HomeMonitorSource, HomeCpuI
       </header>
       <div className={styles.cpuList}>
         {items.map((item, index) => {
-          const itemTone = tone(item.value)
+          const itemTone = tone(item.value);
           return (
             <div key={item.id} className={styles.cpuItem}>
-              <span className={clsx(styles.cpuRank, styles[`cpuRank_${itemTone}`])}>{index + 1}</span>
-              <Link to="/vm-instances/$instanceId" params={{ instanceId: item.instanceId }} className={styles.cpuName}>
+              <span className={clsx(styles.cpuRank, styles[`cpuRank_${itemTone}`])}>
+                {index + 1}
+              </span>
+              <Link
+                to="/vm-instances/$instanceId"
+                params={{ instanceId: item.instanceId }}
+                className={styles.cpuName}
+              >
                 {item.name}
                 <IconRight aria-hidden="true" />
               </Link>
@@ -60,9 +66,9 @@ export function TopCpuPanel({ data }: { data: Record<HomeMonitorSource, HomeCpuI
                 </span>
               </div>
             </div>
-          )
+          );
         })}
       </div>
     </section>
-  )
+  );
 }

@@ -1,8 +1,5 @@
 import { Form, Input, Select, Switch } from "@arco-design/web-react";
-import {
-  type ContainerStorageFormValues,
-  hasDuplicateContainerMountPath,
-} from "./storage";
+import { type ContainerStorageFormValues, hasDuplicateContainerMountPath } from "./storage";
 
 type StorageItem = {
   id: string;
@@ -34,19 +31,11 @@ export function ContainerStorageFields({
       <Form.Item
         field="volume_mount_path"
         label="块存储挂载路径"
-        rules={
-          values.volume_id
-            ? [{ required: true, message: "请输入块存储挂载路径" }]
-            : undefined
-        }
+        rules={values.volume_id ? [{ required: true, message: "请输入块存储挂载路径" }] : undefined}
       >
         <Input disabled={!values.volume_id} placeholder="/data" />
       </Form.Item>
-      <Form.Item
-        field="volume_read_only"
-        label="块存储只读挂载"
-        triggerPropName="checked"
-      >
+      <Form.Item field="volume_read_only" label="块存储只读挂载" triggerPropName="checked">
         <Switch disabled={!values.volume_id} />
       </Form.Item>
 
@@ -63,24 +52,14 @@ export function ContainerStorageFields({
         field="filesystem_mount_path"
         label="文件存储挂载路径"
         rules={
-          values.filesystem_id
-            ? [{ required: true, message: "请输入文件存储挂载路径" }]
-            : undefined
+          values.filesystem_id ? [{ required: true, message: "请输入文件存储挂载路径" }] : undefined
         }
         validateStatus={hasDuplicateMountPath ? "error" : undefined}
-        help={
-          hasDuplicateMountPath
-            ? "块存储卷与文件存储不能使用相同的容器挂载路径"
-            : undefined
-        }
+        help={hasDuplicateMountPath ? "块存储卷与文件存储不能使用相同的容器挂载路径" : undefined}
       >
         <Input disabled={!values.filesystem_id} placeholder="/data" />
       </Form.Item>
-      <Form.Item
-        field="filesystem_read_only"
-        label="文件存储只读挂载"
-        triggerPropName="checked"
-      >
+      <Form.Item field="filesystem_read_only" label="文件存储只读挂载" triggerPropName="checked">
         <Switch disabled={!values.filesystem_id} />
       </Form.Item>
     </>

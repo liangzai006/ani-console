@@ -16,25 +16,17 @@ export function GpuInstanceRollbackLatestModal({
   onCancel: () => void;
   onSubmitted: () => void;
 }) {
-  const scope = useIdempotencyScope("gpu-instance-rollback-latest", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("gpu-instance-rollback-latest", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async () => {
       const submitData = { action: "rollback" as const };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -43,8 +35,7 @@ export function GpuInstanceRollbackLatestModal({
       Message.success("回滚发布已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal

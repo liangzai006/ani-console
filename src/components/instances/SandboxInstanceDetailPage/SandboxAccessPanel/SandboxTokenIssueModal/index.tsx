@@ -16,11 +16,7 @@ import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
-import {
-  copySandboxText,
-  showSandboxError,
-  throwSandboxApiError,
-} from "../../utils";
+import { copySandboxText, showSandboxError, throwSandboxApiError } from "../../utils";
 
 type SandboxInstance = components["schemas"]["InstanceRecord"];
 type SandboxToken = components["schemas"]["SandboxTokenResponse"];
@@ -42,10 +38,7 @@ export function SandboxTokenIssueModal({
   visible: boolean;
   onCancel: () => void;
 }) {
-  const tokenScope = useIdempotencyScope("sandbox-access-token", [
-    "POST",
-    instance.id,
-  ]);
+  const tokenScope = useIdempotencyScope("sandbox-access-token", ["POST", instance.id]);
   const [token, setToken] = useState<SandboxToken>();
   const [tokenExpiresIn, setTokenExpiresIn] = useState("15m");
   const [tokenScopes, setTokenScopes] = useState<TokenScope[]>(["connect"]);
@@ -91,9 +84,7 @@ export function SandboxTokenIssueModal({
       footer={
         token ? (
           <Space>
-            <Button onClick={() => copySandboxText(token.token, "令牌已复制")}>
-              复制令牌
-            </Button>
+            <Button onClick={() => copySandboxText(token.token, "令牌已复制")}>复制令牌</Button>
             <Button type="primary" onClick={closeModal}>
               我已复制，关闭
             </Button>

@@ -17,11 +17,7 @@ const MODEL_CAPABILITY_LABELS: Record<string, string> = {
 };
 
 export function formatModelCapabilities(capabilities: string[] | undefined) {
-  return (
-    capabilities
-      ?.map((item) => MODEL_CAPABILITY_LABELS[item] ?? item)
-      .join("、") || "-"
-  );
+  return capabilities?.map((item) => MODEL_CAPABILITY_LABELS[item] ?? item).join("、") || "-";
 }
 
 export function getLatestModelVersion(model: Model): ModelVersion | undefined {

@@ -1,25 +1,12 @@
-import {
-  Alert,
-  Descriptions,
-  Empty,
-  Space,
-  Tag,
-  Typography,
-} from "@arco-design/web-react";
+import { Alert, Descriptions, Empty, Space, Tag, Typography } from "@arco-design/web-react";
 import type { components } from "@/api/core-schema";
 import { DataTable } from "@/components/common";
 import { sandboxEgressLabel } from "../utils";
 
-type SandboxStatus = NonNullable<
-  components["schemas"]["SandboxInstanceStatus"]
->;
+type SandboxStatus = NonNullable<components["schemas"]["SandboxInstanceStatus"]>;
 type SandboxEnv = NonNullable<SandboxStatus["env"]>[number];
 
-export function SandboxEnvironmentPanel({
-  sandbox,
-}: {
-  sandbox: SandboxStatus;
-}) {
+export function SandboxEnvironmentPanel({ sandbox }: { sandbox: SandboxStatus }) {
   const env = sandbox.env ?? [];
   const allowlist = sandbox.egress_allowlist ?? [];
 

@@ -92,16 +92,10 @@ export function VolumesPage() {
         action: "detach_volume" as const,
         volume_id: item.id,
       };
-      const { error } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: item.mount_instance_id } },
-          body: detachScope.withKey(submitData, [
-            item.mount_instance_id,
-            item.id,
-          ]),
-        },
-      );
+      const { error } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: item.mount_instance_id } },
+        body: detachScope.withKey(submitData, [item.mount_instance_id, item.id]),
+      });
       if (error) throw error;
     },
     onSuccess: (_data, item) => {
@@ -112,10 +106,7 @@ export function VolumesPage() {
     },
     onError: (error) => showApiError(error),
   });
-  const items = useMemo(
-    () => (volumes.data?.items ?? []) as Volume[],
-    [volumes.data?.items],
-  );
+  const items = useMemo(() => (volumes.data?.items ?? []) as Volume[], [volumes.data?.items]);
   const isMounted = (item: Volume) => Boolean(item.mount_instance_id);
   const paginationTotal = volumes.data?.total ?? items.length;
   useListErrorNotification({
@@ -246,10 +237,7 @@ export function VolumesPage() {
                 <DataTableRowActions>
                   {isMounted(item) ? (
                     <DataTableRowActionButton
-                      loading={
-                        detachVolume.isPending &&
-                        detachVolume.variables?.id === item.id
-                      }
+                      loading={detachVolume.isPending && detachVolume.variables?.id === item.id}
                       onClick={() =>
                         Modal.confirm({
                           title: "卸载块存储卷",
@@ -262,20 +250,14 @@ export function VolumesPage() {
                       卸载
                     </DataTableRowActionButton>
                   ) : (
-                    <DataTableRowActionButton
-                      onClick={() => setAttachTarget(item)}
-                    >
+                    <DataTableRowActionButton onClick={() => setAttachTarget(item)}>
                       挂载
                     </DataTableRowActionButton>
                   )}
-                  <DataTableRowActionButton
-                    onClick={() => setExpandTarget(item)}
-                  >
+                  <DataTableRowActionButton onClick={() => setExpandTarget(item)}>
                     扩容
                   </DataTableRowActionButton>
-                  <DataTableRowActionButton
-                    onClick={() => setSnapshotTarget(item)}
-                  >
+                  <DataTableRowActionButton onClick={() => setSnapshotTarget(item)}>
                     创建快照
                   </DataTableRowActionButton>
                   <DataTableRowActionButton
@@ -313,10 +295,7 @@ export function VolumesPage() {
           }}
         />
       </ListPageFrame>
-      <CreateVolumeModal
-        visible={createVisible}
-        onCancel={() => setCreateVisible(false)}
-      />
+      <CreateVolumeModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
       <AttachVolumeModal
         visible={Boolean(attachTarget)}
         volumeId={attachTarget?.id ?? ""}

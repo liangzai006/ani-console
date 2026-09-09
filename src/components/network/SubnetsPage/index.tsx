@@ -60,9 +60,7 @@ export function SubnetsPage() {
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "subnet-page"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
   });
   const {
     query: subnets,
@@ -73,10 +71,7 @@ export function SubnetsPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<Subnet>({
-    queryKey: [
-      "network-subnets",
-      { status, searchField, searchText, filterVpcId },
-    ],
+    queryKey: ["network-subnets", { status, searchField, searchText, filterVpcId }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
@@ -96,9 +91,7 @@ export function SubnetsPage() {
       return data;
     },
   });
-  const selectedVpc = ((vpcs.data?.items ?? []) as Vpc[]).find(
-    (vpc) => vpc.id === vpcId,
-  );
+  const selectedVpc = ((vpcs.data?.items ?? []) as Vpc[]).find((vpc) => vpc.id === vpcId);
   const selectedVpcCidr = selectedVpc?.cidr ?? "";
   const cidrError = selectedVpcCidr
     ? ipv4CidrWithinError(cidr, selectedVpcCidr, "CIDR", "VPC CIDR")
@@ -107,9 +100,7 @@ export function SubnetsPage() {
     ? optionalIpv4WithinCidrError(gateway, cidr, "网关", "CIDR")
     : optionalIpv4Error(gateway, "网关");
   const fixedOctets = selectedVpcCidr ? subnetFixedOctets(selectedVpcCidr) : [];
-  const selectedVpcPrefix = selectedVpcCidr
-    ? Number(selectedVpcCidr.split("/")[1])
-    : 0;
+  const selectedVpcPrefix = selectedVpcCidr ? Number(selectedVpcCidr.split("/")[1]) : 0;
 
   const resetCreateForm = () => {
     createScope.reset();
@@ -164,15 +155,9 @@ export function SubnetsPage() {
     onError: (error) => showApiError(error),
   });
 
-  const items = useMemo(
-    () => (subnets.data?.items ?? []) as Subnet[],
-    [subnets.data?.items],
-  );
+  const items = useMemo(() => (subnets.data?.items ?? []) as Subnet[], [subnets.data?.items]);
   const vpcNames = useMemo(
-    () =>
-      new Map(
-        ((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => [vpc.id, vpc.name]),
-      ),
+    () => new Map(((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => [vpc.id, vpc.name])),
     [vpcs.data?.items],
   );
   const paginationTotal = subnets.data?.total ?? items.length;
@@ -189,10 +174,7 @@ export function SubnetsPage() {
       render: (_, subnet) => (
         <DataTableNameCell
           name={
-            <RouterLink
-              to="/subnets/$subnetId"
-              params={{ subnetId: subnet.id }}
-            >
+            <RouterLink to="/subnets/$subnetId" params={{ subnetId: subnet.id }}>
               {subnet.name}
             </RouterLink>
           }
@@ -424,11 +406,7 @@ export function SubnetsPage() {
             validateStatus={gatewayError ? "error" : undefined}
             help={gatewayError}
           >
-            <Ipv4CidrInput
-              value={gateway}
-              onChange={setGateway}
-              placeholder="10.0.1.1"
-            />
+            <Ipv4CidrInput value={gateway} onChange={setGateway} placeholder="10.0.1.1" />
           </Form.Item>
         </Form>
       </Modal>

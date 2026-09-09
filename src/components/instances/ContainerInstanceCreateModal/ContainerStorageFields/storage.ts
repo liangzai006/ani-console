@@ -7,9 +7,7 @@ export type ContainerStorageFormValues = {
   filesystem_read_only: boolean;
 };
 
-export function hasDuplicateContainerMountPath(
-  values: ContainerStorageFormValues,
-) {
+export function hasDuplicateContainerMountPath(values: ContainerStorageFormValues) {
   return Boolean(
     values.volume_id &&
     values.filesystem_id &&

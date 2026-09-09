@@ -49,8 +49,7 @@
   background-color: rgb(var(--danger-6));
 }
 
-.steps:global(.arco-steps-size-small)
-  :global(.arco-steps-item:not(:last-child)::after) {
+.steps:global(.arco-steps-size-small) :global(.arco-steps-item:not(:last-child)::after) {
   margin-top: 11.5px;
 }
 

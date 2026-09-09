@@ -4,12 +4,7 @@ import { Button, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import {
-  DetailPageFrame,
-  DetailPagePlaceholder,
-  AliIcon,
-  StatusTag,
-} from "@/components/common";
+import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -38,13 +33,10 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
   const completeUpload = useMutation({
     mutationFn: async (_: undefined) => {
       const submitData = {};
-      const { data, error } = await coreApi.POST(
-        "/objects/{object_id}/complete",
-        {
-          params: { path: { object_id: objectId } },
-          body: completeScope.withKey(submitData),
-        },
-      );
+      const { data, error } = await coreApi.POST("/objects/{object_id}/complete", {
+        params: { path: { object_id: objectId } },
+        body: completeScope.withKey(submitData),
+      });
       if (error) throw error;
       return data;
     },
@@ -58,12 +50,9 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
   });
   const downloadObject = useMutation({
     mutationFn: async (_: undefined) => {
-      const { data, error } = await coreApi.GET(
-        "/objects/{object_id}/download",
-        {
-          params: { path: { object_id: objectId } },
-        },
-      );
+      const { data, error } = await coreApi.GET("/objects/{object_id}/download", {
+        params: { path: { object_id: objectId } },
+      });
       if (error) throw error;
       if (data?.download_url) window.open(data.download_url, "_blank");
     },
@@ -185,9 +174,7 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
           ],
         },
       ]}
-      onBack={() =>
-        navigate({ to: "/objects/$bucketId", params: { bucketId } })
-      }
+      onBack={() => navigate({ to: "/objects/$bucketId", params: { bucketId } })}
     />
   );
 }

@@ -10,7 +10,7 @@ pnpm run dev
 pnpm run typecheck
 ```
 
-日常改动由 Agent 执行 TypeScript typecheck；构建、页面与交互通过用户后台运行的 `pnpm dev` 等方式手动验证。Agent 不执行 `pnpm run verify` 或 production build。
+日常改动由 Agent 执行 TypeScript typecheck；构建、页面与交互通过用户后台运行的 `pnpm dev` 等方式手动验证。Agent 不执行 production build。
 
 开发代理目标由 `.env.development` 的 `VITE_API_PROXY_TARGET` 控制。
 

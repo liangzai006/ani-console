@@ -24,20 +24,11 @@ import { InstanceConfiguration } from "@/components/instances/InstanceConfigurat
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
-import {
-  InstanceStorage,
-  type MountKind,
-} from "@/components/instances/InstanceStorage";
+import { InstanceStorage, type MountKind } from "@/components/instances/InstanceStorage";
 
 type Instance = components["schemas"]["InstanceRecord"];
 
-const BUSY_STATES = new Set([
-  "pending",
-  "provisioning",
-  "starting",
-  "stopping",
-  "deleting",
-]);
+const BUSY_STATES = new Set(["pending", "provisioning", "starting", "stopping", "deleting"]);
 
 function imageLabel(instance: Instance) {
   return getImageDisplayName(instance.image);
@@ -117,12 +108,7 @@ export function GpuInstanceDetailPage({
   const terminalAvailable =
     instance.state === "running" && instance.access?.exec_available !== false;
   if (instance.kind !== "gpu_container") {
-    return (
-      <ApiErrorAlert
-        error={new Error("当前资源不是 GPU 容器实例")}
-        title="资源类型不匹配"
-      />
-    );
+    return <ApiErrorAlert error={new Error("当前资源不是 GPU 容器实例")} title="资源类型不匹配" />;
   }
 
   const nodeName = instance.compute?.node_name ?? instance.node_name ?? "-";
@@ -133,9 +119,7 @@ export function GpuInstanceDetailPage({
   const cpuMemory =
     cpu != null || memory != null
       ? `${cpu != null ? `${String(cpu).replace(/C$/i, "")}C` : "-"}${
-          memory != null
-            ? String(memory).replace(/Gi$/i, "G").replace(/^\s+/, "")
-            : "-"
+          memory != null ? String(memory).replace(/Gi$/i, "G").replace(/^\s+/, "") : "-"
         }`
       : "-";
   const rolloutLabels: Record<string, string> = {
@@ -290,9 +274,7 @@ export function GpuInstanceDetailPage({
               value: (
                 <Space wrap size={4}>
                   <StatusTag status={instance.state} />
-                  {instance.termination_protection ? (
-                    <Tag color="orange">终止保护</Tag>
-                  ) : null}
+                  {instance.termination_protection ? <Tag color="orange">终止保护</Tag> : null}
                 </Space>
               ),
             },
@@ -331,9 +313,7 @@ export function GpuInstanceDetailPage({
             },
             {
               label: "负载均衡",
-              value: loadBalancerRefs.length
-                ? loadBalancerRefs.join("、")
-                : "-",
+              value: loadBalancerRefs.length ? loadBalancerRefs.join("、") : "-",
             },
             {
               label: "调用地址",
@@ -353,9 +333,7 @@ export function GpuInstanceDetailPage({
             {
               label: "安全组",
               value: securityGroups.length
-                ? securityGroups
-                    .map((group) => group.name ?? group.id)
-                    .join("、")
+                ? securityGroups.map((group) => group.name ?? group.id).join("、")
                 : "-",
             },
             { label: "创建时间", value: formatDateTime(instance.created_at) },
@@ -421,10 +399,7 @@ export function GpuInstanceDetailPage({
                 </Button>
               }
               filesystemAction={
-                <Button
-                  disabled={busy}
-                  onClick={() => setMountKind("filesystem")}
-                >
+                <Button disabled={busy} onClick={() => setMountKind("filesystem")}>
                   挂载 NFS
                 </Button>
               }
@@ -469,12 +444,7 @@ export function GpuInstanceDetailPage({
         {
           key: "monitoring",
           label: "监控",
-          content: (
-            <InstanceMetrics
-              instanceId={instance.id}
-              instanceKind="gpu_container"
-            />
-          ),
+          content: <InstanceMetrics instanceId={instance.id} instanceKind="gpu_container" />,
         },
         {
           key: "logs",
@@ -492,9 +462,7 @@ export function GpuInstanceDetailPage({
           content: terminalAvailable ? (
             <InstanceTerminal className="h-full" instanceId={instance.id} />
           ) : (
-            <div className="py-12 text-center text-(--color-text-3)">
-              终端仅运行中的实例可用
-            </div>
+            <div className="py-12 text-center text-(--color-text-3)">终端仅运行中的实例可用</div>
           ),
         },
         {

@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Button,
-  Empty,
-  Form,
-  Select,
-  Spin,
-  Typography,
-} from "@arco-design/web-react";
+import { Alert, Button, Empty, Form, Select, Spin, Typography } from "@arco-design/web-react";
 import { ImageNameText } from "@/components/common";
 import type { SandboxTemplate } from "../../types";
 
@@ -18,18 +10,10 @@ type Props = {
   onChange: (templateId: string) => void;
 };
 
-export function SandboxTemplateStep({
-  templates,
-  loading,
-  error,
-  onRetry,
-  onChange,
-}: Props) {
+export function SandboxTemplateStep({ templates, loading, error, onRetry, onChange }: Props) {
   return (
     <>
-      <Typography.Paragraph type="secondary">
-        模板决定 Sandbox 的运行镜像。
-      </Typography.Paragraph>
+      <Typography.Paragraph type="secondary">模板决定 Sandbox 的运行镜像。</Typography.Paragraph>
       {error ? (
         <Alert
           type="error"
@@ -53,12 +37,7 @@ export function SandboxTemplateStep({
           label="Sandbox 模板"
           rules={[{ required: true, message: "请选择 Sandbox 模板" }]}
         >
-          <Select
-            placeholder="请选择 Sandbox 模板"
-            showSearch
-            allowClear
-            onChange={onChange}
-          >
+          <Select placeholder="请选择 Sandbox 模板" showSearch allowClear onChange={onChange}>
             {templates.map((template) => (
               <Select.Option key={template.id} value={template.id}>
                 <span className="flex min-w-0 items-center gap-2">

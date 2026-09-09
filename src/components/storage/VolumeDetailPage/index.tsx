@@ -8,15 +8,7 @@ import {
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Empty,
-  Modal,
-  Space,
-  Spin,
-  Tooltip,
-} from "@arco-design/web-react";
+import { Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
 import { useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
@@ -38,10 +30,7 @@ type MountedInstanceRow = { id: string; name: string; route?: string | null };
 export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const detachScope = useIdempotencyScope("storage-volume-detach", [
-    "POST",
-    volumeId,
-  ]);
+  const detachScope = useIdempotencyScope("storage-volume-detach", ["POST", volumeId]);
   const [snapshotVisible, setSnapshotVisible] = useState(false);
   const [attachVisible, setAttachVisible] = useState(false);
   const [expandVisible, setExpandVisible] = useState(false);
@@ -94,13 +83,10 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
         action: "detach_volume" as const,
         volume_id: volumeId,
       };
-      const { error } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instanceId } },
-          body: detachScope.withKey(submitData, [instanceId]),
-        },
-      );
+      const { error } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instanceId } },
+        body: detachScope.withKey(submitData, [instanceId]),
+      });
       if (error) throw error;
     },
     onSuccess: (_data, instanceId) => {
@@ -121,11 +107,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "存储" },
-          { label: "块存储", to: "/volumes" },
-          { label: volumeId },
-        ]}
+        breadcrumbs={[{ label: "存储" }, { label: "块存储", to: "/volumes" }, { label: volumeId }]}
         title={volumeId}
         idLabel="卷 ID"
         idValue={volumeId}
@@ -147,9 +129,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
     }
     navigateToInstanceDetail(navigate, data);
   };
-  const unavailable = (description: string) => (
-    <Empty description={description} />
-  );
+  const unavailable = (description: string) => <Empty description={description} />;
   const volumeStatus = volume.reason ? (
     <Tooltip content={volume.reason}>
       <span className="inline-flex">
@@ -164,8 +144,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const autoSnapshotText = autoSnapshot
     ? `${autoSnapshot.enabled ? "开" : "关"} · 保留 ${autoSnapshot.retain_days} 天`
     : "-";
-  const osInitStatus =
-    volume.os_init_status === "n_a" ? "n/a" : volume.os_init_status || "-";
+  const osInitStatus = volume.os_init_status === "n_a" ? "n/a" : volume.os_init_status || "-";
 
   return (
     <>
@@ -186,9 +165,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
         actions={
           <Space>
             <Button onClick={() => setExpandVisible(true)}>扩容</Button>
-            <Button onClick={() => setInitGuideVisible(true)}>
-              初始化引导
-            </Button>
+            <Button onClick={() => setInitGuideVisible(true)}>初始化引导</Button>
             <Button
               status="danger"
               loading={deleteVolume.isPending}
@@ -225,14 +202,11 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
               },
               {
                 label: "来源快照",
-                value:
-                  volume.from_snapshot_name ?? volume.from_snapshot_id ?? "-",
+                value: volume.from_snapshot_name ?? volume.from_snapshot_id ?? "-",
               },
               {
                 label: "挂载实例",
-                value: mounted
-                  ? (volume.mount_name ?? volume.mount_instance_id)
-                  : "未挂载",
+                value: mounted ? (volume.mount_name ?? volume.mount_instance_id) : "未挂载",
               },
               { label: "OS 初始化", value: osInitStatus },
               { label: "约束", value: "已挂载不可删 · 扩容不可缩" },
@@ -261,10 +235,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                   title="关联实例"
                   extra={
                     !mounted ? (
-                      <Button
-                        type="primary"
-                        onClick={() => setAttachVisible(true)}
-                      >
+                      <Button type="primary" onClick={() => setAttachVisible(true)}>
                         挂载
                       </Button>
                     ) : undefined
@@ -283,11 +254,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                       title: "操作",
                       render: () => (
                         <Space>
-                          <Button
-                            type="text"
-                            size="mini"
-                            onClick={openMountedInstance}
-                          >
+                          <Button type="text" size="mini" onClick={openMountedInstance}>
                             打开
                           </Button>
                           <Button
@@ -299,10 +266,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                               Modal.confirm({
                                 title: "卸载块存储卷",
                                 content: `确定从实例「${volume.mount_name ?? volume.mount_instance_id}」卸载该卷？`,
-                                onOk: () =>
-                                  detachVolume.mutateAsync(
-                                    volume.mount_instance_id!,
-                                  ),
+                                onOk: () => detachVolume.mutateAsync(volume.mount_instance_id!),
                               })
                             }
                           >
@@ -317,17 +281,14 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                       ? [
                           {
                             id: volume.mount_instance_id!,
-                            name:
-                              volume.mount_name ?? volume.mount_instance_id!,
+                            name: volume.mount_name ?? volume.mount_instance_id!,
                             route: volume.mount_route,
                           },
                         ]
                       : []
                   }
                   pagination={false}
-                  noDataElement={
-                    <Empty description="该卷当前未挂载实例，点击右上角「挂载」开始" />
-                  }
+                  noDataElement={<Empty description="该卷当前未挂载实例，点击右上角「挂载」开始" />}
                 />
               </div>
             ),
@@ -340,10 +301,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                 <TableSectionHeader
                   title="快照"
                   extra={
-                    <Button
-                      type="primary"
-                      onClick={() => setSnapshotVisible(true)}
-                    >
+                    <Button type="primary" onClick={() => setSnapshotVisible(true)}>
                       创建快照
                     </Button>
                   }
@@ -368,9 +326,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                   data={snapshotItems}
                   loading={snapshots.isLoading}
                   pagination={false}
-                  noDataElement={
-                    <Empty description="暂无快照，点击右上角「创建快照」开始" />
-                  }
+                  noDataElement={<Empty description="暂无快照，点击右上角「创建快照」开始" />}
                 />
               </div>
             ),
@@ -378,9 +334,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
           {
             key: "auto-snapshot",
             label: "自动快照",
-            content: unavailable(
-              "当前 Core API 暂未提供自动快照策略查询与设置能力",
-            ),
+            content: unavailable("当前 Core API 暂未提供自动快照策略查询与设置能力"),
           },
           {
             key: "mount-history",
@@ -392,9 +346,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
             label: "事件",
             content: (
               <Space direction="vertical" size={12} className="w-full">
-                {volume.reason ? (
-                  <Alert type="warning" showIcon content={volume.reason} />
-                ) : null}
+                {volume.reason ? <Alert type="warning" showIcon content={volume.reason} /> : null}
                 {unavailable("当前 Core API 暂未提供块存储事件列表")}
               </Space>
             ),

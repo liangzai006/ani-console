@@ -9,16 +9,7 @@ import {
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Empty,
-  Modal,
-  Space,
-  Spin,
-  Tag,
-  Typography,
-} from "@arco-design/web-react";
+import { Alert, Button, Empty, Modal, Space, Spin, Tag, Typography } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { showApiError } from "@/api/helpers";
@@ -48,12 +39,9 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
   const detail = useQuery({
     queryKey: ["network-subnet", subnetId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/networks/subnets/{subnet_id}",
-        {
-          params: { path: { subnet_id: subnetId } },
-        },
-      );
+      const { data, error } = await coreApi.GET("/networks/subnets/{subnet_id}", {
+        params: { path: { subnet_id: subnetId } },
+      });
       if (error) throw error;
       return data;
     },
@@ -133,11 +121,7 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "网络" },
-          { label: "子网", to: "/subnets" },
-          { label: subnetId },
-        ]}
+        breadcrumbs={[{ label: "网络" }, { label: "子网", to: "/subnets" }, { label: subnetId }]}
         title={subnetId}
         idLabel="子网 ID"
         idValue={subnetId}
@@ -162,19 +146,14 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
       id: item.id,
       destinationCidr: item.destination_cidr,
       nextHopType:
-        item.next_hop_type === "instance"
-          ? "实例"
-          : item.next_hop_type === "nat"
-            ? "NAT"
-            : "网关",
+        item.next_hop_type === "instance" ? "实例" : item.next_hop_type === "nat" ? "NAT" : "网关",
       nextHop: item.next_hop_id,
       priority: item.next_hop_type === "instance" ? 150 : 200,
       source: "自定义" as const,
       protected: false,
     })),
   ];
-  const relatedLoading =
-    vpc.isLoading || instances.isLoading || routes.isLoading;
+  const relatedLoading = vpc.isLoading || instances.isLoading || routes.isLoading;
   const summaryItems = [
     ...(parentVpc
       ? [
@@ -202,23 +181,16 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
       type: "instance" as const,
     })),
   ];
-  const relatedResources = summaryItems.filter(
-    (item) => item.type === "instance",
-  );
+  const relatedResources = summaryItems.filter((item) => item.type === "instance");
   const openRelated = (item: (typeof summaryItems)[number]) => {
-    if (item.type === "vpc")
-      navigate({ to: "/vpcs/$vpcId", params: { vpcId: item.id } });
+    if (item.type === "vpc") navigate({ to: "/vpcs/$vpcId", params: { vpcId: item.id } });
     else if (item.type === "route") navigate({ to: "/routes" });
     else {
-      const instance = associatedInstances.find(
-        (candidate) => candidate.id === item.id,
-      );
+      const instance = associatedInstances.find((candidate) => candidate.id === item.id);
       if (instance) navigateToInstanceDetail(navigate, instance);
     }
   };
-  const relatedResourceColumns: Array<
-    ListColumn<(typeof relatedResources)[number]>
-  > = [
+  const relatedResourceColumns: Array<ListColumn<(typeof relatedResources)[number]>> = [
     {
       title: "类型",
       width: 120,
@@ -244,11 +216,7 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
 
   return (
     <DetailPageFrame
-      breadcrumbs={[
-        { label: "网络" },
-        { label: "子网", to: "/subnets" },
-        { label: subnet.name },
-      ]}
+      breadcrumbs={[{ label: "网络" }, { label: "子网", to: "/subnets" }, { label: subnet.name }]}
       title={subnet.name}
       status={<StatusTag status={subnet.state} />}
       icon={<AliIcon name="VPCwangluo" size={28} />}
@@ -265,8 +233,7 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
             onClick={() =>
               Modal.confirm({
                 title: "删除子网",
-                content:
-                  "确定删除「${subnet.name}」？存在关联实例时无法删除，请先清理相关资源。",
+                content: "确定删除「${subnet.name}」？存在关联实例时无法删除，请先清理相关资源。",
                 okButtonProps: { status: "danger" },
                 onOk: () => deleteSubnet.mutateAsync(undefined),
               })
@@ -285,8 +252,7 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
             { label: "名称", value: subnet.name },
             {
               label: "VPC",
-              value:
-                parentVpc?.name ?? (vpc.isLoading ? "加载中…" : subnet.vpc_id),
+              value: parentVpc?.name ?? (vpc.isLoading ? "加载中…" : subnet.vpc_id),
             },
             { label: "CIDR", value: subnet.cidr },
             { label: "网关", value: subnet.gateway ?? "-" },
@@ -317,9 +283,7 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
               <TableSectionHeader
                 title="关联资源"
                 extra={
-                  <Typography.Text type="secondary">
-                    {relatedResources.length} 个
-                  </Typography.Text>
+                  <Typography.Text type="secondary">{relatedResources.length} 个</Typography.Text>
                 }
               />
               <DataTable<(typeof relatedResources)[number]>
@@ -354,15 +318,9 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
                     title: "操作",
                     render: (_, item) =>
                       item.protected ? (
-                        <Typography.Text type="secondary">
-                          受保护
-                        </Typography.Text>
+                        <Typography.Text type="secondary">受保护</Typography.Text>
                       ) : (
-                        <Button
-                          type="text"
-                          size="mini"
-                          onClick={() => navigate({ to: "/routes" })}
-                        >
+                        <Button type="text" size="mini" onClick={() => navigate({ to: "/routes" })}>
                           打开
                         </Button>
                       ),

@@ -1,8 +1,5 @@
 import { coreApi } from "@/api/client";
-import {
-  getInstanceDisplayIp,
-  getInstanceNetworkValue,
-} from "@/lib/instance-network";
+import { getInstanceDisplayIp, getInstanceNetworkValue } from "@/lib/instance-network";
 import { getImageDisplayName } from "@/lib/render";
 import type {
   ContainerInstance,
@@ -41,18 +38,14 @@ function displayScalar(value: unknown): string | undefined {
 
 function formatSpec(cpu?: string, memory?: string) {
   if (!cpu || !memory) return "-";
-  const cpuText = /^\d+(?:\.\d+)?$/.test(cpu)
-    ? `${cpu}C`
-    : cpu.replace(/c$/i, "C");
+  const cpuText = /^\d+(?:\.\d+)?$/.test(cpu) ? `${cpu}C` : cpu.replace(/c$/i, "C");
   const memoryText = /^\d+(?:\.\d+)?$/.test(memory)
     ? `${memory}G`
     : memory.replace(/gi$/i, "G").replace(/g$/i, "G");
   return `${cpuText}${memoryText}`;
 }
 
-function mapContainerInstance(
-  record: ContainerInstanceRecord,
-): ContainerInstance {
+function mapContainerInstance(record: ContainerInstanceRecord): ContainerInstance {
   const cpu = displayScalar(record.compute?.cpu);
   const memory = displayScalar(record.compute?.memory);
   const image = getImageDisplayName(record.image);
@@ -123,18 +116,14 @@ export function createContainerInstanceDataSource(
   fetchPage: ContainerInstancePageFetcher = fetchContainerInstancePage,
 ): ContainerInstanceDataSource {
   return {
-    async list(
-      query: ContainerInstanceQuery,
-    ): Promise<ContainerInstanceListResult> {
+    async list(query: ContainerInstanceQuery): Promise<ContainerInstanceListResult> {
       const records = await fetchAllContainerInstances(fetchPage, query);
       const allItems = records.map(mapContainerInstance);
       const start = (query.page - 1) * query.pageSize;
       return {
         items: allItems.slice(start, start + query.pageSize),
         total: allItems.length,
-        hasTransitioningInstances: allItems.some((item) =>
-          DEPLOYING_STATES.has(item.status),
-        ),
+        hasTransitioningInstances: allItems.some((item) => DEPLOYING_STATES.has(item.status)),
       };
     },
   };

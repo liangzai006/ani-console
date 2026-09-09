@@ -9,22 +9,14 @@ export interface WizardStepsProps extends Omit<ArcoStepsProps, "children"> {
   items: readonly string[];
 }
 
-export function WizardSteps({
-  items,
-  className,
-  ...stepsProps
-}: WizardStepsProps) {
+export function WizardSteps({ items, className, ...stepsProps }: WizardStepsProps) {
   return (
     <Steps {...stepsProps} className={clsx(styles.steps, className)}>
       {items.map((title, index) => (
         <Steps.Step
           key={`${index}-${title}`}
           title={
-            <Typography.Ellipsis
-              className={styles.title}
-              expandable={false}
-              showTooltip
-            >
+            <Typography.Ellipsis className={styles.title} expandable={false} showTooltip>
               {title}
             </Typography.Ellipsis>
           }

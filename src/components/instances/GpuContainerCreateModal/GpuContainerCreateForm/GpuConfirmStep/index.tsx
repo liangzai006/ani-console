@@ -38,11 +38,7 @@ export function GpuConfirmStep({
           { label: "名称", value: values.name || "-" },
           {
             label: "镜像",
-            value: image ? (
-              <ImageNameText image={image} showSize />
-            ) : (
-              values.image || "-"
-            ),
+            value: image ? <ImageNameText image={image} showSize /> : values.image || "-",
           },
           {
             label: "资源",

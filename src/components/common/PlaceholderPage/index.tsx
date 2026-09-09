@@ -1,5 +1,5 @@
-import { Empty, Typography } from '@arco-design/web-react'
-import { PageHeader } from '@/components/shell/AppShell'
+import { Empty, Typography } from "@arco-design/web-react";
+import { PageHeader } from "@/components/shell/AppShell";
 
 export function PlaceholderPage({ title, description }: { title: string; description: string }) {
   return (
@@ -10,5 +10,5 @@ export function PlaceholderPage({ title, description }: { title: string; descrip
         待 Core API 落地后补充实现
       </Typography.Text>
     </div>
-  )
+  );
 }

@@ -18,10 +18,7 @@ export function ContainerInstanceUpdateImageModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<{ imageId: string }>();
-  const scope = useIdempotencyScope("container-instance-update-image", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("container-instance-update-image", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async ({ imageId }: { imageId: string }) => {
       const submitData = {
@@ -29,18 +26,13 @@ export function ContainerInstanceUpdateImageModal({
         image_id: imageId,
         strategy: "rolling" as const,
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -49,8 +41,7 @@ export function ContainerInstanceUpdateImageModal({
       Message.success("更新镜像已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const cancel = () => {
     scope.reset();
@@ -67,11 +58,7 @@ export function ContainerInstanceUpdateImageModal({
       unmountOnExit
     >
       <Form form={form} layout="vertical">
-        <InstanceRegistryImageSelect
-          field="imageId"
-          enabled
-          instanceKind="container"
-        />
+        <InstanceRegistryImageSelect field="imageId" enabled instanceKind="container" />
       </Form>
     </Modal>
   );

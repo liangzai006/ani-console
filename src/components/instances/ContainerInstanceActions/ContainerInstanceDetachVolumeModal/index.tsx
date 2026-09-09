@@ -10,9 +10,7 @@ type Instance = components["schemas"]["InstanceRecord"];
 function attachedVolumeId(volume: NonNullable<Instance["volumes"]>[number]) {
   const sourceRef = volume.source_ref?.trim();
   if (!sourceRef) return "";
-  return sourceRef.startsWith("volume/")
-    ? sourceRef.slice("volume/".length)
-    : sourceRef;
+  return sourceRef.startsWith("volume/") ? sourceRef.slice("volume/".length) : sourceRef;
 }
 
 export function ContainerInstanceDetachVolumeModal({
@@ -25,28 +23,20 @@ export function ContainerInstanceDetachVolumeModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<{ volumeId: string }>();
-  const scope = useIdempotencyScope("container-instance-detach-volume", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("container-instance-detach-volume", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async ({ volumeId }: { volumeId: string }) => {
       const submitData = {
         action: "detach_volume" as const,
         volume_id: volumeId,
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -55,12 +45,10 @@ export function ContainerInstanceDetachVolumeModal({
       Message.success("卸载云盘已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const options = (instance.volumes ?? []).filter(
-    (volume) =>
-      volume.kind !== "root_disk" && Boolean(attachedVolumeId(volume)),
+    (volume) => volume.kind !== "root_disk" && Boolean(attachedVolumeId(volume)),
   );
   const cancel = () => {
     scope.reset();
@@ -90,10 +78,7 @@ export function ContainerInstanceDetachVolumeModal({
         >
           <Select placeholder="请选择要卸载的云盘">
             {options.map((volume) => (
-              <Select.Option
-                key={attachedVolumeId(volume)}
-                value={attachedVolumeId(volume)}
-              >
+              <Select.Option key={attachedVolumeId(volume)} value={attachedVolumeId(volume)}>
                 {volume.name} · {attachedVolumeId(volume)}
               </Select.Option>
             ))}

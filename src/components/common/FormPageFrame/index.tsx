@@ -1,8 +1,8 @@
-import { Breadcrumb, Button, Form, Space, Tooltip } from '@arco-design/web-react'
-import { Link } from '@tanstack/react-router'
-import { AliIcon } from '../AliIcon'
-import type { FormPageFrameProps } from './types'
-import styles from './index.module.css'
+import { Breadcrumb, Button, Form, Space, Tooltip } from "@arco-design/web-react";
+import { Link } from "@tanstack/react-router";
+import { AliIcon } from "../AliIcon";
+import type { FormPageFrameProps } from "./types";
+import styles from "./index.module.css";
 
 export function FormPageFrame<FormData extends Record<string, unknown>>({
   breadcrumbs,
@@ -13,7 +13,7 @@ export function FormPageFrame<FormData extends Record<string, unknown>>({
   onBack,
   formProps,
 }: FormPageFrameProps<FormData>) {
-  const visibleBreadcrumbs = breadcrumbs.filter((item) => item.to !== '/')
+  const visibleBreadcrumbs = breadcrumbs.filter((item) => item.to !== "/");
 
   return (
     <div className={styles.page}>
@@ -31,11 +31,15 @@ export function FormPageFrame<FormData extends Record<string, unknown>>({
         </Tooltip>
         <Breadcrumb className={styles.breadcrumbs} aria-label="表单面包屑">
           {visibleBreadcrumbs.map((item, index) => {
-            const isLast = index === visibleBreadcrumbs.length - 1
+            const isLast = index === visibleBreadcrumbs.length - 1;
             return (
               <Breadcrumb.Item key={`${index}-${String(item.label)}`}>
                 {item.to && !isLast ? (
-                  <Link to={item.to as any} params={item.params as any} className={styles.breadcrumbLink}>
+                  <Link
+                    to={item.to as any}
+                    params={item.params as any}
+                    className={styles.breadcrumbLink}
+                  >
                     {item.label}
                   </Link>
                 ) : isLast ? (
@@ -44,7 +48,7 @@ export function FormPageFrame<FormData extends Record<string, unknown>>({
                   <span className={styles.breadcrumbText}>{item.label}</span>
                 )}
               </Breadcrumb.Item>
-            )
+            );
           })}
         </Breadcrumb>
       </div>
@@ -54,13 +58,17 @@ export function FormPageFrame<FormData extends Record<string, unknown>>({
           {...formProps}
           form={form}
           className="form-page-form"
-          layout={formProps?.layout ?? 'horizontal'}
+          layout={formProps?.layout ?? "horizontal"}
           scrollToFirstError={formProps?.scrollToFirstError ?? true}
           onSubmit={onSubmit}
         >
           <div className={styles.scrollArea} data-testid="form-page-scroll-area">
             {sections.map((section) => (
-              <section key={section.key} className={styles.section} aria-labelledby={`form-section-${section.key}`}>
+              <section
+                key={section.key}
+                className={styles.section}
+                aria-labelledby={`form-section-${section.key}`}
+              >
                 <h2 id={`form-section-${section.key}`} className={styles.sectionTitle}>
                   <span className={styles.sectionAccent} aria-hidden="true" />
                   {section.title}
@@ -79,10 +87,10 @@ export function FormPageFrame<FormData extends Record<string, unknown>>({
                 {...action.buttonProps}
                 onClick={() => {
                   if (action.submit) {
-                    form.submit()
-                    return
+                    form.submit();
+                    return;
                   }
-                  action.onClick?.()
+                  action.onClick?.();
                 }}
               >
                 {action.label}
@@ -92,5 +100,5 @@ export function FormPageFrame<FormData extends Record<string, unknown>>({
         </footer>
       </section>
     </div>
-  )
+  );
 }

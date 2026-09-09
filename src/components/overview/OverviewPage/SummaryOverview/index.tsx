@@ -1,9 +1,9 @@
-import { IconRight } from '@arco-design/web-react/icon'
-import { Link } from '@tanstack/react-router'
-import clsx from 'clsx'
-import { AliIcon } from '@/components/common'
-import type { HomeSummaryCard } from '../types'
-import styles from '../index.module.css'
+import { IconRight } from "@arco-design/web-react/icon";
+import { Link } from "@tanstack/react-router";
+import clsx from "clsx";
+import { AliIcon } from "@/components/common";
+import type { HomeSummaryCard } from "../types";
+import styles from "../index.module.css";
 
 export function SummaryOverview({ items }: { items: HomeSummaryCard[] }) {
   return (
@@ -34,5 +34,5 @@ export function SummaryOverview({ items }: { items: HomeSummaryCard[] }) {
         ))}
       </div>
     </section>
-  )
+  );
 }

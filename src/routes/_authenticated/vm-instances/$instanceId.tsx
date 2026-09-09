@@ -1,24 +1,13 @@
-import {
-  createFileRoute,
-  Outlet,
-  useNavigate,
-  useRouterState,
-} from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { VmInstanceDetailPage } from "@/components/instances/VmInstanceDetailPage";
 import {
   computeInstanceDetailTabKeys,
   type ComputeInstanceDetailTabKey,
 } from "@/lib/instance-detail-tabs";
 
-export const Route = createFileRoute(
-  "/_authenticated/vm-instances/$instanceId",
-)({
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { tab?: ComputeInstanceDetailTabKey } => ({
-    tab: computeInstanceDetailTabKeys.includes(
-      search.tab as ComputeInstanceDetailTabKey,
-    )
+export const Route = createFileRoute("/_authenticated/vm-instances/$instanceId")({
+  validateSearch: (search: Record<string, unknown>): { tab?: ComputeInstanceDetailTabKey } => ({
+    tab: computeInstanceDetailTabKeys.includes(search.tab as ComputeInstanceDetailTabKey)
       ? (search.tab as ComputeInstanceDetailTabKey)
       : undefined,
   }),
@@ -34,9 +23,7 @@ export const Route = createFileRoute(
       <VmInstanceDetailPage
         instanceId={instanceId}
         tab={tab}
-        onTabChange={(nextTab) =>
-          navigate({ search: { tab: nextTab }, replace: true })
-        }
+        onTabChange={(nextTab) => navigate({ search: { tab: nextTab }, replace: true })}
       />
     );
   },

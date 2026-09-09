@@ -25,14 +25,9 @@ export function GpuAdmissionSummary({
     (item) => item.status === "available" && item.available_count > 0,
   ).length;
   const quotaFullSpecs = specs.filter((item) => item.status === "full").length;
-  const deviceFullSpecs = specs.filter(
-    (item) => item.status === "device_full",
-  ).length;
-  const unavailableSpecs = specs.filter(
-    (item) => item.status === "unavailable",
-  ).length;
-  const canCreate =
-    availableSpecs > 0 && (availability?.quota_remaining ?? 0) > 0;
+  const deviceFullSpecs = specs.filter((item) => item.status === "device_full").length;
+  const unavailableSpecs = specs.filter((item) => item.status === "unavailable").length;
+  const canCreate = availableSpecs > 0 && (availability?.quota_remaining ?? 0) > 0;
 
   return (
     <Card title="创建准入预检" className="h-full">

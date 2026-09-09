@@ -28,16 +28,11 @@ export function GpuInstanceBindSecretModal({
 }) {
   const [form] = Form.useForm<Values>();
   const [bindingType, setBindingType] = useState<"env" | "file">("env");
-  const scope = useIdempotencyScope("gpu-instance-bind-secret", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("gpu-instance-bind-secret", ["POST", instance.id]);
   const secrets = useQuery({
     queryKey: ["secrets", "gpu-instance-bind-secret"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/secrets", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/secrets", { params: { query: { limit: 100 } } })),
   });
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
@@ -45,23 +40,16 @@ export function GpuInstanceBindSecretModal({
         action: "bind_secret" as const,
         secret_id: values.secretId,
         binding_type: values.bindingType,
-        env_name:
-          values.bindingType === "env" ? values.envName?.trim() : undefined,
-        mount_path:
-          values.bindingType === "file" ? values.mountPath?.trim() : undefined,
+        env_name: values.bindingType === "env" ? values.envName?.trim() : undefined,
+        mount_path: values.bindingType === "file" ? values.mountPath?.trim() : undefined,
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -70,12 +58,9 @@ export function GpuInstanceBindSecretModal({
       Message.success("绑定密钥已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
-  const options = ((secrets.data?.items ?? []) as Secret[]).filter(
-    (secret) => secret.id,
-  );
+  const options = ((secrets.data?.items ?? []) as Secret[]).filter((secret) => secret.id);
   return (
     <Modal
       title={`绑定密钥 · ${instance.name}`}
@@ -88,19 +73,11 @@ export function GpuInstanceBindSecretModal({
       onOk={async () => mutation.mutate(await form.validate())}
       unmountOnExit
     >
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ bindingType: "env" }}
-      >
+      <Form form={form} layout="vertical" initialValues={{ bindingType: "env" }}>
         <Form.Item
           field="secretId"
           label="密钥"
-          extra={
-            secrets.error
-              ? getErrorMessage(secrets.error, "密钥列表加载失败")
-              : undefined
-          }
+          extra={secrets.error ? getErrorMessage(secrets.error, "密钥列表加载失败") : undefined}
           rules={[{ required: true, message: "请选择密钥" }]}
         >
           <Select

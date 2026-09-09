@@ -44,11 +44,8 @@ export function GpuInstanceResizeFields({
   });
   const currentCpuSpec = currentCpuMemorySpec(instance);
   const currentGpuValue = currentGpuSpecValue(instance);
-  const currentGpuLabel =
-    instance.compute?.gpu_type ?? instance.compute?.spec_id ?? "-";
-  const cpuOptions = GPU_INSTANCE_COMPUTE_SPECS.some(
-    (option) => option.value === currentCpuSpec,
-  )
+  const currentGpuLabel = instance.compute?.gpu_type ?? instance.compute?.spec_id ?? "-";
+  const cpuOptions = GPU_INSTANCE_COMPUTE_SPECS.some((option) => option.value === currentCpuSpec)
     ? GPU_INSTANCE_COMPUTE_SPECS.map((option) => ({
         label: `${option.value}${option.value === currentCpuSpec ? "（当前）" : ""}`,
         value: option.value,
@@ -67,9 +64,7 @@ export function GpuInstanceResizeFields({
       spec.spec_id !== currentGpuValue &&
       (spec.status !== "available" || spec.available_count <= 0),
   }));
-  const gpuOptions = apiGpuOptions.some(
-    (option) => option.value === currentGpuValue,
-  )
+  const gpuOptions = apiGpuOptions.some((option) => option.value === currentGpuValue)
     ? apiGpuOptions
     : [
         {
@@ -92,18 +87,10 @@ export function GpuInstanceResizeFields({
       <Form.Item
         field="gpu_spec_id"
         label="GPU 规格"
-        extra={
-          gpuSpecs.error
-            ? getErrorMessage(gpuSpecs.error, "GPU 规格加载失败")
-            : undefined
-        }
+        extra={gpuSpecs.error ? getErrorMessage(gpuSpecs.error, "GPU 规格加载失败") : undefined}
         rules={[{ required: true, message: "请选择 GPU 规格" }]}
       >
-        <Select
-          loading={gpuSpecs.isLoading}
-          options={gpuOptions}
-          placeholder="请选择 GPU 规格"
-        />
+        <Select loading={gpuSpecs.isLoading} options={gpuOptions} placeholder="请选择 GPU 规格" />
       </Form.Item>
       <InstanceComputeSpecSelect
         field="cpu_memory_spec"

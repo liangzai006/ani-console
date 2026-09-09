@@ -1,24 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Empty,
-  Modal,
-  Space,
-  Spin,
-} from "@arco-design/web-react";
+import { Alert, Button, Empty, Modal, Space, Spin } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
 import type { components as coreComponents } from "@/api/core-schema";
 import { showApiError } from "@/api/helpers";
-import {
-  DetailPageFrame,
-  DetailPagePlaceholder,
-  AliIcon,
-  StatusTag,
-} from "@/components/common";
+import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { KnowledgeChatPanel } from "@/components/knowledge/KnowledgeChatPanel";
 import { KnowledgeDocumentsPanel } from "@/components/knowledge/KnowledgeDocumentsPanel";
 import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeDocumentUploadButton";
@@ -28,10 +16,13 @@ import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type KnowledgeBase = components["schemas"]["KnowledgeBase"];
 type VectorStore = coreComponents["schemas"]["VectorStore"];
-type VectorStoreListResponse =
-  coreComponents["schemas"]["VectorStoreListResponse"];
+type VectorStoreListResponse = coreComponents["schemas"]["VectorStoreListResponse"];
 export type KnowledgeBaseDetailTabKey =
-  "overview" | "documents" | "chat" | "permissions" | "history";
+  | "overview"
+  | "documents"
+  | "chat"
+  | "permissions"
+  | "history";
 
 export function KnowledgeBaseDetailPage({
   kbId,
@@ -45,10 +36,9 @@ export function KnowledgeBaseDetailPage({
   const detail = useQuery({
     queryKey: ["knowledge-base", kbId],
     queryFn: async () => {
-      const { data, error } = await servicesApi.GET(
-        "/knowledge-bases/{kb_id}",
-        { params: { path: { kb_id: kbId } } },
-      );
+      const { data, error } = await servicesApi.GET("/knowledge-bases/{kb_id}", {
+        params: { path: { kb_id: kbId } },
+      });
       if (error) throw error;
       return data;
     },
@@ -89,11 +79,7 @@ export function KnowledgeBaseDetailPage({
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "知识库" },
-          { label: "知识库管理", to: "/kb" },
-          { label: kbId },
-        ]}
+        breadcrumbs={[{ label: "知识库" }, { label: "知识库管理", to: "/kb" }, { label: kbId }]}
         title={kbId}
         idLabel="知识库 ID"
         idValue={kbId}
@@ -106,11 +92,7 @@ export function KnowledgeBaseDetailPage({
   ) as VectorStore | undefined;
   return (
     <DetailPageFrame
-      breadcrumbs={[
-        { label: "知识库" },
-        { label: "知识库管理", to: "/kb" },
-        { label: kb.name },
-      ]}
+      breadcrumbs={[{ label: "知识库" }, { label: "知识库管理", to: "/kb" }, { label: kb.name }]}
       title={kb.name}
       status={<StatusTag status={kb.status} />}
       icon={<AliIcon name="zhishiku" size={28} />}
@@ -192,9 +174,7 @@ export function KnowledgeBaseDetailPage({
         {
           key: "chat",
           label: "问答",
-          content: (
-            <KnowledgeChatPanel kbId={kbId} defaultTopK={kb.top_k ?? 5} />
-          ),
+          content: <KnowledgeChatPanel kbId={kbId} defaultTopK={kb.top_k ?? 5} />,
         },
         {
           key: "permissions",

@@ -113,13 +113,7 @@ const percentageTrend: HomeTrendData = {
 };
 
 function cpuItems(values: number[]): HomeCpuItem[] {
-  const names = [
-    "oe-24.03txt",
-    "oe-24.03txt",
-    "chenxh-Harbor",
-    "chenxh-Harbor",
-    "chenxh-Harbor",
-  ];
+  const names = ["oe-24.03txt", "oe-24.03txt", "chenxh-Harbor", "chenxh-Harbor", "chenxh-Harbor"];
   const ids = ["vm_2krt5t", "vm_3lsu6v", "vm_9xyr1a", "vm_b4nd7c", "vm_p9qm2w"];
   return values.map((value, index) => ({
     id: `${ids[index]}-${value}`,
@@ -330,8 +324,7 @@ const mockOverview: HomeOverviewData = {
   },
 };
 
-const waitForMockResponse = () =>
-  new Promise((resolve) => globalThis.setTimeout(resolve, 120));
+const waitForMockResponse = () => new Promise((resolve) => globalThis.setTimeout(resolve, 120));
 
 export function createMockHomeOverviewDataSource(
   seed: HomeOverviewData = mockOverview,
@@ -346,7 +339,6 @@ export function createMockHomeOverviewDataSource(
 }
 
 // Replace this binding with an API-backed adapter when the overview endpoints are ready.
-export const homeOverviewDataSource: HomeOverviewDataSource =
-  createMockHomeOverviewDataSource();
+export const homeOverviewDataSource: HomeOverviewDataSource = createMockHomeOverviewDataSource();
 
 export const homeOverviewMockData = structuredClone(mockOverview);

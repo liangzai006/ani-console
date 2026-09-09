@@ -1,12 +1,4 @@
-import {
-  Button,
-  Form,
-  Input,
-  Message,
-  Modal,
-  Space,
-  Typography,
-} from "@arco-design/web-react";
+import { Button, Form, Input, Message, Modal, Space, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
@@ -32,12 +24,7 @@ type Props = {
   onSubmit: (values: FormValues, template: SandboxTemplate) => void;
 };
 
-export function SandboxInstanceCreateForm({
-  visible,
-  submitting,
-  onCancel,
-  onSubmit,
-}: Props) {
+export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSubmit }: Props) {
   const [form] = Form.useForm<FormValues>();
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
@@ -52,9 +39,7 @@ export function SandboxInstanceCreateForm({
       ),
   });
   const items = useMemo(
-    () =>
-      (templates.data as { items?: SandboxTemplate[] } | undefined)?.items ??
-      [],
+    () => (templates.data as { items?: SandboxTemplate[] } | undefined)?.items ?? [],
     [templates.data],
   );
   const selectedTemplate = items.find((item) => item.id === values.template_id);
@@ -108,10 +93,7 @@ export function SandboxInstanceCreateForm({
             取消
           </Button>
           {step > 0 ? (
-            <Button
-              onClick={() => setStep((current) => current - 1)}
-              disabled={submitting}
-            >
+            <Button onClick={() => setStep((current) => current - 1)} disabled={submitting}>
               上一步
             </Button>
           ) : null}
@@ -124,8 +106,7 @@ export function SandboxInstanceCreateForm({
             }
             loading={submitting}
             disabled={
-              (step === 1 &&
-                (templates.isLoading || templates.isError || !items.length)) ||
+              (step === 1 && (templates.isLoading || templates.isError || !items.length)) ||
               (step === STEP_TITLES.length - 1 && !selectedTemplate)
             }
           >
@@ -136,11 +117,7 @@ export function SandboxInstanceCreateForm({
       style={{ width: 780 }}
     >
       <div className="flex h-[508px] min-h-0 flex-col">
-        <WizardSteps
-          current={step + 1}
-          items={STEP_TITLES}
-          style={{ marginBottom: 24 }}
-        />
+        <WizardSteps current={step + 1} items={STEP_TITLES} style={{ marginBottom: 24 }} />
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           <Form<FormValues>
             form={form}

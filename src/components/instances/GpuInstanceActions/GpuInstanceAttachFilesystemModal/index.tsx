@@ -18,10 +18,7 @@ export function GpuInstanceAttachFilesystemModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<Values>();
-  const scope = useIdempotencyScope("gpu-instance-attach-filesystem", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("gpu-instance-attach-filesystem", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
       const submitData = {
@@ -30,18 +27,13 @@ export function GpuInstanceAttachFilesystemModal({
         mount_path: values.mountPath.trim(),
         read_only: values.readOnly ?? false,
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -50,8 +42,7 @@ export function GpuInstanceAttachFilesystemModal({
       Message.success("挂载 NFS 已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal

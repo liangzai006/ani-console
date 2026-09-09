@@ -1,11 +1,7 @@
 import { Alert, Empty, Space } from "@arco-design/web-react";
 import { Link } from "@tanstack/react-router";
 import type { components } from "@/api/services-schema";
-import {
-  DataTable,
-  TableSectionHeader,
-  type ListColumn,
-} from "@/components/common";
+import { DataTable, TableSectionHeader, type ListColumn } from "@/components/common";
 import { getErrorMessage } from "@/lib/errors";
 import { getImageDisplayName } from "@/lib/render";
 
@@ -30,9 +26,7 @@ export function InferenceRelatedResources({
   loading: boolean;
   error: unknown;
 }) {
-  const version = model?.versions?.find(
-    (item) => item.id === service.model_version_id,
-  );
+  const version = model?.versions?.find((item) => item.id === service.model_version_id);
   const resources: RelatedResource[] = [
     {
       id: "model",
@@ -78,11 +72,7 @@ export function InferenceRelatedResources({
       <section>
         <TableSectionHeader title="AI 关联" />
         {error ? (
-          <Alert
-            type="error"
-            showIcon
-            content={getErrorMessage(error, "关联模型加载失败")}
-          />
+          <Alert type="error" showIcon content={getErrorMessage(error, "关联模型加载失败")} />
         ) : (
           <DataTable<RelatedResource>
             data={resources}

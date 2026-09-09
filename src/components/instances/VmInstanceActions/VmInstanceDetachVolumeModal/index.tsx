@@ -10,9 +10,7 @@ type Instance = components["schemas"]["InstanceRecord"];
 function attachedVolumeId(volume: NonNullable<Instance["volumes"]>[number]) {
   const sourceRef = volume.source_ref?.trim();
   if (!sourceRef) return "";
-  return sourceRef.startsWith("volume/")
-    ? sourceRef.slice("volume/".length)
-    : sourceRef;
+  return sourceRef.startsWith("volume/") ? sourceRef.slice("volume/".length) : sourceRef;
 }
 
 export function VmInstanceDetachVolumeModal({
@@ -25,23 +23,17 @@ export function VmInstanceDetachVolumeModal({
   onSubmitted: (operationId: string) => void;
 }) {
   const [form] = Form.useForm<{ volumeId: string }>();
-  const scope = useIdempotencyScope("vm-instance-detach-volume", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("vm-instance-detach-volume", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async ({ volumeId }: { volumeId: string }) => {
       const submitData = {
         action: "detach_volume" as const,
         volume_id: volumeId,
       };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error || !data)
         throw {
           ...(typeof error === "object" && error
@@ -56,12 +48,10 @@ export function VmInstanceDetachVolumeModal({
       Message.success("卸载云盘已提交");
       onSubmitted(operationId);
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const options = (instance.volumes ?? []).filter(
-    (volume) =>
-      volume.kind !== "root_disk" && Boolean(attachedVolumeId(volume)),
+    (volume) => volume.kind !== "root_disk" && Boolean(attachedVolumeId(volume)),
   );
   return (
     <Modal
@@ -89,10 +79,7 @@ export function VmInstanceDetachVolumeModal({
         >
           <Select placeholder="请选择要卸载的数据盘">
             {options.map((volume) => (
-              <Select.Option
-                key={attachedVolumeId(volume)}
-                value={attachedVolumeId(volume)}
-              >
+              <Select.Option key={attachedVolumeId(volume)} value={attachedVolumeId(volume)}>
                 {volume.name} · {attachedVolumeId(volume)}
               </Select.Option>
             ))}

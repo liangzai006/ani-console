@@ -21,10 +21,10 @@ export function ContainerInstanceChangeSecurityGroupsModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<{ securityGroupIds?: string[] }>();
-  const scope = useIdempotencyScope(
-    "container-instance-change-security-groups",
-    ["POST", instance.id],
-  );
+  const scope = useIdempotencyScope("container-instance-change-security-groups", [
+    "POST",
+    instance.id,
+  ]);
   const groups = useQuery({
     queryKey: [
       "network-security-groups",
@@ -44,27 +44,18 @@ export function ContainerInstanceChangeSecurityGroupsModal({
       ),
   });
   const mutation = useMutation({
-    mutationFn: async ({
-      securityGroupIds,
-    }: {
-      securityGroupIds?: string[];
-    }) => {
+    mutationFn: async ({ securityGroupIds }: { securityGroupIds?: string[] }) => {
       const submitData = {
         action: "change_security_groups" as const,
         security_group_ids: securityGroupIds ?? [],
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -73,13 +64,11 @@ export function ContainerInstanceChangeSecurityGroupsModal({
       Message.success("更换安全组已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   const options = ((groups.data?.items ?? []) as SecurityGroup[]).filter(
-    (group) =>
-      !instance.network?.vpc_id || group.vpc_id === instance.network.vpc_id,
+    (group) => !instance.network?.vpc_id || group.vpc_id === instance.network.vpc_id,
   );
   const cancel = () => {
     scope.reset();
@@ -99,9 +88,7 @@ export function ContainerInstanceChangeSecurityGroupsModal({
         form={form}
         layout="vertical"
         initialValues={{
-          securityGroupIds: (instance.network?.security_groups ?? []).map(
-            (group) => group.id,
-          ),
+          securityGroupIds: (instance.network?.security_groups ?? []).map((group) => group.id),
         }}
       >
         <Form.Item

@@ -16,25 +16,17 @@ export function ContainerInstanceDeleteModal({
   onCancel: () => void;
   onSubmitted: () => void;
 }) {
-  const scope = useIdempotencyScope("container-instance-delete", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("container-instance-delete", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async () => {
       const submitData = { action: "delete" as const };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error) {
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
       }
@@ -44,8 +36,7 @@ export function ContainerInstanceDeleteModal({
       Message.success("删除已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   return (

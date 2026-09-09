@@ -1,13 +1,13 @@
-import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode } from 'react'
-import { Select } from '@arco-design/web-react'
-import clsx from 'clsx'
-import styles from './index.module.css'
+import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { Select } from "@arco-design/web-react";
+import clsx from "clsx";
+import styles from "./index.module.css";
 
 type ListToolbarProps = {
-  actions?: ReactNode
-  filters?: ReactNode
-  tools?: ReactNode
-}
+  actions?: ReactNode;
+  filters?: ReactNode;
+  tools?: ReactNode;
+};
 
 export function ListToolbar({ actions, filters, tools }: ListToolbarProps) {
   return (
@@ -16,78 +16,84 @@ export function ListToolbar({ actions, filters, tools }: ListToolbarProps) {
       {filters ? <div className={styles.toolbarFilters}>{filters}</div> : null}
       {tools ? <div className={styles.toolbarTools}>{tools}</div> : null}
     </div>
-  )
+  );
 }
 
 type ToolbarButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  iconClassName?: string
-  variant?: 'primary' | 'outline' | 'secondary' | 'danger'
-}
+  iconClassName?: string;
+  variant?: "primary" | "outline" | "secondary" | "danger";
+};
 
-export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(function ToolbarButton(
-  { iconClassName, variant = 'outline', className = '', children, ...buttonProps },
-  ref,
-) {
-  return (
-    <button
-      ref={ref}
-      type="button"
-      className={clsx(styles.toolbarButton, styles[`toolbarButton_${variant}`], className)}
-      {...buttonProps}
-    >
-      {iconClassName ? <i className={clsx('iconfont', iconClassName)} aria-hidden="true" /> : null}
-      {children}
-    </button>
-  )
-})
+export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
+  function ToolbarButton(
+    { iconClassName, variant = "outline", className = "", children, ...buttonProps },
+    ref,
+  ) {
+    return (
+      <button
+        ref={ref}
+        type="button"
+        className={clsx(styles.toolbarButton, styles[`toolbarButton_${variant}`], className)}
+        {...buttonProps}
+      >
+        {iconClassName ? (
+          <i className={clsx("iconfont", iconClassName)} aria-hidden="true" />
+        ) : null}
+        {children}
+      </button>
+    );
+  },
+);
 
 type ToolbarIconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  iconClassName: string
-  label: string
-  spinning?: boolean
-}
+  iconClassName: string;
+  label: string;
+  spinning?: boolean;
+};
 
-export const ToolbarIconButton = forwardRef<HTMLButtonElement, ToolbarIconButtonProps>(function ToolbarIconButton(
-  { iconClassName, label, spinning = false, className = '', ...buttonProps },
-  ref,
-) {
-  return (
-    <button
-      ref={ref}
-      type="button"
-      aria-label={label}
-      title={label}
-      className={clsx(styles.toolbarIconButton, spinning && styles.spinning, className)}
-      {...buttonProps}
-    >
-      <i className={clsx('iconfont', iconClassName)} aria-hidden="true" />
-    </button>
-  )
-})
+export const ToolbarIconButton = forwardRef<HTMLButtonElement, ToolbarIconButtonProps>(
+  function ToolbarIconButton(
+    { iconClassName, label, spinning = false, className = "", ...buttonProps },
+    ref,
+  ) {
+    return (
+      <button
+        ref={ref}
+        type="button"
+        aria-label={label}
+        title={label}
+        className={clsx(styles.toolbarIconButton, spinning && styles.spinning, className)}
+        {...buttonProps}
+      >
+        <i className={clsx("iconfont", iconClassName)} aria-hidden="true" />
+      </button>
+    );
+  },
+);
 
 export type SearchField<T extends string> = {
-  value: T
-  label: string
-}
+  value: T;
+  label: string;
+};
 
 type ToolbarSearchProps<T extends string> = {
-  fields: Array<SearchField<T>>
-  field: T
-  value: string
-  placeholder?: string
-  onFieldChange: (field: T) => void
-  onChange: (value: string) => void
-}
+  fields: Array<SearchField<T>>;
+  field: T;
+  value: string;
+  placeholder?: string;
+  onFieldChange: (field: T) => void;
+  onChange: (value: string) => void;
+};
 
 export function ToolbarSearch<T extends string>({
   fields,
   field,
   value,
-  placeholder = '请输入搜索内容',
+  placeholder = "请输入搜索内容",
   onFieldChange,
   onChange,
 }: ToolbarSearchProps<T>) {
-  const inputId = useId()
+  const inputId = useId();
 
   return (
     <div className={styles.searchControl}>
@@ -113,5 +119,5 @@ export function ToolbarSearch<T extends string>({
         <i className="iconfont icon-search" />
       </span>
     </div>
-  )
+  );
 }

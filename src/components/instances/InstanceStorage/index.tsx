@@ -23,9 +23,7 @@ import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 type Instance = components["schemas"]["InstanceRecord"];
 type LifecycleRequest = components["schemas"]["InstanceLifecycleRequest"];
 type Volume = NonNullable<Instance["volumes"]>[number];
-type FilesystemAttachment = NonNullable<
-  Instance["storage_attachments"]
->[number];
+type FilesystemAttachment = NonNullable<Instance["storage_attachments"]>[number];
 type StorageVolume = components["schemas"]["StorageVolume"];
 type StorageFilesystem = components["schemas"]["StorageFilesystem"];
 type FilesystemMountTarget = components["schemas"]["FilesystemMountTarget"];
@@ -53,10 +51,7 @@ export function InstanceStorage({
   filesystemAction?: ReactNode;
 }) {
   const [form] = Form.useForm<MountFormValues>();
-  const mountScope = useIdempotencyScope("instance-storage-mount", [
-    "POST",
-    instance.id,
-  ]);
+  const mountScope = useIdempotencyScope("instance-storage-mount", ["POST", instance.id]);
   const [selectedResourceId, setSelectedResourceId] = useState("");
   const volumes = instance.volumes ?? [];
   const filesystems = (instance.storage_attachments ?? []).filter(
@@ -67,9 +62,7 @@ export function InstanceStorage({
       .filter((reference) => reference.startsWith("volume/"))
       .map((reference) => reference.slice("volume/".length)),
   );
-  const attachedFilesystemIds = new Set(
-    filesystems.map((filesystem) => filesystem.resource_id),
-  );
+  const attachedFilesystemIds = new Set(filesystems.map((filesystem) => filesystem.resource_id));
   const volumeOptions = useQuery({
     queryKey: ["volumes", "instance-mount", instance.id],
     queryFn: () =>
@@ -105,15 +98,12 @@ export function InstanceStorage({
   const mountTargets = useQuery({
     queryKey: ["filesystem-mount-targets", selectedResourceId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/filesystems/{filesystem_id}/mount-targets",
-        {
-          params: {
-            path: { filesystem_id: selectedResourceId },
-            query: { limit: 100 },
-          },
+      const { data, error } = await coreApi.GET("/filesystems/{filesystem_id}/mount-targets", {
+        params: {
+          path: { filesystem_id: selectedResourceId },
+          query: { limit: 100 },
         },
-      );
+      });
       if (error || !data) {
         throw error ?? new Error("文件系统挂载目标未返回结果");
       }
@@ -122,9 +112,7 @@ export function InstanceStorage({
     enabled: mountKind === "filesystem" && Boolean(selectedResourceId),
   });
   // TODO: 存储接口确认按状态和 available_for_instance_id 过滤后，移除此处关联资源选择的本地兜底过滤。
-  const availableVolumes = (
-    (volumeOptions.data?.items ?? []) as StorageVolume[]
-  ).filter(
+  const availableVolumes = ((volumeOptions.data?.items ?? []) as StorageVolume[]).filter(
     (volume) =>
       ["pending", "available"].includes(volume.state) &&
       !volume.mount_instance_id &&
@@ -161,38 +149,28 @@ export function InstanceStorage({
         action: mountKind === "volume" ? "attach_volume" : "attach_filesystem",
         mount_path: mountPath,
         read_only: values.readOnly ?? false,
-        ...(mountKind === "volume"
-          ? { volume_id: resourceId }
-          : { filesystem_id: resourceId }),
+        ...(mountKind === "volume" ? { volume_id: resourceId } : { filesystem_id: resourceId }),
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: mountScope.withKey(submitData) as LifecycleRequest,
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: mountScope.withKey(submitData) as LifecycleRequest,
+      });
       if (error) {
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
       }
     },
     onSuccess: () => {
       mountScope.reset();
-      Message.success(
-        mountKind === "volume" ? "云盘挂载已提交" : "NFS 挂载已提交",
-      );
+      Message.success(mountKind === "volume" ? "云盘挂载已提交" : "NFS 挂载已提交");
       onMountKindChange(undefined);
       setSelectedResourceId("");
       form.resetFields();
       onChanged();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   return (
@@ -228,16 +206,13 @@ export function InstanceStorage({
           <TableSectionHeader title="文件存储 NFS" extra={filesystemAction} />
           <DataTable<FilesystemAttachment>
             data={filesystems}
-            rowKey={(filesystem) =>
-              `${filesystem.resource_id}:${filesystem.mount_path ?? ""}`
-            }
+            rowKey={(filesystem) => `${filesystem.resource_id}:${filesystem.mount_path ?? ""}`}
             pagination={false}
             noDataElement={<Empty description="暂无文件存储 NFS" />}
             columns={[
               {
                 title: "文件存储",
-                render: (_, filesystem) =>
-                  filesystem.resource_name ?? filesystem.resource_id,
+                render: (_, filesystem) => filesystem.resource_name ?? filesystem.resource_id,
               },
               { title: "文件系统 ID", dataIndex: "resource_id" },
               {
@@ -248,18 +223,13 @@ export function InstanceStorage({
               {
                 title: "访问模式",
                 width: 100,
-                render: (_, filesystem) =>
-                  filesystem.read_only ? "只读" : "读写",
+                render: (_, filesystem) => (filesystem.read_only ? "只读" : "读写"),
               },
               {
                 title: "状态",
                 width: 120,
                 render: (_, filesystem) =>
-                  filesystem.status ? (
-                    <StatusTag status={filesystem.status} />
-                  ) : (
-                    "-"
-                  ),
+                  filesystem.status ? <StatusTag status={filesystem.status} /> : "-",
               },
             ]}
           />
@@ -273,8 +243,7 @@ export function InstanceStorage({
         okButtonProps={{
           disabled:
             !selectedResourceId ||
-            (mountKind === "filesystem" &&
-              (mountTargets.isLoading || !hasAvailableMountTarget)),
+            (mountKind === "filesystem" && (mountTargets.isLoading || !hasAvailableMountTarget)),
         }}
         onCancel={() => {
           mountScope.reset();
@@ -293,28 +262,21 @@ export function InstanceStorage({
           >
             <Select
               loading={
-                mountKind === "volume"
-                  ? volumeOptions.isLoading
-                  : filesystemOptions.isLoading
+                mountKind === "volume" ? volumeOptions.isLoading : filesystemOptions.isLoading
               }
-              placeholder={
-                mountKind === "volume" ? "请选择可挂载云盘" : "请选择可用 NFS"
-              }
+              placeholder={mountKind === "volume" ? "请选择可挂载云盘" : "请选择可用 NFS"}
               showSearch
               allowClear
               onChange={(value) => setSelectedResourceId(value ?? "")}
               onClear={() => setSelectedResourceId("")}
               filterOption={(inputValue, option) =>
-                String(option.props.children)
-                  .toLowerCase()
-                  .includes(inputValue.toLowerCase())
+                String(option.props.children).toLowerCase().includes(inputValue.toLowerCase())
               }
             >
               {mountKind === "volume"
                 ? availableVolumes.map((volume) => (
                     <Select.Option key={volume.id} value={volume.id}>
-                      {volume.name} · {volume.size_gib} GiB ·{" "}
-                      {volume.storage_class}
+                      {volume.name} · {volume.size_gib} GiB · {volume.storage_class}
                     </Select.Option>
                   ))
                 : availableFilesystems.map((filesystem) => (
@@ -337,23 +299,15 @@ export function InstanceStorage({
               className="mb-4"
               type="error"
               showIcon
-              content={getErrorMessage(
-                filesystemOptions.error,
-                "文件存储列表加载失败",
-              )}
+              content={getErrorMessage(filesystemOptions.error, "文件存储列表加载失败")}
             />
           ) : null}
-          {mountKind === "filesystem" &&
-          selectedResourceId &&
-          mountTargets.error ? (
+          {mountKind === "filesystem" && selectedResourceId && mountTargets.error ? (
             <Alert
               className="mb-4"
               type="error"
               showIcon
-              content={getErrorMessage(
-                mountTargets.error,
-                "NFS 挂载目标检查失败",
-              )}
+              content={getErrorMessage(mountTargets.error, "NFS 挂载目标检查失败")}
             />
           ) : null}
           {mountKind === "filesystem" &&

@@ -21,15 +21,16 @@ export function CreateFilesystemMountTargetModal({
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("storage-filesystem-mount-target-create", ["POST", filesystemId]);
+  const createScope = useIdempotencyScope("storage-filesystem-mount-target-create", [
+    "POST",
+    filesystemId,
+  ]);
   const [vpcId, setVpcId] = useState("");
   const [subnetId, setSubnetId] = useState("");
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "filesystem-mount-target-create"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
     enabled: visible,
   });
   const subnets = useQuery({
@@ -48,8 +49,7 @@ export function CreateFilesystemMountTargetModal({
   );
 
   useEffect(() => {
-    if (subnetId && !availableSubnets.some((item) => item.id === subnetId))
-      setSubnetId("");
+    if (subnetId && !availableSubnets.some((item) => item.id === subnetId)) setSubnetId("");
   }, [availableSubnets, subnetId]);
 
   const close = () => {
@@ -63,13 +63,10 @@ export function CreateFilesystemMountTargetModal({
       if (!vpcId) throw new Error("请选择 VPC");
       if (!subnetId) throw new Error("请选择子网");
       const submitData = { vpc_id: vpcId, subnet_id: subnetId };
-      const { error } = await coreApi.POST(
-        "/filesystems/{filesystem_id}/mount-targets",
-        {
-          params: { path: { filesystem_id: filesystemId } },
-          body: createScope.withKey(submitData),
-        },
-      );
+      const { error } = await coreApi.POST("/filesystems/{filesystem_id}/mount-targets", {
+        params: { path: { filesystem_id: filesystemId } },
+        body: createScope.withKey(submitData),
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -90,11 +87,7 @@ export function CreateFilesystemMountTargetModal({
       unmountOnExit
     >
       <Form layout="vertical">
-        <Alert
-          type="info"
-          showIcon
-          content="挂载目标用于为指定 VPC 和子网提供文件存储访问地址。"
-        />
+        <Alert type="info" showIcon content="挂载目标用于为指定 VPC 和子网提供文件存储访问地址。" />
         <Form.Item label="VPC" required>
           <Select
             value={vpcId || undefined}
@@ -128,15 +121,10 @@ export function CreateFilesystemMountTargetModal({
           <Alert
             type="error"
             showIcon
-            content={getErrorMessage(
-              vpcs.error ?? subnets.error,
-              "网络选项加载失败",
-            )}
+            content={getErrorMessage(vpcs.error ?? subnets.error, "网络选项加载失败")}
           />
         ) : null}
-        <Typography.Text type="secondary">
-          IP 地址由后端在所选子网中分配。
-        </Typography.Text>
+        <Typography.Text type="secondary">IP 地址由后端在所选子网中分配。</Typography.Text>
       </Form>
     </Modal>
   );

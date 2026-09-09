@@ -38,10 +38,7 @@ export function SandboxCodeRunner({
   running: boolean;
   onChanged: () => void;
 }) {
-  const runScope = useIdempotencyScope("sandbox-code-run", [
-    "POST",
-    instanceId,
-  ]);
+  const runScope = useIdempotencyScope("sandbox-code-run", ["POST", instanceId]);
   const [language, setLanguage] = useState<Language>("python");
   const [code, setCode] = useState(SAMPLES.python);
   const [stdin, setStdin] = useState("");
@@ -72,14 +69,11 @@ export function SandboxCodeRunner({
     onSuccess: (task) => {
       runScope.reset();
       setLastTask(task);
-      const result = (
-        task.result as unknown as { code_run?: SandboxCodeRun } | undefined
-      )?.code_run;
+      const result = (task.result as unknown as { code_run?: SandboxCodeRun } | undefined)
+        ?.code_run;
       if (result) {
         setRuns((current) => [result, ...current].slice(0, 10));
-        Message.success(
-          result.status === "succeeded" ? "代码执行完成" : "代码执行已返回",
-        );
+        Message.success(result.status === "succeeded" ? "代码执行完成" : "代码执行已返回");
       } else {
         Message.success("代码执行任务已提交");
       }
@@ -96,9 +90,7 @@ export function SandboxCodeRunner({
         type="info"
         content="代码在隔离的 Sandbox 运行环境中执行，单次最长 300 秒。提交代码会同时刷新空闲计时。"
       />
-      {!running ? (
-        <Alert type="warning" content="仅运行中的 Sandbox 可以执行代码。" />
-      ) : null}
+      {!running ? <Alert type="warning" content="仅运行中的 Sandbox 可以执行代码。" /> : null}
 
       <section>
         <Typography.Title heading={6}>代码</Typography.Title>
@@ -124,11 +116,7 @@ export function SandboxCodeRunner({
               />
             </Form.Item>
             <Form.Item label="标准输入（可选）">
-              <Input
-                value={stdin}
-                onChange={setStdin}
-                placeholder="传给程序的 stdin"
-              />
+              <Input value={stdin} onChange={setStdin} placeholder="传给程序的 stdin" />
             </Form.Item>
           </div>
           <Form.Item label="代码内容" required>
@@ -165,11 +153,7 @@ export function SandboxCodeRunner({
                 {
                   label: "状态",
                   value: (
-                    <Tag
-                      color={
-                        lastRun.status === "succeeded" ? "green" : "orange"
-                      }
-                    >
+                    <Tag color={lastRun.status === "succeeded" ? "green" : "orange"}>
                       {lastRun.status}
                     </Tag>
                   ),
@@ -180,28 +164,18 @@ export function SandboxCodeRunner({
                 },
                 {
                   label: "完成时间",
-                  value: formatDateTime(
-                    lastRun.completed_at ?? lastRun.created_at,
-                  ),
+                  value: formatDateTime(lastRun.completed_at ?? lastRun.created_at),
                 },
               ]}
             />
             <OutputBlock title="stdout" value={lastRun.stdout} />
-            {lastRun.stderr ? (
-              <OutputBlock title="stderr" value={lastRun.stderr} error />
-            ) : null}
+            {lastRun.stderr ? <OutputBlock title="stderr" value={lastRun.stderr} error /> : null}
             {lastRun.truncated ? (
-              <Alert
-                type="warning"
-                content="输出超过服务端限制，结果已截断。"
-              />
+              <Alert type="warning" content="输出超过服务端限制，结果已截断。" />
             ) : null}
           </div>
         ) : lastTask ? (
-          <Alert
-            type="info"
-            content={`任务 ${lastTask.id} 已提交，当前状态：${lastTask.status}`}
-          />
+          <Alert type="info" content={`任务 ${lastTask.id} 已提交，当前状态：${lastTask.status}`} />
         ) : (
           <Empty description="尚无代码执行结果" />
         )}

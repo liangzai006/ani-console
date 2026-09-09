@@ -32,8 +32,7 @@ import { listOrThrow } from "@/lib/api-list";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
-type SecurityGroupBinding =
-  components["schemas"]["NetworkSecurityGroupBinding"];
+type SecurityGroupBinding = components["schemas"]["NetworkSecurityGroupBinding"];
 type Vpc = components["schemas"]["NetworkVPC"];
 type Instance = components["schemas"]["InstanceRecord"];
 
@@ -47,11 +46,7 @@ type RelatedResource = {
   instance?: Instance;
 };
 
-export function SecurityGroupDetailPage({
-  securityGroupId,
-}: {
-  securityGroupId: string;
-}) {
+export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [ruleEditor, setRuleEditor] = useState<{
@@ -61,12 +56,9 @@ export function SecurityGroupDetailPage({
   const detail = useQuery({
     queryKey: ["network-security-group", securityGroupId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/networks/security-groups/{security_group_id}",
-        {
-          params: { path: { security_group_id: securityGroupId } },
-        },
-      );
+      const { data, error } = await coreApi.GET("/networks/security-groups/{security_group_id}", {
+        params: { path: { security_group_id: securityGroupId } },
+      });
       if (error) throw error;
       return data;
     },
@@ -109,9 +101,7 @@ export function SecurityGroupDetailPage({
   const instances = useQuery({
     queryKey: ["instances", "security-group-related"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/instances", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/instances", { params: { query: { limit: 100 } } })),
   });
   useListErrorNotification({
     id: `security-group-detail:${securityGroupId}`,
@@ -163,12 +153,9 @@ export function SecurityGroupDetailPage({
   });
   const deleteSecurityGroup = useMutation({
     mutationFn: async () => {
-      const { error } = await coreApi.DELETE(
-        "/networks/security-groups/{security_group_id}",
-        {
-          params: { path: { security_group_id: securityGroupId } },
-        },
-      );
+      const { error } = await coreApi.DELETE("/networks/security-groups/{security_group_id}", {
+        params: { path: { security_group_id: securityGroupId } },
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -200,13 +187,9 @@ export function SecurityGroupDetailPage({
 
   const securityGroup = detail.data as SecurityGroup;
   const parentVpc = vpc.data as Vpc | undefined;
-  const securityGroupBindings = (bindings.data?.items ??
-    []) as SecurityGroupBinding[];
+  const securityGroupBindings = (bindings.data?.items ?? []) as SecurityGroupBinding[];
   const instanceById = new Map(
-    ((instances.data?.items ?? []) as Instance[]).map((instance) => [
-      instance.id,
-      instance,
-    ]),
+    ((instances.data?.items ?? []) as Instance[]).map((instance) => [instance.id, instance]),
   );
   const networkRelatedResources: RelatedResource[] = parentVpc
     ? [
@@ -220,24 +203,21 @@ export function SecurityGroupDetailPage({
         },
       ]
     : [];
-  const computeRelatedResources: RelatedResource[] = securityGroupBindings.map(
-    (binding) => {
-      const instance = instanceById.get(binding.target_id);
-      return {
-        key: binding.id,
-        id: binding.target_id,
-        kind: "实例",
-        name: instance?.name ?? binding.target_id,
-        status: instance?.state ?? "-",
-        route: "instance",
-        instance,
-      };
-    },
-  );
+  const computeRelatedResources: RelatedResource[] = securityGroupBindings.map((binding) => {
+    const instance = instanceById.get(binding.target_id);
+    return {
+      key: binding.id,
+      id: binding.target_id,
+      kind: "实例",
+      name: instance?.name ?? binding.target_id,
+      status: instance?.state ?? "-",
+      route: "instance",
+      instance,
+    };
+  });
   const openRelatedResource = (resource: RelatedResource) => {
     if (resource.route === "instance") {
-      if (resource.instance)
-        navigateToInstanceDetail(navigate, resource.instance);
+      if (resource.instance) navigateToInstanceDetail(navigate, resource.instance);
       return;
     }
     navigate({ to: resource.route, params: { vpcId: resource.id } });
@@ -268,18 +248,14 @@ export function SecurityGroupDetailPage({
     />
   );
   const ruleItems = (rules.data?.items ?? []) as SecurityGroupRuleResource[];
-  const renderRuleTable = (
-    direction: SecurityGroupRuleResource["direction"],
-  ) => {
-    const directionRules = ruleItems.filter(
-      (rule) => rule.direction === direction,
-    );
+  const renderRuleTable = (direction: SecurityGroupRuleResource["direction"]) => {
+    const directionRules = ruleItems.filter((rule) => rule.direction === direction);
     return (
       <Space direction="vertical" size={12} className="w-full">
         <div className="flex items-center justify-between">
           <Typography.Text>
-            共 <Typography.Text bold>{directionRules.length}</Typography.Text>{" "}
-            条{direction === "ingress" ? "入站" : "出站"}规则
+            共 <Typography.Text bold>{directionRules.length}</Typography.Text> 条
+            {direction === "ingress" ? "入站" : "出站"}规则
           </Typography.Text>
           <Button type="primary" onClick={() => setRuleEditor({ direction })}>
             添加规则
@@ -291,8 +267,7 @@ export function SecurityGroupDetailPage({
             { title: "优先级", dataIndex: "priority" },
             {
               title: "协议",
-              render: (_, rule) =>
-                rule.protocol === "all" ? "全部" : rule.protocol.toUpperCase(),
+              render: (_, rule) => (rule.protocol === "all" ? "全部" : rule.protocol.toUpperCase()),
             },
             { title: "端口范围", dataIndex: "port_range" },
             {
@@ -345,9 +320,7 @@ export function SecurityGroupDetailPage({
           data={directionRules}
           pagination={false}
           noDataElement={
-            <Empty
-              description={`暂无${direction === `ingress` ? `入站` : `出站`}规则`}
-            />
+            <Empty description={`暂无${direction === `ingress` ? `入站` : `出站`}规则`} />
           }
         />
       </Space>
@@ -438,28 +411,15 @@ export function SecurityGroupDetailPage({
                 <Typography.Text>
                   共{" "}
                   <Typography.Text bold>
-                    {networkRelatedResources.length +
-                      computeRelatedResources.length}
+                    {networkRelatedResources.length + computeRelatedResources.length}
                   </Typography.Text>{" "}
                   个关联对象
                 </Typography.Text>
-                <Card
-                  title={`网络关联 ${networkRelatedResources.length}`}
-                  size="small"
-                >
-                  {renderRelatedList(
-                    networkRelatedResources,
-                    "暂无网络关联资源",
-                  )}
+                <Card title={`网络关联 ${networkRelatedResources.length}`} size="small">
+                  {renderRelatedList(networkRelatedResources, "暂无网络关联资源")}
                 </Card>
-                <Card
-                  title={`算力关联 ${computeRelatedResources.length}`}
-                  size="small"
-                >
-                  {renderRelatedList(
-                    computeRelatedResources,
-                    "暂无算力关联资源",
-                  )}
+                <Card title={`算力关联 ${computeRelatedResources.length}`} size="small">
+                  {renderRelatedList(computeRelatedResources, "暂无算力关联资源")}
                 </Card>
               </Space>
             ),

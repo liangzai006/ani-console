@@ -28,10 +28,9 @@ export function VolumeOSInitGuideModal({
   const guide = useQuery({
     queryKey: ["volume-os-init-guide", volumeId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/volumes/{volume_id}/os-init-guide",
-        { params: { path: { volume_id: volumeId } } },
-      );
+      const { data, error } = await coreApi.GET("/volumes/{volume_id}/os-init-guide", {
+        params: { path: { volume_id: volumeId } },
+      });
       if (error) throw error;
       return data;
     },
@@ -40,13 +39,10 @@ export function VolumeOSInitGuideModal({
   const complete = useMutation({
     mutationFn: async (_: undefined) => {
       const submitData = { mode: "done" as const };
-      const { error } = await coreApi.POST(
-        "/volumes/{volume_id}/os-init-complete",
-        {
-          params: { path: { volume_id: volumeId } },
-          body: completeScope.withKey(submitData),
-        },
-      );
+      const { error } = await coreApi.POST("/volumes/{volume_id}/os-init-complete", {
+        params: { path: { volume_id: volumeId } },
+        body: completeScope.withKey(submitData),
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -95,11 +91,7 @@ export function VolumeOSInitGuideModal({
         <ApiErrorAlert error={guide.error} />
       ) : guide.data ? (
         <Space direction="vertical" size={16} className="w-full">
-          <Alert
-            type="info"
-            showIcon
-            content={guide.data.hint || `设备：${guide.data.device}`}
-          />
+          <Alert type="info" showIcon content={guide.data.hint || `设备：${guide.data.device}`} />
           <Typography.Text>
             设备：{guide.data.device || "-"}　状态：{guide.data.status || "-"}
           </Typography.Text>

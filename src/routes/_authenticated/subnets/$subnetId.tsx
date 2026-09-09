@@ -1,9 +1,9 @@
-import { SubnetDetailPage } from '@/components/network/SubnetDetailPage'
-import { createFileRoute } from '@tanstack/react-router'
+import { SubnetDetailPage } from "@/components/network/SubnetDetailPage";
+import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute('/_authenticated/subnets/$subnetId')({
+export const Route = createFileRoute("/_authenticated/subnets/$subnetId")({
   component: function SubnetDetailRoute() {
-    const { subnetId } = Route.useParams()
-    return <SubnetDetailPage subnetId={subnetId} />
+    const { subnetId } = Route.useParams();
+    return <SubnetDetailPage subnetId={subnetId} />;
   },
-})
+});

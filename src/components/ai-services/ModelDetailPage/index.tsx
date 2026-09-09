@@ -1,23 +1,11 @@
-import {
-  Button,
-  Empty,
-  Message,
-  Modal,
-  Space,
-  Spin,
-} from "@arco-design/web-react";
+import { Button, Empty, Message, Modal, Space, Spin } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { showApiError } from "@/api/helpers";
 import { servicesApi } from "@/api/services-client";
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
-import {
-  AliIcon,
-  DetailPageFrame,
-  StatusTag,
-  type DetailCard,
-} from "@/components/common";
+import { AliIcon, DetailPageFrame, StatusTag, type DetailCard } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import {
@@ -113,15 +101,11 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
 
   const item = model.data;
   const latestVersion = getLatestModelVersion(item);
-  const versionIds = new Set(
-    (item.versions ?? []).map((version) => version.id),
-  );
+  const versionIds = new Set((item.versions ?? []).map((version) => version.id));
   const inferenceItems = (relatedServices.data?.items ?? []).filter(
     (service) =>
       service.model === item.name ||
-      Boolean(
-        service.model_version_id && versionIds.has(service.model_version_id),
-      ),
+      Boolean(service.model_version_id && versionIds.has(service.model_version_id)),
   );
   const detailCards: DetailCard[] = [
     {

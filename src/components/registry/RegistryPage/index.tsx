@@ -69,17 +69,14 @@ const PURPOSE_LABELS: Record<RegistryPurpose, string> = {
 };
 
 function copyText(value: string, success: string) {
-  void navigator.clipboard
-    .writeText(value)
-    .then(() => Message.success(success));
+  void navigator.clipboard.writeText(value).then(() => Message.success(success));
 }
 
 function scanSummary(scan: RegistryScanResult) {
   if (scan.status === "not_scanned") return "未扫描";
   if (scan.status === "pending" || scan.status === "running") return "扫描中";
   if (scan.status === "failed") return "扫描失败";
-  if (scan.critical || scan.high)
-    return `严重 ${scan.critical} · 高危 ${scan.high}`;
+  if (scan.critical || scan.high) return `严重 ${scan.critical} · 高危 ${scan.high}`;
   return "未发现高危漏洞";
 }
 
@@ -130,8 +127,7 @@ export function RegistryPage() {
           }),
         },
       });
-      if (error || !data)
-        throw error ?? new Error("Registry 镜像列表未返回结果");
+      if (error || !data) throw error ?? new Error("Registry 镜像列表未返回结果");
       return data;
     },
   });
@@ -144,15 +140,12 @@ export function RegistryPage() {
           params: { path: { project: string }; query: { repository: string } };
         },
       ) => RegistryApiResponse<RegistryPushInstructions>;
-      const { data, error } = await request(
-        "/registry/projects/{project}/push-instructions",
-        {
-          params: {
-            path: { project: guideProject },
-            query: { repository: guideRepository.trim() || "demo/app" },
-          },
+      const { data, error } = await request("/registry/projects/{project}/push-instructions", {
+        params: {
+          path: { project: guideProject },
+          query: { repository: guideRepository.trim() || "demo/app" },
         },
-      );
+      });
       if (error) throw error;
       return data;
     },
@@ -160,8 +153,7 @@ export function RegistryPage() {
   });
 
   useEffect(() => {
-    if (!guideProject && projects.data?.[0])
-      setGuideProject(projects.data[0].name);
+    if (!guideProject && projects.data?.[0]) setGuideProject(projects.data[0].name);
   }, [guideProject, projects.data]);
 
   const deleteTag = useMutation({
@@ -333,10 +325,7 @@ export function RegistryPage() {
                 <DataTableRowActions>
                   <DataTableRowActionButton
                     onClick={() =>
-                      copyText(
-                        item.pull_command || `docker pull ${item.image}`,
-                        "拉取命令已复制",
-                      )
+                      copyText(item.pull_command || `docker pull ${item.image}`, "拉取命令已复制")
                     }
                   >
                     拉取命令
@@ -386,8 +375,7 @@ export function RegistryPage() {
         style={{ width: 720 }}
       >
         <Typography.Paragraph type="secondary">
-          镜像通过 docker push
-          入库，不支持网页上传。项目由平台按当前租户自动创建，Console
+          镜像通过 docker push 入库，不支持网页上传。项目由平台按当前租户自动创建，Console
           不展示或下发凭据明文。
         </Typography.Paragraph>
         <Form layout="vertical">
@@ -418,14 +406,9 @@ export function RegistryPage() {
         ) : guide.data ? (
           <Space direction="vertical" className="w-full">
             {guide.data.commands.map((item) => (
-              <div
-                key={item.label}
-                className="rounded border border-[var(--color-border-2)] p-3"
-              >
+              <div key={item.label} className="rounded border border-[var(--color-border-2)] p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <Typography.Text className="font-medium">
-                    {item.label}
-                  </Typography.Text>
+                  <Typography.Text className="font-medium">{item.label}</Typography.Text>
                   <Button
                     size="mini"
                     type="text"
@@ -441,9 +424,7 @@ export function RegistryPage() {
             ))}
           </Space>
         ) : (
-          <Typography.Text type="secondary">
-            当前租户项目暂不可用，请刷新后重试。
-          </Typography.Text>
+          <Typography.Text type="secondary">当前租户项目暂不可用，请刷新后重试。</Typography.Text>
         )}
       </Modal>
     </>

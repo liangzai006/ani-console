@@ -81,16 +81,12 @@ function VpcList() {
   const subnets = useQuery({
     queryKey: ["network-subnets", "vpc-counts"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/subnets", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/networks/subnets", { params: { query: { limit: 100 } } })),
   });
   const routes = useQuery({
     queryKey: ["network-routes", "vpc-counts"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/routes", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/networks/routes", { params: { query: { limit: 100 } } })),
   });
 
   const createVpc = useMutation({
@@ -133,10 +129,7 @@ function VpcList() {
     onError: (error) => showApiError(error),
   });
 
-  const items = useMemo(
-    () => (vpcs.data?.items ?? []) as Vpc[],
-    [vpcs.data?.items],
-  );
+  const items = useMemo(() => (vpcs.data?.items ?? []) as Vpc[], [vpcs.data?.items]);
   const subnetCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const subnet of (subnets.data?.items ?? []) as Subnet[])
@@ -185,14 +178,12 @@ function VpcList() {
     {
       key: "subnets",
       title: "子网数",
-      render: (_, vpc) =>
-        subnets.isError ? "-" : (subnetCounts.get(vpc.id) ?? 0),
+      render: (_, vpc) => (subnets.isError ? "-" : (subnetCounts.get(vpc.id) ?? 0)),
     },
     {
       key: "routeTable",
       title: "路由表",
-      render: (_, vpc) =>
-        routes.isError ? "-" : routeTableNames.get(vpc.id)?.join("、") || "-",
+      render: (_, vpc) => (routes.isError ? "-" : routeTableNames.get(vpc.id)?.join("、") || "-"),
     },
     {
       key: "createdAt",
@@ -332,12 +323,7 @@ function VpcList() {
             validateStatus={cidrError ? "error" : undefined}
             help={cidrError}
           >
-            <Ipv4CidrInput
-              value={cidr}
-              onChange={setCidr}
-              placeholder="10.0.0.0"
-              withPrefix
-            />
+            <Ipv4CidrInput value={cidr} onChange={setCidr} placeholder="10.0.0.0" withPrefix />
           </Form.Item>
           <Typography.Text type="secondary">
             CIDR 不能与租户下已有 VPC 网段重叠；创建后不可修改。

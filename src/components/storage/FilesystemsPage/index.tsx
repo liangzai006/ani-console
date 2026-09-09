@@ -37,8 +37,7 @@ export function FilesystemsPage() {
   const qc = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
   const [expandTarget, setExpandTarget] = useState<Filesystem | null>(null);
-  const [mountTargetFilesystem, setMountTargetFilesystem] =
-    useState<Filesystem | null>(null);
+  const [mountTargetFilesystem, setMountTargetFilesystem] = useState<Filesystem | null>(null);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
@@ -108,10 +107,7 @@ export function FilesystemsPage() {
     })),
   });
   const mountTargetCounts = new Map(
-    items.map((item, index) => [
-      item.id,
-      mountTargetQueries[index]?.data?.total,
-    ]),
+    items.map((item, index) => [item.id, mountTargetQueries[index]?.data?.total]),
   );
   const columns: Array<ListColumn<Filesystem>> = [
     {
@@ -120,10 +116,7 @@ export function FilesystemsPage() {
       render: (_, item) => (
         <DataTableNameCell
           name={
-            <Link
-              to="/filesystems/$filesystemId"
-              params={{ filesystemId: item.id }}
-            >
+            <Link to="/filesystems/$filesystemId" params={{ filesystemId: item.id }}>
               {item.name}
             </Link>
           }
@@ -233,9 +226,7 @@ export function FilesystemsPage() {
               fixed: "right",
               render: (_value, item) => (
                 <DataTableRowActions>
-                  <DataTableRowActionButton
-                    onClick={() => setExpandTarget(item)}
-                  >
+                  <DataTableRowActionButton onClick={() => setExpandTarget(item)}>
                     扩容
                   </DataTableRowActionButton>
                   <Dropdown
@@ -268,10 +259,7 @@ export function FilesystemsPage() {
                   >
                     <DataTableRowActionButton>
                       更多
-                      <i
-                        className="iconfont icon-down-chevron-small"
-                        aria-hidden="true"
-                      />
+                      <i className="iconfont icon-down-chevron-small" aria-hidden="true" />
                     </DataTableRowActionButton>
                   </Dropdown>
                 </DataTableRowActions>
@@ -296,10 +284,7 @@ export function FilesystemsPage() {
           }}
         />
       </ListPageFrame>
-      <CreateFilesystemModal
-        visible={createVisible}
-        onCancel={() => setCreateVisible(false)}
-      />
+      <CreateFilesystemModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
       <ExpandFilesystemModal
         visible={Boolean(expandTarget)}
         filesystem={expandTarget}

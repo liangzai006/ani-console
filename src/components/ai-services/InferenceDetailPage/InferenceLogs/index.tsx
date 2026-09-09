@@ -15,18 +15,15 @@ export function InferenceLogs({ serviceId }: { serviceId: string }) {
   const logs = useQuery({
     queryKey: ["inference-service-logs", serviceId, level],
     queryFn: async () => {
-      const { data, error } = await servicesApi.GET(
-        "/inference-services/{service_id}/logs",
-        {
-          params: {
-            path: { service_id: serviceId },
-            query: {
-              limit: 200,
-              ...(level === "all" ? {} : { level }),
-            },
+      const { data, error } = await servicesApi.GET("/inference-services/{service_id}/logs", {
+        params: {
+          path: { service_id: serviceId },
+          query: {
+            limit: 200,
+            ...(level === "all" ? {} : { level }),
           },
         },
-      );
+      });
       if (error) throw error;
       return data;
     },
@@ -51,29 +48,19 @@ export function InferenceLogs({ serviceId }: { serviceId: string }) {
                 { value: "error", label: "Error" },
               ]}
             />
-            <Button
-              size="small"
-              loading={logs.isFetching}
-              onClick={() => void logs.refetch()}
-            >
+            <Button size="small" loading={logs.isFetching} onClick={() => void logs.refetch()}>
               刷新
             </Button>
           </Space>
         }
       />
       {logs.error ? (
-        <Alert
-          type="error"
-          showIcon
-          content={getErrorMessage(logs.error, "日志加载失败")}
-        />
+        <Alert type="error" showIcon content={getErrorMessage(logs.error, "日志加载失败")} />
       ) : (
         <DataTable<InferenceLog>
           loading={logs.isFetching}
           data={logs.data?.items ?? []}
-          rowKey={(row) =>
-            `${row.timestamp}-${row.container}-${row.stream}-${row.message}`
-          }
+          rowKey={(row) => `${row.timestamp}-${row.container}-${row.stream}-${row.message}`}
           pagination={false}
           noDataElement={<Empty description="暂无日志" />}
           columns={[

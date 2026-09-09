@@ -3,10 +3,7 @@ import type { components } from "@/api/core-schema";
 
 type Instance = Pick<components["schemas"]["InstanceRecord"], "id" | "kind">;
 
-export function navigateToInstanceDetail(
-  navigate: NavigateFn,
-  instance: Instance,
-) {
+export function navigateToInstanceDetail(navigate: NavigateFn, instance: Instance) {
   if (instance.kind === "vm") {
     void navigate({
       to: "/vm-instances/$instanceId",

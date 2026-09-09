@@ -1,11 +1,4 @@
-import {
-  Alert,
-  Card,
-  Empty,
-  Grid,
-  Statistic,
-  Tooltip,
-} from "@arco-design/web-react";
+import { Alert, Card, Empty, Grid, Statistic, Tooltip } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import type { EChartsOption } from "echarts";
 import { useMemo } from "react";
@@ -47,9 +40,7 @@ function memory(value?: number | null) {
 function gpuMemory(used?: number | null, total?: number | null) {
   if (used == null || total == null) return "-";
   const formatGiB = (value: number) =>
-    Number.isInteger(value / 1024)
-      ? String(value / 1024)
-      : (value / 1024).toFixed(1);
+    Number.isInteger(value / 1024) ? String(value / 1024) : (value / 1024).toFixed(1);
   return `${formatGiB(used)} / ${formatGiB(total)} GiB`;
 }
 
@@ -70,10 +61,9 @@ export function InstanceMetrics({
   const metrics = useQuery({
     queryKey: ["instance-metrics", instanceId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/instances/{instance_id}/metrics",
-        { params: { path: { instance_id: instanceId } } },
-      );
+      const { data, error } = await coreApi.GET("/instances/{instance_id}/metrics", {
+        params: { path: { instance_id: instanceId } },
+      });
       if (error || !data) throw error ?? new Error("监控指标未返回结果");
       return data as Metrics;
     },
@@ -151,51 +141,46 @@ export function InstanceMetrics({
               ];
 
       return Promise.all(
-        queries.map(
-          async ({ name, promql, scale }): Promise<MonitoringTrendSeries> => {
-            try {
-              const { data, error } = await coreApi.GET(
-                "/observability/query_range",
-                {
-                  params: {
-                    query: {
-                      query: promql,
-                      start: start.toISOString(),
-                      end: end.toISOString(),
-                      step: "30s",
-                    },
-                  },
+        queries.map(async ({ name, promql, scale }): Promise<MonitoringTrendSeries> => {
+          try {
+            const { data, error } = await coreApi.GET("/observability/query_range", {
+              params: {
+                query: {
+                  query: promql,
+                  start: start.toISOString(),
+                  end: end.toISOString(),
+                  step: "30s",
                 },
-              );
-              if (error || !data) {
-                throw error ?? new Error(`${name}趋势未返回结果`);
-              }
-              const result = data as RangeMetrics;
-              if (!result.dev_profile.real_provider) {
-                return {
-                  name,
-                  values: [],
-                  error: result.dev_profile.reason ?? `${name}趋势查询已降级`,
-                };
-              }
-              return {
-                name,
-                values: result.results
-                  .flatMap((series) => series.values)
-                  .map((point) => ({
-                    ...point,
-                    value: point.value * (scale ?? 1),
-                  })),
-              };
-            } catch (error) {
+              },
+            });
+            if (error || !data) {
+              throw error ?? new Error(`${name}趋势未返回结果`);
+            }
+            const result = data as RangeMetrics;
+            if (!result.dev_profile.real_provider) {
               return {
                 name,
                 values: [],
-                error: getErrorMessage(error, `${name}趋势查询失败`),
+                error: result.dev_profile.reason ?? `${name}趋势查询已降级`,
               };
             }
-          },
-        ),
+            return {
+              name,
+              values: result.results
+                .flatMap((series) => series.values)
+                .map((point) => ({
+                  ...point,
+                  value: point.value * (scale ?? 1),
+                })),
+            };
+          } catch (error) {
+            return {
+              name,
+              values: [],
+              error: getErrorMessage(error, `${name}趋势查询失败`),
+            };
+          }
+        }),
       );
     },
     refetchInterval: 5_000,
@@ -253,9 +238,7 @@ export function InstanceMetrics({
       })),
     };
   }, [monitoringTrend.data]);
-  const hasMonitoringTrend = monitoringTrend.data?.some(
-    (series) => series.values.length > 0,
-  );
+  const hasMonitoringTrend = monitoringTrend.data?.some((series) => series.values.length > 0);
   const monitoringTrendErrors = (monitoringTrend.data ?? [])
     .filter((series) => series.error)
     .map((series) => `${series.name}：${series.error}`);
@@ -285,20 +268,14 @@ export function InstanceMetrics({
             <Grid.Row gutter={16}>
               <Grid.Col span={8}>
                 <div className="px-3 py-2">
-                  <Statistic
-                    title="GPU 利用率"
-                    value={percent(data.gpu_utilization_pct)}
-                  />
+                  <Statistic title="GPU 利用率" value={percent(data.gpu_utilization_pct)} />
                 </div>
               </Grid.Col>
               <Grid.Col span={8}>
                 <div className="px-3 py-2">
                   <Statistic
                     title="显存"
-                    value={gpuMemory(
-                      data.gpu_memory_used_mb,
-                      data.gpu_memory_total_mb,
-                    )}
+                    value={gpuMemory(data.gpu_memory_used_mb, data.gpu_memory_total_mb)}
                   />
                 </div>
               </Grid.Col>
@@ -325,10 +302,7 @@ export function InstanceMetrics({
         <Grid.Col span={24}>
           <Card title="GPU 利用率趋势" size="small">
             {gpuTrendPoints.length ? (
-              <CoreLineBarChart
-                option={utilizationTrendOption}
-                style={{ height: 240 }}
-              />
+              <CoreLineBarChart option={utilizationTrendOption} style={{ height: 240 }} />
             ) : (
               <Empty description="暂无 GPU 利用率趋势数据" />
             )}
@@ -347,10 +321,7 @@ export function InstanceMetrics({
             <Grid.Row gutter={[16, 16]}>
               <Grid.Col span={hasGpuMetrics ? 6 : 8}>
                 <div className="px-3 py-2">
-                  <Statistic
-                    title="CPU 利用率"
-                    value={percent(data.cpu_utilization_pct)}
-                  />
+                  <Statistic title="CPU 利用率" value={percent(data.cpu_utilization_pct)} />
                 </div>
               </Grid.Col>
               <Grid.Col span={hasGpuMetrics ? 6 : 8}>
@@ -365,10 +336,7 @@ export function InstanceMetrics({
               {hasGpuMetrics ? (
                 <Grid.Col span={6}>
                   <div className="px-3 py-2">
-                    <Statistic
-                      title="GPU 利用率"
-                      value={percent(data.gpu_utilization_pct)}
-                    />
+                    <Statistic title="GPU 利用率" value={percent(data.gpu_utilization_pct)} />
                   </div>
                 </Grid.Col>
               ) : null}
@@ -399,10 +367,7 @@ export function InstanceMetrics({
             />
           ) : null}
           {hasMonitoringTrend ? (
-            <CoreLineBarChart
-              option={monitoringTrendOption}
-              style={{ height: 280 }}
-            />
+            <CoreLineBarChart option={monitoringTrendOption} style={{ height: 280 }} />
           ) : monitoringTrendErrors.length === 0 ? (
             <Empty description="暂无资源利用率趋势数据" />
           ) : null}

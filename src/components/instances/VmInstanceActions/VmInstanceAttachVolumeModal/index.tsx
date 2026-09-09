@@ -1,11 +1,4 @@
-import {
-  Checkbox,
-  Form,
-  Input,
-  Message,
-  Modal,
-  Select,
-} from "@arco-design/web-react";
+import { Checkbox, Form, Input, Message, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
@@ -22,9 +15,7 @@ type Values = { volumeId: string; mountPath: string; readOnly?: boolean };
 function attachedVolumeId(volume: NonNullable<Instance["volumes"]>[number]) {
   const sourceRef = volume.source_ref?.trim();
   if (!sourceRef) return "";
-  return sourceRef.startsWith("volume/")
-    ? sourceRef.slice("volume/".length)
-    : sourceRef;
+  return sourceRef.startsWith("volume/") ? sourceRef.slice("volume/".length) : sourceRef;
 }
 
 export function VmInstanceAttachVolumeModal({
@@ -37,10 +28,7 @@ export function VmInstanceAttachVolumeModal({
   onSubmitted: (operationId: string) => void;
 }) {
   const [form] = Form.useForm<Values>();
-  const scope = useIdempotencyScope("vm-instance-attach-volume", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("vm-instance-attach-volume", ["POST", instance.id]);
   const volumes = useQuery({
     queryKey: ["volumes", "vm-instance-attach-volume", instance.id],
     queryFn: () =>
@@ -64,13 +52,10 @@ export function VmInstanceAttachVolumeModal({
         mount_path: values.mountPath.trim(),
         read_only: values.readOnly ?? false,
       };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error || !data)
         throw {
           ...(typeof error === "object" && error
@@ -85,12 +70,9 @@ export function VmInstanceAttachVolumeModal({
       Message.success("挂载云盘已提交");
       onSubmitted(operationId);
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
-  const attachedIds = new Set(
-    (instance.volumes ?? []).map(attachedVolumeId).filter(Boolean),
-  );
+  const attachedIds = new Set((instance.volumes ?? []).map(attachedVolumeId).filter(Boolean));
   const options = ((volumes.data?.items ?? []) as StorageVolume[]).filter(
     (volume) =>
       ["pending", "available"].includes(volume.state) &&
@@ -113,18 +95,10 @@ export function VmInstanceAttachVolumeModal({
         <Form.Item
           field="volumeId"
           label="云盘"
-          extra={
-            volumes.error
-              ? getErrorMessage(volumes.error, "云盘列表加载失败")
-              : undefined
-          }
+          extra={volumes.error ? getErrorMessage(volumes.error, "云盘列表加载失败") : undefined}
           rules={[{ required: true, message: "请选择云盘" }]}
         >
-          <Select
-            loading={volumes.isLoading}
-            placeholder="请选择可挂载云盘"
-            showSearch
-          >
+          <Select loading={volumes.isLoading} placeholder="请选择可挂载云盘" showSearch>
             {options.map((volume) => (
               <Select.Option key={volume.id} value={volume.id}>
                 {volume.name} · {volume.size_gib} GiB · {volume.storage_class}

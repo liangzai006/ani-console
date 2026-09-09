@@ -1,10 +1,4 @@
-import {
-  Form,
-  Input,
-  InputNumber,
-  Message,
-  Modal,
-} from "@arco-design/web-react";
+import { Form, Input, InputNumber, Message, Modal } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
@@ -83,19 +77,12 @@ export function CreateKnowledgeBaseModal({
         <Form.Item
           label="名称"
           field="name"
-          rules={[
-            { required: true, message: "请输入知识库名称" },
-            { maxLength: 128 },
-          ]}
+          rules={[{ required: true, message: "请输入知识库名称" }, { maxLength: 128 }]}
         >
           <Input placeholder="例如：产品资料库" />
         </Form.Item>
         <Form.Item label="描述" field="description">
-          <Input.TextArea
-            placeholder="说明知识库的内容和用途"
-            maxLength={500}
-            showWordLimit
-          />
+          <Input.TextArea placeholder="说明知识库的内容和用途" maxLength={500} showWordLimit />
         </Form.Item>
         <Form.Item
           label="Embedding 模型"
@@ -105,25 +92,13 @@ export function CreateKnowledgeBaseModal({
           <Input disabled />
         </Form.Item>
         <div className="grid grid-cols-3 gap-4">
-          <Form.Item
-            label="分块大小"
-            field="chunk_size"
-            rules={[{ required: true }]}
-          >
+          <Form.Item label="分块大小" field="chunk_size" rules={[{ required: true }]}>
             <InputNumber min={1} max={8192} />
           </Form.Item>
-          <Form.Item
-            label="默认 TopK"
-            field="top_k"
-            rules={[{ required: true }]}
-          >
+          <Form.Item label="默认 TopK" field="top_k" rules={[{ required: true }]}>
             <InputNumber min={1} max={20} />
           </Form.Item>
-          <Form.Item
-            label="相似度阈值"
-            field="score_threshold"
-            rules={[{ required: true }]}
-          >
+          <Form.Item label="相似度阈值" field="score_threshold" rules={[{ required: true }]}>
             <InputNumber min={0} max={1} step={0.05} />
           </Form.Item>
         </div>

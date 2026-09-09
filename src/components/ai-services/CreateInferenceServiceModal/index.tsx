@@ -59,15 +59,8 @@ type GpuSpecAvailabilityListResponse = {
   quota_remaining: number;
 };
 
-function isGpuSpecSelectable(
-  spec: GpuSpec,
-  availability?: GpuSpecAvailability,
-) {
-  return (
-    spec.available &&
-    availability?.status === "available" &&
-    availability.available_count > 0
-  );
+function isGpuSpecSelectable(spec: GpuSpec, availability?: GpuSpecAvailability) {
+  return spec.available && availability?.status === "available" && availability.available_count > 0;
 }
 
 function gpuSpecLabel(spec: GpuSpec, availability?: GpuSpecAvailability) {
@@ -110,8 +103,7 @@ export function CreateInferenceServiceModal({
     DEFAULT_GPU_INSTANCE_COMPUTE_SPEC,
   );
   const [acceleratorSpecId, setAcceleratorSpecId] = useState("");
-  const [runtimeImageMode, setRuntimeImageMode] =
-    useState<RuntimeImageMode>("registry");
+  const [runtimeImageMode, setRuntimeImageMode] = useState<RuntimeImageMode>("registry");
   const [runtimeImageId, setRuntimeImageId] = useState("");
   const [runtimeImageRef, setRuntimeImageRef] = useState("");
   const models = useQuery({
@@ -185,13 +177,7 @@ export function CreateInferenceServiceModal({
   });
 
   const availabilityBySpecId = useMemo(
-    () =>
-      new Map(
-        (gpuSpecAvailability.data?.items ?? []).map((item) => [
-          item.spec_id,
-          item,
-        ]),
-      ),
+    () => new Map((gpuSpecAvailability.data?.items ?? []).map((item) => [item.spec_id, item])),
     [gpuSpecAvailability.data?.items],
   );
   const selectedGpuSpec = (gpuSpecs.data?.items ?? []).find(
@@ -203,15 +189,11 @@ export function CreateInferenceServiceModal({
 
   const runtimeImages = useQuery({
     queryKey: ["inference-runtime-images"],
-    enabled:
-      visible &&
-      runtimeImageMode === "registry" &&
-      Boolean(selectedModelVersion),
+    enabled: visible && runtimeImageMode === "registry" && Boolean(selectedModelVersion),
     queryFn: async () => {
-      const { data: projectData, error: projectError } = await coreApi.GET(
-        "/registry/projects",
-        { params: { query: { limit: 50 } } },
-      );
+      const { data: projectData, error: projectError } = await coreApi.GET("/registry/projects", {
+        params: { query: { limit: 50 } },
+      });
       if (projectError) throw projectError;
       const images: RuntimeImage[] = [];
       for (const project of projectData?.items ?? []) {
@@ -226,16 +208,15 @@ export function CreateInferenceServiceModal({
         );
         if (repoError) throw repoError;
         for (const repository of repoData?.items ?? []) {
-          const { data: artifactData, error: artifactError } =
-            await coreApi.GET(
-              "/registry/projects/{project}/repositories/{repository}/artifacts",
-              {
-                params: {
-                  path: { project: project.name, repository: repository.name },
-                  query: { limit: 50 },
-                },
+          const { data: artifactData, error: artifactError } = await coreApi.GET(
+            "/registry/projects/{project}/repositories/{repository}/artifacts",
+            {
+              params: {
+                path: { project: project.name, repository: repository.name },
+                query: { limit: 50 },
               },
-            );
+            },
+          );
           if (artifactError) throw artifactError;
           for (const artifact of artifactData?.items ?? []) {
             for (const tag of artifact.tags) {
@@ -251,15 +232,11 @@ export function CreateInferenceServiceModal({
           }
         }
       }
-      return Array.from(
-        new Map(images.map((image) => [image.id, image])).values(),
-      );
+      return Array.from(new Map(images.map((image) => [image.id, image])).values());
     },
   });
 
-  const runtimeImage = (runtimeImages.data ?? []).find(
-    (image) => image.id === runtimeImageId,
-  );
+  const runtimeImage = (runtimeImages.data ?? []).find((image) => image.id === runtimeImageId);
 
   useEffect(() => {
     if (!visible) return;
@@ -308,25 +285,20 @@ export function CreateInferenceServiceModal({
       const currentSpec = specs.find((spec) => spec.id === current);
       if (
         currentSpec &&
-        isGpuSpecSelectable(
-          currentSpec,
-          availabilityBySpecId.get(currentSpec.id),
-        )
+        isGpuSpecSelectable(currentSpec, availabilityBySpecId.get(currentSpec.id))
       ) {
         return current;
       }
       return (
-        specs.find((spec) =>
-          isGpuSpecSelectable(spec, availabilityBySpecId.get(spec.id)),
-        )?.id ?? "cpu"
+        specs.find((spec) => isGpuSpecSelectable(spec, availabilityBySpecId.get(spec.id)))?.id ??
+        "cpu"
       );
     });
   }, [availabilityBySpecId, gpuSpecAvailability.data, gpuSpecs.data, visible]);
 
   const create = useMutation({
     mutationFn: async () => {
-      if (!name.trim() || !modelVersionId)
-        throw new Error("请完整填写服务名称并选择模型版本");
+      if (!name.trim() || !modelVersionId) throw new Error("请完整填写服务名称并选择模型版本");
       if (!selectedModelVersion) throw new Error("请选择有效的模型版本");
       const manualImageRef = runtimeImageRef.trim();
       if (runtimeImageMode === "registry" && !runtimeImage) {
@@ -347,25 +319,17 @@ export function CreateInferenceServiceModal({
           }
         | undefined;
       if (acceleratorSpecId !== "cpu") {
-        if (
-          !selectedGpuSpec ||
-          !isGpuSpecSelectable(selectedGpuSpec, selectedGpuAvailability)
-        ) {
+        if (!selectedGpuSpec || !isGpuSpecSelectable(selectedGpuSpec, selectedGpuAvailability)) {
           throw new Error("请选择当前可用的 GPU 规格");
         }
         const memory =
-          selectedGpuSpec.gpu_mode === "vgpu"
-            ? selectedGpuSpec.mb_per_share
-            : undefined;
+          selectedGpuSpec.gpu_mode === "vgpu" ? selectedGpuSpec.mb_per_share : undefined;
         if (selectedGpuSpec.gpu_mode === "vgpu" && !memory) {
           throw new Error("所选 vGPU 规格缺少显存份额信息");
         }
         accelerator = {
           spec_id: selectedGpuSpec.id,
-          count_per_replica: Math.max(
-            1,
-            selectedGpuAvailability?.gpu_count ?? 1,
-          ),
+          count_per_replica: Math.max(1, selectedGpuAvailability?.gpu_count ?? 1),
           ...(memory ? { memory } : {}),
         };
       }
@@ -415,12 +379,7 @@ export function CreateInferenceServiceModal({
     >
       <Form layout="vertical">
         <Form.Item label="服务名称" required>
-          <Input
-            value={name}
-            onChange={setName}
-            placeholder="例如 qwen-service"
-            maxLength={63}
-          />
+          <Input value={name} onChange={setName} placeholder="例如 qwen-service" maxLength={63} />
         </Form.Item>
         <Form.Item label="模型" required>
           <Select
@@ -470,11 +429,7 @@ export function CreateInferenceServiceModal({
           <Alert type="warning" showIcon content="所选模型暂无可部署版本" />
         ) : null}
         <Form.Item label="镜像来源" required>
-          <Radio.Group
-            type="button"
-            value={runtimeImageMode}
-            onChange={setRuntimeImageMode}
-          >
+          <Radio.Group type="button" value={runtimeImageMode} onChange={setRuntimeImageMode}>
             <Radio value="registry">镜像仓库</Radio>
             <Radio value="manual">手动输入</Radio>
           </Radio.Group>
@@ -517,11 +472,7 @@ export function CreateInferenceServiceModal({
           !runtimeImages.isLoading &&
           selectedModelVersion &&
           (runtimeImages.data?.length ?? 0) === 0 ? (
-          <Alert
-            type="warning"
-            showIcon
-            content="Registry 中暂无可选运行镜像"
-          />
+          <Alert type="warning" showIcon content="Registry 中暂无可选运行镜像" />
         ) : null}
         <Form.Item label="推理引擎">
           <Input value="平台默认启动命令与环境" readOnly />

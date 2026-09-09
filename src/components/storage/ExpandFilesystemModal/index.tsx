@@ -1,11 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Form,
-  InputNumber,
-  Modal,
-  Typography,
-} from "@arco-design/web-react";
+import { Alert, Form, InputNumber, Modal, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
@@ -38,20 +32,16 @@ export function ExpandFilesystemModal({
         throw new Error(`新容量必须大于当前容量 ${filesystem.size_gib} GiB`);
       }
       const submitData = { size_gib: sizeGiB };
-      const { error } = await coreApi.POST(
-        "/filesystems/{filesystem_id}/expand",
-        {
-          params: { path: { filesystem_id: filesystem.id } },
-          body: expandScope.withKey(submitData),
-        },
-      );
+      const { error } = await coreApi.POST("/filesystems/{filesystem_id}/expand", {
+        params: { path: { filesystem_id: filesystem.id } },
+        body: expandScope.withKey(submitData),
+      });
       if (error) throw error;
     },
     onSuccess: () => {
       expandScope.reset();
       qc.invalidateQueries({ queryKey: ["filesystems"] });
-      if (filesystem)
-        qc.invalidateQueries({ queryKey: ["filesystem", filesystem.id] });
+      if (filesystem) qc.invalidateQueries({ queryKey: ["filesystem", filesystem.id] });
       onExpanded?.();
       onCancel();
     },
@@ -84,9 +74,7 @@ export function ExpandFilesystemModal({
             onChange={(value) => setSizeGiB(Number(value ?? 1))}
           />
         </Form.Item>
-        <Typography.Text type="secondary">
-          提交后容量不可调小，请确认目标容量。
-        </Typography.Text>
+        <Typography.Text type="secondary">提交后容量不可调小，请确认目标容量。</Typography.Text>
       </Form>
     </Modal>
   );

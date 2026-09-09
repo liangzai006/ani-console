@@ -18,10 +18,7 @@ export function GpuInstanceUpdateImageModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<{ imageId: string }>();
-  const scope = useIdempotencyScope("gpu-instance-update-image", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("gpu-instance-update-image", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async ({ imageId }: { imageId: string }) => {
       const submitData = {
@@ -29,18 +26,13 @@ export function GpuInstanceUpdateImageModal({
         image_id: imageId,
         strategy: "rolling" as const,
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -49,8 +41,7 @@ export function GpuInstanceUpdateImageModal({
       Message.success("更新镜像已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal
@@ -65,11 +56,7 @@ export function GpuInstanceUpdateImageModal({
       unmountOnExit
     >
       <Form form={form} layout="vertical">
-        <InstanceRegistryImageSelect
-          field="imageId"
-          enabled
-          instanceKind="gpu_container"
-        />
+        <InstanceRegistryImageSelect field="imageId" enabled instanceKind="gpu_container" />
       </Form>
     </Modal>
   );

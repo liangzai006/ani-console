@@ -43,8 +43,7 @@ function metadataEntries(value: KBDocument["custom_metadata"]) {
     return [["metadata", String(metadata)]] as const;
   }
   return Object.entries(metadata).map(
-    ([key, item]) =>
-      [key, typeof item === "string" ? item : JSON.stringify(item)] as const,
+    ([key, item]) => [key, typeof item === "string" ? item : JSON.stringify(item)] as const,
   );
 }
 
@@ -72,20 +71,10 @@ function statusTag(document: KBDocument) {
       }
     </Tag>
   );
-  return document.error_message ? (
-    <Tooltip content={document.error_message}>{tag}</Tooltip>
-  ) : (
-    tag
-  );
+  return document.error_message ? <Tooltip content={document.error_message}>{tag}</Tooltip> : tag;
 }
 
-export function KnowledgeDocumentsPanel({
-  kbId,
-  action,
-}: {
-  kbId: string;
-  action?: ReactNode;
-}) {
+export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action?: ReactNode }) {
   const qc = useQueryClient();
   const {
     query: documents,
@@ -98,20 +87,18 @@ export function KnowledgeDocumentsPanel({
     queryKey: ["knowledge-base-documents", kbId],
     cursorScope: kbId,
     fetchPage: async ({ cursor, limit }) => {
-      const { data, error } = await servicesApi.GET(
-        "/knowledge-bases/{kb_id}/documents",
-        { params: { path: { kb_id: kbId }, query: { limit, cursor } } },
-      );
+      const { data, error } = await servicesApi.GET("/knowledge-bases/{kb_id}/documents", {
+        params: { path: { kb_id: kbId }, query: { limit, cursor } },
+      });
       if (error || !data) throw error ?? new Error("文档列表未返回结果");
       return data;
     },
   });
   const remove = useMutation({
     mutationFn: async (doc: KBDocument) => {
-      const { error } = await servicesApi.DELETE(
-        "/knowledge-bases/{kb_id}/documents/{doc_id}",
-        { params: { path: { kb_id: kbId, doc_id: doc.id } } },
-      );
+      const { error } = await servicesApi.DELETE("/knowledge-bases/{kb_id}/documents/{doc_id}", {
+        params: { path: { kb_id: kbId, doc_id: doc.id } },
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -136,9 +123,7 @@ export function KnowledgeDocumentsPanel({
         bordered
         loading={documents.isLoading}
         dataSource={documents.error ? [] : rows}
-        noDataElement={
-          <Empty description="还没有文档，上传后可进行解析和问答" />
-        }
+        noDataElement={<Empty description="还没有文档，上传后可进行解析和问答" />}
         render={(item: KBDocument) => {
           const metadata = metadataEntries(item.custom_metadata);
           return (
@@ -146,13 +131,9 @@ export function KnowledgeDocumentsPanel({
               <div className={styles.documentMainRow}>
                 <div className={styles.documentIdentity}>
                   <Typography.Text bold>{item.file_name}</Typography.Text>
-                  <Typography.Text
-                    type="secondary"
-                    className={styles.documentSummary}
-                  >
+                  <Typography.Text type="secondary" className={styles.documentSummary}>
                     {item.file_type?.toUpperCase() || "未知类型"} ·{" "}
-                    {formatBytes(item.file_size_bytes)} ·{" "}
-                    {item.chunk_count ?? 0} 个分块
+                    {formatBytes(item.file_size_bytes)} · {item.chunk_count ?? 0} 个分块
                   </Typography.Text>
                 </div>
                 <div className={styles.documentActions}>
@@ -164,9 +145,7 @@ export function KnowledgeDocumentsPanel({
                     type="text"
                     size="small"
                     status="danger"
-                    loading={
-                      remove.isPending && remove.variables?.id === item.id
-                    }
+                    loading={remove.isPending && remove.variables?.id === item.id}
                     onClick={() =>
                       Modal.confirm({
                         title: "删除文档",
@@ -188,9 +167,7 @@ export function KnowledgeDocumentsPanel({
                     </Tag>
                   ))
                 ) : (
-                  <Typography.Text type="secondary">
-                    暂无自定义元数据
-                  </Typography.Text>
+                  <Typography.Text type="secondary">暂无自定义元数据</Typography.Text>
                 )}
               </div>
             </List.Item>

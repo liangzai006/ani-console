@@ -22,31 +22,23 @@ export function currentGpuSpecValue(instance: Instance) {
   return instance.compute?.spec_id || CURRENT_GPU_SPEC_VALUE;
 }
 
-export function getGpuInstanceResizeInitialValues(
-  instance: Instance,
-): GpuInstanceResizeFormValues {
+export function getGpuInstanceResizeInitialValues(instance: Instance): GpuInstanceResizeFormValues {
   return {
     gpu_spec_id: currentGpuSpecValue(instance),
     cpu_memory_spec: currentCpuMemorySpec(instance),
   };
 }
 
-export function buildGpuInstanceResizeFields(
-  values: GpuInstanceResizeFormValues,
-) {
+export function buildGpuInstanceResizeFields(values: GpuInstanceResizeFormValues) {
   const cpuSpec = GPU_INSTANCE_COMPUTE_SPECS.find(
     (option) => option.value === values.cpu_memory_spec,
   );
-  const [cpu, memory] =
-    values.cpu_memory_spec?.match(/^(\d+)C(\d+)G$/i)?.slice(1) ?? [];
+  const [cpu, memory] = values.cpu_memory_spec?.match(/^(\d+)C(\d+)G$/i)?.slice(1) ?? [];
 
   return {
     cpu: cpuSpec?.cpu ?? cpu,
     memory: cpuSpec?.memory ?? (memory ? `${memory}Gi` : undefined),
-    spec_id:
-      values.gpu_spec_id === CURRENT_GPU_SPEC_VALUE
-        ? undefined
-        : values.gpu_spec_id,
+    spec_id: values.gpu_spec_id === CURRENT_GPU_SPEC_VALUE ? undefined : values.gpu_spec_id,
   };
 }
 

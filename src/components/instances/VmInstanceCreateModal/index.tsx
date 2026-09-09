@@ -24,11 +24,7 @@ import {
   type CpuInstanceComputeSpec,
 } from "@/lib/instance-compute-specs";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
-import {
-  optionalIpv4WithinCidrError,
-  subnetFixedOctets,
-  suggestGatewayIp,
-} from "@/lib/validators";
+import { optionalIpv4WithinCidrError, subnetFixedOctets, suggestGatewayIp } from "@/lib/validators";
 import styles from "./index.module.css";
 
 type Request = components["schemas"]["CreateInstanceRequest"];
@@ -124,18 +120,8 @@ const INITIAL: Values = {
   autoStart: true,
   terminationProtection: false,
 };
-const STEPS = [
-  "基础信息",
-  "镜像配置",
-  "规格",
-  "网络与 SSH",
-  "磁盘与高级选项",
-  "确认",
-];
-const SYSTEM_DISKS: Record<
-  DiskOption,
-  { label: string; size: number; type: string }
-> = {
+const STEPS = ["基础信息", "镜像配置", "规格", "网络与 SSH", "磁盘与高级选项", "确认"];
+const SYSTEM_DISKS: Record<DiskOption, { label: string; size: number; type: string }> = {
   "40-ssd": { label: "40Gi · SSD", size: 40, type: "ssd" },
   "80-ssd": { label: "80Gi · SSD", size: 80, type: "ssd" },
   "100-hdd": { label: "100Gi · HDD", size: 100, type: "hdd" },
@@ -204,9 +190,7 @@ export function VmInstanceCreateModal({
     queryKey: ["network-vpcs", "vm-create"],
     enabled: visible,
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
   });
   const subnets = useQuery({
     queryKey: ["network-subnets", "vm-create", values.vpcId],
@@ -232,59 +216,42 @@ export function VmInstanceCreateModal({
     queryKey: ["filesystems", "vm-create"],
     enabled: visible,
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/filesystems", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/filesystems", { params: { query: { limit: 100 } } })),
   });
   const secrets = useQuery({
     queryKey: ["secrets", "vm-create"],
     enabled: visible,
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/secrets", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/secrets", { params: { query: { limit: 100 } } })),
   });
   const availableSubnets = (subnets.data?.items ?? []).filter(
     (item) => item.vpc_id === values.vpcId,
   );
-  const availableSecurityGroups = (
-    (securityGroups.data?.items ?? []) as SecurityGroup[]
-  ).filter((item) => !item.vpc_id || item.vpc_id === values.vpcId);
-  const selectedSubnet = availableSubnets.find(
-    (item) => String(item.id) === values.subnetId,
+  const availableSecurityGroups = ((securityGroups.data?.items ?? []) as SecurityGroup[]).filter(
+    (item) => !item.vpc_id || item.vpc_id === values.vpcId,
   );
+  const selectedSubnet = availableSubnets.find((item) => String(item.id) === values.subnetId);
   const subnetCidr = selectedSubnet?.cidr ? String(selectedSubnet.cidr) : "";
   const privateIpError =
     values.ipMode === "manual" && values.privateIp && subnetCidr
-      ? optionalIpv4WithinCidrError(
-          values.privateIp,
-          subnetCidr,
-          "固定 IP",
-          "子网 CIDR",
-        )
+      ? optionalIpv4WithinCidrError(values.privateIp, subnetCidr, "固定 IP", "子网 CIDR")
       : undefined;
   const activeSecrets = ((secrets.data?.items ?? []) as Secret[]).filter(
     (secret) => secret.state !== "deleted" && secret.id,
   );
-  const sshSecrets = activeSecrets.filter((secret) =>
-    /ssh|key/i.test(secret.type ?? ""),
-  );
+  const sshSecrets = activeSecrets.filter((secret) => /ssh|key/i.test(secret.type ?? ""));
   const userDataSecrets = activeSecrets.filter(
-    (secret) =>
-      secret.name &&
-      secret.keys?.some((key) => key.trim().toLowerCase() === "userdata"),
+    (secret) => secret.name && secret.keys?.some((key) => key.trim().toLowerCase() === "userdata"),
   );
 
   const create = useMutation({
     mutationFn: async () => {
       const instanceName = values.name.trim();
       const spec =
-        CPU_INSTANCE_COMPUTE_SPECS.find(
-          (option) => option.value === values.spec,
-        ) ?? CPU_INSTANCE_COMPUTE_SPECS[2];
+        CPU_INSTANCE_COMPUTE_SPECS.find((option) => option.value === values.spec) ??
+        CPU_INSTANCE_COMPUTE_SPECS[2];
       const systemDisk = SYSTEM_DISKS[values.systemDisk];
-      const dataDisk =
-        values.dataDisk === "none" ? undefined : DATA_DISKS[values.dataDisk];
+      const dataDisk = values.dataDisk === "none" ? undefined : DATA_DISKS[values.dataDisk];
       const userData =
         values.loginMode === "password"
           ? buildPasswordCloudInit(values.sshUsername.trim(), values.password)
@@ -294,15 +261,13 @@ export function VmInstanceCreateModal({
         user_data: userData,
         cloud_init_secret: optional(values.cloudInitSecret),
         ssh_username: values.sshUsername.trim(),
-        ssh_key_ref:
-          values.loginMode === "ssh-key" ? values.sshKeyRef : undefined,
+        ssh_key_ref: values.loginMode === "ssh-key" ? values.sshKeyRef : undefined,
         network: {
           vpc_id: values.vpcId,
           subnet_id: values.subnetId,
           security_group_ids: values.securityGroupIds,
           assign_private_ip: values.ipMode === "auto",
-          private_ip:
-            values.ipMode === "manual" ? optional(values.privateIp) : undefined,
+          private_ip: values.ipMode === "manual" ? optional(values.privateIp) : undefined,
         },
         system_disk: {
           name: `${instanceName}-root`,
@@ -353,9 +318,7 @@ export function VmInstanceCreateModal({
       });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
       return data?.operation_id;
@@ -366,8 +329,7 @@ export function VmInstanceCreateModal({
       await queryClient.invalidateQueries({ queryKey: ["vm-instances"] });
       onCreated(operationId);
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "create")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "create")),
   });
 
   const close = () => {
@@ -379,16 +341,10 @@ export function VmInstanceCreateModal({
       await form.validate();
       if (step === 1 && !values.imageRef) throw new Error();
       if (step === 3 && (!values.vpcId || !values.subnetId)) throw new Error();
-      if (
-        step === 3 &&
-        values.ipMode === "manual" &&
-        (!values.privateIp || privateIpError)
-      )
+      if (step === 3 && values.ipMode === "manual" && (!values.privateIp || privateIpError))
         throw new Error();
-      if (step === 3 && values.loginMode === "ssh-key" && !values.sshKeyRef)
-        throw new Error();
-      if (step === 3 && values.loginMode === "password" && !values.password)
-        throw new Error();
+      if (step === 3 && values.loginMode === "ssh-key" && !values.sshKeyRef) throw new Error();
+      if (step === 3 && values.loginMode === "password" && !values.password) throw new Error();
       setStep((current) => Math.min(STEPS.length - 1, current + 1));
     } catch {
       Message.warning("请先完成当前步骤的必填项");
@@ -410,10 +366,7 @@ export function VmInstanceCreateModal({
             取消
           </Button>
           {step > 0 ? (
-            <Button
-              onClick={() => setStep((current) => current - 1)}
-              disabled={create.isPending}
-            >
+            <Button onClick={() => setStep((current) => current - 1)} disabled={create.isPending}>
               上一步
             </Button>
           ) : null}
@@ -437,9 +390,7 @@ export function VmInstanceCreateModal({
             form={form}
             layout="vertical"
             initialValues={INITIAL}
-            onValuesChange={(changed) =>
-              setValues((current) => ({ ...current, ...changed }))
-            }
+            onValuesChange={(changed) => setValues((current) => ({ ...current, ...changed }))}
           >
             {step === 0 ? (
               <>
@@ -457,11 +408,7 @@ export function VmInstanceCreateModal({
             ) : null}
             {step === 1 ? (
               <>
-                <Form.Item
-                  field="imageRef"
-                  label="启动镜像（系统镜像）"
-                  required
-                >
+                <Form.Item field="imageRef" label="启动镜像（系统镜像）" required>
                   <Select
                     loading={images.isLoading}
                     placeholder="选择 Registry 中的 system 镜像"
@@ -476,10 +423,7 @@ export function VmInstanceCreateModal({
                   </Select>
                 </Form.Item>
                 {images.error ? (
-                  <Alert
-                    type="error"
-                    content="系统镜像加载失败，请稍后重试。"
-                  />
+                  <Alert type="error" content="系统镜像加载失败，请稍后重试。" />
                 ) : null}
                 <Form.Item field="userData" label="cloud-init / user-data">
                   <Input.TextArea
@@ -492,10 +436,7 @@ export function VmInstanceCreateModal({
                     }
                   />
                 </Form.Item>
-                <Form.Item
-                  field="cloudInitSecret"
-                  label="cloud-init Secret（可选）"
-                >
+                <Form.Item field="cloudInitSecret" label="cloud-init Secret（可选）">
                   <Select
                     allowClear
                     loading={secrets.isLoading}
@@ -538,10 +479,7 @@ export function VmInstanceCreateModal({
                     }}
                   >
                     {(vpcs.data?.items ?? []).map((vpc) => (
-                      <Select.Option
-                        key={String(vpc.id)}
-                        value={String(vpc.id)}
-                      >
+                      <Select.Option key={String(vpc.id)} value={String(vpc.id)}>
                         {String(vpc.name ?? vpc.id)}
                       </Select.Option>
                     ))}
@@ -559,20 +497,13 @@ export function VmInstanceCreateModal({
                     }}
                   >
                     {availableSubnets.map((subnet) => (
-                      <Select.Option
-                        key={String(subnet.id)}
-                        value={String(subnet.id)}
-                      >
-                        {String(subnet.name ?? subnet.id)} ·{" "}
-                        {String(subnet.cidr ?? "-")}
+                      <Select.Option key={String(subnet.id)} value={String(subnet.id)}>
+                        {String(subnet.name ?? subnet.id)} · {String(subnet.cidr ?? "-")}
                       </Select.Option>
                     ))}
                   </Select>
                 </Form.Item>
-                <Form.Item
-                  field="securityGroupIds"
-                  label="安全组（可选，可多选）"
-                >
+                <Form.Item field="securityGroupIds" label="安全组（可选，可多选）">
                   <Select
                     mode="multiple"
                     disabled={!values.vpcId}
@@ -592,9 +523,7 @@ export function VmInstanceCreateModal({
                         setValue("ipMode", ipMode);
                         setValue(
                           "privateIp",
-                          ipMode === "manual" && subnetCidr
-                            ? suggestGatewayIp(subnetCidr)
-                            : "",
+                          ipMode === "manual" && subnetCidr ? suggestGatewayIp(subnetCidr) : "",
                         );
                       }}
                     >
@@ -612,9 +541,7 @@ export function VmInstanceCreateModal({
                       <Ipv4CidrInput
                         value={values.privateIp}
                         onChange={(value) => setValue("privateIp", value)}
-                        disabledOctets={
-                          subnetCidr ? subnetFixedOctets(subnetCidr) : []
-                        }
+                        disabledOctets={subnetCidr ? subnetFixedOctets(subnetCidr) : []}
                       />
                     </Form.Item>
                   ) : null}
@@ -625,9 +552,7 @@ export function VmInstanceCreateModal({
                     onChange={(mode) => {
                       if (mode === "password" && values.userData.trim()) {
                         setValue("userData", "");
-                        Message.info(
-                          "密码登录会自动生成内联 user-data，已清除自定义内容",
-                        );
+                        Message.info("密码登录会自动生成内联 user-data，已清除自定义内容");
                       }
                       setValue("loginMode", mode);
                       setValue("sshKeyRef", "");
@@ -638,11 +563,7 @@ export function VmInstanceCreateModal({
                     <Radio value="password">密码</Radio>
                   </Radio.Group>
                 </Form.Item>
-                <Form.Item
-                  field="sshUsername"
-                  label="用户名"
-                  rules={[{ required: true }]}
-                >
+                <Form.Item field="sshUsername" label="用户名" rules={[{ required: true }]}>
                   <Input placeholder="请输入 VM 登录用户名" />
                 </Form.Item>
                 {values.loginMode === "ssh-key" ? (
@@ -673,9 +594,10 @@ export function VmInstanceCreateModal({
               <>
                 <Form.Item field="systemDisk" label="系统盘">
                   <Select
-                    options={Object.entries(SYSTEM_DISKS).map(
-                      ([value, disk]) => ({ value, label: disk.label }),
-                    )}
+                    options={Object.entries(SYSTEM_DISKS).map(([value, disk]) => ({
+                      value,
+                      label: disk.label,
+                    }))}
                   />
                 </Form.Item>
                 <Form.Item field="dataDisk" label="数据盘">
@@ -694,26 +616,19 @@ export function VmInstanceCreateModal({
                     allowClear
                     loading={filesystems.isLoading}
                     placeholder="不挂载 NFS"
-                    options={(
-                      (filesystems.data?.items ?? []) as Filesystem[]
-                    ).map((filesystem) => ({
-                      value: filesystem.id,
-                      label: `${filesystem.name} · ${filesystem.size_gib}Gi · ${filesystem.protocol}`,
-                    }))}
+                    options={((filesystems.data?.items ?? []) as Filesystem[]).map(
+                      (filesystem) => ({
+                        value: filesystem.id,
+                        label: `${filesystem.name} · ${filesystem.size_gib}Gi · ${filesystem.protocol}`,
+                      }),
+                    )}
                   />
                 </Form.Item>
                 {values.filesystemId ? (
-                  <Alert
-                    type="info"
-                    content="文件存储将以读写方式挂载到 /mnt/nfs。"
-                  />
+                  <Alert type="info" content="文件存储将以读写方式挂载到 /mnt/nfs。" />
                 ) : null}
                 <Space size={32}>
-                  <Form.Item
-                    field="autoStart"
-                    label="自动启动"
-                    triggerPropName="checked"
-                  >
+                  <Form.Item field="autoStart" label="自动启动" triggerPropName="checked">
                     <Switch />
                   </Form.Item>
                   <Form.Item
@@ -738,9 +653,8 @@ export function VmInstanceCreateModal({
                     value: (
                       <ImageNameText
                         image={
-                          (images.data ?? []).find(
-                            (image) => image.image === values.imageRef,
-                          ) ?? values.imageRef
+                          (images.data ?? []).find((image) => image.image === values.imageRef) ??
+                          values.imageRef
                         }
                         showSize
                       />
@@ -757,10 +671,7 @@ export function VmInstanceCreateModal({
                   },
                   {
                     label: "私网 IP",
-                    value:
-                      values.ipMode === "auto"
-                        ? "自动分配"
-                        : values.privateIp || "-",
+                    value: values.ipMode === "auto" ? "自动分配" : values.privateIp || "-",
                   },
                   {
                     label: "登录方式",
@@ -776,9 +687,7 @@ export function VmInstanceCreateModal({
                           : values.userData.trim()
                             ? "内联 user-data"
                             : "",
-                        values.cloudInitSecret
-                          ? `Secret ${values.cloudInitSecret}`
-                          : "",
+                        values.cloudInitSecret ? `Secret ${values.cloudInitSecret}` : "",
                       ]
                         .filter(Boolean)
                         .join(" + ") || "未配置",
@@ -799,15 +708,11 @@ export function VmInstanceCreateModal({
                   {
                     label: "数据盘",
                     value:
-                      values.dataDisk === "none"
-                        ? "不挂载"
-                        : DATA_DISKS[values.dataDisk].label,
+                      values.dataDisk === "none" ? "不挂载" : DATA_DISKS[values.dataDisk].label,
                   },
                   {
                     label: "NFS",
-                    value: values.filesystemId
-                      ? `${values.filesystemId} → /mnt/nfs`
-                      : "不挂载",
+                    value: values.filesystemId ? `${values.filesystemId} → /mnt/nfs` : "不挂载",
                   },
                   {
                     label: "自动启动",

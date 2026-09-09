@@ -3,31 +3,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import type { components } from "@/api/core-schema";
-import {
-  AliIcon,
-  DetailPageFrame,
-  ImageNameText,
-  StatusTag,
-} from "@/components/common";
+import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { InstanceConfiguration } from "@/components/instances/InstanceConfiguration";
-import {
-  InstanceStorage,
-  type MountKind,
-} from "@/components/instances/InstanceStorage";
+import { InstanceStorage, type MountKind } from "@/components/instances/InstanceStorage";
 import { InstanceTerminal } from "@/components/instances/InstanceTerminal";
 import { InstanceReleases } from "@/components/instances/InstanceReleases";
 import { InstanceReleaseActions } from "@/components/instances/InstanceReleaseActions";
 import { ContainerInstanceActions } from "@/components/instances/ContainerInstanceActions";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
-import {
-  getInstanceDisplayIp,
-  getInstanceNetworkValue,
-} from "@/lib/instance-network";
+import { getInstanceDisplayIp, getInstanceNetworkValue } from "@/lib/instance-network";
 import type { ContainerInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
 import { containerDetailDataSource } from "./data-source";
 
@@ -61,10 +50,7 @@ export function ContainerInstanceDetailPage({
   if (!query.data)
     return (
       <DetailPageFrame
-        breadcrumbs={[
-          { label: "容器实例", to: "/container-instances" },
-          { label: instanceId },
-        ]}
+        breadcrumbs={[{ label: "容器实例", to: "/container-instances" }, { label: instanceId }]}
         title={instanceId}
         icon={<AliIcon name="rongqishili" size={28} />}
         headerItems={[
@@ -85,27 +71,18 @@ export function ContainerInstanceDetailPage({
   const detail = query.data;
 
   const isRunning = detail.state === "running";
-  const busy = [
-    "pending",
-    "provisioning",
-    "starting",
-    "stopping",
-    "deleting",
-  ].includes(detail.state ?? "");
+  const busy = ["pending", "provisioning", "starting", "stopping", "deleting"].includes(
+    detail.state ?? "",
+  );
 
   const nameValue =
     detail.compute?.cpu || detail.compute?.memory
-      ? [detail.compute?.cpu, detail.compute?.memory]
-          .filter(Boolean)
-          .join(" / ")
+      ? [detail.compute?.cpu, detail.compute?.memory].filter(Boolean).join(" / ")
       : "-";
 
   return (
     <DetailPageFrame
-      breadcrumbs={[
-        { label: "容器实例", to: "/container-instances" },
-        { label: detail.name },
-      ]}
+      breadcrumbs={[{ label: "容器实例", to: "/container-instances" }, { label: detail.name }]}
       icon={<AliIcon name="icon-rongqishili" size={28} />}
       title={detail.name}
       status={
@@ -235,10 +212,7 @@ export function ContainerInstanceDetailPage({
                 </Button>
               }
               filesystemAction={
-                <Button
-                  disabled={busy}
-                  onClick={() => setMountKind("filesystem")}
-                >
+                <Button disabled={busy} onClick={() => setMountKind("filesystem")}>
                   挂载 NFS
                 </Button>
               }
@@ -258,9 +232,7 @@ export function ContainerInstanceDetailPage({
         {
           key: "monitoring",
           label: "监控",
-          content: (
-            <InstanceMetrics instanceId={instanceId} instanceKind="container" />
-          ),
+          content: <InstanceMetrics instanceId={instanceId} instanceKind="container" />,
         },
         {
           key: "logs",
@@ -278,9 +250,7 @@ export function ContainerInstanceDetailPage({
           content: isRunning ? (
             <InstanceTerminal className="h-full" instanceId={instanceId} />
           ) : (
-            <div className="py-12 text-center text-(--color-text-3)">
-              终端仅运行中的实例可用
-            </div>
+            <div className="py-12 text-center text-(--color-text-3)">终端仅运行中的实例可用</div>
           ),
         },
         {

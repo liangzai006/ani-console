@@ -23,13 +23,7 @@ import {
   Spin,
   Typography,
 } from "@arco-design/web-react";
-import {
-  IconCheck,
-  IconCopy,
-  IconPlus,
-  IconSend,
-  IconStop,
-} from "@arco-design/web-react/icon";
+import { IconCheck, IconCopy, IconPlus, IconSend, IconStop } from "@arco-design/web-react/icon";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { SERVICES_API_BASE, servicesApi } from "@/api/services-client";
 import type { components } from "@/api/services-schema";
@@ -59,9 +53,7 @@ function createLocalSession(): LocalChatSession {
 }
 
 function getLatestQuestion(messages: readonly ThreadMessage[]) {
-  const latestUserMessage = [...messages]
-    .reverse()
-    .find((message) => message.role === "user");
+  const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
   return (
     latestUserMessage?.content
       .filter((part) => part.type === "text")
@@ -183,13 +175,10 @@ function createKnowledgeBaseAdapter(
         session_id: sessionIdRef.current,
         top_k: topK,
       };
-      const { data, error } = await servicesApi.POST(
-        "/knowledge-bases/{kb_id}/query",
-        {
-          params: { path: { kb_id: kbId } },
-          body: queryScope.withKey(submitData),
-        },
-      );
+      const { data, error } = await servicesApi.POST("/knowledge-bases/{kb_id}/query", {
+        params: { path: { kb_id: kbId } },
+        body: queryScope.withKey(submitData),
+      });
       if (error || !data) throw error ?? new Error("问答未返回结果");
       queryScope.reset();
       sessionIdRef.current = data.session_id;
@@ -343,7 +332,11 @@ function AssistantMessage() {
           </ErrorPrimitive.Root>
         </MessagePrimitive.Error>
       </div>
-      <ActionBarPrimitive.Root hideWhenRunning autohide="not-last" className={styles.messageActions}>
+      <ActionBarPrimitive.Root
+        hideWhenRunning
+        autohide="not-last"
+        className={styles.messageActions}
+      >
         <ActionBarPrimitive.Copy asChild>
           <Button type="text" size="mini">
             <AuiIf condition={(state) => state.message.isCopied}>
@@ -379,10 +372,9 @@ export function KnowledgeChatPanel({
       const items: Citation[] = [];
       let cursor: string | undefined;
       do {
-        const { data, error } = await servicesApi.GET(
-          "/knowledge-bases/{kb_id}/citations",
-          { params: { path: { kb_id: kbId }, query: { limit: 100, cursor } } },
-        );
+        const { data, error } = await servicesApi.GET("/knowledge-bases/{kb_id}/citations", {
+          params: { path: { kb_id: kbId }, query: { limit: 100, cursor } },
+        });
         if (error || !data) throw error ?? new Error("引用列表未返回结果");
         items.push(...data.items);
         cursor = data.next_cursor ?? undefined;
@@ -414,9 +406,7 @@ export function KnowledgeChatPanel({
   const handleAnswer = useCallback((sessionId: string) => {
     setSessions((current) =>
       current.map((session) =>
-        session.id === sessionId
-          ? { ...session, messageCount: session.messageCount + 1 }
-          : session,
+        session.id === sessionId ? { ...session, messageCount: session.messageCount + 1 } : session,
       ),
     );
   }, []);
@@ -424,75 +414,75 @@ export function KnowledgeChatPanel({
   return (
     <>
       <div className={styles.panel}>
-      <Alert
-        type="info"
-        showIcon
-        content="仅已完成解析和索引的文档会参与回答。当前会话列表临时保存在本页面，刷新后不会保留。"
-      />
-      <div className={styles.chatWorkspace}>
-        <aside className={styles.sessionSidebar} aria-label="问答会话">
-          <Button type="primary" long icon={<IconPlus />} onClick={addSession}>
-            新会话
-          </Button>
-          <div className={styles.sessionList}>
-            {sessions.length ? (
-              sessions.map((session) => (
-                <button
-                  key={session.id}
-                  type="button"
-                  className={clsx(
-                    styles.sessionItem,
-                    session.id === activeSessionId && styles.sessionItemActive,
-                  )}
-                  onClick={() => setActiveSessionId(session.id)}
-                >
-                  <span className={styles.sessionTitle}>{session.title}</span>
-                  <span className={styles.sessionMeta}>
-                    {session.messageCount ? `${session.messageCount} 条消息` : "尚未提问"}
-                  </span>
-                </button>
-              ))
-            ) : (
-              <Empty description="暂无会话" />
-            )}
-          </div>
-        </aside>
-        <div className={styles.conversationArea}>
-          <div className={styles.queryToolbar}>
-            <div className={styles.queryOptions}>
-              <Radio.Group type="button" value={mode} onChange={setMode}>
-                <Radio value="stream">流式</Radio>
-                <Radio value="sync">同步</Radio>
-              </Radio.Group>
-              <label className={styles.topKControl}>
-                <Typography.Text type="secondary">TopK</Typography.Text>
-                <InputNumber
-                  size="small"
-                  min={1}
-                  max={20}
-                  precision={0}
-                  value={topK}
-                  onChange={(value) => setTopK(Number(value) || 5)}
-                />
-              </label>
+        <Alert
+          type="info"
+          showIcon
+          content="仅已完成解析和索引的文档会参与回答。当前会话列表临时保存在本页面，刷新后不会保留。"
+        />
+        <div className={styles.chatWorkspace}>
+          <aside className={styles.sessionSidebar} aria-label="问答会话">
+            <Button type="primary" long icon={<IconPlus />} onClick={addSession}>
+              新会话
+            </Button>
+            <div className={styles.sessionList}>
+              {sessions.length ? (
+                sessions.map((session) => (
+                  <button
+                    key={session.id}
+                    type="button"
+                    className={clsx(
+                      styles.sessionItem,
+                      session.id === activeSessionId && styles.sessionItemActive,
+                    )}
+                    onClick={() => setActiveSessionId(session.id)}
+                  >
+                    <span className={styles.sessionTitle}>{session.title}</span>
+                    <span className={styles.sessionMeta}>
+                      {session.messageCount ? `${session.messageCount} 条消息` : "尚未提问"}
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <Empty description="暂无会话" />
+              )}
             </div>
-            {/* TODO: 后端引用列表接口实现后恢复“查看本库全部引用”入口。 */}
+          </aside>
+          <div className={styles.conversationArea}>
+            <div className={styles.queryToolbar}>
+              <div className={styles.queryOptions}>
+                <Radio.Group type="button" value={mode} onChange={setMode}>
+                  <Radio value="stream">流式</Radio>
+                  <Radio value="sync">同步</Radio>
+                </Radio.Group>
+                <label className={styles.topKControl}>
+                  <Typography.Text type="secondary">TopK</Typography.Text>
+                  <InputNumber
+                    size="small"
+                    min={1}
+                    max={20}
+                    precision={0}
+                    value={topK}
+                    onChange={(value) => setTopK(Number(value) || 5)}
+                  />
+                </label>
+              </div>
+              {/* TODO: 后端引用列表接口实现后恢复“查看本库全部引用”入口。 */}
+            </div>
+            {/* TODO: 后端开放会话列表与消息历史接口后，替换为 RemoteThreadListAdapter/ThreadHistoryAdapter。 */}
+            {sessions.map((session) => (
+              <SessionThread
+                key={session.id}
+                kbId={kbId}
+                sessionKey={session.id}
+                active={session.id === activeSessionId}
+                mode={mode}
+                topK={topK}
+                onQuestion={handleQuestion}
+                onAnswer={handleAnswer}
+              />
+            ))}
           </div>
-          {/* TODO: 后端开放会话列表与消息历史接口后，替换为 RemoteThreadListAdapter/ThreadHistoryAdapter。 */}
-          {sessions.map((session) => (
-            <SessionThread
-              key={session.id}
-              kbId={kbId}
-              sessionKey={session.id}
-              active={session.id === activeSessionId}
-              mode={mode}
-              topK={topK}
-              onQuestion={handleQuestion}
-              onAnswer={handleAnswer}
-            />
-          ))}
         </div>
-      </div>
       </div>
       <Drawer
         width={560}
@@ -502,7 +492,9 @@ export function KnowledgeChatPanel({
         onCancel={() => setCitationsVisible(false)}
       >
         {citations.isLoading ? (
-          <div className={styles.citationState}><Spin /></div>
+          <div className={styles.citationState}>
+            <Spin />
+          </div>
         ) : citations.error ? (
           <Alert
             type="error"

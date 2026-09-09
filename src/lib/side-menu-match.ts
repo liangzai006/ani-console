@@ -1,10 +1,7 @@
 import { findMenuItem, isGroupItem, menuItems } from "./menu-items";
 
 /** 根据当前 pathname 计算侧栏 Menu selectedKeys（最长前缀匹配）。 */
-export function matchSideMenuKey(
-  pathname: string,
-  routeKeys: string[],
-): string[] {
+export function matchSideMenuKey(pathname: string, routeKeys: string[]): string[] {
   const exact = routeKeys.find((k) => k === pathname);
   if (exact) return [exact];
   const prefix = routeKeys

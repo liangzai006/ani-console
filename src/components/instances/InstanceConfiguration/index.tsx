@@ -24,13 +24,10 @@ type SecretRow = {
 };
 
 function secretReferences(instance: Instance) {
-  const refs = [
-    instance.ssh?.key_ref,
-    ...(instance.resource_refs ?? []),
-  ].filter((ref): ref is string => Boolean(ref));
-  return Array.from(
-    new Set(refs.filter((ref) => /secret|key|credential/i.test(ref))),
+  const refs = [instance.ssh?.key_ref, ...(instance.resource_refs ?? [])].filter(
+    (ref): ref is string => Boolean(ref),
   );
+  return Array.from(new Set(refs.filter((ref) => /secret|key|credential/i.test(ref))));
 }
 
 function secretId(reference: string) {
@@ -50,10 +47,7 @@ export function InstanceConfiguration({
   onChanged: () => void;
   secretAction?: ReactNode;
 }) {
-  const unbindScope = useIdempotencyScope("instance-secret-unbind", [
-    "POST",
-    instance.id,
-  ]);
+  const unbindScope = useIdempotencyScope("instance-secret-unbind", ["POST", instance.id]);
   const secretRefs = secretReferences(instance);
   const secretRows: SecretRow[] = secretRefs.map((reference) => ({
     reference,
@@ -67,18 +61,13 @@ export function InstanceConfiguration({
         action: "unbind_secret" as const,
         secret_id: secretId(reference),
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: unbindScope.withKey(submitData, [reference]),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: unbindScope.withKey(submitData, [reference]),
+      });
       if (error) {
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
       }
@@ -88,8 +77,7 @@ export function InstanceConfiguration({
       Message.success("密钥解绑已提交");
       onChanged();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   return (
@@ -116,10 +104,7 @@ export function InstanceConfiguration({
                 <Button
                   type="text"
                   status="danger"
-                  loading={
-                    unbindSecret.isPending &&
-                    unbindSecret.variables === secret.reference
-                  }
+                  loading={unbindSecret.isPending && unbindSecret.variables === secret.reference}
                   onClick={() =>
                     Modal.confirm({
                       title: "解绑密钥",

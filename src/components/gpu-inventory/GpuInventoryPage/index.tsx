@@ -3,26 +3,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
-import {
-  ListPageFrame,
-  ListPageHeader,
-  ToolbarButton,
-} from "@/components/common";
+import { ListPageFrame, ListPageHeader, ToolbarButton } from "@/components/common";
 import { GpuContainerCreateModal } from "@/components/instances/GpuContainerCreateModal";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { GpuCapacityOverview } from "./GpuCapacityOverview";
-import type {
-  GpuSpecAvailabilityListResponse,
-  TenantQuotaResponse,
-} from "./types";
+import type { GpuSpecAvailabilityListResponse, TenantQuotaResponse } from "./types";
 
 type GpuOccupancy = components["schemas"]["GPUOccupancyStats"];
 type GpuInventoryRecord = components["schemas"]["GPUInventoryRecord"];
 
 async function getGpuSpecAvailability() {
-  const request = coreApi.GET as unknown as (
-    path: "/gpu-specs/availability",
-  ) => Promise<{
+  const request = coreApi.GET as unknown as (path: "/gpu-specs/availability") => Promise<{
     data?: GpuSpecAvailabilityListResponse;
     error?: unknown;
   }>;
@@ -65,11 +56,7 @@ async function getGpuAnomalies(): Promise<GpuInventoryRecord[]> {
     !faultResponse.data ||
     !maintenanceResponse.data
   ) {
-    throw (
-      faultResponse.error ??
-      maintenanceResponse.error ??
-      new Error("GPU 异常数据未返回结果")
-    );
+    throw faultResponse.error ?? maintenanceResponse.error ?? new Error("GPU 异常数据未返回结果");
   }
 
   return [...faultResponse.data.items, ...maintenanceResponse.data.items];

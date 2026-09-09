@@ -36,14 +36,8 @@ export function SandboxFilesPanel({
   running: boolean;
   onChanged: () => void;
 }) {
-  const writeScope = useIdempotencyScope("sandbox-file-write", [
-    "POST",
-    instanceId,
-  ]);
-  const deleteScope = useIdempotencyScope("sandbox-file-delete", [
-    "DELETE",
-    instanceId,
-  ]);
+  const writeScope = useIdempotencyScope("sandbox-file-write", ["POST", instanceId]);
+  const deleteScope = useIdempotencyScope("sandbox-file-delete", ["DELETE", instanceId]);
   const [directory, setDirectory] = useState(".");
   const [pathInput, setPathInput] = useState(".");
   const [editorVisible, setEditorVisible] = useState(false);
@@ -106,16 +100,13 @@ export function SandboxFilesPanel({
   const deleteFile = useMutation({
     mutationFn: async (path: string) => {
       const { idempotency_key } = deleteScope.withKey({}, [path]);
-      const { error, response } = await coreApi.DELETE(
-        "/instances/{instance_id}/sandbox/files",
-        {
-          params: {
-            path: { instance_id: instanceId },
-            query: { path },
-            header: { "Idempotency-Key": idempotency_key },
-          },
+      const { error, response } = await coreApi.DELETE("/instances/{instance_id}/sandbox/files", {
+        params: {
+          path: { instance_id: instanceId },
+          query: { path },
+          header: { "Idempotency-Key": idempotency_key },
         },
-      );
+      });
       if (error) {
         throwSandboxApiError(error, response.status, "文件删除失败");
       }
@@ -152,10 +143,7 @@ export function SandboxFilesPanel({
           content="文件列表和写入操作直接作用于实例的 /workspace。Core 当前未开放文件内容读取接口，因此这里只展示目录项，不伪造文件预览。"
         />
         {!running ? (
-          <Alert
-            type="warning"
-            content="当前实例不是运行状态，写入和删除文件不可用。"
-          />
+          <Alert type="warning" content="当前实例不是运行状态，写入和删除文件不可用。" />
         ) : null}
 
         <section>
@@ -168,20 +156,14 @@ export function SandboxFilesPanel({
               onChange={setPathInput}
               onPressEnter={() => openDirectory(pathInput.trim() || ".")}
             />
-            <Button onClick={() => openDirectory(pathInput.trim() || ".")}>
-              打开目录
-            </Button>
+            <Button onClick={() => openDirectory(pathInput.trim() || ".")}>打开目录</Button>
             <Button
               disabled={directory === "."}
               onClick={() => openDirectory(parentPath(directory))}
             >
               返回上级
             </Button>
-            <Button
-              type="primary"
-              disabled={!running}
-              onClick={() => setEditorVisible(true)}
-            >
+            <Button type="primary" disabled={!running} onClick={() => setEditorVisible(true)}>
               新建文本文件
             </Button>
             <Button loading={files.isFetching} onClick={() => files.refetch()}>
@@ -229,9 +211,7 @@ export function SandboxFilesPanel({
                 title: "大小",
                 width: 120,
                 render: (_, item) =>
-                  item.kind === "directory"
-                    ? "-"
-                    : formatBytes(item.size_bytes),
+                  item.kind === "directory" ? "-" : formatBytes(item.size_bytes),
               },
               {
                 title: "更新时间",
@@ -244,11 +224,7 @@ export function SandboxFilesPanel({
                 fixed: "right",
                 render: (_, item) =>
                   item.kind === "directory" ? (
-                    <Button
-                      type="text"
-                      size="small"
-                      onClick={() => openDirectory(item.path)}
-                    >
+                    <Button type="text" size="small" onClick={() => openDirectory(item.path)}>
                       打开
                     </Button>
                   ) : (
@@ -256,9 +232,7 @@ export function SandboxFilesPanel({
                       <Button
                         type="text"
                         size="small"
-                        onClick={() =>
-                          copySandboxText(item.path, "文件路径已复制")
-                        }
+                        onClick={() => copySandboxText(item.path, "文件路径已复制")}
                       >
                         复制路径
                       </Button>

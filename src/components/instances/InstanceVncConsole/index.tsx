@@ -6,8 +6,7 @@ import { coreApi } from "@/api/client";
 import { getErrorMessage } from "@/lib/errors";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type ConsoleStatus =
-  "connecting" | "connected" | "disconnected" | "error" | "expired";
+type ConsoleStatus = "connecting" | "connected" | "disconnected" | "error" | "expired";
 type ViewMode = "fit" | "native";
 
 const VNC_SUBPROTOCOL = "ani.vnc.v1";
@@ -74,21 +73,16 @@ export function InstanceVncConsole({
     const connect = async () => {
       setStatus("connecting");
       setErrorText(null);
-      await new Promise<void>((resolve) =>
-        window.requestAnimationFrame(() => resolve()),
-      );
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
       if (disposed) return;
 
       try {
         const submitData = { protocol };
-        const { data, error } = await coreApi.POST(
-          "/instances/{instance_id}/console",
-          {
-            params: { path: { instance_id: instanceId } },
-            body: consoleScope.withKey(submitData),
-            signal: abortController.signal,
-          },
-        );
+        const { data, error } = await coreApi.POST("/instances/{instance_id}/console", {
+          params: { path: { instance_id: instanceId } },
+          body: consoleScope.withKey(submitData),
+          signal: abortController.signal,
+        });
         if (error) throw error;
         consoleScope.reset();
         const connectUrl = data?.connect_url;
@@ -117,13 +111,8 @@ export function InstanceVncConsole({
         rfb.addEventListener("securityfailure", (event) => {
           if (disposed) return;
           setStatus("error");
-          const detail =
-            event instanceof CustomEvent ? event.detail : undefined;
-          setErrorText(
-            typeof detail?.reason === "string"
-              ? detail.reason
-              : "VNC 安全握手失败",
-          );
+          const detail = event instanceof CustomEvent ? event.detail : undefined;
+          setErrorText(typeof detail?.reason === "string" ? detail.reason : "VNC 安全握手失败");
         });
         rfbRef.current = rfb;
       } catch (e) {
@@ -149,8 +138,7 @@ export function InstanceVncConsole({
   }, [consoleScope, instanceId, protocol, reconnectKey]);
 
   const meta = STATUS_META[status];
-  const canReconnect =
-    status === "error" || status === "disconnected" || status === "expired";
+  const canReconnect = status === "error" || status === "disconnected" || status === "expired";
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#0b0e16] text-white">
@@ -198,9 +186,7 @@ export function InstanceVncConsole({
           ref={hostRef}
           data-testid="instance-vnc-console"
           className={
-            viewMode === "native"
-              ? "min-h-full min-w-full"
-              : "h-full w-full overflow-hidden"
+            viewMode === "native" ? "min-h-full min-w-full" : "h-full w-full overflow-hidden"
           }
         />
       </div>

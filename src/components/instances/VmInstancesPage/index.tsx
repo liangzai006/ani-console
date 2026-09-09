@@ -32,9 +32,7 @@ function specLabel(instance: VmInstance) {
   if (cpu == null || memory == null) return "-";
   const cpuValue = String(cpu);
   const memoryValue = String(memory);
-  const cpuText = /^\d+(?:\.\d+)?$/.test(cpuValue)
-    ? `${cpuValue}C`
-    : cpuValue.replace(/c$/i, "C");
+  const cpuText = /^\d+(?:\.\d+)?$/.test(cpuValue) ? `${cpuValue}C` : cpuValue.replace(/c$/i, "C");
   const memoryText = /^\d+(?:\.\d+)?$/.test(memoryValue)
     ? `${memoryValue}G`
     : memoryValue.replace(/gi$/i, "G").replace(/g$/i, "G");
@@ -92,11 +90,7 @@ export function VmInstancesPage() {
       render: (_, row) => (
         <DataTableNameCell
           name={
-            <Link
-              from="/"
-              to="/vm-instances/$instanceId"
-              params={{ instanceId: row.id }}
-            >
+            <Link from="/" to="/vm-instances/$instanceId" params={{ instanceId: row.id }}>
               {row.name}
             </Link>
           }
@@ -145,10 +139,7 @@ export function VmInstancesPage() {
       title: "操作",
       fixed: "right",
       render: (_, row) => (
-        <VmInstanceActions
-          instance={row}
-          onOperationSubmitted={setOperationId}
-        />
+        <VmInstanceActions instance={row} onOperationSubmitted={setOperationId} />
       ),
     },
   ];
@@ -172,9 +163,7 @@ export function VmInstancesPage() {
             }
           />
         }
-        tabs={
-          <StatusTabs items={statusTabs} value={status} onChange={setStatus} />
-        }
+        tabs={<StatusTabs items={statusTabs} value={status} onChange={setStatus} />}
         toolbar={
           <ListToolbar
             filters={

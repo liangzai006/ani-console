@@ -1,11 +1,4 @@
-import {
-  Alert,
-  Form,
-  Message,
-  Modal,
-  Select,
-  Tooltip,
-} from "@arco-design/web-react";
+import { Alert, Form, Message, Modal, Select, Tooltip } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
@@ -25,25 +18,17 @@ export function ContainerInstanceRollbackModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<{ revision: string }>();
-  const scope = useIdempotencyScope("container-instance-rollback", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("container-instance-rollback", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async ({ revision }: { revision: string }) => {
       const submitData = { action: "rollback" as const, revision };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -52,8 +37,7 @@ export function ContainerInstanceRollbackModal({
       Message.success("回滚发布已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const targets = (instance.container?.history ?? []).filter(
     (entry) => entry.revision !== instance.container?.revision,
@@ -88,17 +72,11 @@ export function ContainerInstanceRollbackModal({
             {targets.map((entry) => (
               <Select.Option key={entry.revision} value={entry.revision}>
                 <Tooltip
-                  content={
-                    entry.image
-                      ? `${entry.revision} · ${entry.image}`
-                      : entry.revision
-                  }
+                  content={entry.image ? `${entry.revision} · ${entry.image}` : entry.revision}
                 >
                   <span className="block truncate">
                     {entry.revision}
-                    {entry.image
-                      ? ` · ${getImageDisplayName(entry.image)}`
-                      : ""}
+                    {entry.image ? ` · ${getImageDisplayName(entry.image)}` : ""}
                   </span>
                 </Tooltip>
               </Select.Option>

@@ -96,13 +96,7 @@ export function DataTableRowActions({ children }: { children: ReactNode }) {
   return <div className={styles.rowActions}>{children}</div>;
 }
 
-export function DataTableNameCell({
-  name,
-  id,
-}: {
-  name: ReactNode;
-  id: ReactNode;
-}) {
+export function DataTableNameCell({ name, id }: { name: ReactNode; id: ReactNode }) {
   return (
     <div className={styles.nameCell}>
       <span className={styles.name}>{name}</span>
@@ -116,13 +110,7 @@ export const DataTableRowActionButton = forwardRef<
   ButtonProps & { children: ReactNode }
 >(function DataTableRowActionButton({ children, ...buttonProps }, ref) {
   return (
-    <Button
-      ref={ref}
-      type="text"
-      size="small"
-      {...buttonProps}
-      className={styles.rowActionButton}
-    >
+    <Button ref={ref} type="text" size="small" {...buttonProps} className={styles.rowActionButton}>
       {children}
     </Button>
   );

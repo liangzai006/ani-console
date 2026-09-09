@@ -25,28 +25,20 @@ export function GpuInstanceResizeModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<GpuInstanceResizeFormValues>();
-  const scope = useIdempotencyScope("gpu-instance-resize", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("gpu-instance-resize", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async (values: GpuInstanceResizeFormValues) => {
       const submitData = {
         action: "resize" as const,
         ...buildGpuInstanceResizeFields(values),
       } as Omit<LifecycleRequest, "idempotency_key">;
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData) as LifecycleRequest,
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData) as LifecycleRequest,
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -55,8 +47,7 @@ export function GpuInstanceResizeModal({
       Message.success("变配已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal

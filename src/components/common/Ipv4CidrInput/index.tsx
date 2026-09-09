@@ -1,39 +1,39 @@
-import { InputNumber } from '@arco-design/web-react'
+import { InputNumber } from "@arco-design/web-react";
 
 interface Ipv4CidrInputProps {
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  withPrefix?: boolean
-  disabledOctets?: boolean[]
-  minPrefix?: number
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  withPrefix?: boolean;
+  disabledOctets?: boolean[];
+  minPrefix?: number;
 }
 
 function toInputNumber(value: string): number | undefined {
-  if (!/^\d+$/.test(value)) return undefined
-  return Number(value)
+  if (!/^\d+$/.test(value)) return undefined;
+  return Number(value);
 }
 
 function splitCidr(value: string, placeholder: string): [string[], string] {
-  const [ip = placeholder, prefix = '24'] = value.split('/')
-  const octets = ip.split('.')
-  return [[octets[0] ?? '', octets[1] ?? '', octets[2] ?? '', octets[3] ?? ''], prefix]
+  const [ip = placeholder, prefix = "24"] = value.split("/");
+  const octets = ip.split(".");
+  return [[octets[0] ?? "", octets[1] ?? "", octets[2] ?? "", octets[3] ?? ""], prefix];
 }
 
 export function Ipv4CidrInput({
   value,
   onChange,
-  placeholder = '10.80.1.0',
+  placeholder = "10.80.1.0",
   withPrefix,
   disabledOctets = [],
   minPrefix = 0,
 }: Ipv4CidrInputProps) {
-  const [octets, prefix] = splitCidr(value, placeholder)
+  const [octets, prefix] = splitCidr(value, placeholder);
 
   const emit = (nextOctets: string[], nextPrefix: string) => {
-    const ip = nextOctets.join('.')
-    onChange(withPrefix ? `${ip}/${nextPrefix}` : ip)
-  }
+    const ip = nextOctets.join(".");
+    onChange(withPrefix ? `${ip}/${nextPrefix}` : ip);
+  };
 
   return (
     <div className="flex flex-nowrap items-center gap-1 overflow-x-auto">
@@ -47,9 +47,9 @@ export function Ipv4CidrInput({
             style={{ width: 52 }}
             disabled={disabledOctets[index]}
             onChange={(next) => {
-              const nextOctets = [...octets]
-              nextOctets[index] = next == null ? '' : String(next)
-              emit(nextOctets, prefix)
+              const nextOctets = [...octets];
+              nextOctets[index] = next == null ? "" : String(next);
+              emit(nextOctets, prefix);
             }}
           />
           {index < 3 && <span className="text-[var(--color-text-3)]">.</span>}
@@ -64,10 +64,10 @@ export function Ipv4CidrInput({
             max={32}
             precision={0}
             style={{ width: 52 }}
-            onChange={(next) => emit(octets, next == null ? '' : String(next))}
+            onChange={(next) => emit(octets, next == null ? "" : String(next))}
           />
         </>
       )}
     </div>
-  )
+  );
 }

@@ -8,11 +8,7 @@ import {
   Typography,
   type TableColumnProps,
 } from "@arco-design/web-react";
-import {
-  IconArrowLeft,
-  IconFile,
-  IconFolder,
-} from "@arco-design/web-react/icon";
+import { IconArrowLeft, IconFile, IconFolder } from "@arco-design/web-react/icon";
 import type { ReactNode } from "react";
 import type { components } from "@/api/core-schema";
 import { DataTable } from "@/components/common";
@@ -115,14 +111,12 @@ export function ObjectBrowser({
     {
       title: "大小",
       width: 100,
-      render: (_, entry) =>
-        entry.size_bytes != null ? formatBytes(entry.size_bytes) : "-",
+      render: (_, entry) => (entry.size_bytes != null ? formatBytes(entry.size_bytes) : "-"),
     },
     {
       title: "更新时间",
       width: 180,
-      render: (_, entry) =>
-        entry.updated_at ? formatDateTime(entry.updated_at) : "-",
+      render: (_, entry) => (entry.updated_at ? formatDateTime(entry.updated_at) : "-"),
     },
     {
       title: "存储类型",
@@ -143,11 +137,7 @@ export function ObjectBrowser({
           <Space className={styles.actions}>
             {entry.kind === "object" ? (
               <>
-                <Link
-                  type="text"
-                  className="text-nowrap"
-                  onClick={() => onCopyPath(entry)}
-                >
+                <Link type="text" className="text-nowrap" onClick={() => onCopyPath(entry)}>
                   复制路径
                 </Link>
                 <Link
@@ -189,11 +179,7 @@ export function ObjectBrowser({
             const target = `/${segments.slice(0, index + 1).join("/")}/`;
             return (
               <Breadcrumb.Item key={target}>
-                <Button
-                  type="text"
-                  size="mini"
-                  onClick={() => onNavigate(target)}
-                >
+                <Button type="text" size="mini" onClick={() => onNavigate(target)}>
                   {segment}
                 </Button>
               </Breadcrumb.Item>
@@ -217,9 +203,7 @@ export function ObjectBrowser({
         loading={loading}
         pagination={false}
         scroll={{ x: "max-content" }}
-        noDataElement={
-          <Empty description="当前文件夹暂无对象，可上传对象或新建文件夹" />
-        }
+        noDataElement={<Empty description="当前文件夹暂无对象，可上传对象或新建文件夹" />}
       />
     </div>
   );

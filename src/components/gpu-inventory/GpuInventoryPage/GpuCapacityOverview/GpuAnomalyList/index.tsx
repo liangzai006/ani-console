@@ -1,11 +1,4 @@
-import {
-  Card,
-  Empty,
-  Skeleton,
-  Space,
-  Tag,
-  Typography,
-} from "@arco-design/web-react";
+import { Card, Empty, Skeleton, Space, Tag, Typography } from "@arco-design/web-react";
 import type { components } from "@/api/core-schema";
 import { ApiErrorAlert } from "@/components/common";
 
@@ -33,11 +26,7 @@ export function GpuAnomalyList({
     <Card
       title="异常"
       className="h-full"
-      extra={
-        <Typography.Text type="secondary">
-          {anomalies.length} 项
-        </Typography.Text>
-      }
+      extra={<Typography.Text type="secondary">{anomalies.length} 项</Typography.Text>}
     >
       {error ? (
         <ApiErrorAlert error={error} title="GPU 异常数据加载失败" />
@@ -60,9 +49,7 @@ export function GpuAnomalyList({
                 </Tag>
                 <Typography.Text>{item.gpu_type}</Typography.Text>
               </Space>
-              <Typography.Text type="secondary">
-                {item.node_name}
-              </Typography.Text>
+              <Typography.Text type="secondary">{item.node_name}</Typography.Text>
             </div>
           ))}
         </Space>

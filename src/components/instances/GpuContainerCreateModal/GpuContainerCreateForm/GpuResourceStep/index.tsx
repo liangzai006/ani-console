@@ -7,10 +7,7 @@ import {
   isGpuSpecSelectable,
 } from "../../types";
 
-const WORKLOAD_CLASS_LABELS: Record<
-  GpuSchedulingQueue["workload_class"],
-  string
-> = {
+const WORKLOAD_CLASS_LABELS: Record<GpuSchedulingQueue["workload_class"], string> = {
   inference: "推理",
   training: "训练",
   batch: "批任务",
@@ -18,9 +15,7 @@ const WORKLOAD_CLASS_LABELS: Record<
 
 function specStatusTag(spec: GpuSpecOption) {
   if (spec.source === "temporary") {
-    return (
-      <Tag color="blue">{spec.gpu_mode === "wholecard" ? "整卡" : "vGPU"}</Tag>
-    );
+    return <Tag color="blue">{spec.gpu_mode === "wholecard" ? "整卡" : "vGPU"}</Tag>;
   }
 
   switch (spec.availability?.status) {
@@ -61,20 +56,10 @@ export function GpuResourceStep({
   return (
     <>
       {specsError ? (
-        <Alert
-          type="error"
-          showIcon
-          content="GPU 规格加载失败，请稍后重试"
-          className="mb-4"
-        />
+        <Alert type="error" showIcon content="GPU 规格加载失败，请稍后重试" className="mb-4" />
       ) : null}
       {queuesError ? (
-        <Alert
-          type="error"
-          showIcon
-          content="GPU 调度队列加载失败，请稍后重试"
-          className="mb-4"
-        />
+        <Alert type="error" showIcon content="GPU 调度队列加载失败，请稍后重试" className="mb-4" />
       ) : null}
       {usingTemporarySpecs ? (
         <Alert
@@ -85,34 +70,19 @@ export function GpuResourceStep({
         />
       ) : null}
       {!specsLoading && !specsError && !specs.some(isGpuSpecSelectable) ? (
-        <Alert
-          type="warning"
-          showIcon
-          content="当前没有可创建的 GPU 规格"
-          className="mb-4"
-        />
+        <Alert type="warning" showIcon content="当前没有可创建的 GPU 规格" className="mb-4" />
       ) : null}
       {!queuesLoading &&
       !queuesError &&
       !queues.some((queue) => queue.status?.state !== "closed") ? (
-        <Alert
-          type="warning"
-          showIcon
-          content="当前没有可用的 GPU 调度队列"
-          className="mb-4"
-        />
+        <Alert type="warning" showIcon content="当前没有可用的 GPU 调度队列" className="mb-4" />
       ) : null}
       <Form.Item
         field="spec_id"
         label="GPU 规格"
         rules={[{ required: true, message: "请选择 GPU 规格" }]}
       >
-        <Select
-          loading={specsLoading}
-          placeholder="请选择可用 GPU 规格"
-          showSearch
-          allowClear
-        >
+        <Select loading={specsLoading} placeholder="请选择可用 GPU 规格" showSearch allowClear>
           {specs.map((spec) => (
             <Select.Option
               key={spec.spec_id}
@@ -144,12 +114,7 @@ export function GpuResourceStep({
         label="调度队列"
         rules={[{ required: true, message: "请选择调度队列" }]}
       >
-        <Select
-          loading={queuesLoading}
-          placeholder="请选择调度队列"
-          showSearch
-          allowClear
-        >
+        <Select loading={queuesLoading} placeholder="请选择调度队列" showSearch allowClear>
           {queues.map((queue) => (
             <Select.Option
               key={queue.id}
@@ -159,12 +124,8 @@ export function GpuResourceStep({
               <Space size={6}>
                 <span>{queue.name}</span>
                 <Tag>{WORKLOAD_CLASS_LABELS[queue.workload_class]}</Tag>
-                {queue.is_platform_default ? (
-                  <Tag color="blue">平台默认</Tag>
-                ) : null}
-                {queue.status?.state === "closed" ? (
-                  <Tag color="gray">已关闭</Tag>
-                ) : null}
+                {queue.is_platform_default ? <Tag color="blue">平台默认</Tag> : null}
+                {queue.status?.state === "closed" ? <Tag color="gray">已关闭</Tag> : null}
               </Space>
             </Select.Option>
           ))}

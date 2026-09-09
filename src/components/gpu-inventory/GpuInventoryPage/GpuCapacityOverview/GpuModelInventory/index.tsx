@@ -1,10 +1,6 @@
 import { Progress, Typography } from "@arco-design/web-react";
 import type { components } from "@/api/core-schema";
-import {
-  DataTableRowActionButton,
-  ListDataTable,
-  TableSectionHeader,
-} from "@/components/common";
+import { DataTableRowActionButton, ListDataTable, TableSectionHeader } from "@/components/common";
 
 type GpuOccupancy = components["schemas"]["GPUOccupancyStats"];
 
@@ -50,9 +46,7 @@ export function GpuModelInventory({
       <TableSectionHeader
         title="型号库存"
         extra={
-          <Typography.Text type="secondary">
-            共 {modelInventory.length} 个型号
-          </Typography.Text>
+          <Typography.Text type="secondary">共 {modelInventory.length} 个型号</Typography.Text>
         }
       />
       <ListDataTable<ModelInventoryRow>
@@ -86,9 +80,7 @@ export function GpuModelInventory({
             render: (_, row) => (
               <Progress
                 size="small"
-                percent={
-                  row.total > 0 ? Math.round((row.inUse / row.total) * 100) : 0
-                }
+                percent={row.total > 0 ? Math.round((row.inUse / row.total) * 100) : 0}
               />
             ),
           },
@@ -96,9 +88,7 @@ export function GpuModelInventory({
             key: "__actions",
             title: "操作",
             render: () => (
-              <DataTableRowActionButton onClick={onCreate}>
-                创建容器
-              </DataTableRowActionButton>
+              <DataTableRowActionButton onClick={onCreate}>创建容器</DataTableRowActionButton>
             ),
           },
         ]}

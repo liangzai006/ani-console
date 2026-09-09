@@ -1,11 +1,4 @@
-import {
-  Dropdown,
-  Menu,
-  Message,
-  Modal,
-  Select,
-  Space,
-} from "@arco-design/web-react";
+import { Dropdown, Menu, Message, Modal, Select, Space } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
@@ -36,8 +29,7 @@ import { MODEL_SOURCE_LABELS, type Model } from "@/lib/model-catalog";
 type StatusFilter = "all" | "available" | "importing" | "failed";
 type SearchField = "name";
 type SourceFilter = "all" | Model["source"];
-type CapabilityFilter =
-  "all" | "text-generation" | "embedding" | "speech-to-text";
+type CapabilityFilter = "all" | "text-generation" | "embedding" | "speech-to-text";
 
 function getApiStatus(status: StatusFilter) {
   if (status === "available") return "ready" as const;
@@ -82,20 +74,12 @@ export function ModelsPage() {
         },
       });
       if (error || !data) throw error ?? new Error("模型列表未返回结果");
-      const currentPage = cursor
-        ? (cursorPageRef.current.get(cursorScope + ":" + cursor) ?? 1)
-        : 1;
+      const currentPage = cursor ? (cursorPageRef.current.get(cursorScope + ":" + cursor) ?? 1) : 1;
       if (data.next_cursor) {
-        cursorPageRef.current.set(
-          cursorScope + ":" + data.next_cursor,
-          currentPage + 1,
-        );
+        cursorPageRef.current.set(cursorScope + ":" + data.next_cursor, currentPage + 1);
       }
       const total =
-        data.total ??
-        (currentPage - 1) * limit +
-          data.items.length +
-          (data.next_cursor ? 1 : 0);
+        data.total ?? (currentPage - 1) * limit + data.items.length + (data.next_cursor ? 1 : 0);
       return { ...data, total };
     },
   });
@@ -260,11 +244,7 @@ export function ModelsPage() {
                     position="br"
                     droplist={
                       <Menu>
-                        <Menu.Item
-                          key="favorite"
-                          disabled
-                          title="等待后端开放收藏状态与操作接口"
-                        >
+                        <Menu.Item key="favorite" disabled title="等待后端开放收藏状态与操作接口">
                           收藏
                         </Menu.Item>
                         <Menu.Item
@@ -276,9 +256,7 @@ export function ModelsPage() {
                         </Menu.Item>
                         <Menu.Item
                           key="delete"
-                          disabled={
-                            item.status === "deleted" || remove.isPending
-                          }
+                          disabled={item.status === "deleted" || remove.isPending}
                           style={{ color: "var(--color-danger-6)" }}
                           onClick={() =>
                             Modal.confirm({
@@ -299,10 +277,7 @@ export function ModelsPage() {
                   >
                     <DataTableRowActionButton disabled={remove.isPending}>
                       更多
-                      <i
-                        className="iconfont icon-down-chevron-small ml-1"
-                        aria-hidden="true"
-                      />
+                      <i className="iconfont icon-down-chevron-small ml-1" aria-hidden="true" />
                     </DataTableRowActionButton>
                   </Dropdown>
                 </DataTableRowActions>
@@ -313,10 +288,7 @@ export function ModelsPage() {
           preserveTableOnEmpty
           emptyIconClassName="icon-moxing"
           emptyText={
-            status !== "all" ||
-            searchText ||
-            source !== "all" ||
-            capability !== "all"
+            status !== "all" || searchText || source !== "all" || capability !== "all"
               ? "没有符合条件的模型"
               : "暂无模型，可通过“导入模型”添加"
           }
@@ -345,9 +317,7 @@ export function ModelsPage() {
       <CreateInferenceServiceModal
         visible={deployModel !== null}
         initialModelId={deployModel?.id}
-        initialServiceName={
-          deployModel ? ("infer-" + deployModel.name).slice(0, 63) : undefined
-        }
+        initialServiceName={deployModel ? ("infer-" + deployModel.name).slice(0, 63) : undefined}
         onCancel={() => setDeployModel(null)}
       />
     </>

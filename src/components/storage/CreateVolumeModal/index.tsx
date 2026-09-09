@@ -62,11 +62,7 @@ export function CreateVolumeModal({
     (item) => item.kind && INSTANCE_ROUTE[item.kind],
   );
   useEffect(() => {
-    if (
-      !mountInstanceId ||
-      instanceItems.some((item) => item.id === mountInstanceId)
-    )
-      return;
+    if (!mountInstanceId || instanceItems.some((item) => item.id === mountInstanceId)) return;
     setMountInstanceId("");
   }, [instanceItems, mountInstanceId]);
   const reset = () => {
@@ -84,18 +80,14 @@ export function CreateVolumeModal({
       if (!Number.isInteger(sizeGiB) || sizeGiB < 1)
         throw new Error("容量必须是大于 0 的整数（GiB）");
       if (!storageClass.trim()) throw new Error("请选择类型");
-      const selectedInstance = instanceItems.find(
-        (item) => item.id === mountInstanceId,
-      );
+      const selectedInstance = instanceItems.find((item) => item.id === mountInstanceId);
       const submitData = {
         name: trimmedName,
         size_gib: sizeGiB,
         storage_class: storageClass.trim(),
         encrypted,
         mount_instance_id: selectedInstance ? selectedInstance.id : undefined,
-        mount_route: selectedInstance
-          ? INSTANCE_ROUTE[selectedInstance.kind]
-          : undefined,
+        mount_route: selectedInstance ? INSTANCE_ROUTE[selectedInstance.kind] : undefined,
       };
       const { data, error } = await coreApi.POST("/volumes", {
         body: createScope.withKey(submitData),
@@ -143,11 +135,7 @@ export function CreateVolumeModal({
           />
         </Form.Item>
         <Form.Item label="类型" required>
-          <Select
-            value={storageClass}
-            onChange={setStorageClass}
-            placeholder="请选择类型"
-          >
+          <Select value={storageClass} onChange={setStorageClass} placeholder="请选择类型">
             {STORAGE_CLASS_OPTIONS.map((option) => (
               <Select.Option key={option.value} value={option.value}>
                 {option.label}
@@ -167,9 +155,7 @@ export function CreateVolumeModal({
             placeholder="可选，创建后挂载到实例"
             showSearch
             filterOption={(inputValue, option) =>
-              String(option.props.children)
-                .toLowerCase()
-                .includes(inputValue.toLowerCase())
+              String(option.props.children).toLowerCase().includes(inputValue.toLowerCase())
             }
           >
             {instanceItems.map((item) => (

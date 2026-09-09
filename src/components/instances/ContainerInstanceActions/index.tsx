@@ -1,20 +1,10 @@
-import {
-  Button,
-  Dropdown,
-  Menu,
-  Message,
-  Space,
-  Tooltip,
-} from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Message, Space, Tooltip } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import type { components } from "@/api/core-schema";
 import { coreApi } from "@/api/client";
-import {
-  DataTableRowActionButton,
-  DataTableRowActions,
-} from "@/components/common";
+import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { ContainerInstanceAttachFilesystemModal } from "./ContainerInstanceAttachFilesystemModal";
@@ -65,36 +55,25 @@ export function ContainerInstanceActions({
   display?: "row" | "detail";
 }) {
   const navigate = useNavigate();
-  const startScope = useIdempotencyScope("container-instance-start", [
+  const startScope = useIdempotencyScope("container-instance-start", ["POST", instance.id]);
+  const restartScope = useIdempotencyScope("container-instance-restart", ["POST", instance.id]);
+  const protectionScope = useIdempotencyScope("container-instance-termination-protection", [
     "POST",
     instance.id,
   ]);
-  const restartScope = useIdempotencyScope("container-instance-restart", [
-    "POST",
-    instance.id,
-  ]);
-  const protectionScope = useIdempotencyScope(
-    "container-instance-termination-protection",
-    ["POST", instance.id],
-  );
   const [modalAction, setModalAction] = useState<ModalAction>();
   const [stopVisible, setStopVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const start = useMutation({
     mutationFn: async () => {
       const submitData = { action: "start" as const };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: startScope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: startScope.withKey(submitData),
+      });
       if (error) {
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
       }
@@ -104,25 +83,19 @@ export function ContainerInstanceActions({
       Message.success("启动已提交");
       onChanged();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   const restart = useMutation({
     mutationFn: async () => {
       const submitData = { action: "restart" as const };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: restartScope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: restartScope.withKey(submitData),
+      });
       if (error) {
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
       }
@@ -132,8 +105,7 @@ export function ContainerInstanceActions({
       Message.success("重启已提交");
       onChanged();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   const terminationProtection = useMutation({
@@ -142,18 +114,13 @@ export function ContainerInstanceActions({
         action: "set_termination_protection" as const,
         enabled,
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: protectionScope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: protectionScope.withKey(submitData),
+      });
       if (error) {
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
       }
@@ -163,8 +130,7 @@ export function ContainerInstanceActions({
       Message.success("终止保护已更新");
       onChanged();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   const busy =
@@ -176,11 +142,9 @@ export function ContainerInstanceActions({
   const canStart = instance.state === "stopped" || instance.state === "failed";
   const stable = running || instance.state === "stopped";
   const protectedInstance = instance.termination_protection === true;
-  const terminalAvailable =
-    running && instance.access?.exec_available !== false;
+  const terminalAvailable = running && instance.access?.exec_available !== false;
   const detachableVolumes = (instance.volumes ?? []).filter(
-    (volume) =>
-      volume.kind !== "root_disk" && Boolean(volume.source_ref?.trim()),
+    (volume) => volume.kind !== "root_disk" && Boolean(volume.source_ref?.trim()),
   );
   const rollbackAvailable = (instance.container?.history ?? []).some(
     (entry) => entry.revision !== instance.container?.revision,
@@ -220,9 +184,7 @@ export function ContainerInstanceActions({
     setModalAction(action as ModalAction);
   };
 
-  const lifecycleDisabled = canStart
-    ? busy
-    : !running || busy || protectedInstance;
+  const lifecycleDisabled = canStart ? busy : !running || busy || protectedInstance;
   const lifecycleAction = () => {
     if (canStart) start.mutate();
     else setStopVisible(true);
@@ -231,11 +193,7 @@ export function ContainerInstanceActions({
     display === "row" ? (
       <DataTableRowActionButton
         disabled={lifecycleDisabled}
-        title={
-          canStart || running || protectedInstance
-            ? undefined
-            : "当前状态不可停止"
-        }
+        title={canStart || running || protectedInstance ? undefined : "当前状态不可停止"}
         onClick={lifecycleAction}
       >
         {canStart ? "启动" : "停止"}
@@ -244,11 +202,7 @@ export function ContainerInstanceActions({
       <Button
         disabled={lifecycleDisabled}
         loading={start.isPending}
-        title={
-          canStart || running || protectedInstance
-            ? undefined
-            : "当前状态不可停止"
-        }
+        title={canStart || running || protectedInstance ? undefined : "当前状态不可停止"}
         onClick={lifecycleAction}
       >
         {canStart ? "启动" : "停止"}
@@ -285,10 +239,7 @@ export function ContainerInstanceActions({
       <Menu.Item key="attach_volume" disabled={!stable || busy}>
         挂载云盘
       </Menu.Item>
-      <Menu.Item
-        key="detach_volume"
-        disabled={!stable || busy || detachableVolumes.length === 0}
-      >
+      <Menu.Item key="detach_volume" disabled={!stable || busy || detachableVolumes.length === 0}>
         卸载云盘
       </Menu.Item>
       <Menu.Item key="attach_filesystem" disabled={!stable || busy}>
@@ -332,10 +283,7 @@ export function ContainerInstanceActions({
           <Dropdown trigger="click" position="br" droplist={moreMenu}>
             <DataTableRowActionButton disabled={busy}>
               更多
-              <i
-                className="iconfont icon-down-chevron-small ml-1"
-                aria-hidden="true"
-              />
+              <i className="iconfont icon-down-chevron-small ml-1" aria-hidden="true" />
             </DataTableRowActionButton>
           </Dropdown>
         </DataTableRowActions>
@@ -345,10 +293,7 @@ export function ContainerInstanceActions({
           <Dropdown trigger="click" position="br" droplist={moreMenu}>
             <Button disabled={busy}>
               更多操作
-              <i
-                className="iconfont icon-down-chevron-small ml-1"
-                aria-hidden="true"
-              />
+              <i className="iconfont icon-down-chevron-small ml-1" aria-hidden="true" />
             </Button>
           </Dropdown>
         </Space>

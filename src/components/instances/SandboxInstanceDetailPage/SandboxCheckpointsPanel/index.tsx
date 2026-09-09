@@ -34,18 +34,9 @@ export function SandboxCheckpointsPanel({
   onChanged: () => void;
 }) {
   const navigate = useNavigate();
-  const createScope = useIdempotencyScope("sandbox-checkpoint-create", [
-    "POST",
-    instanceId,
-  ]);
-  const restoreScope = useIdempotencyScope("sandbox-checkpoint-restore", [
-    "POST",
-    instanceId,
-  ]);
-  const cloneScope = useIdempotencyScope("sandbox-checkpoint-clone", [
-    "POST",
-    instanceId,
-  ]);
+  const createScope = useIdempotencyScope("sandbox-checkpoint-create", ["POST", instanceId]);
+  const restoreScope = useIdempotencyScope("sandbox-checkpoint-restore", ["POST", instanceId]);
+  const cloneScope = useIdempotencyScope("sandbox-checkpoint-clone", ["POST", instanceId]);
   const [createVisible, setCreateVisible] = useState(false);
   const [checkpointName, setCheckpointName] = useState("");
   const [keepMemory, setKeepMemory] = useState(false);
@@ -173,8 +164,7 @@ export function SandboxCheckpointsPanel({
   const confirmRestore = (checkpoint: SandboxCheckpoint) => {
     Modal.confirm({
       title: `恢复检查点 ${checkpoint.name}`,
-      content:
-        "当前工作区内容将回滚到该检查点，此操作会覆盖此后产生的文件变更。",
+      content: "当前工作区内容将回滚到该检查点，此操作会覆盖此后产生的文件变更。",
       okButtonProps: { status: "danger" },
       onOk: () => restoreCheckpoint.mutateAsync(checkpoint),
     });
@@ -210,11 +200,7 @@ export function SandboxCheckpointsPanel({
           </div>
 
           {checkpoints.error ? (
-            <Alert
-              className="mb-3"
-              type="error"
-              content="检查点加载失败，请刷新重试。"
-            />
+            <Alert className="mb-3" type="error" content="检查点加载失败，请刷新重试。" />
           ) : null}
 
           <DataTable<SandboxCheckpoint>
@@ -234,9 +220,7 @@ export function SandboxCheckpointsPanel({
                 width: 120,
                 render: (_, item) => (
                   <Tooltip content={item.reason ?? ""}>
-                    <Tag
-                      color={item.status === "available" ? "green" : "orange"}
-                    >
+                    <Tag color={item.status === "available" ? "green" : "orange"}>
                       {item.status}
                     </Tag>
                   </Tooltip>
@@ -245,8 +229,7 @@ export function SandboxCheckpointsPanel({
               {
                 title: "内容",
                 width: 120,
-                render: (_, item) =>
-                  item.keep_memory ? "文件系统 + 内存" : "仅文件系统",
+                render: (_, item) => (item.keep_memory ? "文件系统 + 内存" : "仅文件系统"),
               },
               {
                 title: "大小",
@@ -337,12 +320,7 @@ export function SandboxCheckpointsPanel({
       >
         <Form layout="vertical">
           <Form.Item label="新 Sandbox 名称" required>
-            <Input
-              value={cloneName}
-              onChange={setCloneName}
-              maxLength={128}
-              showWordLimit
-            />
+            <Input value={cloneName} onChange={setCloneName} maxLength={128} showWordLimit />
           </Form.Item>
         </Form>
       </Modal>

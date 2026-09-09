@@ -33,9 +33,7 @@ type SearchField = "name" | "id";
 
 export function VectorStoresPage() {
   const qc = useQueryClient();
-  const rebuildScope = useIdempotencyScope("storage-vector-store-rebuild", [
-    "POST",
-  ]);
+  const rebuildScope = useIdempotencyScope("storage-vector-store-rebuild", ["POST"]);
   const navigate = useNavigate();
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -71,10 +69,9 @@ export function VectorStoresPage() {
   });
   const remove = useMutation({
     mutationFn: async (item: VectorStore) => {
-      const { error } = await coreApi.DELETE(
-        "/vector-stores/{vector_store_id}",
-        { params: { path: { vector_store_id: item.id } } },
-      );
+      const { error } = await coreApi.DELETE("/vector-stores/{vector_store_id}", {
+        params: { path: { vector_store_id: item.id } },
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -86,13 +83,10 @@ export function VectorStoresPage() {
   const rebuildIndex = useMutation({
     mutationFn: async (item: VectorStore) => {
       const submitData = {};
-      const { error } = await coreApi.POST(
-        "/vector-stores/{vector_store_id}/rebuild-index",
-        {
-          params: { path: { vector_store_id: item.id } },
-          body: rebuildScope.withKey(submitData, [item.id]),
-        },
-      );
+      const { error } = await coreApi.POST("/vector-stores/{vector_store_id}/rebuild-index", {
+        params: { path: { vector_store_id: item.id } },
+        body: rebuildScope.withKey(submitData, [item.id]),
+      });
       if (error) throw error;
     },
     onSuccess: (_, item) => {
@@ -103,10 +97,7 @@ export function VectorStoresPage() {
     },
     onError: (error) => showApiError(error),
   });
-  const items = useMemo(
-    () => (stores.data?.items ?? []) as VectorStore[],
-    [stores.data?.items],
-  );
+  const items = useMemo(() => (stores.data?.items ?? []) as VectorStore[], [stores.data?.items]);
   const paginationTotal = stores.data?.total ?? items.length;
   useListErrorNotification({
     id: "vector-stores-list",
@@ -237,13 +228,7 @@ export function VectorStoresPage() {
               fixed: "right",
               render: (_value, item) => (
                 <DataTableRowActions>
-                  <Tooltip
-                    content={
-                      item.state === "ready"
-                        ? undefined
-                        : "仅可用状态支持检索测试"
-                    }
-                  >
+                  <Tooltip content={item.state === "ready" ? undefined : "仅可用状态支持检索测试"}>
                     <span>
                       <DataTableRowActionButton
                         disabled={item.state !== "ready"}
@@ -259,20 +244,11 @@ export function VectorStoresPage() {
                       </DataTableRowActionButton>
                     </span>
                   </Tooltip>
-                  <Tooltip
-                    content={
-                      item.state === "ready"
-                        ? undefined
-                        : "仅可用状态支持重建索引"
-                    }
-                  >
+                  <Tooltip content={item.state === "ready" ? undefined : "仅可用状态支持重建索引"}>
                     <span>
                       <DataTableRowActionButton
                         disabled={item.state !== "ready"}
-                        loading={
-                          rebuildIndex.isPending &&
-                          rebuildIndex.variables?.id === item.id
-                        }
+                        loading={rebuildIndex.isPending && rebuildIndex.variables?.id === item.id}
                         onClick={() =>
                           Modal.confirm({
                             title: "重建索引",
@@ -285,11 +261,7 @@ export function VectorStoresPage() {
                       </DataTableRowActionButton>
                     </span>
                   </Tooltip>
-                  <Tooltip
-                    content={
-                      item.knowledge_base_ref ? undefined : "当前未关联知识库"
-                    }
-                  >
+                  <Tooltip content={item.knowledge_base_ref ? undefined : "当前未关联知识库"}>
                     <span>
                       <DataTableRowActionButton
                         disabled={!item.knowledge_base_ref}
@@ -307,11 +279,7 @@ export function VectorStoresPage() {
                     </span>
                   </Tooltip>
                   <Tooltip
-                    content={
-                      item.knowledge_base_ref
-                        ? "请先解除知识库关联后再删除"
-                        : undefined
-                    }
+                    content={item.knowledge_base_ref ? "请先解除知识库关联后再删除" : undefined}
                   >
                     <span>
                       <DataTableRowActionButton
@@ -352,10 +320,7 @@ export function VectorStoresPage() {
           }}
         />
       </ListPageFrame>
-      <CreateVectorStoreModal
-        visible={createVisible}
-        onCancel={() => setCreateVisible(false)}
-      />
+      <CreateVectorStoreModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
     </>
   );
 }

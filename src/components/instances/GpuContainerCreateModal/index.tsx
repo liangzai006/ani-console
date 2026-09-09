@@ -4,23 +4,13 @@ import { coreApi } from "@/api/client";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { GpuContainerCreateForm } from "./GpuContainerCreateForm";
-import {
-  buildCreateRequest,
-  type ExtendedCreateRequest,
-  type FormValues,
-} from "./types";
+import { buildCreateRequest, type ExtendedCreateRequest, type FormValues } from "./types";
 
 type Props = { visible: boolean; onCancel: () => void; onCreated: () => void };
 
-export function GpuContainerCreateModal({
-  visible,
-  onCancel,
-  onCreated,
-}: Props) {
+export function GpuContainerCreateModal({ visible, onCancel, onCreated }: Props) {
   const queryClient = useQueryClient();
-  const createScope = useIdempotencyScope("gpu-container-instance-create", [
-    "POST",
-  ]);
+  const createScope = useIdempotencyScope("gpu-container-instance-create", ["POST"]);
   const create = useMutation({
     mutationFn: async ({
       values,
@@ -39,9 +29,7 @@ export function GpuContainerCreateModal({
       });
       if (error) {
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
       }
@@ -54,8 +42,7 @@ export function GpuContainerCreateModal({
       });
       onCreated();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "create")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "create")),
   });
 
   const close = () => {
@@ -69,9 +56,7 @@ export function GpuContainerCreateModal({
       visible={visible}
       submitting={create.isPending}
       onCancel={close}
-      onSubmit={(values, securityGroupId) =>
-        create.mutate({ values, securityGroupId })
-      }
+      onSubmit={(values, securityGroupId) => create.mutate({ values, securityGroupId })}
     />
   );
 }

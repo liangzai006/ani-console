@@ -16,9 +16,7 @@ export function ImageNameText({
   showSize?: boolean;
   className?: string;
 }) {
-  const label = showSize
-    ? getImageSelectionLabel(image)
-    : getImageDisplayName(image);
+  const label = showSize ? getImageSelectionLabel(image) : getImageDisplayName(image);
 
   return (
     <Tooltip content={getImageTooltip(image)}>

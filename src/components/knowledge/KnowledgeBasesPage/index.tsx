@@ -36,35 +36,28 @@ export function KnowledgeBasesPage() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
-  const {
-    query,
-    page,
-    pageSize,
-    setPage,
-    setPageSize,
-    resetPagination,
-    refresh,
-  } = useCursorPaginatedQuery<KnowledgeBase>({
-    queryKey: ["knowledge-bases", { status, searchField, searchText }],
-    cursorScope: `${status}:${searchField}:${searchText.trim()}`,
-    fetchPage: async ({ cursor, limit }) => {
-      const keyword = searchText.trim();
-      // TODO: 待后端联调确认 status/name/id 查询参数及筛选后 total 的最终契约。
-      const { data, error } = await servicesApi.GET("/knowledge-bases", {
-        params: {
-          query: {
-            limit,
-            cursor,
-            status: status === "all" ? undefined : status,
-            name: searchField === "name" && keyword ? keyword : undefined,
-            id: searchField === "id" && keyword ? keyword : undefined,
+  const { query, page, pageSize, setPage, setPageSize, resetPagination, refresh } =
+    useCursorPaginatedQuery<KnowledgeBase>({
+      queryKey: ["knowledge-bases", { status, searchField, searchText }],
+      cursorScope: `${status}:${searchField}:${searchText.trim()}`,
+      fetchPage: async ({ cursor, limit }) => {
+        const keyword = searchText.trim();
+        // TODO: 待后端联调确认 status/name/id 查询参数及筛选后 total 的最终契约。
+        const { data, error } = await servicesApi.GET("/knowledge-bases", {
+          params: {
+            query: {
+              limit,
+              cursor,
+              status: status === "all" ? undefined : status,
+              name: searchField === "name" && keyword ? keyword : undefined,
+              id: searchField === "id" && keyword ? keyword : undefined,
+            },
           },
-        },
-      });
-      if (error || !data) throw error ?? new Error("知识库列表未返回结果");
-      return data;
-    },
-  });
+        });
+        if (error || !data) throw error ?? new Error("知识库列表未返回结果");
+        return data;
+      },
+    });
   const remove = useMutation({
     mutationFn: async (item: KnowledgeBase) => {
       const { error } = await servicesApi.DELETE("/knowledge-bases/{kb_id}", {
@@ -92,11 +85,7 @@ export function KnowledgeBasesPage() {
       render: (_, item) => (
         <DataTableNameCell
           name={
-            <Link
-              to="/kb/$kbId"
-              params={{ kbId: item.id }}
-              search={{ tab: "overview" }}
-            >
+            <Link to="/kb/$kbId" params={{ kbId: item.id }} search={{ tab: "overview" }}>
               {item.name}
             </Link>
           }

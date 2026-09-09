@@ -57,8 +57,7 @@ export function ContainerInstancesPage({
   dataSource?: ContainerInstanceDataSource;
 }) {
   const [status, setStatus] = useState<ContainerInstanceStatusFilter>("all");
-  const [searchField, setSearchField] =
-    useState<ContainerInstanceSearchField>("name");
+  const [searchField, setSearchField] = useState<ContainerInstanceSearchField>("name");
   const [searchText, setSearchText] = useState("");
   const keyword = useDebouncedValue(searchText, 200);
   const [page, setPage] = useState(1);
@@ -70,12 +69,8 @@ export function ContainerInstancesPage({
   }, [keyword, searchField, status]);
 
   const query = useQuery({
-    queryKey: [
-      "container-instances",
-      { status, searchField, keyword, page, pageSize },
-    ],
-    queryFn: () =>
-      dataSource.list({ status, searchField, keyword, page, pageSize }),
+    queryKey: ["container-instances", { status, searchField, keyword, page, pageSize }],
+    queryFn: () => dataSource.list({ status, searchField, keyword, page, pageSize }),
     placeholderData: (previous) => previous,
   });
 
@@ -97,10 +92,7 @@ export function ContainerInstancesPage({
       render: (_, row) => (
         <DataTableNameCell
           name={
-            <Link
-              to="/container-instances/$instanceId"
-              params={{ instanceId: row.id }}
-            >
+            <Link to="/container-instances/$instanceId" params={{ instanceId: row.id }}>
               {row.name}
             </Link>
           }
@@ -179,9 +171,7 @@ export function ContainerInstancesPage({
           }
         />
       }
-      tabs={
-        <StatusTabs items={statusTabs} value={status} onChange={setStatus} />
-      }
+      tabs={<StatusTabs items={statusTabs} value={status} onChange={setStatus} />}
       toolbar={
         <ListToolbar
           filters={

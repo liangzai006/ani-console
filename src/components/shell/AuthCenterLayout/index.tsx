@@ -3,9 +3,9 @@ export function AuthCenterLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="flex min-h-screen items-center justify-center p-4"
-      style={{ background: 'var(--color-bg-1)' }}
+      style={{ background: "var(--color-bg-1)" }}
     >
       {children}
     </div>
-  )
+  );
 }

@@ -1,15 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  GpuInstanceDetailPage,
-} from "@/components/instances/GpuInstanceDetailPage";
-import {
-  gpuInstanceDetailTabKeys,
-  type GpuInstanceDetailTabKey,
-} from "@/lib/instance-detail-tabs";
+import { GpuInstanceDetailPage } from "@/components/instances/GpuInstanceDetailPage";
+import { gpuInstanceDetailTabKeys, type GpuInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
 
-export const Route = createFileRoute(
-  "/_authenticated/gpu-instances/$instanceId",
-)({
+export const Route = createFileRoute("/_authenticated/gpu-instances/$instanceId")({
   validateSearch: (search: Record<string, unknown>): { tab?: GpuInstanceDetailTabKey } => ({
     tab: gpuInstanceDetailTabKeys.includes(search.tab as GpuInstanceDetailTabKey)
       ? (search.tab as GpuInstanceDetailTabKey)

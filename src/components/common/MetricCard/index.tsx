@@ -1,10 +1,10 @@
-import { Card, Statistic, Typography } from '@arco-design/web-react'
-import type { ReactNode } from 'react'
+import { Card, Statistic, Typography } from "@arco-design/web-react";
+import type { ReactNode } from "react";
 
 interface MetricCardProps {
-  title: string
-  value: string | number
-  extra?: ReactNode
+  title: string;
+  value: string | number;
+  extra?: ReactNode;
 }
 
 /** 概览页指标卡（页面模板 2.0 §4.2：Card + Statistic） */
@@ -18,5 +18,5 @@ export function MetricCard({ title, value, extra }: MetricCardProps) {
         </Typography.Text>
       ) : null}
     </Card>
-  )
+  );
 }

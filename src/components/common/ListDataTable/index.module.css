@@ -104,13 +104,11 @@
 
 .listDataTable :global(.arco-table-th.arco-table-checkbox),
 .listDataTable :global(.arco-table-td.arco-table-checkbox),
-.listDataTable
-  :global(.arco-table-th.arco-table-checkbox .arco-table-th-item) {
+.listDataTable :global(.arco-table-th.arco-table-checkbox .arco-table-th-item) {
   padding: 0;
 }
 
-.listDataTable
-  :global(.arco-table-tbody .arco-table-tr:last-child .arco-table-td) {
+.listDataTable :global(.arco-table-tbody .arco-table-tr:last-child .arco-table-td) {
   border-bottom: 0;
 }
 

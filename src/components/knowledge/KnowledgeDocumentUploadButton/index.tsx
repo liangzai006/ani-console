@@ -7,13 +7,8 @@ import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 const allowedTypes = ["pdf", "docx", "xlsx", "pptx", "md", "txt"] as const;
 
 async function sha256(file: File) {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    await file.arrayBuffer(),
-  );
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export function KnowledgeDocumentUploadButton({ kbId }: { kbId: string }) {

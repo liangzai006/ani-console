@@ -42,10 +42,7 @@ export function VmInstanceResizeModal({
   )
     ? [...CPU_INSTANCE_COMPUTE_SPECS]
     : [currentSpec, ...CPU_INSTANCE_COMPUTE_SPECS];
-  const scope = useIdempotencyScope("vm-instance-resize", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("vm-instance-resize", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
       const spec = resizeSpecs.find((option) => option.value === values.spec);
@@ -56,13 +53,10 @@ export function VmInstanceResizeModal({
         cpu: spec.cpu,
         memory: spec.memory,
       };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error || !data)
         throw {
           ...(typeof error === "object" && error
@@ -77,8 +71,7 @@ export function VmInstanceResizeModal({
       Message.success("变配已提交");
       onSubmitted(operationId);
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal
@@ -93,17 +86,8 @@ export function VmInstanceResizeModal({
       onOk={async () => mutation.mutate(await form.validate())}
       unmountOnExit
     >
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ spec: currentSpec.value }}
-      >
-        <Alert
-          type="info"
-          showIcon
-          content="VM 变配要求实例处于已停止状态。"
-          className="mb-4"
-        />
+      <Form form={form} layout="vertical" initialValues={{ spec: currentSpec.value }}>
+        <Alert type="info" showIcon content="VM 变配要求实例处于已停止状态。" className="mb-4" />
         <InstanceComputeSpecSelect
           field="spec"
           profile="cpu"

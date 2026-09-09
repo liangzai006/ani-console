@@ -35,11 +35,7 @@ export function GpuInstancesPage() {
   const keyword = searchText.trim();
   const { query, page, pageSize, setPage, setPageSize, refresh } =
     useCursorPaginatedQuery<Instance>({
-      queryKey: [
-        "instances",
-        "gpu_container",
-        { status, searchField, keyword },
-      ],
+      queryKey: ["instances", "gpu_container", { status, searchField, keyword }],
       cursorScope: `gpu:${status}:${searchField}:${keyword}`,
       fetchPage: async ({ cursor, limit }) => {
         const listQuery = {
@@ -53,8 +49,7 @@ export function GpuInstancesPage() {
         const { data, error } = await coreApi.GET("/instances", {
           params: { query: listQuery },
         });
-        if (error || !data)
-          throw error ?? new Error("GPU 容器实例列表未返回结果");
+        if (error || !data) throw error ?? new Error("GPU 容器实例列表未返回结果");
         return data;
       },
     });
@@ -83,10 +78,7 @@ export function GpuInstancesPage() {
       render: (_, row) => (
         <DataTableNameCell
           name={
-            <Link
-              to="/gpu-instances/$instanceId"
-              params={{ instanceId: row.id }}
-            >
+            <Link to="/gpu-instances/$instanceId" params={{ instanceId: row.id }}>
               {row.name}
             </Link>
           }
@@ -128,19 +120,13 @@ export function GpuInstancesPage() {
       key: "replicas",
       title: "副本",
       render: (_, row) =>
-        row.container
-          ? `${row.container.ready_replicas} / ${row.container.replicas}`
-          : "-",
+        row.container ? `${row.container.ready_replicas} / ${row.container.replicas}` : "-",
     },
     {
       key: "rollout",
       title: "发布",
       render: (_, row) =>
-        row.container?.rollout_status ? (
-          <StatusTag status={row.container.rollout_status} />
-        ) : (
-          "-"
-        ),
+        row.container?.rollout_status ? <StatusTag status={row.container.rollout_status} /> : "-",
     },
     {
       key: "node",
@@ -157,9 +143,7 @@ export function GpuInstancesPage() {
       key: "actions",
       title: "操作",
       fixed: "right",
-      render: (_, row) => (
-        <GpuInstanceActions instance={row} onChanged={refresh} />
-      ),
+      render: (_, row) => <GpuInstanceActions instance={row} onChanged={refresh} />,
     },
   ];
 

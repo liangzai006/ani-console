@@ -1,13 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Select,
-  Typography,
-} from "@arco-design/web-react";
+import { Alert, Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
@@ -29,9 +21,7 @@ export function CreateVectorStoreModal({
   onCreated?: (store: VectorStore) => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("storage-vector-store-create", [
-    "POST",
-  ]);
+  const createScope = useIdempotencyScope("storage-vector-store-create", ["POST"]);
   const [name, setName] = useState("");
   const [embeddingModel, setEmbeddingModel] = useState("");
   const [dimension, setDimension] = useState(1536);
@@ -50,8 +40,7 @@ export function CreateVectorStoreModal({
     enabled: visible,
   });
   const modelOptions = useMemo(
-    () =>
-      Array.from(new Set((models.data?.items ?? []).map((item) => item.name))),
+    () => Array.from(new Set((models.data?.items ?? []).map((item) => item.name))),
     [models.data?.items],
   );
   useEffect(() => {
@@ -133,17 +122,10 @@ export function CreateVectorStoreModal({
           <Alert
             type="warning"
             showIcon
-            content={getErrorMessage(
-              models.error,
-              "Embedding 模型列表加载失败",
-            )}
+            content={getErrorMessage(models.error, "Embedding 模型列表加载失败")}
           />
         ) : !models.isLoading && modelOptions.length === 0 ? (
-          <Alert
-            type="warning"
-            showIcon
-            content="暂无已就绪的 Embedding 模型"
-          />
+          <Alert type="warning" showIcon content="暂无已就绪的 Embedding 模型" />
         ) : null}
         <Form.Item label="向量维度" required>
           <InputNumber

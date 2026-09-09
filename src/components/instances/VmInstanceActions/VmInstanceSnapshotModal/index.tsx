@@ -18,10 +18,7 @@ export function VmInstanceSnapshotModal({
   onSubmitted: (operationId: string) => void;
 }) {
   const [form] = Form.useForm<Values>();
-  const scope = useIdempotencyScope("vm-instance-snapshot", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("vm-instance-snapshot", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
       const submitData = {
@@ -29,13 +26,10 @@ export function VmInstanceSnapshotModal({
         snapshot_name: values.snapshotName.trim(),
         include_data_disks: values.includeDataDisks ?? false,
       };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error || !data)
         throw {
           ...(typeof error === "object" && error
@@ -50,8 +44,7 @@ export function VmInstanceSnapshotModal({
       Message.success("创建快照已提交");
       onSubmitted(operationId);
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal
@@ -65,11 +58,7 @@ export function VmInstanceSnapshotModal({
       onOk={async () => mutation.mutate(await form.validate())}
       unmountOnExit
     >
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{ includeDataDisks: true }}
-      >
+      <Form form={form} layout="vertical" initialValues={{ includeDataDisks: true }}>
         <Form.Item
           field="snapshotName"
           label="快照名称"

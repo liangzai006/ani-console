@@ -8,8 +8,8 @@
 
 1. 阅读 [UI 开发约定](./docs/UI-CONVENTIONS.md) 和 [工程约定](./docs/CONVENTIONS.md)。
 2. 当前状态与变更记录见 [docs/PROJECT-STATUS.md](./docs/PROJECT-STATUS.md)。
-3. 任何新增或修改完成后，必须分别执行：对本次新增或修改的代码文件运行 Oxlint、仅对本次新增或修改的文件运行项目内 Prettier、运行 `pnpm typecheck`、运行 `git diff --check`、运行 GitNexus 变更检测；不得对全仓运行格式化。
-4. 不得运行 `pnpm run verify`、production build，或启动、重启、中断用户的 `pnpm dev`。
+3. 任何新增或修改完成后，必须分别执行：对本次新增或修改的代码文件运行 Oxlint、对全仓运行项目内 oxfmt、运行 `pnpm typecheck`、运行 `git diff --check`、运行 GitNexus 变更检测。
+4. 不得运行 production build，或启动、重启、中断用户的 `pnpm dev`。
 
 ## 强制规则
 
@@ -67,7 +67,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ani-console** (2326 symbols, 6471 relationships, 183 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ani-console** (2371 symbols, 6581 relationships, 186 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 

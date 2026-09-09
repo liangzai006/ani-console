@@ -24,9 +24,7 @@ function resourceLabel(name?: string | null, id?: string | null) {
   return name ?? id ?? "-";
 }
 
-function volumeKindLabel(
-  kind: NonNullable<Instance["volumes"]>[number]["kind"],
-) {
+function volumeKindLabel(kind: NonNullable<Instance["volumes"]>[number]["kind"]) {
   const labels: Record<typeof kind, string> = {
     root_disk: "系统盘",
     data_disk: "数据盘",
@@ -60,8 +58,7 @@ export function InstanceNetwork({ instance }: { instance: Instance }) {
   const secretRefs = Array.from(
     new Set(
       (instance.resource_refs ?? []).filter(
-        (reference) =>
-          /secret|key|credential/i.test(reference) && reference !== sshKeyRef,
+        (reference) => /secret|key|credential/i.test(reference) && reference !== sshKeyRef,
       ),
     ),
   );
@@ -71,9 +68,7 @@ export function InstanceNetwork({ instance }: { instance: Instance }) {
       type: "安全组",
       name: group.name ?? group.id,
     })),
-    ...(sshKeyRef
-      ? [{ key: `ssh-key:${sshKeyRef}`, type: "SSH 密钥", name: sshKeyRef }]
-      : []),
+    ...(sshKeyRef ? [{ key: `ssh-key:${sshKeyRef}`, type: "SSH 密钥", name: sshKeyRef }] : []),
     ...secretRefs.map((reference) => ({
       key: `secret:${reference}`,
       type: "绑定密钥",

@@ -85,12 +85,7 @@ export function SandboxInstanceDetailPage({
   }
 
   if (!detail.data) {
-    return (
-      <ApiErrorAlert
-        error={new Error("Sandbox 实例不存在")}
-        title="未找到资源"
-      />
-    );
+    return <ApiErrorAlert error={new Error("Sandbox 实例不存在")} title="未找到资源" />;
   }
 
   const instance = detail.data;
@@ -106,8 +101,7 @@ export function SandboxInstanceDetailPage({
   const sandbox = instance.sandbox;
   const sessionState = sandbox.session_state ?? instance.state;
   const running = sessionState === "running";
-  const terminalAvailable =
-    running && instance.access?.exec_available !== false;
+  const terminalAvailable = running && instance.access?.exec_available !== false;
 
   return (
     <DetailPageFrame
@@ -235,10 +229,7 @@ export function SandboxInstanceDetailPage({
           key: "access",
           label: "访问与端口",
           content: (
-            <SandboxAccessPanel
-              instance={instance}
-              onChanged={() => void refreshDetail()}
-            />
+            <SandboxAccessPanel instance={instance} onChanged={() => void refreshDetail()} />
           ),
         },
         {
@@ -297,9 +288,7 @@ export function SandboxInstanceDetailPage({
         {
           key: "metrics",
           label: "监控",
-          content: (
-            <InstanceMetrics instanceId={instanceId} instanceKind="sandbox" />
-          ),
+          content: <InstanceMetrics instanceId={instanceId} instanceKind="sandbox" />,
         },
         {
           key: "logs",

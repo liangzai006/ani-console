@@ -1,11 +1,11 @@
-import { Button, Card, Result, Space, Typography } from '@arco-design/web-react'
-import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { isAuthenticated } from '@/stores/auth'
+import { Button, Card, Result, Space, Typography } from "@arco-design/web-react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { isAuthenticated } from "@/stores/auth";
 
 export function NotFoundPage() {
-  const navigate = useNavigate()
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const authenticated = isAuthenticated()
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const authenticated = isAuthenticated();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-(--color-bg-1) p-6">
@@ -22,13 +22,16 @@ export function NotFoundPage() {
           extra={
             <Space wrap>
               <Button onClick={() => history.back()}>返回上一页</Button>
-              <Button type="primary" onClick={() => navigate({ to: authenticated ? '/' : '/login' })}>
-                {authenticated ? '回到概览' : '去登录'}
+              <Button
+                type="primary"
+                onClick={() => navigate({ to: authenticated ? "/" : "/login" })}
+              >
+                {authenticated ? "回到概览" : "去登录"}
               </Button>
             </Space>
           }
         />
       </Card>
     </div>
-  )
+  );
 }

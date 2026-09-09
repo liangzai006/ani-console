@@ -1,5 +1,13 @@
-import { DataTable } from '@/components/common'
-import { Alert, Button, Descriptions, Empty, Space, Tooltip, Typography } from "@arco-design/web-react"
+import { DataTable } from "@/components/common";
+import {
+  Alert,
+  Button,
+  Descriptions,
+  Empty,
+  Space,
+  Tooltip,
+  Typography,
+} from "@arco-design/web-react";
 
 type FilesystemAccessRule = {
   id: string;
@@ -9,8 +17,7 @@ type FilesystemAccessRule = {
   description?: string;
 };
 
-const unavailableReason =
-  "当前 Core API 暂未提供文件存储访问规则与默认目录权限接口";
+const unavailableReason = "当前 Core API 暂未提供文件存储访问规则与默认目录权限接口";
 
 export function FilesystemPermissionsTab() {
   const rules: FilesystemAccessRule[] = [];

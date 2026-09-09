@@ -1,7 +1,15 @@
-import { DataTable } from '@/components/common'
+import { DataTable } from "@/components/common";
 import { useMutation } from "@tanstack/react-query";
 import {
-  Alert, Button, Empty, Form, Input, InputNumber, Space, Typography } from "@arco-design/web-react"
+  Alert,
+  Button,
+  Empty,
+  Form,
+  Input,
+  InputNumber,
+  Space,
+  Typography,
+} from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
@@ -17,30 +25,20 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
   const [topK, setTopK] = useState(10);
   const [filterJson, setFilterJson] = useState("{}");
   useEffect(() => {
-    setSearchVector(
-      Array.from({ length: store.dimension }, () => "0").join(","),
-    );
+    setSearchVector(Array.from({ length: store.dimension }, () => "0").join(","));
   }, [store.dimension, store.id]);
   const search = useMutation({
     mutationFn: async (_: undefined) => {
-      const vector = searchVector
-        .split(",")
-        .map((value) => Number.parseFloat(value.trim()));
-      if (vector.some(Number.isNaN))
-        throw new Error("向量必须为逗号分隔的数字");
+      const vector = searchVector.split(",").map((value) => Number.parseFloat(value.trim()));
+      if (vector.some(Number.isNaN)) throw new Error("向量必须为逗号分隔的数字");
       if (vector.length !== store.dimension)
-        throw new Error(
-          `向量维度必须为 ${store.dimension}，当前为 ${vector.length}`,
-        );
+        throw new Error(`向量维度必须为 ${store.dimension}，当前为 ${vector.length}`);
       const filter = filterJson.trim() ? JSON.parse(filterJson) : undefined;
       const submitData = { vector, top_k: topK, filter };
-      const { data, error } = await coreApi.POST(
-        "/vector-stores/{vector_store_id}/search",
-        {
-          params: { path: { vector_store_id: store.id } },
-          body: searchScope.withKey(submitData),
-        },
-      );
+      const { data, error } = await coreApi.POST("/vector-stores/{vector_store_id}/search", {
+        params: { path: { vector_store_id: store.id } },
+        body: searchScope.withKey(submitData),
+      });
       if (error) throw error;
       return data;
     },
@@ -75,11 +73,7 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
             />
           </Form.Item>
           <Form.Item label="元数据过滤（JSON）">
-            <Input
-              value={filterJson}
-              onChange={setFilterJson}
-              className="min-w-[320px]"
-            />
+            <Input value={filterJson} onChange={setFilterJson} className="min-w-[320px]" />
           </Form.Item>
         </Space>
         <Button
@@ -98,9 +92,7 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
             {
               title: "元数据",
               render: (_, row) => (
-                <Typography.Text code>
-                  {JSON.stringify(row.metadata ?? {})}
-                </Typography.Text>
+                <Typography.Text code>{JSON.stringify(row.metadata ?? {})}</Typography.Text>
               ),
             },
           ]}

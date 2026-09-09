@@ -1,6 +1,6 @@
-import { SecurityGroupsPage } from '@/components/network/SecurityGroupsPage'
-import { createFileRoute } from '@tanstack/react-router'
+import { SecurityGroupsPage } from "@/components/network/SecurityGroupsPage";
+import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute('/_authenticated/security-groups/')({
+export const Route = createFileRoute("/_authenticated/security-groups/")({
   component: SecurityGroupsPage,
-})
+});

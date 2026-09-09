@@ -5,15 +5,9 @@ import {
   type SandboxInstanceDetailTabKey,
 } from "@/lib/instance-detail-tabs";
 
-export const Route = createFileRoute(
-  "/_authenticated/sandbox-instances/$instanceId",
-)({
-  validateSearch: (
-    search: Record<string, unknown>,
-  ): { tab?: SandboxInstanceDetailTabKey } => ({
-    tab: sandboxInstanceDetailTabKeys.includes(
-      search.tab as SandboxInstanceDetailTabKey,
-    )
+export const Route = createFileRoute("/_authenticated/sandbox-instances/$instanceId")({
+  validateSearch: (search: Record<string, unknown>): { tab?: SandboxInstanceDetailTabKey } => ({
+    tab: sandboxInstanceDetailTabKeys.includes(search.tab as SandboxInstanceDetailTabKey)
       ? (search.tab as SandboxInstanceDetailTabKey)
       : undefined,
   }),
@@ -25,9 +19,7 @@ export const Route = createFileRoute(
       <SandboxInstanceDetailPage
         instanceId={instanceId}
         tab={tab}
-        onTabChange={(nextTab) =>
-          navigate({ search: { tab: nextTab }, replace: true })
-        }
+        onTabChange={(nextTab) => navigate({ search: { tab: nextTab }, replace: true })}
       />
     );
   },

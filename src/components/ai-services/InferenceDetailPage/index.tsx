@@ -14,12 +14,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { showApiError } from "@/api/helpers";
 import { servicesApi } from "@/api/services-client";
-import {
-  AliIcon,
-  DetailPageFrame,
-  ImageNameText,
-  StatusTag,
-} from "@/components/common";
+import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { getErrorMessage } from "@/lib/errors";
@@ -34,24 +29,17 @@ type LifecycleAction = "start" | "stop" | "restart";
 export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", [
-    "POST",
-    serviceId,
-  ]);
-  const scaleScope = useIdempotencyScope("inference-service-scale", [
-    "PATCH",
-    serviceId,
-  ]);
+  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", ["POST", serviceId]);
+  const scaleScope = useIdempotencyScope("inference-service-scale", ["PATCH", serviceId]);
   const [scaleVisible, setScaleVisible] = useState(false);
   const [replicas, setReplicas] = useState(1);
 
   const service = useQuery({
     queryKey: ["inference-service", serviceId],
     queryFn: async () => {
-      const { data, error } = await servicesApi.GET(
-        "/inference-services/{service_id}",
-        { params: { path: { service_id: serviceId } } },
-      );
+      const { data, error } = await servicesApi.GET("/inference-services/{service_id}", {
+        params: { path: { service_id: serviceId } },
+      });
       if (error) throw error;
       return data;
     },
@@ -70,10 +58,9 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
     queryKey: ["inference-operation", operationId],
     enabled: Boolean(operationId),
     queryFn: async () => {
-      const { data, error } = await servicesApi.GET(
-        "/inference-operations/{operation_id}",
-        { params: { path: { operation_id: operationId! } } },
-      );
+      const { data, error } = await servicesApi.GET("/inference-operations/{operation_id}", {
+        params: { path: { operation_id: operationId! } },
+      });
       if (error) throw error;
       return data;
     },
@@ -88,13 +75,10 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const lifecycle = useMutation({
     mutationFn: async (action: LifecycleAction) => {
       const submitData = { action };
-      const { data, error } = await servicesApi.POST(
-        "/inference-services/{service_id}/lifecycle",
-        {
-          params: { path: { service_id: serviceId } },
-          body: lifecycleScope.withKey(submitData),
-        },
-      );
+      const { data, error } = await servicesApi.POST("/inference-services/{service_id}/lifecycle", {
+        params: { path: { service_id: serviceId } },
+        body: lifecycleScope.withKey(submitData),
+      });
       if (error) throw error;
       return data;
     },
@@ -111,13 +95,10 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const scale = useMutation({
     mutationFn: async () => {
       const submitData = { replicas };
-      const { data, error } = await servicesApi.PATCH(
-        "/inference-services/{service_id}",
-        {
-          params: { path: { service_id: serviceId } },
-          body: scaleScope.withKey(submitData),
-        },
-      );
+      const { data, error } = await servicesApi.PATCH("/inference-services/{service_id}", {
+        params: { path: { service_id: serviceId } },
+        body: scaleScope.withKey(submitData),
+      });
       if (error) throw error;
       return data;
     },
@@ -134,10 +115,9 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   });
   const remove = useMutation({
     mutationFn: async () => {
-      const { data, error } = await servicesApi.DELETE(
-        "/inference-services/{service_id}",
-        { params: { path: { service_id: serviceId } } },
-      );
+      const { data, error } = await servicesApi.DELETE("/inference-services/{service_id}", {
+        params: { path: { service_id: serviceId } },
+      });
       if (error) throw error;
       return data;
     },
@@ -193,9 +173,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
       model.name === item.model ||
       model.versions?.some((version) => version.id === item.model_version_id),
   );
-  const statusDetail = [item.status_reason, item.status_message]
-    .filter(Boolean)
-    .join("：");
+  const statusDetail = [item.status_reason, item.status_message].filter(Boolean).join("：");
   const serviceStatus = statusDetail ? (
     <Tooltip content={statusDetail}>
       <span className="inline-flex">
@@ -208,26 +186,17 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const actions = (
     <Space wrap>
       {item.status === "running" ? (
-        <Button
-          loading={lifecycle.isPending}
-          onClick={() => lifecycle.mutate("stop")}
-        >
+        <Button loading={lifecycle.isPending} onClick={() => lifecycle.mutate("stop")}>
           停止
         </Button>
       ) : null}
       {item.status === "stopped" ? (
-        <Button
-          loading={lifecycle.isPending}
-          onClick={() => lifecycle.mutate("start")}
-        >
+        <Button loading={lifecycle.isPending} onClick={() => lifecycle.mutate("start")}>
           启动
         </Button>
       ) : null}
       {item.status === "running" || item.status === "failed" ? (
-        <Button
-          loading={lifecycle.isPending}
-          onClick={() => lifecycle.mutate("restart")}
-        >
+        <Button loading={lifecycle.isPending} onClick={() => lifecycle.mutate("restart")}>
           重启
         </Button>
       ) : null}
@@ -289,10 +258,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
               {
                 label: "模型",
                 value: relatedModel ? (
-                  <Link
-                    to="/models/$modelId"
-                    params={{ modelId: relatedModel.id }}
-                  >
+                  <Link to="/models/$modelId" params={{ modelId: relatedModel.id }}>
                     {relatedModel.display_name || relatedModel.name}
                   </Link>
                 ) : (
@@ -340,10 +306,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
                     ? [
                         {
                           label: "加载结果",
-                          value: getErrorMessage(
-                            operation.error,
-                            "操作状态加载失败",
-                          ),
+                          value: getErrorMessage(operation.error, "操作状态加载失败"),
                         },
                       ]
                     : operation.isLoading
@@ -356,9 +319,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
                             },
                             {
                               label: "状态",
-                              value: (
-                                <StatusTag status={operation.data.status} />
-                              ),
+                              value: <StatusTag status={operation.data.status} />,
                             },
                             {
                               label: "进度",

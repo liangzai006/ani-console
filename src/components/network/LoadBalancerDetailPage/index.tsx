@@ -19,22 +19,15 @@ type Listener = components["schemas"]["NetworkLoadBalancerListener"];
 type Vpc = components["schemas"]["NetworkVPC"];
 type Subnet = components["schemas"]["NetworkSubnet"];
 
-export function LoadBalancerDetailPage({
-  loadBalancerId,
-}: {
-  loadBalancerId: string;
-}) {
+export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
     queryKey: ["network-load-balancer", loadBalancerId],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/networks/load-balancers/{load_balancer_id}",
-        {
-          params: { path: { load_balancer_id: loadBalancerId } },
-        },
-      );
+      const { data, error } = await coreApi.GET("/networks/load-balancers/{load_balancer_id}", {
+        params: { path: { load_balancer_id: loadBalancerId } },
+      });
       if (error) throw error;
       return data;
     },
@@ -53,12 +46,9 @@ export function LoadBalancerDetailPage({
   const subnet = useQuery({
     queryKey: ["network-subnet", detail.data?.subnet_id],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/networks/subnets/{subnet_id}",
-        {
-          params: { path: { subnet_id: detail.data!.subnet_id! } },
-        },
-      );
+      const { data, error } = await coreApi.GET("/networks/subnets/{subnet_id}", {
+        params: { path: { subnet_id: detail.data!.subnet_id! } },
+      });
       if (error) throw error;
       return data;
     },
@@ -81,12 +71,9 @@ export function LoadBalancerDetailPage({
   });
   const remove = useMutation({
     mutationFn: async (_: undefined) => {
-      const { error } = await coreApi.DELETE(
-        "/networks/load-balancers/{load_balancer_id}",
-        {
-          params: { path: { load_balancer_id: loadBalancerId } },
-        },
-      );
+      const { error } = await coreApi.DELETE("/networks/load-balancers/{load_balancer_id}", {
+        params: { path: { load_balancer_id: loadBalancerId } },
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -140,9 +127,7 @@ export function LoadBalancerDetailPage({
         ]
       : []),
   ];
-  const unavailable = (description: string) => (
-    <Empty description={description} />
-  );
+  const unavailable = (description: string) => <Empty description={description} />;
   return (
     <DetailPageFrame
       breadcrumbs={[

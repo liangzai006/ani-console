@@ -38,15 +38,12 @@ export function InstanceOperations({ instanceId }: { instanceId: string }) {
       cursorScope: instanceId,
       initialPageSize: 10,
       fetchPage: async ({ cursor, limit }) => {
-        const { data, error } = await coreApi.GET(
-          "/instances/{instance_id}/operations",
-          {
-            params: {
-              path: { instance_id: instanceId },
-              query: { limit, cursor },
-            },
+        const { data, error } = await coreApi.GET("/instances/{instance_id}/operations", {
+          params: {
+            path: { instance_id: instanceId },
+            query: { limit, cursor },
           },
-        );
+        });
         if (error || !data) {
           throw error ?? new Error("操作历史未返回结果");
         }
@@ -82,8 +79,7 @@ export function InstanceOperations({ instanceId }: { instanceId: string }) {
         {
           title: "操作",
           width: 140,
-          render: (_, operation) =>
-            OPERATION_LABELS[operation.operation] ?? operation.operation,
+          render: (_, operation) => OPERATION_LABELS[operation.operation] ?? operation.operation,
         },
         {
           title: "状态",

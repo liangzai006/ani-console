@@ -1,12 +1,7 @@
 import { coreApi } from "@/api/client";
-import type {
-  ContainerDetailDataSource,
-  ContainerDetailInstance,
-} from "./types";
+import type { ContainerDetailDataSource, ContainerDetailInstance } from "./types";
 
-function buildDetail(
-  record: Record<string, unknown>,
-): ContainerDetailInstance | undefined {
+function buildDetail(record: Record<string, unknown>): ContainerDetailInstance | undefined {
   const compute = record.compute as Record<string, unknown> | undefined;
   return {
     ...record,
@@ -27,18 +22,13 @@ export const containerDetailDataSource: ContainerDetailDataSource = {
   },
 
   async changePowerState(instanceId, body) {
-    const { error, response } = await coreApi.POST(
-      "/instances/{instance_id}/lifecycle",
-      {
-        params: { path: { instance_id: instanceId } },
-        body,
-      },
-    );
+    const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+      params: { path: { instance_id: instanceId } },
+      body,
+    });
     if (error) {
       throw {
-        ...(typeof error === "object" && error
-          ? error
-          : { message: String(error) }),
+        ...(typeof error === "object" && error ? error : { message: String(error) }),
         status: response?.status,
       };
     }

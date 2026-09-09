@@ -90,8 +90,7 @@ function ClusterList() {
         return {
           items,
           total: mockClusters.length,
-          next_cursor:
-            nextOffset < mockClusters.length ? String(nextOffset) : null,
+          next_cursor: nextOffset < mockClusters.length ? String(nextOffset) : null,
         };
       }
       const keyword = searchText.trim();
@@ -149,20 +148,13 @@ function ClusterList() {
       if (!clusterId) throw new Error("缺少集群 ID");
       let content = `apiVersion: v1\nkind: Config\nclusters:\n- name: ${cluster.name ?? clusterId}\n`;
       if (!K8S_MOCK_ENABLED) {
-        const { data, error } = await coreApi.GET(
-          "/k8s-clusters/{cluster_id}/kubeconfig",
-          {
-            params: { path: { cluster_id: clusterId } },
-          },
-        );
+        const { data, error } = await coreApi.GET("/k8s-clusters/{cluster_id}/kubeconfig", {
+          params: { path: { cluster_id: clusterId } },
+        });
         if (error) throw error;
-        content =
-          (data as { kubeconfig?: string })?.kubeconfig ??
-          JSON.stringify(data, null, 2);
+        content = (data as { kubeconfig?: string })?.kubeconfig ?? JSON.stringify(data, null, 2);
       }
-      const url = URL.createObjectURL(
-        new Blob([content], { type: "text/yaml" }),
-      );
+      const url = URL.createObjectURL(new Blob([content], { type: "text/yaml" }));
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = `kubeconfig-${clusterId}.yaml`;
@@ -203,10 +195,7 @@ function ClusterList() {
       render: (_, cluster) => (
         <DataTableNameCell
           name={
-            <Link
-              to="/k8s-clusters/$clusterId"
-              params={{ clusterId: cluster.id ?? "" }}
-            >
+            <Link to="/k8s-clusters/$clusterId" params={{ clusterId: cluster.id ?? "" }}>
               {cluster.name ?? cluster.id ?? "-"}
             </Link>
           }
@@ -294,9 +283,7 @@ function ClusterList() {
           />
         }
       >
-        {taskId ? (
-          <AsyncTaskPoller taskId={taskId} onComplete={() => setTaskId(null)} />
-        ) : null}
+        {taskId ? <AsyncTaskPoller taskId={taskId} onComplete={() => setTaskId(null)} /> : null}
         <ListDataTable
           data={items}
           rowKey={(cluster) => cluster.id ?? cluster.name ?? ""}
@@ -334,10 +321,7 @@ function ClusterList() {
                   >
                     <DataTableRowActionButton>
                       更多
-                      <i
-                        className="iconfont icon-down-chevron-small"
-                        aria-hidden="true"
-                      />
+                      <i className="iconfont icon-down-chevron-small" aria-hidden="true" />
                     </DataTableRowActionButton>
                   </Dropdown>
                 </DataTableRowActions>
@@ -395,13 +379,7 @@ function ClusterList() {
   );
 }
 
-export function ClusterDetail({
-  clusterId,
-  onBack,
-}: {
-  clusterId: string;
-  onBack: () => void;
-}) {
+export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack: () => void }) {
   const qc = useQueryClient();
 
   const detail = useQuery({
@@ -465,17 +443,13 @@ export function ClusterDetail({
 
   const downloadKubeconfig = useMutation({
     mutationFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/k8s-clusters/{cluster_id}/kubeconfig",
-        {
-          params: { path: { cluster_id: clusterId } },
-        },
-      );
+      const { data, error } = await coreApi.GET("/k8s-clusters/{cluster_id}/kubeconfig", {
+        params: { path: { cluster_id: clusterId } },
+      });
       if (error) throw error;
-      const blob = new Blob(
-        [(data as { kubeconfig?: string })?.kubeconfig ?? ""],
-        { type: "text/yaml" },
-      );
+      const blob = new Blob([(data as { kubeconfig?: string })?.kubeconfig ?? ""], {
+        type: "text/yaml",
+      });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `kubeconfig-${clusterId}.yaml`;
@@ -513,11 +487,7 @@ export function ClusterDetail({
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "算力" },
-          { label: "K8s 集群" },
-          { label: clusterId },
-        ]}
+        breadcrumbs={[{ label: "算力" }, { label: "K8s 集群" }, { label: clusterId }]}
         title={clusterId}
         idLabel="集群 ID"
         idValue={clusterId}
@@ -526,10 +496,7 @@ export function ClusterDetail({
 
   const c = detail.data;
   const poolItems = (nodePools.data?.items ?? []) as NodePool[];
-  const workloadItems = (workloads.data?.items ?? []) as Record<
-    string,
-    unknown
-  >[];
+  const workloadItems = (workloads.data?.items ?? []) as Record<string, unknown>[];
 
   const confirmDeleteCluster = () => {
     Modal.confirm({
@@ -583,27 +550,19 @@ export function ClusterDetail({
     />
   );
 
-  const deploymentCount = workloadItems.filter(
-    (item) => item.kind === "Deployment",
-  ).length;
+  const deploymentCount = workloadItems.filter((item) => item.kind === "Deployment").length;
   const podCount = workloadItems.reduce(
     (total, item) => total + Number(item.ready_replicas ?? 0),
     0,
   );
   const serviceCount = 0;
 
-  const nodeCount = poolItems.reduce(
-    (total, pool) => total + Number(pool.node_count ?? 0),
-    0,
-  );
+  const nodeCount = poolItems.reduce((total, pool) => total + Number(pool.node_count ?? 0), 0);
 
   return (
     <>
       <DetailPageFrame
-        breadcrumbs={[
-          { label: "K8s 集群", to: "/k8s-clusters" },
-          { label: c?.name ?? clusterId },
-        ]}
+        breadcrumbs={[{ label: "K8s 集群", to: "/k8s-clusters" }, { label: c?.name ?? clusterId }]}
         icon={<AliIcon name="jiqun" size={28} />}
         title={c?.name ?? clusterId}
         status={<StatusTag status={c?.state} />}

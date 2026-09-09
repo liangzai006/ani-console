@@ -1,13 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Select,
-  Typography,
-} from "@arco-design/web-react";
+import { Alert, Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
@@ -36,17 +28,14 @@ export function CreateFilesystemModal({
   const mountTargetScope = useIdempotencyScope("storage-filesystem-mount-target-create", ["POST"]);
   const [name, setName] = useState("");
   const [protocol, setProtocol] = useState<FilesystemProtocol>("nfs");
-  const [performanceMode, setPerformanceMode] =
-    useState<FilesystemPerformanceMode>("standard");
+  const [performanceMode, setPerformanceMode] = useState<FilesystemPerformanceMode>("standard");
   const [sizeGiB, setSizeGiB] = useState(100);
   const [vpcId, setVpcId] = useState("");
   const [subnetId, setSubnetId] = useState("");
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "filesystem-create"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
     enabled: visible,
   });
   const subnets = useQuery({
@@ -64,8 +53,7 @@ export function CreateFilesystemModal({
     (item) => item.vpc_id === vpcId,
   );
   useEffect(() => {
-    if (subnetId && !availableSubnets.some((item) => item.id === subnetId))
-      setSubnetId("");
+    if (subnetId && !availableSubnets.some((item) => item.id === subnetId)) setSubnetId("");
   }, [availableSubnets, subnetId]);
   const reset = () => {
     createScope.reset();
@@ -191,10 +179,7 @@ export function CreateFilesystemModal({
           <Alert
             type="error"
             showIcon
-            content={getErrorMessage(
-              vpcs.error ?? subnets.error,
-              "网络选项加载失败",
-            )}
+            content={getErrorMessage(vpcs.error ?? subnets.error, "网络选项加载失败")}
           />
         ) : null}
         <Typography.Text type="secondary">

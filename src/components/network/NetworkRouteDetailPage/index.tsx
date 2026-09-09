@@ -1,24 +1,10 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Button,
-  Card,
-  Empty,
-  List,
-  Modal,
-  Spin,
-  Tag,
-  Typography,
-} from "@arco-design/web-react";
+import { Button, Card, Empty, List, Modal, Spin, Tag, Typography } from "@arco-design/web-react";
 import { coreApi } from "@/api/client";
 import { showApiError } from "@/api/helpers";
 import type { components } from "@/api/core-schema";
-import {
-  DetailPageFrame,
-  DetailPagePlaceholder,
-  AliIcon,
-  StatusTag,
-} from "@/components/common";
+import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -67,9 +53,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
       if (error) throw error;
       return data;
     },
-    enabled:
-      detail.data?.next_hop_type === "instance" &&
-      Boolean(detail.data?.next_hop_id),
+    enabled: detail.data?.next_hop_type === "instance" && Boolean(detail.data?.next_hop_id),
     retry: false,
   });
   useListErrorNotification({
@@ -110,11 +94,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
   if (!detail.data)
     return (
       <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "网络" },
-          { label: "路由", to: "/routes" },
-          { label: routeId },
-        ]}
+        breadcrumbs={[{ label: "网络" }, { label: "路由", to: "/routes" }, { label: routeId }]}
         title={routeId}
         idLabel="路由 ID"
         idValue={routeId}
@@ -157,11 +137,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
 
   return (
     <DetailPageFrame
-      breadcrumbs={[
-        { label: "网络" },
-        { label: "路由", to: "/routes" },
-        { label: name },
-      ]}
+      breadcrumbs={[{ label: "网络" }, { label: "路由", to: "/routes" }, { label: name }]}
       title={name}
       icon={<AliIcon name="VPCluyouqi" size={28} />}
       headerItems={[
@@ -194,8 +170,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
             { label: "名称", value: item.description?.trim() || "-" },
             {
               label: "VPC",
-              value:
-                parentVpc?.name ?? (vpc.isLoading ? "加载中…" : item.vpc_id),
+              value: parentVpc?.name ?? (vpc.isLoading ? "加载中…" : item.vpc_id),
             },
             { label: "目标网段", value: item.destination_cidr },
             {
@@ -219,10 +194,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
           content: (
             <div className="flex flex-col gap-3">
               <Typography.Text>
-                共{" "}
-                <Typography.Text bold>
-                  {relatedResources.length}
-                </Typography.Text>{" "}
+                共 <Typography.Text bold>{relatedResources.length}</Typography.Text>{" "}
                 个可确认的关联对象
               </Typography.Text>
               <Card title={`关联资源 ${relatedResources.length}`} size="small">
@@ -233,9 +205,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
                   render={(resource) => (
                     <div className="flex w-full items-center gap-3 px-5 py-3">
                       <Tag className="shrink-0">{resource.kind}</Tag>
-                      <span className="min-w-0 flex-1 truncate">
-                        {resource.name}
-                      </span>
+                      <span className="min-w-0 flex-1 truncate">{resource.name}</span>
                       <Typography.Text className="shrink-0" type="secondary">
                         {resource.id}
                       </Typography.Text>

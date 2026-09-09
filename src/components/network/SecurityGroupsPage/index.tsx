@@ -33,9 +33,7 @@ type StatusFilter = "all" | "available";
 type SearchField = "name" | "id";
 
 export function SecurityGroupsPage() {
-  const copyScope = useIdempotencyScope("network-security-group-copy", [
-    "POST",
-  ]);
+  const copyScope = useIdempotencyScope("network-security-group-copy", ["POST"]);
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
@@ -50,10 +48,7 @@ export function SecurityGroupsPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<SecurityGroup>({
-    queryKey: [
-      "network-security-groups",
-      { status, searchField, searchText, filterVpcId },
-    ],
+    queryKey: ["network-security-groups", { status, searchField, searchText, filterVpcId }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
@@ -76,20 +71,15 @@ export function SecurityGroupsPage() {
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "security-group-create"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } }),
-      ),
+      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
   });
 
   const qc = useQueryClient();
   const deleteSecurityGroup = useMutation({
     mutationFn: async (item: SecurityGroup) => {
-      const { error } = await coreApi.DELETE(
-        "/networks/security-groups/{security_group_id}",
-        {
-          params: { path: { security_group_id: item.id } },
-        },
-      );
+      const { error } = await coreApi.DELETE("/networks/security-groups/{security_group_id}", {
+        params: { path: { security_group_id: item.id } },
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -124,10 +114,7 @@ export function SecurityGroupsPage() {
     [securityGroups.data?.items],
   );
   const vpcNames = useMemo(
-    () =>
-      new Map(
-        ((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => [vpc.id, vpc.name]),
-      ),
+    () => new Map(((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => [vpc.id, vpc.name])),
     [vpcs.data?.items],
   );
   const paginationTotal = securityGroups.data?.total ?? items.length;
@@ -144,10 +131,7 @@ export function SecurityGroupsPage() {
       render: (_, item) => (
         <DataTableNameCell
           name={
-            <Link
-              to="/security-groups/$securityGroupId"
-              params={{ securityGroupId: item.id }}
-            >
+            <Link to="/security-groups/$securityGroupId" params={{ securityGroupId: item.id }}>
               {item.name}
             </Link>
           }
@@ -310,10 +294,7 @@ export function SecurityGroupsPage() {
           }}
         />
       </ListPageFrame>
-      <CreateSecurityGroupModal
-        visible={createVisible}
-        onCancel={() => setCreateVisible(false)}
-      />
+      <CreateSecurityGroupModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
     </>
   );
 }

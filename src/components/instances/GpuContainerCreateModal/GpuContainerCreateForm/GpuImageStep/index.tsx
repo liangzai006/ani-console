@@ -2,13 +2,7 @@ import { Empty, Form, Select, Spin, Typography } from "@arco-design/web-react";
 import { ImageNameText } from "@/components/common";
 import type { RegistryImage } from "../../types";
 
-export function GpuImageStep({
-  images,
-  loading,
-}: {
-  images: RegistryImage[];
-  loading: boolean;
-}) {
+export function GpuImageStep({ images, loading }: { images: RegistryImage[]; loading: boolean }) {
   return (
     <>
       <Typography.Paragraph type="secondary">

@@ -1,28 +1,28 @@
-import { Layout, Space, Typography } from '@arco-design/web-react'
-import { useRouterState } from '@tanstack/react-router'
-import { useState } from 'react'
-import { TopNav, TOPNAV_HEIGHT } from '../TopNav'
-import { Sidebar, SIDEBAR_WIDTH } from '../Sidebar'
-import { activeTopNavKeyForPath, sidebarItemsForTopNavKey } from '@/lib/side-menu-match'
+import { Layout, Space, Typography } from "@arco-design/web-react";
+import { useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
+import { TopNav, TOPNAV_HEIGHT } from "../TopNav";
+import { Sidebar, SIDEBAR_WIDTH } from "../Sidebar";
+import { activeTopNavKeyForPath, sidebarItemsForTopNavKey } from "@/lib/side-menu-match";
 
-const { Content } = Layout
+const { Content } = Layout;
 
 interface AppShellProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const topNavKey = activeTopNavKeyForPath(pathname)
-  const sidebarItems = sidebarItemsForTopNavKey(topNavKey)
-  const showSidebar = pathname !== '/'
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const topNavKey = activeTopNavKeyForPath(pathname);
+  const sidebarItems = sidebarItemsForTopNavKey(topNavKey);
+  const showSidebar = pathname !== "/";
 
   return (
     <Layout
       data-component="app-shell"
       className="h-screen overflow-hidden"
-      style={{ background: 'var(--color-bg-1)' }}
+      style={{ background: "var(--color-bg-1)" }}
     >
       <TopNav activeKey={topNavKey} />
       <Layout
@@ -41,7 +41,7 @@ export function AppShell({ children }: AppShellProps) {
             <Content
               data-component="page-scroll-region"
               className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4"
-              style={{ background: '#F7F8FA', minWidth: 0 }}
+              style={{ background: "#F7F8FA", minWidth: 0 }}
             >
               {children}
             </Content>
@@ -50,14 +50,14 @@ export function AppShell({ children }: AppShellProps) {
           <Content
             data-component="page-scroll-region"
             className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-6 pb-6 pt-4"
-            style={{ background: '#F7F8FA', minWidth: 0 }}
+            style={{ background: "#F7F8FA", minWidth: 0 }}
           >
             {children}
           </Content>
         )}
       </Layout>
     </Layout>
-  )
+  );
 }
 
 export function PageHeader({
@@ -65,9 +65,9 @@ export function PageHeader({
   subtitle,
   extra,
 }: {
-  title: string
-  subtitle?: string
-  extra?: React.ReactNode
+  title: string;
+  subtitle?: string;
+  extra?: React.ReactNode;
 }) {
   return (
     <header className="mb-5">
@@ -85,7 +85,7 @@ export function PageHeader({
         {extra ? <Space className="shrink-0">{extra}</Space> : null}
       </Space>
     </header>
-  )
+  );
 }
 
-export { TOPNAV_HEIGHT, SIDEBAR_WIDTH }
+export { TOPNAV_HEIGHT, SIDEBAR_WIDTH };

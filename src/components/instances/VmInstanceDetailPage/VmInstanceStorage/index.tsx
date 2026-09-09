@@ -8,10 +8,7 @@ import {
   StatusTag,
   TableSectionHeader,
 } from "@/components/common";
-import {
-  InstanceStorage,
-  type MountKind,
-} from "@/components/instances/InstanceStorage";
+import { InstanceStorage, type MountKind } from "@/components/instances/InstanceStorage";
 import { VmInstanceRollbackModal } from "@/components/instances/VmInstanceActions/VmInstanceRollbackModal";
 import { formatDateTime } from "@/lib/format";
 

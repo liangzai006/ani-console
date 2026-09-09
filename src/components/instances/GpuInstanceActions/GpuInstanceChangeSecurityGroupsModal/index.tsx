@@ -21,17 +21,10 @@ export function GpuInstanceChangeSecurityGroupsModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<{ securityGroupIds?: string[] }>();
-  const scope = useIdempotencyScope("gpu-instance-change-security-groups", [
-    "POST",
-    instance.id,
-  ]);
+  const scope = useIdempotencyScope("gpu-instance-change-security-groups", ["POST", instance.id]);
   const vpcId = instance.network?.vpc_id ?? instance.vpc_id;
   const groups = useQuery({
-    queryKey: [
-      "network-security-groups",
-      "gpu-instance-change-security-groups",
-      vpcId,
-    ],
+    queryKey: ["network-security-groups", "gpu-instance-change-security-groups", vpcId],
     queryFn: () =>
       listOrThrow(() =>
         coreApi.GET("/networks/security-groups", {
@@ -45,27 +38,18 @@ export function GpuInstanceChangeSecurityGroupsModal({
       ),
   });
   const mutation = useMutation({
-    mutationFn: async ({
-      securityGroupIds,
-    }: {
-      securityGroupIds?: string[];
-    }) => {
+    mutationFn: async ({ securityGroupIds }: { securityGroupIds?: string[] }) => {
       const submitData = {
         action: "change_security_groups" as const,
         security_group_ids: securityGroupIds ?? [],
       };
-      const { error, response } = await coreApi.POST(
-        "/instances/{instance_id}/lifecycle",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: scope.withKey(submitData),
-        },
-      );
+      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
+        params: { path: { instance_id: instance.id } },
+        body: scope.withKey(submitData),
+      });
       if (error)
         throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error) }),
+          ...(typeof error === "object" && error ? error : { message: String(error) }),
           status: response.status,
         };
     },
@@ -74,8 +58,7 @@ export function GpuInstanceChangeSecurityGroupsModal({
       Message.success("更换安全组已提交");
       onSubmitted();
     },
-    onError: (error) =>
-      Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
+    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const options = ((groups.data?.items ?? []) as SecurityGroup[]).filter(
     (group) => !vpcId || group.vpc_id === vpcId,
@@ -96,9 +79,7 @@ export function GpuInstanceChangeSecurityGroupsModal({
         form={form}
         layout="vertical"
         initialValues={{
-          securityGroupIds: (instance.network?.security_groups ?? []).map(
-            (group) => group.id,
-          ),
+          securityGroupIds: (instance.network?.security_groups ?? []).map((group) => group.id),
         }}
       >
         <Form.Item
@@ -117,9 +98,7 @@ export function GpuInstanceChangeSecurityGroupsModal({
             showSearch
             allowClear
             filterOption={(inputValue, option) =>
-              String(option.props.children)
-                .toLowerCase()
-                .includes(inputValue.toLowerCase())
+              String(option.props.children).toLowerCase().includes(inputValue.toLowerCase())
             }
           >
             {options.map((group) => (

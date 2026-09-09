@@ -1,16 +1,16 @@
 {
   "name": "ani-console",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "type": "module",
-  "packageManager": "pnpm@8.6.11",
   "scripts": {
     "dev": "vite",
+    "preview": "vite preview",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.app.json --noEmit",
-    "verify": "npm run typecheck && npm run build"
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit"
   },
   "dependencies": {
     "@arco-design/web-react": "^2.66.1",
@@ -44,11 +44,13 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.5.2",
+    "oxfmt": "^0.67.0",
     "oxlint": "^1.69.0",
     "tailwindcss": "^4.3.1",
     "typescript": "^7.0.2",
     "vite": "^6.3.5"
   },
+  "packageManager": "pnpm@8.6.11",
   "pnpm": {
     "overrides": {
       "@tanstack/react-router-devtools": "1.121.21",

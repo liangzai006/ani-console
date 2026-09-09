@@ -15,18 +15,15 @@ export function SandboxSecurityEvents({ instanceId }: { instanceId: string }) {
   const query = useQuery({
     queryKey: ["sandbox-security-events", instanceId, severity],
     queryFn: async () => {
-      const { data, error } = await coreApi.GET(
-        "/instances/{instance_id}/security-events",
-        {
-          params: {
-            path: { instance_id: instanceId },
-            query: {
-              limit: 100,
-              severity: severity === "all" ? undefined : severity,
-            },
+      const { data, error } = await coreApi.GET("/instances/{instance_id}/security-events", {
+        params: {
+          path: { instance_id: instanceId },
+          query: {
+            limit: 100,
+            severity: severity === "all" ? undefined : severity,
           },
         },
-      );
+      });
       if (error || !data) throw error ?? new Error("安全事件未返回结果");
       return data.items as SecurityEvent[];
     },
@@ -66,9 +63,7 @@ export function SandboxSecurityEvents({ instanceId }: { instanceId: string }) {
             {
               title: "级别",
               width: 100,
-              render: (_, item) => (
-                <Tag color={severityColor(item.severity)}>{item.severity}</Tag>
-              ),
+              render: (_, item) => <Tag color={severityColor(item.severity)}>{item.severity}</Tag>,
             },
             { title: "类型", dataIndex: "event_type", width: 180 },
             { title: "说明", dataIndex: "message" },

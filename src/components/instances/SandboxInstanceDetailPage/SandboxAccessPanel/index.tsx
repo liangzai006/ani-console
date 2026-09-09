@@ -20,16 +20,10 @@ import { DataTable } from "@/components/common";
 import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getImageDisplayName } from "@/lib/render";
 import { SandboxTokenIssueModal } from "./SandboxTokenIssueModal";
-import {
-  copySandboxText,
-  showSandboxError,
-  throwSandboxApiError,
-} from "../utils";
+import { copySandboxText, showSandboxError, throwSandboxApiError } from "../utils";
 
 type SandboxInstance = components["schemas"]["InstanceRecord"];
-type SandboxStatus = NonNullable<
-  components["schemas"]["SandboxInstanceStatus"]
->;
+type SandboxStatus = NonNullable<components["schemas"]["SandboxInstanceStatus"]>;
 type SandboxPortSummary = NonNullable<SandboxStatus["ports"]>[number];
 
 export function SandboxAccessPanel({
@@ -40,10 +34,7 @@ export function SandboxAccessPanel({
   onChanged: () => void;
 }) {
   const sandbox = instance.sandbox!;
-  const createPortScope = useIdempotencyScope("sandbox-preview-port-create", [
-    "POST",
-    instance.id,
-  ]);
+  const createPortScope = useIdempotencyScope("sandbox-preview-port-create", ["POST", instance.id]);
   const deletePortScope = useIdempotencyScope("sandbox-preview-port-delete", [
     "DELETE",
     instance.id,
@@ -56,9 +47,7 @@ export function SandboxAccessPanel({
   const running = sandbox.session_state === "running";
   const tokenAvailable = sandbox.connectivity?.token_available !== false;
   const portsAvailable = sandbox.connectivity?.ports_available !== false;
-  const browserTemplate = getImageDisplayName(instance.image)
-    .toLowerCase()
-    .includes("browser");
+  const browserTemplate = getImageDisplayName(instance.image).toLowerCase().includes("browser");
 
   const createPort = useMutation({
     mutationFn: async () => {
@@ -193,9 +182,7 @@ export function SandboxAccessPanel({
                 title: "状态",
                 width: 120,
                 render: (_, item) => (
-                  <Tag color={item.status === "available" ? "green" : "orange"}>
-                    {item.status}
-                  </Tag>
+                  <Tag color={item.status === "available" ? "green" : "orange"}>{item.status}</Tag>
                 ),
               },
               {
@@ -226,8 +213,7 @@ export function SandboxAccessPanel({
                       size="small"
                       disabled={!item.preview_url}
                       onClick={() =>
-                        item.preview_url &&
-                        copySandboxText(item.preview_url, "预览地址已复制")
+                        item.preview_url && copySandboxText(item.preview_url, "预览地址已复制")
                       }
                     >
                       复制
@@ -277,11 +263,7 @@ export function SandboxAccessPanel({
             />
           </Form.Item>
           <Form.Item label="名称">
-            <Input
-              value={portName}
-              onChange={setPortName}
-              placeholder="例如 web-preview"
-            />
+            <Input value={portName} onChange={setPortName} placeholder="例如 web-preview" />
           </Form.Item>
           <Form.Item label="协议" required>
             <Select
