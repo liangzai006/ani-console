@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Message, Modal, Tooltip } from "@arco-design/web-react";
+import { Dropdown, Menu, Message, Modal, Tooltip } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
 import { coreApi } from "@/api/client";
 import { asUncontractedQuery } from "@/api/uncontracted-query";
@@ -112,6 +112,7 @@ export function VectorStoresPage() {
         <DataTableNameCell
           name={
             <Link
+              className="truncate"
               to="/vector-stores/$vectorStoreId"
               params={{ vectorStoreId: item.id }}
               search={{ tab: undefined }}
@@ -142,6 +143,7 @@ export function VectorStoresPage() {
     {
       key: "embeddingModel",
       title: "Embedding 模型",
+      ellipsis: true,
       dataIndex: "embedding_model",
       placeholder: "-",
     },
@@ -154,8 +156,19 @@ export function VectorStoresPage() {
     {
       key: "knowledgeBase",
       title: "关联知识库",
-      dataIndex: "knowledge_base_ref.name",
-      placeholder: "未关联",
+      ellipsis: true,
+      render: (_, item) =>
+        item.knowledge_base_ref ? (
+          <Link
+            to="/kb/$kbId"
+            params={{ kbId: item.knowledge_base_ref.id }}
+            search={{ tab: "overview" }}
+          >
+            {item.knowledge_base_ref.name}
+          </Link>
+        ) : (
+          "未关联"
+        ),
     },
     {
       key: "createdAt",
@@ -244,60 +257,54 @@ export function VectorStoresPage() {
                       </DataTableRowActionButton>
                     </span>
                   </Tooltip>
-                  <Tooltip content={item.state === "ready" ? undefined : "仅可用状态支持重建索引"}>
-                    <span>
-                      <DataTableRowActionButton
-                        disabled={item.state !== "ready"}
-                        loading={rebuildIndex.isPending && rebuildIndex.variables?.id === item.id}
-                        onClick={() =>
-                          Modal.confirm({
-                            title: "重建索引",
-                            content: `确定重建「${item.name}」的索引？重建期间检索能力可能暂时受影响。`,
-                            onOk: () => rebuildIndex.mutateAsync(item),
-                          })
-                        }
-                      >
-                        重建索引
-                      </DataTableRowActionButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip content={item.knowledge_base_ref ? undefined : "当前未关联知识库"}>
-                    <span>
-                      <DataTableRowActionButton
-                        disabled={!item.knowledge_base_ref}
-                        onClick={() => {
-                          if (!item.knowledge_base_ref) return;
-                          navigate({
-                            to: "/kb/$kbId",
-                            params: { kbId: item.knowledge_base_ref.id },
-                            search: { tab: "overview" },
-                          });
-                        }}
-                      >
-                        打开关联知识库
-                      </DataTableRowActionButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip
-                    content={item.knowledge_base_ref ? "请先解除知识库关联后再删除" : undefined}
+                  <Dropdown
+                    trigger="click"
+                    position="br"
+                    droplist={
+                      <Menu>
+                        <Menu.Item
+                          key="rebuild-index"
+                          disabled={
+                            item.state !== "ready" ||
+                            (rebuildIndex.isPending && rebuildIndex.variables?.id === item.id)
+                          }
+                          title={item.state === "ready" ? undefined : "仅可用状态支持重建索引"}
+                          onClick={() =>
+                            Modal.confirm({
+                              title: "重建索引",
+                              content: `确定重建「${item.name}」的索引？重建期间检索能力可能暂时受影响。`,
+                              onOk: () => rebuildIndex.mutateAsync(item),
+                            })
+                          }
+                        >
+                          {rebuildIndex.isPending && rebuildIndex.variables?.id === item.id
+                            ? "重建中..."
+                            : "重建索引"}
+                        </Menu.Item>
+                        <Menu.Item
+                          key="delete"
+                          style={{ color: "var(--color-danger-6)" }}
+                          disabled={Boolean(item.knowledge_base_ref)}
+                          title={item.knowledge_base_ref ? "请先解除知识库关联后再删除" : undefined}
+                          onClick={() =>
+                            Modal.confirm({
+                              title: "删除向量存储",
+                              content: `确定删除「${item.name}」？其中的向量数据将不可恢复。`,
+                              okButtonProps: { status: "danger" },
+                              onOk: () => remove.mutateAsync(item),
+                            })
+                          }
+                        >
+                          删除
+                        </Menu.Item>
+                      </Menu>
+                    }
                   >
-                    <span>
-                      <DataTableRowActionButton
-                        status="danger"
-                        disabled={Boolean(item.knowledge_base_ref)}
-                        onClick={() =>
-                          Modal.confirm({
-                            title: "删除向量存储",
-                            content: `确定删除「${item.name}」？其中的向量数据将不可恢复。`,
-                            okButtonProps: { status: "danger" },
-                            onOk: () => remove.mutateAsync(item),
-                          })
-                        }
-                      >
-                        删除
-                      </DataTableRowActionButton>
-                    </span>
-                  </Tooltip>
+                    <DataTableRowActionButton>
+                      更多
+                      <i className="iconfont icon-down-chevron-small" aria-hidden="true" />
+                    </DataTableRowActionButton>
+                  </Dropdown>
                 </DataTableRowActions>
               ),
             },
