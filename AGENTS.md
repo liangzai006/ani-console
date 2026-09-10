@@ -15,6 +15,7 @@
 
 - 本仓库根目录已经代表产品原型中的 Console 范围；路由、页面、组件及其文件或目录不得再使用 `console`、`console-*`、`*Console` 等重复表达 Console 层级的命名，应直接按业务领域或资源命名。
 - UI 实现顺序、组件复用和样式边界以 `docs/UI-CONVENTIONS.md` 为准；目录及组件组织以 `docs/CONVENTIONS.md` 为准。
+- route component 作为路由适配层，负责从当前 `Route` 读取 path/search/loader 输入并转换为普通 props 传给领域页面组件；不强制箭头函数语法，没有路由输入时也只组合页面组件，不在 route 文件内保留查询、业务状态或完整页面实现。
 - 后端由独立的 ANI 仓库维护；接口契约与后端行为以其 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
 - 开始任何 Core API 接口对接前，必须先使用 GitNexus 查询索引 `ani-console对接文档补充`，并将命中内容作为 Core OpenAPI 与后端实现之外的临时契约补充。该补充用于覆盖“后端测试环境已经部署、对应代码尚未合并”的过渡期：部分功能会先在独立补充文档索引中整理接口说明；未完成查询不得开始对接。若补充内容与 Core OpenAPI、`ANI` 索引中的后端实现或实际测试环境表现存在差异，不得自行推断，必须停止相关对接并提示用户确认，以免产生接口偏差。
 - Core API 统一通过 `src/api/client.ts` 的 `coreApi` 调用。
@@ -50,6 +51,7 @@
 
 ## 开发记录
 
+- pnpm 命令执行门禁：所有 Agent 执行任何 `pnpm` 命令时，都必须在 Codex 沙箱外的系统环境运行，由系统 Corepack 根据 `package.json` 的 `packageManager` 选择 pnpm 版本；不得使用沙箱内的 fallback pnpm，也不得绕过项目声明手动选择其他版本。
 - 完成并验证实现、修复或测试后，必须在最终回复前更新项目开发记录。
 - Console 功能、UI、API、网络、存储、工具链和验证规则的变化统一记录在 `docs/PROJECT-STATUS.md`。
 - 记录应简短且事实准确，覆盖变更区域、用户可见行为、重要集成说明及已执行的验证，不粘贴冗长命令输出。
