@@ -6,7 +6,7 @@
 
 ## 开发入口
 
-1. 阅读 [UI 开发约定](./docs/UI-CONVENTIONS.md) 和 [工程约定](./docs/CONVENTIONS.md)。
+1. 阅读 [UI 开发约定](./docs/UI-CONVENTIONS.md)、[工程约定](./docs/CONVENTIONS.md) 和 [API 对接流程](./docs/API-INTEGRATION.md)。
 2. 当前状态与变更记录见 [docs/PROJECT-STATUS.md](./docs/PROJECT-STATUS.md)。
 3. 任何新增或修改完成后，必须分别执行：对本次新增或修改的代码文件运行 Oxlint、对全仓运行项目内 oxfmt、运行 `pnpm typecheck`、运行 `git diff --check`、运行 GitNexus 变更检测。
 4. 不得运行 production build，或启动、重启、中断用户的 `pnpm dev`。
@@ -16,12 +16,7 @@
 - 本仓库根目录已经代表产品原型中的 Console 范围；路由、页面、组件及其文件或目录不得再使用 `console`、`console-*`、`*Console` 等重复表达 Console 层级的命名，应直接按业务领域或资源命名。
 - UI 实现顺序、组件复用和样式边界以 `docs/UI-CONVENTIONS.md` 为准；目录及组件组织以 `docs/CONVENTIONS.md` 为准。
 - route component 作为路由适配层，负责从当前 `Route` 读取 path/search/loader 输入并转换为普通 props 传给领域页面组件；不强制箭头函数语法，没有路由输入时也只组合页面组件，不在 route 文件内保留查询、业务状态或完整页面实现。
-- 后端由独立的 ANI 仓库维护；接口契约与后端行为以其 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
-- 开始任何 Core API 接口对接前，必须先使用 GitNexus 查询索引 `ani-console对接文档补充`，并将命中内容作为 Core OpenAPI 与后端实现之外的临时契约补充。该补充用于覆盖“后端测试环境已经部署、对应代码尚未合并”的过渡期：部分功能会先在独立补充文档索引中整理接口说明；未完成查询不得开始对接。若补充内容与 Core OpenAPI、`ANI` 索引中的后端实现或实际测试环境表现存在差异，不得自行推断，必须停止相关对接并提示用户确认，以免产生接口偏差。
-- Core API 统一通过 `src/api/client.ts` 的 `coreApi` 调用。
-- POST 及有副作用的 PUT/PATCH 必须通过公共幂等作用域注入 `idempotency_key`：React 代码使用 `useIdempotencyScope`，非 React 流程使用 `createIdempotencyScope`；key 仅由公共幂等库使用外部 `uuid` 包生成，不得保留本地手写 UUID 实现，业务代码不得直接生成 key，也不得包装或修改 `useMutation` 的行为。
-- 幂等作用域依赖至少包含请求方法，并包含会影响请求身份、但不在实际 body 中的稳定业务参数；路由模板和实际 URL 不得作为依赖。实际提交内容必须先构造为不含 key 的 `submitData`，再以 `scope.withKey(submitData, runtimeDependencies?)` 生成最终 body。
-- 同一作用域内，相同依赖与相同提交内容的失败重试必须复用原 key；提交内容、固定依赖或运行时依赖变化时必须生成新 key。请求成功或用户取消时调用 `reset()`，任何失败均保留 key；多阶段流程的每个写请求步骤使用独立作用域。
+- 接口契约核对、API 模块与类型落位、公共请求层、幂等、SSE、预签名上传及页面接入统一遵循 `docs/API-INTEGRATION.md`；本文件不重复维护具体对接细则。
 - 当前快速迭代阶段不保留自动化测试资产；页面与交互由用户手动验证。
 - 不覆盖或清理用户已有的无关工作区改动。
 
@@ -60,23 +55,23 @@
 
 ## GitNexus
 
-仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-9.08`。GitNexus 查询使用当前会话接入的工具，不使用仓库内 CLI 作为替代。
+仓库索引名为 `ani-console`，后端索引名为 `ANI`，产品原型索引名为 `产品原型-9.08 v2`。GitNexus 查询使用当前会话接入的工具，不使用仓库内 CLI 作为替代。
 
 - 查看接口、后端契约或执行流时，必须使用已接入的 GitNexus 工具查询索引 `ANI`（`repo: "ANI"`）。
-- 查看产品原型、页面信息架构或交互布局时，必须使用已接入的 GitNexus 工具查询索引 `产品原型-9.08`（`repo: "产品原型-9.08"`）。
+- 查看产品原型、页面信息架构或交互布局时，必须使用已接入的 GitNexus 工具查询索引 `产品原型-9.08 v2`（`repo: "产品原型-9.08 v2"`）。
 - 文档指定的仓库或索引不可用、未建立或无法访问时，不得根据前端代码、训练数据或经验猜测接口契约、后端行为、产品原型和交互布局；必须立即停止相关判断并提示用户建立或恢复对应索引，待索引可用后再继续。
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ani-console** (2407 symbols, 6680 relationships, 189 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ani-console** (3010 symbols, 7906 relationships, 239 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
 ## Always Do
 
 - **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "main"})`.
+- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "master"})`.
 - **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
 - When exploring unfamiliar code, use `query({search_query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
 - When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.

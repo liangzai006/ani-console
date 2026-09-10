@@ -14,19 +14,21 @@ import {
   Upload,
 } from "@arco-design/web-react";
 import { useRef, useState } from "react";
-import { coreApi } from "@/api/client";
+import {
+  deleteImage as deleteImageRequest,
+  listImages,
+  suggestImageSizeGib,
+  uploadImageFile,
+  type Image,
+  type ImageUploadProgress,
+} from "@/api/images";
 import { PageHeader } from "@/components/shell/AppShell";
 import { DataTable, StatusTag } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
-import { showApiError } from "@/api/helpers";
+import { showApiError } from "@/lib/api-error";
 import { getErrorMessage } from "@/lib/errors";
 import { getImageDisplayName } from "@/lib/render";
-import { suggestImageSizeGib, uploadImageFile, type ImageUploadProgress } from "@/lib/image-upload";
-import type { components } from "@/api/core-schema";
-
-type ImageRecord = components["schemas"]["Image"];
 
 type UploadFormState = {
   name: string;
@@ -51,7 +53,6 @@ function formatBytes(bytes?: number): string | null {
 
 export function ImagesPage() {
   const qc = useQueryClient();
-  const uploadScope = useIdempotencyScope("registry-image-upload-session", ["POST"]);
   const [visible, setVisible] = useState(false);
   const [form, setForm] = useState<UploadFormState>(defaultUploadForm);
   const [progress, setProgress] = useState<ImageUploadProgress | null>(null);
@@ -59,13 +60,7 @@ export function ImagesPage() {
 
   const images = useQuery({
     queryKey: ["images"],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/images", {
-        params: { query: { limit: 50 } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listImages({ limit: 50 }),
   });
   useListErrorNotification({
     id: "images-list",
@@ -89,7 +84,6 @@ export function ImagesPage() {
         contentType: form.content_type.trim() || undefined,
         onProgress: setProgress,
         signal: controller.signal,
-        idempotencyScope: uploadScope,
       });
     },
     onSuccess: (image) => {
@@ -108,17 +102,12 @@ export function ImagesPage() {
   });
 
   const deleteImage = useMutation({
-    mutationFn: async (imageId: string) => {
-      const { error } = await coreApi.DELETE("/images/{image_id}", {
-        params: { path: { image_id: imageId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: deleteImageRequest,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["images"] }),
     onError: (e) => showApiError(e),
   });
 
-  const items = (images.data?.items ?? []) as ImageRecord[];
+  const items = images.data?.items ?? [];
   const progressLabel =
     progress?.phase === "preparing"
       ? progress.message || "正在准备存储（等待上传服务就绪）…"
@@ -150,7 +139,7 @@ export function ImagesPage() {
           </Button>
         }
       />
-      <DataTable<ImageRecord>
+      <DataTable<Image>
         columns={[
           {
             title: "名称",
@@ -213,7 +202,6 @@ export function ImagesPage() {
           }
           setVisible(false);
           setProgress(null);
-          uploadScope.reset();
         }}
         onOk={() => uploadIso.mutateAsync()}
         confirmLoading={uploadIso.isPending}

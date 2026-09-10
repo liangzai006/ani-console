@@ -1,8 +1,6 @@
+import { listInstances, type InstanceRecord } from "@/api/instances";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
 import {
   DataTableNameCell,
   ListDataTable,
@@ -23,7 +21,7 @@ import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { SandboxInstanceCreateModal } from "@/components/instances/SandboxInstanceCreateModal";
 
-type SandboxInstance = components["schemas"]["InstanceRecord"];
+type SandboxInstance = InstanceRecord;
 type SandboxStatus = "all" | "running" | "paused" | "expired";
 type SearchField = "name" | "id";
 
@@ -44,20 +42,14 @@ export function SandboxInstancesPage() {
       cursorScope: `sandbox:${status}:${searchField}:${searchText.trim()}`,
       fetchPage: async ({ cursor, limit }) => {
         const keyword = searchText.trim();
-        const { data, error } = await coreApi.GET("/instances", {
-          params: {
-            query: asUncontractedQuery({
-              kind: "sandbox",
-              status: status === "all" ? undefined : status,
-              search_field: keyword ? searchField : undefined,
-              keyword: keyword || undefined,
-              cursor,
-              limit,
-            }),
-          },
+        return listInstances({
+          kind: "sandbox",
+          status: status === "all" ? undefined : status,
+          search_field: keyword ? searchField : undefined,
+          keyword: keyword || undefined,
+          cursor,
+          limit,
         });
-        if (error || !data) throw error ?? new Error("Sandbox 实例列表未返回结果");
-        return data;
       },
     });
 

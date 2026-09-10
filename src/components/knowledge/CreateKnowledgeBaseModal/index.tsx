@@ -10,14 +10,10 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
-import { servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
-import { showApiError } from "@/api/helpers";
+import { listModels, type Model } from "@/api/ai-services/models";
+import { showApiError } from "@/lib/api-error";
+import { createKnowledgeBase, type KnowledgeBase } from "@/api/knowledge";
 import { getErrorMessage } from "@/lib/errors";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
-
-type KnowledgeBase = components["schemas"]["KnowledgeBase"];
-type Model = components["schemas"]["Model"];
 
 export function CreateKnowledgeBaseModal({
   visible,
@@ -30,17 +26,10 @@ export function CreateKnowledgeBaseModal({
 }) {
   const [form] = Form.useForm();
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("knowledge-base-create", ["POST"]);
   const models = useQuery({
     queryKey: ["models", "knowledge-base-create"],
     enabled: visible,
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/models", {
-        params: { query: { limit: 100, capability: "embedding", status: "ready" } },
-      });
-      if (error || !data) throw error ?? new Error("Embedding 模型列表未返回结果");
-      return data;
-    },
+    queryFn: () => listModels({ limit: 100, capability: "embedding", status: "ready" }),
   });
   const modelOptions = useMemo(() => {
     const byName = new Map<string, Model>();
@@ -75,14 +64,9 @@ export function CreateKnowledgeBaseModal({
         name: values.name.trim(),
         description: values.description?.trim() || undefined,
       };
-      const { data, error } = await servicesApi.POST("/knowledge-bases", {
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
+      return createKnowledgeBase(submitData);
     },
     onSuccess: (item) => {
-      createScope.reset();
       Message.success("知识库已创建");
       qc.invalidateQueries({ queryKey: ["knowledge-bases"] });
       form.resetFields();
@@ -97,7 +81,6 @@ export function CreateKnowledgeBaseModal({
       visible={visible}
       confirmLoading={create.isPending}
       onCancel={() => {
-        createScope.reset();
         form.resetFields();
         onCancel();
       }}

@@ -1,11 +1,10 @@
+import type { InstanceLifecycleRequest, InstanceRecord } from "@/api/instances";
+import { applyInstanceLifecycle } from "@/api/instances";
 import { Button, Dropdown, Menu, Message, Space, Tooltip } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { ContainerInstanceAttachFilesystemModal } from "./ContainerInstanceAttachFilesystemModal";
 import { ContainerInstanceAttachVolumeModal } from "./ContainerInstanceAttachVolumeModal";
@@ -19,8 +18,8 @@ import { ContainerInstanceScaleModal } from "./ContainerInstanceScaleModal";
 import { ContainerInstanceStopModal } from "./ContainerInstanceStopModal";
 import { ContainerInstanceUpdateImageModal } from "./ContainerInstanceUpdateImageModal";
 
-type Instance = components["schemas"]["InstanceRecord"];
-type LifecycleRequest = components["schemas"]["InstanceLifecycleRequest"];
+type Instance = InstanceRecord;
+type LifecycleRequest = InstanceLifecycleRequest;
 type LifecycleAction = LifecycleRequest["action"];
 type ModalAction = Extract<
   LifecycleAction,
@@ -55,31 +54,15 @@ export function ContainerInstanceActions({
   display?: "row" | "detail";
 }) {
   const navigate = useNavigate();
-  const startScope = useIdempotencyScope("container-instance-start", ["POST", instance.id]);
-  const restartScope = useIdempotencyScope("container-instance-restart", ["POST", instance.id]);
-  const protectionScope = useIdempotencyScope("container-instance-termination-protection", [
-    "POST",
-    instance.id,
-  ]);
   const [modalAction, setModalAction] = useState<ModalAction>();
   const [stopVisible, setStopVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const start = useMutation({
     mutationFn: async () => {
       const submitData = { action: "start" as const };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: startScope.withKey(submitData),
-      });
-      if (error) {
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
-      }
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      startScope.reset();
       Message.success("启动已提交");
       onChanged();
     },
@@ -89,19 +72,9 @@ export function ContainerInstanceActions({
   const restart = useMutation({
     mutationFn: async () => {
       const submitData = { action: "restart" as const };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: restartScope.withKey(submitData),
-      });
-      if (error) {
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
-      }
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      restartScope.reset();
       Message.success("重启已提交");
       onChanged();
     },
@@ -114,19 +87,9 @@ export function ContainerInstanceActions({
         action: "set_termination_protection" as const,
         enabled,
       };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: protectionScope.withKey(submitData),
-      });
-      if (error) {
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
-      }
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      protectionScope.reset();
       Message.success("终止保护已更新");
       onChanged();
     },

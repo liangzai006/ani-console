@@ -1,29 +1,24 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  completeStorageObjectUpload,
+  deleteStorageObject,
+  getStorageObject,
+  getStorageObjectDownload,
+  type StorageObject,
+} from "@/api/storage/objects";
+import { showApiError } from "@/lib/api-error";
 import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-
-type StorageObject = components["schemas"]["StorageObject"];
 
 export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; objectId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const completeScope = useIdempotencyScope("storage-object-upload-complete", ["POST", objectId]);
   const detail = useQuery({
     queryKey: ["object", objectId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/objects/{object_id}", {
-        params: { path: { object_id: objectId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getStorageObject(objectId),
   });
   useListErrorNotification({
     id: `object-detail:${objectId}`,
@@ -31,17 +26,8 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
     error: detail.error,
   });
   const completeUpload = useMutation({
-    mutationFn: async (_: undefined) => {
-      const submitData = {};
-      const { data, error } = await coreApi.POST("/objects/{object_id}/complete", {
-        params: { path: { object_id: objectId } },
-        body: completeScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
-    },
+    mutationFn: (_: undefined) => completeStorageObjectUpload(objectId),
     onSuccess: () => {
-      completeScope.reset();
       qc.invalidateQueries({ queryKey: ["object", objectId] });
       qc.invalidateQueries({ queryKey: ["bucket-objects", bucketId] });
       qc.invalidateQueries({ queryKey: ["buckets"] });
@@ -50,21 +36,13 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
   });
   const downloadObject = useMutation({
     mutationFn: async (_: undefined) => {
-      const { data, error } = await coreApi.GET("/objects/{object_id}/download", {
-        params: { path: { object_id: objectId } },
-      });
-      if (error) throw error;
+      const data = await getStorageObjectDownload(objectId);
       if (data?.download_url) window.open(data.download_url, "_blank");
     },
     onError: (error) => showApiError(error),
   });
   const deleteObject = useMutation({
-    mutationFn: async (_: undefined) => {
-      const { error } = await coreApi.DELETE("/objects/{object_id}", {
-        params: { path: { object_id: objectId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (_: undefined) => deleteStorageObject(objectId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["buckets"] });
       qc.invalidateQueries({ queryKey: ["bucket-objects", bucketId] });

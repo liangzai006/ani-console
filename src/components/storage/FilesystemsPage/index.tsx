@@ -2,10 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { Dropdown, Menu, Modal } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  deleteFilesystem,
+  listFilesystemMountTargets,
+  listFilesystems,
+  type StorageFilesystem,
+} from "@/api/storage/filesystems";
+import { showApiError } from "@/lib/api-error";
 import { CreateFilesystemModal } from "@/components/storage/CreateFilesystemModal";
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
@@ -26,10 +29,9 @@ import {
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
 
-type Filesystem = components["schemas"]["StorageFilesystem"];
+type Filesystem = StorageFilesystem;
 type StatusFilter = "all" | "available" | "pending";
 type SearchField = "name" | "id";
 
@@ -54,28 +56,17 @@ export function FilesystemsPage() {
     cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
-      const { data, error } = await coreApi.GET("/filesystems", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            status: status === "all" ? undefined : status,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      return listFilesystems({
+        limit,
+        cursor,
+        status: status === "all" ? undefined : status,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error || !data) throw error ?? new Error("文件存储列表未返回结果");
-      return data;
     },
   });
   const remove = useMutation({
-    mutationFn: async (item: Filesystem) => {
-      const { error } = await coreApi.DELETE("/filesystems/{filesystem_id}", {
-        params: { path: { filesystem_id: item.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (item: Filesystem) => deleteFilesystem(item.id),
     onSuccess: () => {
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["filesystems"] });
@@ -95,15 +86,7 @@ export function FilesystemsPage() {
   const mountTargetQueries = useQueries({
     queries: items.map((item) => ({
       queryKey: ["filesystem-mounts", item.id, "count"],
-      queryFn: () =>
-        listOrThrow(() =>
-          coreApi.GET("/filesystems/{filesystem_id}/mount-targets", {
-            params: {
-              path: { filesystem_id: item.id },
-              query: { limit: 1 },
-            },
-          }),
-        ),
+      queryFn: () => listFilesystemMountTargets(item.id, { limit: 1 }),
     })),
   });
   const mountTargetCounts = new Map(

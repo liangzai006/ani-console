@@ -9,7 +9,7 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { ApiErrorAlert } from "@/components/common";
-import type { GpuSpecAvailabilityListResponse } from "../../types";
+import type { GpuSpecAvailabilityListResponse } from "@/api/gpu-inventory";
 
 export function GpuAdmissionSummary({
   availability,

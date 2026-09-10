@@ -1,17 +1,14 @@
+import { listFilesystemMountTargets, listFilesystems } from "@/api/storage/filesystems";
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { StorageFilesystem } from "@/api/storage/filesystems";
+import type { InstanceRecord } from "@/api/instances";
 import { Alert, Checkbox, Form, Input, Message, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
-import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
-type StorageFilesystem = components["schemas"]["StorageFilesystem"];
-type FilesystemMountTarget = components["schemas"]["FilesystemMountTarget"];
+type Instance = InstanceRecord;
 type Values = { filesystemId: string; mountPath: string; readOnly?: boolean };
 
 export function VmInstanceAttachFilesystemModal({
@@ -25,34 +22,18 @@ export function VmInstanceAttachFilesystemModal({
 }) {
   const [form] = Form.useForm<Values>();
   const [selectedId, setSelectedId] = useState("");
-  const scope = useIdempotencyScope("vm-instance-attach-filesystem", ["POST", instance.id]);
   const filesystems = useQuery({
     queryKey: ["filesystems", "vm-instance-attach-filesystem", instance.id],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/filesystems", {
-          params: {
-            query: asUncontractedQuery({
-              limit: 100,
-              protocol: "nfs",
-              available_for_instance_id: instance.id,
-            }),
-          },
-        }),
-      ),
+      listFilesystems({
+        limit: 100,
+        protocol: "nfs",
+        available_for_instance_id: instance.id,
+      }),
   });
   const mountTargets = useQuery({
     queryKey: ["filesystem-mount-targets", selectedId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/filesystems/{filesystem_id}/mount-targets", {
-        params: {
-          path: { filesystem_id: selectedId },
-          query: { limit: 100 },
-        },
-      });
-      if (error || !data) throw error ?? new Error("文件系统挂载目标未返回结果");
-      return data.items as FilesystemMountTarget[];
-    },
+    queryFn: async () => (await listFilesystemMountTargets(selectedId, { limit: 100 })).items,
     enabled: Boolean(selectedId),
   });
   const mutation = useMutation({
@@ -63,21 +44,10 @@ export function VmInstanceAttachFilesystemModal({
         mount_path: values.mountPath.trim(),
         read_only: values.readOnly ?? false,
       };
-      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error || !data)
-        throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error ?? "操作未返回结果") }),
-          status: response.status,
-        };
+      const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      scope.reset();
       Message.success("挂载 NFS 已提交");
       onSubmitted(operationId);
     },
@@ -103,7 +73,6 @@ export function VmInstanceAttachFilesystemModal({
         disabled: Boolean(selectedId) && (mountTargets.isLoading || !hasMountTarget),
       }}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={async () => mutation.mutate(await form.validate())}

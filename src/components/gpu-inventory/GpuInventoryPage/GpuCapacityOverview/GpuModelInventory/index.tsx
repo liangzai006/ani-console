@@ -1,8 +1,6 @@
 import { Progress, Typography } from "@arco-design/web-react";
-import type { components } from "@/api/core-schema";
+import type { GpuOccupancyStats } from "@/api/gpu-inventory";
 import { DataTableRowActionButton, ListDataTable, TableSectionHeader } from "@/components/common";
-
-type GpuOccupancy = components["schemas"]["GPUOccupancyStats"];
 
 type ModelInventoryRow = {
   id: string;
@@ -13,7 +11,7 @@ type ModelInventoryRow = {
   unavailable: number;
 };
 
-function getModelInventory(occupancy?: GpuOccupancy): ModelInventoryRow[] {
+function getModelInventory(occupancy?: GpuOccupancyStats): ModelInventoryRow[] {
   return (occupancy?.by_gpu_type ?? []).map((bucket, index) => {
     const total = bucket.total ?? 0;
     const available = bucket.available ?? 0;
@@ -35,7 +33,7 @@ export function GpuModelInventory({
   loading,
   onCreate,
 }: {
-  occupancy?: GpuOccupancy;
+  occupancy?: GpuOccupancyStats;
   loading: boolean;
   onCreate: () => void;
 }) {

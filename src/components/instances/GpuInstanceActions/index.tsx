@@ -1,12 +1,11 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceRecord } from "@/api/instances";
 import { Button, Dropdown, Menu, Message, Space, Tooltip } from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { coreApi } from "@/api/client";
-import type { components } from "@/api/core-schema";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { GpuInstanceAttachFilesystemModal } from "./GpuInstanceAttachFilesystemModal";
 import { GpuInstanceAttachVolumeModal } from "./GpuInstanceAttachVolumeModal";
@@ -21,7 +20,7 @@ import { GpuInstanceScaleModal } from "./GpuInstanceScaleModal";
 import { GpuInstanceStopModal } from "./GpuInstanceStopModal";
 import { GpuInstanceUpdateImageModal } from "./GpuInstanceUpdateImageModal";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 type ModalAction =
   | "scale"
   | "update_image"
@@ -49,12 +48,6 @@ export function GpuInstanceActions({
   display?: "row" | "detail" | "release" | "configuration";
 }) {
   const navigate = useNavigate();
-  const startScope = useIdempotencyScope("gpu-instance-start", ["POST", instance.id]);
-  const restartScope = useIdempotencyScope("gpu-instance-restart", ["POST", instance.id]);
-  const protectionScope = useIdempotencyScope("gpu-instance-termination-protection", [
-    "POST",
-    instance.id,
-  ]);
   const [modalAction, setModalAction] = useState<ModalAction>();
   const [stopVisible, setStopVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
@@ -62,18 +55,9 @@ export function GpuInstanceActions({
   const start = useMutation({
     mutationFn: async () => {
       const submitData = { action: "start" as const };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: startScope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      startScope.reset();
       Message.success("启动已提交");
       onChanged();
     },
@@ -82,18 +66,9 @@ export function GpuInstanceActions({
   const restart = useMutation({
     mutationFn: async () => {
       const submitData = { action: "restart" as const };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: restartScope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      restartScope.reset();
       Message.success("重启已提交");
       onChanged();
     },
@@ -105,18 +80,9 @@ export function GpuInstanceActions({
         action: "set_termination_protection" as const,
         enabled,
       };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: protectionScope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      protectionScope.reset();
       Message.success("终止保护已更新");
       onChanged();
     },

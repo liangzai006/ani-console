@@ -10,9 +10,13 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
-import { showApiError } from "@/api/helpers";
+import { showApiError } from "@/lib/api-error";
+import {
+  deleteKnowledgeBaseDocument,
+  listKnowledgeBaseDocuments,
+  reparseKnowledgeBaseDocument,
+  type KBDocument,
+} from "@/api/knowledge";
 import {
   ApiErrorAlert,
   DataTable,
@@ -23,12 +27,9 @@ import {
   type ListColumn,
 } from "@/components/common";
 import { KnowledgeDocumentChunksDrawer } from "@/components/knowledge/KnowledgeDocumentChunksDrawer";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 import styles from "./index.module.css";
-
-type KBDocument = components["schemas"]["KBDocument"];
 
 function formatBytes(value?: number) {
   if (value == null) return "-";
@@ -85,7 +86,6 @@ function statusTag(document: KBDocument) {
 export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action?: ReactNode }) {
   const qc = useQueryClient();
   const [previewDocument, setPreviewDocument] = useState<KBDocument>();
-  const reparseScope = useIdempotencyScope("knowledge-base-document-reparse", ["POST", kbId]);
   const {
     query: documents,
     page,
@@ -96,21 +96,10 @@ export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action
   } = useCursorPaginatedQuery<KBDocument>({
     queryKey: ["knowledge-base-documents", kbId],
     cursorScope: kbId,
-    fetchPage: async ({ cursor, limit }) => {
-      const { data, error } = await servicesApi.GET("/knowledge-bases/{kb_id}/documents", {
-        params: { path: { kb_id: kbId }, query: { limit, cursor } },
-      });
-      if (error || !data) throw error ?? new Error("文档列表未返回结果");
-      return data;
-    },
+    fetchPage: ({ cursor, limit }) => listKnowledgeBaseDocuments(kbId, { limit, cursor }),
   });
   const remove = useMutation({
-    mutationFn: async (doc: KBDocument) => {
-      const { error } = await servicesApi.DELETE("/knowledge-bases/{kb_id}/documents/{doc_id}", {
-        params: { path: { kb_id: kbId, doc_id: doc.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (doc: KBDocument) => deleteKnowledgeBaseDocument(kbId, doc.id),
     onSuccess: () => {
       Message.success("文档已删除");
       resetPagination();
@@ -120,19 +109,8 @@ export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action
     onError: (error) => showApiError(error, "删除文档失败"),
   });
   const reparse = useMutation({
-    mutationFn: async (doc: KBDocument) => {
-      const submitData = {};
-      const { error } = await servicesApi.POST(
-        "/knowledge-bases/{kb_id}/documents/{doc_id}/reparse",
-        {
-          params: { path: { kb_id: kbId, doc_id: doc.id } },
-          body: reparseScope.withKey(submitData, [doc.id]),
-        },
-      );
-      if (error) throw error;
-    },
-    onSuccess: (_, doc) => {
-      reparseScope.reset([doc.id]);
+    mutationFn: (doc: KBDocument) => reparseKnowledgeBaseDocument(kbId, doc.id),
+    onSuccess: () => {
       Message.success("已提交重新解析");
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["knowledge-base-documents", kbId] });

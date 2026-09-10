@@ -1,15 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { listOrThrow } from "@/lib/api-list";
+import {
+  listNetworkSubnets,
+  listNetworkVpcs,
+  type NetworkSubnet,
+  type NetworkVPC,
+} from "@/api/network";
+import { createFilesystemMountTarget } from "@/api/storage/filesystems";
+import { showApiError } from "@/lib/api-error";
 import { getErrorMessage } from "@/lib/errors";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type Vpc = components["schemas"]["NetworkVPC"];
-type Subnet = components["schemas"]["NetworkSubnet"];
+type Vpc = NetworkVPC;
+type Subnet = NetworkSubnet;
 
 export function CreateFilesystemMountTargetModal({
   visible,
@@ -21,26 +24,16 @@ export function CreateFilesystemMountTargetModal({
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("storage-filesystem-mount-target-create", [
-    "POST",
-    filesystemId,
-  ]);
   const [vpcId, setVpcId] = useState("");
   const [subnetId, setSubnetId] = useState("");
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "filesystem-mount-target-create"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkVpcs({ limit: 100 }),
     enabled: visible,
   });
   const subnets = useQuery({
     queryKey: ["network-subnets", "filesystem-mount-target-create", vpcId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/subnets", {
-          params: { query: { limit: 100, vpc_id: vpcId || undefined } },
-        }),
-      ),
+    queryFn: () => listNetworkSubnets({ limit: 100, vpc_id: vpcId || undefined }),
     enabled: visible && !!vpcId,
   });
   // TODO: 子网接口确认按 vpc_id 过滤后，移除此处创建表单的本地兜底过滤。
@@ -53,7 +46,6 @@ export function CreateFilesystemMountTargetModal({
   }, [availableSubnets, subnetId]);
 
   const close = () => {
-    createScope.reset();
     setVpcId("");
     setSubnetId("");
     onCancel();
@@ -62,12 +54,7 @@ export function CreateFilesystemMountTargetModal({
     mutationFn: async (_: undefined) => {
       if (!vpcId) throw new Error("请选择 VPC");
       if (!subnetId) throw new Error("请选择子网");
-      const submitData = { vpc_id: vpcId, subnet_id: subnetId };
-      const { error } = await coreApi.POST("/filesystems/{filesystem_id}/mount-targets", {
-        params: { path: { filesystem_id: filesystemId } },
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
+      return createFilesystemMountTarget(filesystemId, { vpc_id: vpcId, subnet_id: subnetId });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["filesystem-mounts", filesystemId] });

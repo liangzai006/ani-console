@@ -1,15 +1,14 @@
+import { listNetworkSecurityGroups } from "@/api/network";
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { NetworkSecurityGroup } from "@/api/network";
+import type { InstanceRecord } from "@/api/instances";
 import { Form, Message, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
-import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
-type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
+type Instance = InstanceRecord;
+type SecurityGroup = NetworkSecurityGroup;
 
 export function VmInstanceChangeSecurityGroupsModal({
   instance,
@@ -21,7 +20,6 @@ export function VmInstanceChangeSecurityGroupsModal({
   onSubmitted: (operationId: string) => void;
 }) {
   const [form] = Form.useForm<{ securityGroupIds?: string[] }>();
-  const scope = useIdempotencyScope("vm-instance-change-security-groups", ["POST", instance.id]);
   const groups = useQuery({
     queryKey: [
       "network-security-groups",
@@ -29,16 +27,10 @@ export function VmInstanceChangeSecurityGroupsModal({
       instance.network?.vpc_id,
     ],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/security-groups", {
-          params: {
-            query: asUncontractedQuery({
-              limit: 100,
-              vpc_id: instance.network?.vpc_id || undefined,
-            }),
-          },
-        }),
-      ),
+      listNetworkSecurityGroups({
+        limit: 100,
+        vpc_id: instance.network?.vpc_id || undefined,
+      }),
   });
   const mutation = useMutation({
     mutationFn: async ({ securityGroupIds }: { securityGroupIds?: string[] }) => {
@@ -46,21 +38,10 @@ export function VmInstanceChangeSecurityGroupsModal({
         action: "change_security_groups" as const,
         security_group_ids: securityGroupIds ?? [],
       };
-      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error || !data)
-        throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error ?? "操作未返回结果") }),
-          status: response.status,
-        };
+      const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      scope.reset();
       Message.success("更换安全组已提交");
       onSubmitted(operationId);
     },
@@ -75,7 +56,6 @@ export function VmInstanceChangeSecurityGroupsModal({
       visible
       confirmLoading={mutation.isPending}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={async () => mutation.mutate(await form.validate())}

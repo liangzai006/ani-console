@@ -1,3 +1,11 @@
+import { listSecrets } from "@/api/secrets";
+import type { Secret } from "@/api/secrets";
+import type { NetworkSecurityGroup } from "@/api/network";
+import type { StorageFilesystem } from "@/api/storage/filesystems";
+import { createInstance } from "@/api/instances";
+import { listNetworkSecurityGroups, listNetworkSubnets, listNetworkVpcs } from "@/api/network";
+import { listRegistryImages } from "@/api/registry";
+import { listFilesystems } from "@/api/storage/filesystems";
 import {
   Alert,
   Button,
@@ -13,12 +21,8 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import type { components } from "@/api/core-schema";
 import { ImageNameText, Ipv4CidrInput, WizardSteps } from "@/components/common";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
-import { listOrThrow } from "@/lib/api-list";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import {
   CPU_INSTANCE_COMPUTE_SPECS,
   type CpuInstanceComputeSpec,
@@ -27,20 +31,8 @@ import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { optionalIpv4WithinCidrError, subnetFixedOctets, suggestGatewayIp } from "@/lib/validators";
 import styles from "./index.module.css";
 
-type Request = components["schemas"]["CreateInstanceRequest"];
-type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
-type Filesystem = components["schemas"]["StorageFilesystem"];
-type Secret = components["schemas"]["Secret"];
-type RegistryImage = {
-  image: string;
-  name?: string | null;
-  purpose?: string;
-  project: string;
-  repository: string;
-  tag: string;
-  size_bytes?: number | null;
-};
-type RegistryImageListResponse = { items: RegistryImage[]; total: number };
+type SecurityGroup = NetworkSecurityGroup;
+type Filesystem = StorageFilesystem;
 type DiskOption = "40-ssd" | "80-ssd" | "100-hdd";
 type DataDiskOption = "none" | "100-ssd" | "200-ssd";
 type VmConfig = {
@@ -76,7 +68,6 @@ type VmConfig = {
     read_only: boolean;
   }>;
 };
-type ExtendedRequest = Request & { image_ref: string; vm_config: VmConfig };
 type Values = {
   name: string;
   imageRef: string;
@@ -161,68 +152,43 @@ export function VmInstanceCreateModal({
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<Values>(INITIAL);
   const queryClient = useQueryClient();
-  const createScope = useIdempotencyScope("vm-instance-create", ["POST"]);
 
   useEffect(() => {
     if (!visible) return;
-    createScope.reset();
     form.setFieldsValue(INITIAL);
     setValues(INITIAL);
     setStep(0);
-  }, [createScope, form, visible]);
+  }, [form, visible]);
 
   const images = useQuery({
     queryKey: ["registry-images", "vm-create", "system"],
     enabled: visible,
-    queryFn: async () => {
-      const request = coreApi.GET as unknown as (
-        path: string,
-        options: unknown,
-      ) => Promise<{ data?: RegistryImageListResponse; error?: unknown }>;
-      const { data, error } = await request("/registry/images", {
-        params: { query: { limit: 100, purpose: "system" } },
-      });
-      if (error) throw error;
-      return data?.items ?? [];
-    },
+    queryFn: async () => (await listRegistryImages({ limit: 100, purpose: "system" })).items,
   });
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "vm-create"],
     enabled: visible,
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkVpcs({ limit: 100 }),
   });
   const subnets = useQuery({
     queryKey: ["network-subnets", "vm-create", values.vpcId],
     enabled: visible && !!values.vpcId,
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/subnets", {
-          params: { query: { limit: 100, vpc_id: values.vpcId } },
-        }),
-      ),
+    queryFn: () => listNetworkSubnets({ limit: 100, vpc_id: values.vpcId }),
   });
   const securityGroups = useQuery({
     queryKey: ["network-security-groups", "vm-create", values.vpcId],
     enabled: visible && !!values.vpcId,
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/security-groups", {
-          params: { query: { limit: 100, vpc_id: values.vpcId } },
-        }),
-      ),
+    queryFn: () => listNetworkSecurityGroups({ limit: 100, vpc_id: values.vpcId }),
   });
   const filesystems = useQuery({
     queryKey: ["filesystems", "vm-create"],
     enabled: visible,
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/filesystems", { params: { query: { limit: 100 } } })),
+    queryFn: () => listFilesystems({ limit: 100 }),
   });
   const secrets = useQuery({
     queryKey: ["secrets", "vm-create"],
     enabled: visible,
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/secrets", { params: { query: { limit: 100 } } })),
+    queryFn: () => listSecrets({ limit: 100 }),
   });
   const availableSubnets = (subnets.data?.items ?? []).filter(
     (item) => item.vpc_id === values.vpcId,
@@ -312,19 +278,9 @@ export function VmInstanceCreateModal({
         ssh_key_ref: values.loginMode === "ssh-key" ? values.sshKeyRef : null,
         vm_config: vmConfig,
       };
-      const body = createScope.withKey(submitData) as ExtendedRequest;
-      const { data, error, response } = await coreApi.POST("/instances", {
-        body,
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
-      return data?.operation_id;
+      return (await createInstance(submitData)).operation_id;
     },
     onSuccess: async (operationId) => {
-      createScope.reset();
       Message.success("云主机创建已提交");
       await queryClient.invalidateQueries({ queryKey: ["vm-instances"] });
       onCreated(operationId);
@@ -333,7 +289,6 @@ export function VmInstanceCreateModal({
   });
 
   const close = () => {
-    createScope.reset();
     onCancel();
   };
   const next = async () => {

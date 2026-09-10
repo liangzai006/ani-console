@@ -1,17 +1,6 @@
 # Console 当前状态
 
-> 本文件是项目当前状态与简短开发记录的唯一真来源，仅保留仍有效的口径、缺口和最近变更。
-
-## 当前口径
-
-- 项目：独立 ANI Console 前端；仓库根目录已代表 Console 范围，路由和文件直接按业务领域或资源命名。
-- 后端：独立 ANI 仓库；接口契约与行为以 Core OpenAPI、实现代码和 GitNexus 索引 `ANI` 为准。
-- 临时接口补充：开始 Core API 对接前，先查询 GitNexus 索引 `ani-console对接文档补充`，纳入后端测试环境先部署、代码尚未合并期间独立整理的接口说明；发现契约差异时停止推断并请求确认。
-- API：Core `/api/v1` 通过 `src/api/client.ts` 的 `coreApi` 调用；Services `/api/v1/svc` 通过 `src/api/services-client.ts` 的 `servicesApi` 调用。
-- 产品原型：GitNexus 索引 `产品原型-9.08 v2`；页面信息架构与交互布局以该版本为准。
-- UI：使用 Arco Design React 和 Arco Token，Tailwind 仅负责布局；沿用现有顶部一级导航及侧栏层级。
-- 验证：任何新增或修改完成后必须对变更代码运行 Oxlint、通过 `pnpm fmt` 对全仓运行项目内 oxfmt，并运行 TypeScript typecheck、`git diff --check` 与 GitNexus 变更检测；不运行 production build 或干预用户的 `pnpm dev`。
-- 测试：快速迭代阶段不保留自动化测试资产，页面与交互由用户手动验证。
+> 本文件只记录当前功能状态、缺口和最近变更；开发规则以 `AGENTS.md` 及其引用的专项文档为准。
 
 ## 模块状态
 
@@ -34,6 +23,7 @@
 
 | 日期 | 摘要 |
 |------|------|
+| 2026-09-10 | 完成前端 API 层重构：以 Axios 替换 `openapi-fetch`，移除 Core/Services 生成式 schema、旧客户端及兼容 Hook，将认证、AI、实例、网络、存储等请求与静态类型按资源模块收敛；公共层统一认证刷新、错误、SSE 和隔离预签名上传，写请求幂等迁入 API 内部，页面只提交无 key DTO。同步新增 API 对接流程并收敛工程文档职责，`PROJECT-STATUS.md` 只保留状态、缺口和日期记录。全仓 oxfmt 与格式检查、Oxlint、TypeScript、差异格式及本地文档链接检查通过；GitNexus 累计工作区变更为 CRITICAL，来自 223 个文件的累计改动及 216 条受影响流程。 |
 | 2026-09-10 | 明确所有 Agent 的 pnpm 命令必须在 Codex 沙箱外由系统 Corepack 按项目 `packageManager` 执行，并补齐 route component 仅承担路由输入适配与领域页面组合的薄入口边界。文档链接与内容一致性、Oxlint、全仓 oxfmt、TypeScript 与差异格式检查通过；GitNexus 对本次暂存文档变更评估为 LOW，未命中执行流。 |
 | 2026-09-10 | 收敛向量存储列表交互：有关联时可直接点击“关联知识库”列中的知识库名称打开详情，未关联时继续显示“未关联”，并移除操作列中的独立知识库入口；操作列只保留“检索测试”直接操作，将“重建索引”和“删除”移入“更多”菜单，延续原禁用条件、重建状态与危险操作确认。变更代码 Oxlint、全仓 oxfmt、TypeScript 与差异格式检查通过。 |
 | 2026-09-09 | 对齐 `产品原型-9.08 v2` 并完善 AI 管理：知识库创建改为选择 `ready` 且具备 `embedding` 能力的真实模型，成功后留在列表；详情接入服务端多会话、历史消息、删除、引用回溯、权限白名单、文档分块和失败重解析，问答按编排、会话展示和请求适配拆分，文档解析改为表格。后端 `/models` 目前仅落实状态过滤，前端保留能力兜底与 TODO；OpenAPI 已声明但网关未注册的 `/config`、`/rebuild` 和库级 `/models` 暂未接入。推理服务详情收敛基本信息与关联摘要，展示引擎/精度、OpenAI 兼容信息、调用地址、QPS/并发并可直达策略页，右侧统一关联资源、策略、调用测试、监控、日志和事件。变更代码 Oxlint、全仓 oxfmt、TypeScript 与差异格式检查通过；GitNexus 累计工作区变更检测为 HIGH。 |

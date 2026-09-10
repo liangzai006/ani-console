@@ -1,3 +1,4 @@
+import type { InstanceRecord } from "@/api/instances";
 import {
   Alert,
   Button,
@@ -7,9 +8,8 @@ import {
   Tag,
   Typography,
 } from "@arco-design/web-react";
-import type { components } from "@/api/core-schema";
 
-type VmInstance = components["schemas"]["InstanceRecord"];
+type VmInstance = InstanceRecord;
 
 export function VmInstanceSshAccess({
   instance,

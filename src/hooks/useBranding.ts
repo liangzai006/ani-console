@@ -1,18 +1,14 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { coreApi } from "@/api/client";
-import { useBrandingStore, type BrandingConfig } from "@/stores/branding";
+import { getBranding } from "@/api/branding";
+import { useBrandingStore } from "@/stores/branding";
 
 export function useBranding() {
   const setBranding = useBrandingStore((s) => s.setBranding);
 
   const query = useQuery({
     queryKey: ["branding"],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/branding");
-      if (error) throw error;
-      return data as BrandingConfig;
-    },
+    queryFn: getBranding,
     staleTime: 300_000,
   });
 

@@ -2,9 +2,8 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
 import { useState } from "react";
-import { servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
-import { showApiError } from "@/api/helpers";
+import { deleteKnowledgeBase, listKnowledgeBases, type KnowledgeBase } from "@/api/knowledge";
+import { showApiError } from "@/lib/api-error";
 import { CreateKnowledgeBaseModal } from "@/components/knowledge/CreateKnowledgeBaseModal";
 import {
   ListDataTable,
@@ -25,7 +24,6 @@ import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
-type KnowledgeBase = components["schemas"]["KnowledgeBase"];
 type StatusFilter = "all" | "active" | "rebuilding";
 type SearchField = "name" | "id";
 
@@ -43,28 +41,17 @@ export function KnowledgeBasesPage() {
       fetchPage: async ({ cursor, limit }) => {
         const keyword = searchText.trim();
         // TODO: 待后端联调确认 status/name/id 查询参数及筛选后 total 的最终契约。
-        const { data, error } = await servicesApi.GET("/knowledge-bases", {
-          params: {
-            query: {
-              limit,
-              cursor,
-              status: status === "all" ? undefined : status,
-              name: searchField === "name" && keyword ? keyword : undefined,
-              id: searchField === "id" && keyword ? keyword : undefined,
-            },
-          },
+        return listKnowledgeBases({
+          limit,
+          cursor,
+          status: status === "all" ? undefined : status,
+          name: searchField === "name" && keyword ? keyword : undefined,
+          id: searchField === "id" && keyword ? keyword : undefined,
         });
-        if (error || !data) throw error ?? new Error("知识库列表未返回结果");
-        return data;
       },
     });
   const remove = useMutation({
-    mutationFn: async (item: KnowledgeBase) => {
-      const { error } = await servicesApi.DELETE("/knowledge-bases/{kb_id}", {
-        params: { path: { kb_id: item.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (item: KnowledgeBase) => deleteKnowledgeBase(item.id),
     onSuccess: () => {
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["knowledge-bases"] });

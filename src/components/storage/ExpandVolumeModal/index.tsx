@@ -1,12 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, InputNumber, Modal, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { expandVolume, type StorageVolume } from "@/api/storage/volumes";
+import { showApiError } from "@/lib/api-error";
 
-type Volume = components["schemas"]["StorageVolume"];
+type Volume = StorageVolume;
 
 export function ExpandVolumeModal({
   visible,
@@ -18,7 +16,6 @@ export function ExpandVolumeModal({
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
-  const expandScope = useIdempotencyScope("storage-volume-expand", ["POST", volume?.id]);
   const [sizeGiB, setSizeGiB] = useState(1);
   useEffect(() => {
     if (visible && volume) setSizeGiB(volume.size_gib + 1);
@@ -28,15 +25,9 @@ export function ExpandVolumeModal({
       if (!volume) throw new Error("块存储卷不存在");
       if (!Number.isInteger(sizeGiB) || sizeGiB <= volume.size_gib)
         throw new Error(`新容量必须大于当前容量 ${volume.size_gib} GiB`);
-      const submitData = { size_gib: sizeGiB };
-      const { error } = await coreApi.POST("/volumes/{volume_id}/expand", {
-        params: { path: { volume_id: volume.id } },
-        body: expandScope.withKey(submitData),
-      });
-      if (error) throw error;
+      return expandVolume(volume.id, { size_gib: sizeGiB });
     },
     onSuccess: () => {
-      expandScope.reset();
       qc.invalidateQueries({ queryKey: ["volumes"] });
       if (volume) qc.invalidateQueries({ queryKey: ["volume", volume.id] });
       onCancel();
@@ -47,10 +38,7 @@ export function ExpandVolumeModal({
     <Modal
       visible={visible}
       title="扩容块存储卷"
-      onCancel={() => {
-        expandScope.reset();
-        onCancel();
-      }}
+      onCancel={onCancel}
       onOk={() => expand.mutateAsync(undefined)}
       confirmLoading={expand.isPending}
       unmountOnExit

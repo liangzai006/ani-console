@@ -11,10 +11,16 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import { showApiError } from "@/lib/api-error";
+import {
+  deleteRegistryTag,
+  getRegistryPushInstructions,
+  listRegistryImages,
+  listRegistryProjects,
+  type RegistryImage,
+  type RegistryPurpose,
+  type RegistryScanResult,
+} from "@/api/registry";
 import {
   ListDataTable,
   ListPageFrame,
@@ -31,35 +37,6 @@ import { formatBytes, formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-
-type RegistryProject = components["schemas"]["RegistryProject"];
-type RegistryScanResult = components["schemas"]["RegistryScanResult"];
-type RegistryPurpose = "container" | "gpu" | "sandbox" | "system";
-type RegistryImage = {
-  name?: string | null;
-  project: string;
-  repository: string;
-  tag: string;
-  image: string;
-  purpose?: RegistryPurpose;
-  digest: string;
-  size_bytes: number;
-  pull_command?: string;
-  pushed_at: string;
-  scan_status: RegistryScanResult;
-};
-type RegistryImageListResponse = {
-  items: RegistryImage[];
-  total: number;
-  next_cursor?: string | null;
-};
-type RegistryPushInstructions = {
-  project: string;
-  registry: string;
-  repository_example: string;
-  commands: Array<{ label: string; command: string }>;
-};
-type RegistryApiResponse<T> = Promise<{ data?: T; error?: unknown }>;
 
 const PURPOSE_LABELS: Record<RegistryPurpose, string> = {
   container: "容器镜像",
@@ -92,13 +69,7 @@ export function RegistryPage() {
 
   const projects = useQuery({
     queryKey: ["registry-projects"],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/registry/projects", {
-        params: { query: { limit: 100 } },
-      });
-      if (error) throw error;
-      return (data?.items ?? []) as RegistryProject[];
-    },
+    queryFn: () => listRegistryProjects({ limit: 100 }).then((data) => data.items),
   });
   const {
     query: images,
@@ -112,43 +83,18 @@ export function RegistryPage() {
     queryKey: ["registry-images", { keyword, project, purpose }],
     cursorScope: `${keyword.trim()}:${project}:${purpose}`,
     fetchPage: async ({ cursor, limit }) => {
-      const request = coreApi.GET as unknown as (
-        path: string,
-        options: { params: { query: never } },
-      ) => RegistryApiResponse<RegistryImageListResponse>;
-      const { data, error } = await request("/registry/images", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            keyword: keyword.trim() || undefined,
-            project: project === "all" ? undefined : project,
-            purpose: purpose === "all" ? undefined : purpose,
-          }),
-        },
+      return listRegistryImages({
+        limit,
+        cursor,
+        keyword: keyword.trim() || undefined,
+        project: project === "all" ? undefined : project,
+        purpose: purpose === "all" ? undefined : purpose,
       });
-      if (error || !data) throw error ?? new Error("Registry 镜像列表未返回结果");
-      return data;
     },
   });
   const guide = useQuery({
     queryKey: ["registry-push-instructions", guideProject, guideRepository],
-    queryFn: async () => {
-      const request = coreApi.GET as unknown as (
-        path: string,
-        options: {
-          params: { path: { project: string }; query: { repository: string } };
-        },
-      ) => RegistryApiResponse<RegistryPushInstructions>;
-      const { data, error } = await request("/registry/projects/{project}/push-instructions", {
-        params: {
-          path: { project: guideProject },
-          query: { repository: guideRepository.trim() || "demo/app" },
-        },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getRegistryPushInstructions(guideProject, guideRepository.trim() || "demo/app"),
     enabled: guideVisible && !!guideProject,
   });
 
@@ -157,29 +103,7 @@ export function RegistryPage() {
   }, [guideProject, projects.data]);
 
   const deleteTag = useMutation({
-    mutationFn: async (item: RegistryImage) => {
-      const request = coreApi.DELETE as unknown as (
-        path: string,
-        options: {
-          params: {
-            path: { project: string; repository: string; tag: string };
-          };
-        },
-      ) => RegistryApiResponse<unknown>;
-      const { error } = await request(
-        "/registry/projects/{project}/repositories/{repository}/tags/{tag}",
-        {
-          params: {
-            path: {
-              project: item.project,
-              repository: item.repository,
-              tag: item.tag,
-            },
-          },
-        },
-      );
-      if (error) throw error;
-    },
+    mutationFn: (item: RegistryImage) => deleteRegistryTag(item.project, item.repository, item.tag),
     onSuccess: () => {
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["registry-images"] });

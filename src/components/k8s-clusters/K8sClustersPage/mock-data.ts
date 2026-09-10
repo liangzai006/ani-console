@@ -1,8 +1,8 @@
-import type { components } from "@/api/core-schema";
-
-type Cluster = components["schemas"]["K8sCluster"];
-type NodePool = components["schemas"]["K8sClusterNodePool"];
-type Workload = components["schemas"]["K8sClusterWorkload"];
+import type {
+  K8sCluster as Cluster,
+  K8sClusterNodePool as NodePool,
+  K8sClusterWorkload as Workload,
+} from "@/api/k8s-clusters";
 
 // 开发预览开关：设置 VITE_K8S_MOCK_DATA=false 可恢复真实接口。
 // 后续移除 Mock 时，删除本文件及 K8S 页面中的 mock 查询分支即可。

@@ -1,9 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Tooltip } from "@arco-design/web-react";
 import { useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import type { components } from "@/api/core-schema";
+import { listBuckets, type StorageBucketRecord } from "@/api/storage/buckets";
 import { CreateBucketModal } from "@/components/storage/CreateBucketModal";
 import {
   ListDataTable,
@@ -22,7 +20,7 @@ import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatBytes, formatDateTime } from "@/lib/format";
 
-type Bucket = components["schemas"]["StorageBucketRecord"];
+type Bucket = StorageBucketRecord;
 type SearchField = "name" | "id";
 
 export function ObjectsPage() {
@@ -42,18 +40,12 @@ export function ObjectsPage() {
     cursorScope: `${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
-      const { data, error } = await coreApi.GET("/buckets", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      return listBuckets({
+        limit,
+        cursor,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error || !data) throw error ?? new Error("对象存储桶列表未返回结果");
-      return data;
     },
   });
   const items = (buckets.data?.items ?? []) as Bucket[];

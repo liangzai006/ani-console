@@ -1,21 +1,21 @@
 import { Alert, Button, Empty } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
-import { servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
+import {
+  listInferenceServicePolicies,
+  type InferenceAccessPolicy,
+} from "@/api/ai-services/inference";
 import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 
-type InferencePolicy = components["schemas"]["InferenceAccessPolicy"];
-
-const SCOPE_LABELS: Record<InferencePolicy["scope"]["type"], string> = {
+const SCOPE_LABELS: Record<InferenceAccessPolicy["scope"]["type"], string> = {
   tenant_default: "租户默认",
   inference_service: "推理服务",
   api_key: "API Key",
   inference_service_api_key: "服务与 API Key",
 };
 
-function formatRateLimits(policy: InferencePolicy) {
+function formatRateLimits(policy: InferenceAccessPolicy) {
   const limits = [
     policy.rate_limits.qps ? `QPS ${policy.rate_limits.qps}` : "",
     policy.rate_limits.rpm ? `RPM ${policy.rate_limits.rpm}` : "",
@@ -26,13 +26,7 @@ function formatRateLimits(policy: InferencePolicy) {
 export function InferencePolicies({ serviceId }: { serviceId: string }) {
   const policies = useQuery({
     queryKey: ["inference-service-policies", serviceId],
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/inference-services/{service_id}/policies", {
-        params: { path: { service_id: serviceId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listInferenceServicePolicies(serviceId),
   });
 
   return (
@@ -56,7 +50,7 @@ export function InferencePolicies({ serviceId }: { serviceId: string }) {
           content={getErrorMessage(policies.error, "访问策略加载失败")}
         />
       ) : (
-        <DataTable<InferencePolicy>
+        <DataTable<InferenceAccessPolicy>
           data={policies.data?.policies ?? []}
           loading={policies.isFetching}
           pagination={false}

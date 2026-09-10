@@ -1,3 +1,5 @@
+import type { AsyncTask } from "@/api/tasks";
+import { createSandboxCodeRun, type SandboxCodeRun } from "@/api/instances";
 import {
   Alert,
   Button,
@@ -14,15 +16,10 @@ import {
 } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
-import { showSandboxError, throwSandboxApiError } from "../utils";
+import { showSandboxError } from "../utils";
 
 type Language = "python" | "javascript";
-type SandboxCodeRun = components["schemas"]["SandboxCodeRun"];
-type AsyncTask = components["schemas"]["AsyncTask"];
 
 const SAMPLES: Record<Language, string> = {
   python: 'print("Hello from ANI Sandbox")',
@@ -38,7 +35,6 @@ export function SandboxCodeRunner({
   running: boolean;
   onChanged: () => void;
 }) {
-  const runScope = useIdempotencyScope("sandbox-code-run", ["POST", instanceId]);
   const [language, setLanguage] = useState<Language>("python");
   const [code, setCode] = useState(SAMPLES.python);
   const [stdin, setStdin] = useState("");
@@ -54,20 +50,9 @@ export function SandboxCodeRunner({
         timeout_seconds: timeoutSeconds,
         stdin: stdin || undefined,
       };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/sandbox/code-runs",
-        {
-          params: { path: { instance_id: instanceId } },
-          body: runScope.withKey(submitData),
-        },
-      );
-      if (error || !data) {
-        throwSandboxApiError(error, response.status, "代码执行失败");
-      }
-      return data;
+      return createSandboxCodeRun(instanceId, submitData);
     },
     onSuccess: (task) => {
-      runScope.reset();
       setLastTask(task);
       const result = (task.result as unknown as { code_run?: SandboxCodeRun } | undefined)
         ?.code_run;

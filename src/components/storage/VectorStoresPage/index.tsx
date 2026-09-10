@@ -2,10 +2,13 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dropdown, Menu, Message, Modal, Tooltip } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  deleteVectorStore,
+  listVectorStores,
+  rebuildVectorStoreIndex,
+  type VectorStore,
+} from "@/api/storage/vector-stores";
+import { showApiError } from "@/lib/api-error";
 import { CreateVectorStoreModal } from "@/components/storage/CreateVectorStoreModal";
 import {
   ListDataTable,
@@ -25,15 +28,12 @@ import {
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type VectorStore = components["schemas"]["VectorStore"];
 type StatusFilter = "all" | "ready" | "pending";
 type SearchField = "name" | "id";
 
 export function VectorStoresPage() {
   const qc = useQueryClient();
-  const rebuildScope = useIdempotencyScope("storage-vector-store-rebuild", ["POST"]);
   const navigate = useNavigate();
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -52,28 +52,17 @@ export function VectorStoresPage() {
     cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
-      const { data, error } = await coreApi.GET("/vector-stores", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            status: status === "all" ? undefined : status,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      return listVectorStores({
+        limit,
+        cursor,
+        status: status === "all" ? undefined : status,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error || !data) throw error ?? new Error("向量存储列表未返回结果");
-      return data;
     },
   });
   const remove = useMutation({
-    mutationFn: async (item: VectorStore) => {
-      const { error } = await coreApi.DELETE("/vector-stores/{vector_store_id}", {
-        params: { path: { vector_store_id: item.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (item: VectorStore) => deleteVectorStore(item.id),
     onSuccess: () => {
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["vector-stores"] });
@@ -81,16 +70,8 @@ export function VectorStoresPage() {
     onError: (error) => showApiError(error),
   });
   const rebuildIndex = useMutation({
-    mutationFn: async (item: VectorStore) => {
-      const submitData = {};
-      const { error } = await coreApi.POST("/vector-stores/{vector_store_id}/rebuild-index", {
-        params: { path: { vector_store_id: item.id } },
-        body: rebuildScope.withKey(submitData, [item.id]),
-      });
-      if (error) throw error;
-    },
+    mutationFn: (item: VectorStore) => rebuildVectorStoreIndex(item.id),
     onSuccess: (_, item) => {
-      rebuildScope.reset([item.id]);
       Message.success(`已提交「${item.name}」索引重建`);
       void qc.invalidateQueries({ queryKey: ["vector-stores"] });
       void qc.invalidateQueries({ queryKey: ["vector-store", item.id] });

@@ -1,11 +1,10 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceRecord } from "@/api/instances";
 import { Checkbox, Form, Input, Message, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 type Values = { snapshotName: string; includeDataDisks?: boolean };
 
 export function VmInstanceSnapshotModal({
@@ -18,7 +17,6 @@ export function VmInstanceSnapshotModal({
   onSubmitted: (operationId: string) => void;
 }) {
   const [form] = Form.useForm<Values>();
-  const scope = useIdempotencyScope("vm-instance-snapshot", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
       const submitData = {
@@ -26,21 +24,10 @@ export function VmInstanceSnapshotModal({
         snapshot_name: values.snapshotName.trim(),
         include_data_disks: values.includeDataDisks ?? false,
       };
-      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error || !data)
-        throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error ?? "操作未返回结果") }),
-          status: response.status,
-        };
+      const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      scope.reset();
       Message.success("创建快照已提交");
       onSubmitted(operationId);
     },
@@ -52,7 +39,6 @@ export function VmInstanceSnapshotModal({
       visible
       confirmLoading={mutation.isPending}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={async () => mutation.mutate(await form.validate())}

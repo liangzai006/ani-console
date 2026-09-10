@@ -9,18 +9,21 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { useCallback, useMemo, useState } from "react";
-import { servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
+import {
+  deleteKnowledgeBaseSession,
+  listKnowledgeBaseCitations,
+  listKnowledgeBaseSessionMessages,
+  listKnowledgeBaseSessions,
+  type KBCitation as Citation,
+  type KBSession as Session,
+  type KBSessionMessage as SessionMessage,
+} from "@/api/knowledge";
 import { getErrorMessage } from "@/lib/errors";
 import { KnowledgeCitationsDrawer } from "./KnowledgeCitationsDrawer";
 import { KnowledgeConversation } from "./KnowledgeConversation";
 import { KnowledgeSessionsSidebar } from "./KnowledgeSessionsSidebar";
 import { toThreadMessage, type QueryMode } from "./knowledgeQueryAdapter";
 import styles from "./index.module.css";
-
-type Citation = components["schemas"]["KBCitation"];
-type Session = components["schemas"]["KBSession"];
-type SessionMessage = components["schemas"]["KBSessionMessage"];
 
 export function KnowledgeChatPanel({
   kbId,
@@ -41,10 +44,7 @@ export function KnowledgeChatPanel({
       const items: Session[] = [];
       let cursor: string | undefined;
       do {
-        const { data, error } = await servicesApi.GET("/knowledge-bases/{kb_id}/sessions", {
-          params: { path: { kb_id: kbId }, query: { limit: 100, cursor } },
-        });
-        if (error || !data) throw error ?? new Error("会话列表未返回结果");
+        const data = await listKnowledgeBaseSessions(kbId, { limit: 100, cursor });
         items.push(...data.items);
         cursor = data.next_cursor ?? undefined;
       } while (cursor);
@@ -58,16 +58,10 @@ export function KnowledgeChatPanel({
       const items: SessionMessage[] = [];
       let cursor: string | undefined;
       do {
-        const { data, error } = await servicesApi.GET(
-          "/knowledge-bases/{kb_id}/sessions/{session_id}/messages",
-          {
-            params: {
-              path: { kb_id: kbId, session_id: activeSessionId! },
-              query: { limit: 100, cursor },
-            },
-          },
-        );
-        if (error || !data) throw error ?? new Error("会话消息未返回结果");
+        const data = await listKnowledgeBaseSessionMessages(kbId, activeSessionId!, {
+          limit: 100,
+          cursor,
+        });
         items.push(...data.items);
         cursor = data.next_cursor ?? undefined;
       } while (cursor);
@@ -81,10 +75,7 @@ export function KnowledgeChatPanel({
       const items: Citation[] = [];
       let cursor: string | undefined;
       do {
-        const { data, error } = await servicesApi.GET("/knowledge-bases/{kb_id}/citations", {
-          params: { path: { kb_id: kbId }, query: { limit: 100, cursor } },
-        });
-        if (error || !data) throw error ?? new Error("引用列表未返回结果");
+        const data = await listKnowledgeBaseCitations(kbId, { limit: 100, cursor });
         items.push(...data.items);
         cursor = data.next_cursor ?? undefined;
       } while (cursor);
@@ -96,12 +87,7 @@ export function KnowledgeChatPanel({
     [messages.data],
   );
   const deleteSession = useMutation({
-    mutationFn: async (session: Session) => {
-      const { error } = await servicesApi.DELETE("/knowledge-bases/{kb_id}/sessions/{session_id}", {
-        params: { path: { kb_id: kbId, session_id: session.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (session: Session) => deleteKnowledgeBaseSession(kbId, session.id),
     onSuccess: (_, session) => {
       Message.success("会话已删除");
       if (activeSessionId === session.id) {
@@ -200,7 +186,6 @@ export function KnowledgeChatPanel({
               <KnowledgeConversation
                 key={sessionKey}
                 kbId={kbId}
-                sessionKey={sessionKey}
                 sessionId={activeSessionId}
                 initialMessages={initialMessages}
                 mode={mode}

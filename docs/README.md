@@ -5,5 +5,6 @@
 ## 开发文档
 
 - [工程约定](./CONVENTIONS.md)
+- [API 对接流程](./API-INTEGRATION.md)
 - [UI 开发约定](./UI-CONVENTIONS.md)
 - [当前状态与变更记录](./PROJECT-STATUS.md)

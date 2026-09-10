@@ -10,40 +10,37 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
 import { useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import { applyInstanceLifecycle, getInstance } from "@/api/instances";
+import {
+  deleteVolume as removeVolume,
+  getVolume,
+  listVolumeSnapshots,
+  type StorageVolume,
+  type VolumeSnapshotRecord,
+} from "@/api/storage/volumes";
+import { showApiError } from "@/lib/api-error";
 import { AttachVolumeModal } from "@/components/storage/AttachVolumeModal";
 import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnapshotModal";
 import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
 import { VolumeOSInitGuideModal } from "@/components/storage/VolumeOSInitGuideModal";
-import { listOrThrow } from "@/lib/api-list";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type Volume = components["schemas"]["StorageVolume"];
-type VolumeSnapshot = components["schemas"]["VolumeSnapshotRecord"];
+type Volume = StorageVolume;
+type VolumeSnapshot = VolumeSnapshotRecord;
 type MountedInstanceRow = { id: string; name: string; route?: string | null };
 
 export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const detachScope = useIdempotencyScope("storage-volume-detach", ["POST", volumeId]);
   const [snapshotVisible, setSnapshotVisible] = useState(false);
   const [attachVisible, setAttachVisible] = useState(false);
   const [expandVisible, setExpandVisible] = useState(false);
   const [initGuideVisible, setInitGuideVisible] = useState(false);
   const detail = useQuery({
     queryKey: ["volume", volumeId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/volumes/{volume_id}", {
-        params: { path: { volume_id: volumeId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getVolume(volumeId),
   });
   useListErrorNotification({
     id: `volume-detail:${volumeId}`,
@@ -52,12 +49,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   });
   const snapshots = useQuery({
     queryKey: ["volume-snapshots", volumeId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/volumes/{volume_id}/snapshots", {
-          params: { path: { volume_id: volumeId }, query: { limit: 100 } },
-        }),
-      ),
+    queryFn: () => listVolumeSnapshots(volumeId, { limit: 100 }),
   });
   useListErrorNotification({
     id: `volume-snapshots:${volumeId}`,
@@ -65,12 +57,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
     error: snapshots.error,
   });
   const deleteVolume = useMutation({
-    mutationFn: async (_: undefined) => {
-      const { error } = await coreApi.DELETE("/volumes/{volume_id}", {
-        params: { path: { volume_id: volumeId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (_: undefined) => removeVolume(volumeId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["volumes"] });
       navigate({ to: "/volumes" });
@@ -78,19 +65,12 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
     onError: (error) => showApiError(error),
   });
   const detachVolume = useMutation({
-    mutationFn: async (instanceId: string) => {
-      const submitData = {
+    mutationFn: (instanceId: string) =>
+      applyInstanceLifecycle(instanceId, {
         action: "detach_volume" as const,
         volume_id: volumeId,
-      };
-      const { error } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instanceId } },
-        body: detachScope.withKey(submitData, [instanceId]),
-      });
-      if (error) throw error;
-    },
-    onSuccess: (_data, instanceId) => {
-      detachScope.reset([instanceId]);
+      }),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["instances"] });
       qc.invalidateQueries({ queryKey: ["volume", volumeId] });
       qc.invalidateQueries({ queryKey: ["volumes"] });
@@ -120,14 +100,13 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const mounted = Boolean(volume.mount_instance_id);
   const openMountedInstance = async () => {
     if (!volume.mount_instance_id) return;
-    const { data, error } = await coreApi.GET("/instances/{instance_id}", {
-      params: { path: { instance_id: volume.mount_instance_id } },
-    });
-    if (error || !data) {
-      showApiError(error ?? new Error("挂载实例详情未返回结果"));
+    try {
+      const instance = await getInstance(volume.mount_instance_id);
+      navigateToInstanceDetail(navigate, instance);
+    } catch (error) {
+      showApiError(error);
       return;
     }
-    navigateToInstanceDetail(navigate, data);
   };
   const unavailable = (description: string) => <Empty description={description} />;
   const volumeStatus = volume.reason ? (

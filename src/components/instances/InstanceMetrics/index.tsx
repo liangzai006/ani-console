@@ -1,17 +1,20 @@
+import {
+  getInstanceMetrics,
+  queryObservabilityRange,
+  type InstanceRecord,
+  type ObservabilityRangeQueryResponse,
+} from "@/api/instances";
 import { Alert, Card, Empty, Grid, Statistic, Tooltip } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import type { EChartsOption } from "echarts";
 import { useMemo } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { CoreLineBarChart } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { getErrorMessage } from "@/lib/errors";
 import { formatBytes } from "@/lib/format";
 
-type Metrics = components["schemas"]["InstanceMetrics"];
-type InstanceKind = components["schemas"]["InstanceRecord"]["kind"];
-type RangeMetrics = components["schemas"]["ObservabilityRangeQueryResponse"];
+type InstanceKind = InstanceRecord["kind"];
+type RangeMetrics = ObservabilityRangeQueryResponse;
 type MonitoringTrendSeries = {
   name: string;
   values: RangeMetrics["results"][number]["values"];
@@ -60,13 +63,7 @@ export function InstanceMetrics({
   const hasGpuMetrics = instanceKind === "gpu_container";
   const metrics = useQuery({
     queryKey: ["instance-metrics", instanceId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/instances/{instance_id}/metrics", {
-        params: { path: { instance_id: instanceId } },
-      });
-      if (error || !data) throw error ?? new Error("监控指标未返回结果");
-      return data as Metrics;
-    },
+    queryFn: () => getInstanceMetrics(instanceId),
     refetchInterval: 5_000,
   });
   const gpuTrend = useQuery({
@@ -75,18 +72,12 @@ export function InstanceMetrics({
     queryFn: async () => {
       const end = new Date();
       const start = new Date(end.getTime() - 60 * 60 * 1000);
-      const { data, error } = await coreApi.GET("/observability/query_range", {
-        params: {
-          query: {
-            query: `avg(DCGM_FI_DEV_GPU_UTIL{namespace="${instanceId}",pod="${instanceId}"})`,
-            start: start.toISOString(),
-            end: end.toISOString(),
-            step: "1m",
-          },
-        },
+      return queryObservabilityRange({
+        query: `avg(DCGM_FI_DEV_GPU_UTIL{namespace="${instanceId}",pod="${instanceId}"})`,
+        start: start.toISOString(),
+        end: end.toISOString(),
+        step: "1m",
       });
-      if (error || !data) throw error ?? new Error("GPU 利用率趋势未返回结果");
-      return data as RangeMetrics;
     },
     refetchInterval: 5_000,
   });
@@ -143,20 +134,12 @@ export function InstanceMetrics({
       return Promise.all(
         queries.map(async ({ name, promql, scale }): Promise<MonitoringTrendSeries> => {
           try {
-            const { data, error } = await coreApi.GET("/observability/query_range", {
-              params: {
-                query: {
-                  query: promql,
-                  start: start.toISOString(),
-                  end: end.toISOString(),
-                  step: "30s",
-                },
-              },
+            const result = await queryObservabilityRange({
+              query: promql,
+              start: start.toISOString(),
+              end: end.toISOString(),
+              step: "30s",
             });
-            if (error || !data) {
-              throw error ?? new Error(`${name}趋势未返回结果`);
-            }
-            const result = data as RangeMetrics;
             if (!result.dev_profile.real_provider) {
               return {
                 name,

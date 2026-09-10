@@ -1,15 +1,13 @@
+import { listVolumes } from "@/api/storage/volumes";
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { StorageVolume } from "@/api/storage/volumes";
+import type { InstanceRecord } from "@/api/instances";
 import { Checkbox, Form, Input, Message, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
-import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
-type StorageVolume = components["schemas"]["StorageVolume"];
+type Instance = InstanceRecord;
 type Values = { volumeId: string; mountPath: string; readOnly?: boolean };
 
 function attachedVolumeId(volume: NonNullable<Instance["volumes"]>[number]) {
@@ -28,21 +26,14 @@ export function VmInstanceAttachVolumeModal({
   onSubmitted: (operationId: string) => void;
 }) {
   const [form] = Form.useForm<Values>();
-  const scope = useIdempotencyScope("vm-instance-attach-volume", ["POST", instance.id]);
   const volumes = useQuery({
     queryKey: ["volumes", "vm-instance-attach-volume", instance.id],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/volumes", {
-          params: {
-            query: asUncontractedQuery({
-              limit: 100,
-              status: "pending,available",
-              available_for_instance_id: instance.id,
-            }),
-          },
-        }),
-      ),
+      listVolumes({
+        limit: 100,
+        status: "pending,available",
+        available_for_instance_id: instance.id,
+      }),
   });
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
@@ -52,21 +43,10 @@ export function VmInstanceAttachVolumeModal({
         mount_path: values.mountPath.trim(),
         read_only: values.readOnly ?? false,
       };
-      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error || !data)
-        throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error ?? "操作未返回结果") }),
-          status: response.status,
-        };
+      const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      scope.reset();
       Message.success("挂载云盘已提交");
       onSubmitted(operationId);
     },
@@ -85,7 +65,6 @@ export function VmInstanceAttachVolumeModal({
       visible
       confirmLoading={mutation.isPending}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={async () => mutation.mutate(await form.validate())}

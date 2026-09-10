@@ -2,8 +2,9 @@ import { Button, Empty, Message, Modal, Space, Spin } from "@arco-design/web-rea
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { showApiError } from "@/api/helpers";
-import { servicesApi } from "@/api/services-client";
+import { listInferenceServices } from "@/api/ai-services/inference";
+import { deleteModel, getModel } from "@/api/ai-services/models";
+import { showApiError } from "@/lib/api-error";
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import { AliIcon, DetailPageFrame, StatusTag, type DetailCard } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -21,22 +22,12 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
   const [deployVisible, setDeployVisible] = useState(false);
   const model = useQuery({
     queryKey: ["model", modelId],
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/models/{model_id}", {
-        params: { path: { model_id: modelId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getModel(modelId),
   });
   const relatedServices = useQuery({
     queryKey: ["model-related-inference-services", modelId],
     enabled: Boolean(model.data),
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/inference-services");
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listInferenceServices(),
   });
   useListErrorNotification({
     id: "model-detail:" + modelId,
@@ -49,12 +40,7 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
     error: relatedServices.error,
   });
   const remove = useMutation({
-    mutationFn: async () => {
-      const { error } = await servicesApi.DELETE("/models/{model_id}", {
-        params: { path: { model_id: modelId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: () => deleteModel(modelId),
     onSuccess: () => {
       Message.success("模型已删除");
       void qc.invalidateQueries({ queryKey: ["models"] });

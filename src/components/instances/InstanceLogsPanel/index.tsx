@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Empty, Select, Space, Spin, Typography } from "@arco-design/web-react";
-import { coreApi } from "@/api/client";
+import { streamInstanceLogs } from "@/api/instances";
 import { ApiErrorAlert } from "@/components/common";
-import type { operations } from "@/api/core-schema";
-
-type StreamInstanceLogsQuery = NonNullable<operations["streamInstanceLogs"]["parameters"]["query"]>;
-type LogLevel = NonNullable<StreamInstanceLogsQuery["level"]>;
+type LogLevel = "debug" | "info" | "warn" | "error";
 type LevelFilter = LogLevel | "all";
 type StreamStatus = "idle" | "connecting" | "connected";
 
@@ -52,32 +49,6 @@ function formatLog(log: InstanceLog): string {
     .filter(Boolean)
     .map((item) => `[${item}]`);
   return metadata.length ? `${metadata.join(" ")} ${log.message}` : log.message;
-}
-
-async function readErrorPayload(payload: unknown): Promise<{ code?: string; message?: string }> {
-  if (!(payload instanceof ReadableStream)) return {};
-  const text = await new Response(payload).text();
-  try {
-    return JSON.parse(text) as { code?: string; message?: string };
-  } catch {
-    return text ? { message: text } : {};
-  }
-}
-
-function createPreStreamError(status: number, payload: { code?: string; message?: string }): Error {
-  const message =
-    status === 400
-      ? "日志流参数错误"
-      : status === 401
-        ? "登录状态已失效，请重新登录"
-        : status === 403
-          ? "没有查看实例日志的权限"
-          : status === 404
-            ? "实例不存在或已删除"
-            : status === 503
-              ? "当前环境不支持日志流"
-              : payload.message || `日志流连接失败（HTTP ${status}）`;
-  return new Error(message);
 }
 
 async function readLogStream(
@@ -144,23 +115,15 @@ async function connectLogStream({
   appendLog: (log: InstanceLog) => void;
   onConnected: () => void;
 }): Promise<StreamResult> {
-  const { data, error, response } = await coreApi.GET("/instances/{instance_id}/logs/stream", {
-    params: {
-      path: { instance_id: instanceId },
-      query: {
-        limit: LOG_LIMIT,
-        interval_seconds: LOG_INTERVAL_SECONDS,
-        level: level === "all" ? undefined : level,
-      },
+  const data = await streamInstanceLogs(
+    instanceId,
+    {
+      limit: LOG_LIMIT,
+      interval_seconds: LOG_INTERVAL_SECONDS,
+      level: level === "all" ? undefined : level,
     },
-    parseAs: "stream",
     signal,
-  });
-
-  if (!response.ok || error) {
-    throw createPreStreamError(response.status, await readErrorPayload(error));
-  }
-  if (!data) throw new Error("日志流响应没有可读取的内容");
+  );
 
   onConnected();
   return readLogStream(data, signal, appendLog);

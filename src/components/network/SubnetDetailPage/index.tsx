@@ -10,19 +10,24 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Empty, Modal, Space, Spin, Tag, Typography } from "@arco-design/web-react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import { listInstances, type InstanceRecord } from "@/api/instances";
+import {
+  deleteNetworkSubnet,
+  getNetworkSubnet,
+  getNetworkVpc,
+  listNetworkRoutes,
+  type NetworkRoute,
+  type NetworkSubnet,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import { formatDateTime } from "@/lib/format";
-import { listOrThrow } from "@/lib/api-list";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type Subnet = components["schemas"]["NetworkSubnet"];
-type Vpc = components["schemas"]["NetworkVPC"];
-type Instance = components["schemas"]["InstanceRecord"];
-type NetworkRoute = components["schemas"]["NetworkRoute"];
+type Subnet = NetworkSubnet;
+type Vpc = NetworkVPC;
+type Instance = InstanceRecord;
 type SubnetRouteRow = {
   id: string;
   destinationCidr: string;
@@ -38,44 +43,20 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
   const qc = useQueryClient();
   const detail = useQuery({
     queryKey: ["network-subnet", subnetId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/networks/subnets/{subnet_id}", {
-        params: { path: { subnet_id: subnetId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getNetworkSubnet(subnetId),
   });
   const vpc = useQuery({
     queryKey: ["network-vpc", detail.data?.vpc_id],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/networks/vpcs/{vpc_id}", {
-        params: { path: { vpc_id: detail.data!.vpc_id } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getNetworkVpc(detail.data!.vpc_id),
     enabled: Boolean(detail.data?.vpc_id),
   });
   const instances = useQuery({
     queryKey: ["instances", "subnet", subnetId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/instances", {
-          params: {
-            query: asUncontractedQuery({ limit: 100, subnet_id: subnetId }),
-          },
-        }),
-      ),
+    queryFn: () => listInstances({ limit: 100, subnet_id: subnetId }),
   });
   const routes = useQuery({
     queryKey: ["network-routes", "subnet-vpc", detail.data?.vpc_id],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/routes", {
-          params: { query: { vpc_id: detail.data!.vpc_id, limit: 100 } },
-        }),
-      ),
+    queryFn: () => listNetworkRoutes({ vpc_id: detail.data!.vpc_id, limit: 100 }),
     enabled: Boolean(detail.data?.vpc_id),
   });
   useListErrorNotification({
@@ -99,12 +80,7 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
     error: routes.error,
   });
   const deleteSubnet = useMutation({
-    mutationFn: async () => {
-      const { error } = await coreApi.DELETE("/networks/subnets/{subnet_id}", {
-        params: { path: { subnet_id: subnetId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: () => deleteNetworkSubnet(subnetId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["network-subnets"] });
       navigate({ to: "/subnets" });

@@ -1,9 +1,9 @@
+import type { InstanceRecord } from "@/api/instances";
 import { Empty, Space, Typography } from "@arco-design/web-react";
-import type { components } from "@/api/core-schema";
 import { DataTable } from "@/components/common";
 import { getImageDisplayName } from "@/lib/render";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 type ImageRow = {
   key: string;
   image: NonNullable<Instance["image"]>;

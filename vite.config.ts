@@ -6,7 +6,7 @@ import path from "node:path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  // 开发态可选：将 /api/v1 代理到 Mock Server 或真实 Gateway（见 .env.example）
+  // 开发态可选：将 /api 代理到 Mock Server 或真实 Gateway（见 .env.development）
   const apiTarget = env.VITE_API_PROXY_TARGET || "http://127.0.0.1:4010";
 
   return {

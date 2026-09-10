@@ -1,26 +1,14 @@
+import { listInstanceEvents, type InstanceEvent } from "@/api/instances";
 import { Empty, Tag } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { DataTable } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
-type InstanceEvent = components["schemas"]["InstanceEvent"];
-
 export function InstanceEvents({ instanceId }: { instanceId: string }) {
   const events = useQuery({
     queryKey: ["instance-events", instanceId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/instances/{instance_id}/events", {
-        params: {
-          path: { instance_id: instanceId },
-          query: { limit: 100 },
-        },
-      });
-      if (error || !data) throw error ?? new Error("事件列表未返回结果");
-      return data.items as InstanceEvent[];
-    },
+    queryFn: async () => (await listInstanceEvents(instanceId)).items,
   });
   useListErrorNotification({
     id: `instance-events:${instanceId}`,

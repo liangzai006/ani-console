@@ -2,10 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import { applyInstanceLifecycle } from "@/api/instances";
+import {
+  deleteVolume as removeVolume,
+  listVolumes,
+  type StorageVolume,
+} from "@/api/storage/volumes";
+import { showApiError } from "@/lib/api-error";
 import { CreateVolumeModal } from "@/components/storage/CreateVolumeModal";
 import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnapshotModal";
 import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
@@ -28,15 +31,13 @@ import {
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type Volume = components["schemas"]["StorageVolume"];
+type Volume = StorageVolume;
 type StatusFilter = "all" | "available" | "mounted" | "failed";
 type SearchField = "name" | "id";
 
 export function VolumesPage() {
   const qc = useQueryClient();
-  const detachScope = useIdempotencyScope("storage-volume-detach", ["POST"]);
   const [createVisible, setCreateVisible] = useState(false);
   const [attachTarget, setAttachTarget] = useState<Volume | null>(null);
   const [expandTarget, setExpandTarget] = useState<Volume | null>(null);
@@ -57,28 +58,17 @@ export function VolumesPage() {
     cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
-      const { data, error } = await coreApi.GET("/volumes", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            status: status === "all" ? undefined : status,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      return listVolumes({
+        limit,
+        cursor,
+        status: status === "all" ? undefined : status,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error || !data) throw error ?? new Error("块存储卷列表未返回结果");
-      return data;
     },
   });
   const deleteVolume = useMutation({
-    mutationFn: async (item: Volume) => {
-      const { error } = await coreApi.DELETE("/volumes/{volume_id}", {
-        params: { path: { volume_id: item.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (item: Volume) => removeVolume(item.id),
     onSuccess: () => {
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["volumes"] });
@@ -88,18 +78,12 @@ export function VolumesPage() {
   const detachVolume = useMutation({
     mutationFn: async (item: Volume) => {
       if (!item.mount_instance_id) throw new Error("块存储卷未挂载实例");
-      const submitData = {
+      return applyInstanceLifecycle(item.mount_instance_id, {
         action: "detach_volume" as const,
         volume_id: item.id,
-      };
-      const { error } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: item.mount_instance_id } },
-        body: detachScope.withKey(submitData, [item.mount_instance_id, item.id]),
       });
-      if (error) throw error;
     },
     onSuccess: (_data, item) => {
-      detachScope.reset([item.mount_instance_id, item.id]);
       void qc.invalidateQueries({ queryKey: ["instances"] });
       void qc.invalidateQueries({ queryKey: ["volume", item.id] });
       void qc.invalidateQueries({ queryKey: ["volumes"] });

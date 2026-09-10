@@ -1,4 +1,11 @@
 import {
+  cloneSandboxCheckpoint,
+  createSandboxCheckpoint,
+  listSandboxCheckpoints,
+  restoreSandboxCheckpoint,
+  type SandboxCheckpoint,
+} from "@/api/instances";
+import {
   Alert,
   Button,
   Empty,
@@ -15,14 +22,9 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { DataTable } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { showSandboxError, throwSandboxApiError } from "../utils";
-
-type SandboxCheckpoint = components["schemas"]["SandboxCheckpoint"];
+import { showSandboxError } from "../utils";
 
 export function SandboxCheckpointsPanel({
   instanceId,
@@ -34,9 +36,6 @@ export function SandboxCheckpointsPanel({
   onChanged: () => void;
 }) {
   const navigate = useNavigate();
-  const createScope = useIdempotencyScope("sandbox-checkpoint-create", ["POST", instanceId]);
-  const restoreScope = useIdempotencyScope("sandbox-checkpoint-restore", ["POST", instanceId]);
-  const cloneScope = useIdempotencyScope("sandbox-checkpoint-clone", ["POST", instanceId]);
   const [createVisible, setCreateVisible] = useState(false);
   const [checkpointName, setCheckpointName] = useState("");
   const [keepMemory, setKeepMemory] = useState(false);
@@ -46,21 +45,7 @@ export function SandboxCheckpointsPanel({
 
   const checkpoints = useQuery({
     queryKey: ["sandbox-checkpoints", instanceId],
-    queryFn: async () => {
-      const { data, error, response } = await coreApi.GET(
-        "/instances/{instance_id}/sandbox/checkpoints",
-        {
-          params: {
-            path: { instance_id: instanceId },
-            query: { limit: 500 },
-          },
-        },
-      );
-      if (error || !data) {
-        throwSandboxApiError(error, response.status, "检查点加载失败");
-      }
-      return data;
-    },
+    queryFn: () => listSandboxCheckpoints(instanceId),
   });
 
   const createCheckpoint = useMutation({
@@ -69,20 +54,9 @@ export function SandboxCheckpointsPanel({
         name: checkpointName.trim(),
         keep_memory: keepMemory,
       };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/sandbox/checkpoints",
-        {
-          params: { path: { instance_id: instanceId } },
-          body: createScope.withKey(submitData),
-        },
-      );
-      if (error || !data) {
-        throwSandboxApiError(error, response.status, "检查点创建失败");
-      }
-      return data;
+      return createSandboxCheckpoint(instanceId, submitData);
     },
     onSuccess: () => {
-      createScope.reset();
       setCreateVisible(false);
       setCheckpointName("");
       setKeepMemory(false);
@@ -95,26 +69,10 @@ export function SandboxCheckpointsPanel({
 
   const restoreCheckpoint = useMutation({
     mutationFn: async (checkpoint: SandboxCheckpoint) => {
-      const submitData = {};
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/sandbox/checkpoints/{checkpoint_id}/restore",
-        {
-          params: {
-            path: {
-              instance_id: instanceId,
-              checkpoint_id: checkpoint.id,
-            },
-          },
-          body: restoreScope.withKey(submitData, [checkpoint.id]),
-        },
-      );
-      if (error || !data) {
-        throwSandboxApiError(error, response.status, "检查点恢复失败");
-      }
+      await restoreSandboxCheckpoint(instanceId, checkpoint.id);
       return checkpoint;
     },
-    onSuccess: (checkpoint) => {
-      restoreScope.reset([checkpoint.id]);
+    onSuccess: () => {
       Message.success("检查点已恢复");
       void checkpoints.refetch();
       onChanged();
@@ -126,25 +84,10 @@ export function SandboxCheckpointsPanel({
     mutationFn: async () => {
       if (!cloneTarget) throw new Error("请选择要克隆的检查点");
       const submitData = { name: cloneName.trim() };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/sandbox/checkpoints/{checkpoint_id}/clone",
-        {
-          params: {
-            path: {
-              instance_id: instanceId,
-              checkpoint_id: cloneTarget.id,
-            },
-          },
-          body: cloneScope.withKey(submitData, [cloneTarget.id]),
-        },
-      );
-      if (error || !data) {
-        throwSandboxApiError(error, response.status, "检查点克隆失败");
-      }
+      const data = await cloneSandboxCheckpoint(instanceId, cloneTarget.id, submitData);
       return { data, checkpointId: cloneTarget.id };
     },
-    onSuccess: ({ data, checkpointId }) => {
-      cloneScope.reset([checkpointId]);
+    onSuccess: ({ data }) => {
       setCloneTarget(undefined);
       setCloneName("");
       Modal.success({
@@ -280,7 +223,6 @@ export function SandboxCheckpointsPanel({
         confirmLoading={createCheckpoint.isPending}
         okButtonProps={{ disabled: !checkpointName.trim() }}
         onCancel={() => {
-          createScope.reset();
           setCreateVisible(false);
         }}
         onOk={() => createCheckpoint.mutate()}
@@ -313,7 +255,6 @@ export function SandboxCheckpointsPanel({
         confirmLoading={cloneCheckpoint.isPending}
         okButtonProps={{ disabled: !cloneName.trim() }}
         onCancel={() => {
-          if (cloneTarget) cloneScope.reset([cloneTarget.id]);
           setCloneTarget(undefined);
         }}
         onOk={() => cloneCheckpoint.mutate()}

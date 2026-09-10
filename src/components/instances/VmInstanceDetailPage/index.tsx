@@ -1,9 +1,8 @@
+import { getInstance, type InstanceRecord } from "@/api/instances";
 import { Button, Empty, Spin, Tooltip } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import {
   AliIcon,
   ApiErrorAlert,
@@ -26,7 +25,7 @@ import type { ComputeInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
 import { VmInstanceSshAccess } from "./VmInstanceSshAccess";
 import { VmInstanceStorage } from "./VmInstanceStorage";
 
-type VmInstance = components["schemas"]["InstanceRecord"];
+type VmInstance = InstanceRecord;
 
 const BUSY_STATES = new Set<VmInstance["state"]>([
   "pending",
@@ -72,13 +71,7 @@ export function VmInstanceDetailPage({
   const [snapshotVisible, setSnapshotVisible] = useState(false);
   const detail = useQuery({
     queryKey: ["vm-instance", instanceId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/instances/{instance_id}", {
-        params: { path: { instance_id: instanceId } },
-      });
-      if (error || !data) throw error ?? new Error("云主机详情未返回结果");
-      return data as VmInstance;
-    },
+    queryFn: () => getInstance(instanceId),
   });
   useListErrorNotification({
     id: `vm-instance-detail:${instanceId}`,

@@ -1,3 +1,9 @@
+import { listVolumes } from "@/api/storage/volumes";
+import { listFilesystemMountTargets, listFilesystems } from "@/api/storage/filesystems";
+import type { StorageFilesystem } from "@/api/storage/filesystems";
+import type { StorageVolume } from "@/api/storage/volumes";
+import type { InstanceRecord } from "@/api/instances";
+import { applyInstanceLifecycle } from "@/api/instances";
 import {
   Alert,
   Checkbox,
@@ -11,22 +17,13 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
 import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
-import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type Instance = components["schemas"]["InstanceRecord"];
-type LifecycleRequest = components["schemas"]["InstanceLifecycleRequest"];
+type Instance = InstanceRecord;
 type Volume = NonNullable<Instance["volumes"]>[number];
 type FilesystemAttachment = NonNullable<Instance["storage_attachments"]>[number];
-type StorageVolume = components["schemas"]["StorageVolume"];
-type StorageFilesystem = components["schemas"]["StorageFilesystem"];
-type FilesystemMountTarget = components["schemas"]["FilesystemMountTarget"];
 export type MountKind = "volume" | "filesystem";
 
 type MountFormValues = {
@@ -51,7 +48,6 @@ export function InstanceStorage({
   filesystemAction?: ReactNode;
 }) {
   const [form] = Form.useForm<MountFormValues>();
-  const mountScope = useIdempotencyScope("instance-storage-mount", ["POST", instance.id]);
   const [selectedResourceId, setSelectedResourceId] = useState("");
   const volumes = instance.volumes ?? [];
   const filesystems = (instance.storage_attachments ?? []).filter(
@@ -66,49 +62,27 @@ export function InstanceStorage({
   const volumeOptions = useQuery({
     queryKey: ["volumes", "instance-mount", instance.id],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/volumes", {
-          params: {
-            query: asUncontractedQuery({
-              limit: 100,
-              status: "pending,available",
-              available_for_instance_id: instance.id,
-            }),
-          },
-        }),
-      ),
+      listVolumes({
+        limit: 100,
+        status: "pending,available",
+        available_for_instance_id: instance.id,
+      }),
     enabled: mountKind === "volume",
   });
   const filesystemOptions = useQuery({
     queryKey: ["filesystems", "instance-mount", instance.id],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/filesystems", {
-          params: {
-            query: asUncontractedQuery({
-              limit: 100,
-              protocol: "nfs",
-              available_for_instance_id: instance.id,
-            }),
-          },
-        }),
-      ),
+      listFilesystems({
+        limit: 100,
+        protocol: "nfs",
+        available_for_instance_id: instance.id,
+      }),
     enabled: mountKind === "filesystem",
   });
   const mountTargets = useQuery({
     queryKey: ["filesystem-mount-targets", selectedResourceId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/filesystems/{filesystem_id}/mount-targets", {
-        params: {
-          path: { filesystem_id: selectedResourceId },
-          query: { limit: 100 },
-        },
-      });
-      if (error || !data) {
-        throw error ?? new Error("文件系统挂载目标未返回结果");
-      }
-      return data.items as FilesystemMountTarget[];
-    },
+    queryFn: async () =>
+      (await listFilesystemMountTargets(selectedResourceId, { limit: 100 })).items,
     enabled: mountKind === "filesystem" && Boolean(selectedResourceId),
   });
   // TODO: 存储接口确认按状态和 available_for_instance_id 过滤后，移除此处关联资源选择的本地兜底过滤。
@@ -150,20 +124,10 @@ export function InstanceStorage({
         mount_path: mountPath,
         read_only: values.readOnly ?? false,
         ...(mountKind === "volume" ? { volume_id: resourceId } : { filesystem_id: resourceId }),
-      };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: mountScope.withKey(submitData) as LifecycleRequest,
-      });
-      if (error) {
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
-      }
+      } as const;
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      mountScope.reset();
       Message.success(mountKind === "volume" ? "云盘挂载已提交" : "NFS 挂载已提交");
       onMountKindChange(undefined);
       setSelectedResourceId("");
@@ -246,7 +210,6 @@ export function InstanceStorage({
             (mountKind === "filesystem" && (mountTargets.isLoading || !hasAvailableMountTarget)),
         }}
         onCancel={() => {
-          mountScope.reset();
           onMountKindChange(undefined);
           setSelectedResourceId("");
           form.resetFields();

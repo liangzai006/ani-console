@@ -1,12 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Form, Input, InputNumber, Modal, Select } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { createBucketLifecycleRule, type StorageBucketLifecycleRule } from "@/api/storage/buckets";
+import { showApiError } from "@/lib/api-error";
 
-type LifecycleRule = components["schemas"]["StorageBucketLifecycleRule"];
+type LifecycleRule = StorageBucketLifecycleRule;
 
 export function CreateLifecycleRuleModal({
   visible,
@@ -20,11 +18,6 @@ export function CreateLifecycleRuleModal({
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("storage-bucket-lifecycle-rule-create", [
-    "POST",
-    bucketId,
-    rule?.id,
-  ]);
   const [name, setName] = useState("");
   const [prefix, setPrefix] = useState("");
   const [expireDays, setExpireDays] = useState(90);
@@ -41,21 +34,15 @@ export function CreateLifecycleRuleModal({
   const create = useMutation({
     mutationFn: async (_: undefined) => {
       if (!name.trim()) throw new Error("请输入规则名称");
-      const submitData = {
+      return createBucketLifecycleRule(bucketId, {
         name: name.trim(),
         prefix: prefix.trim(),
         expire_days: expireDays,
         to_infrequent_days: toInfrequentDays,
         enabled,
-      };
-      const { error } = await coreApi.POST("/buckets/{bucket_id}/lifecycle-rules", {
-        params: { path: { bucket_id: bucketId } },
-        body: createScope.withKey(submitData),
       });
-      if (error) throw error;
     },
     onSuccess: () => {
-      createScope.reset();
       qc.invalidateQueries({ queryKey: ["bucket-lifecycle-rules", bucketId] });
       qc.invalidateQueries({ queryKey: ["bucket", bucketId] });
       onCancel();
@@ -66,10 +53,7 @@ export function CreateLifecycleRuleModal({
     <Modal
       visible={visible}
       title={rule ? "编辑生命周期规则" : "添加生命周期规则"}
-      onCancel={() => {
-        createScope.reset();
-        onCancel();
-      }}
+      onCancel={onCancel}
       onOk={() => create.mutateAsync(undefined)}
       confirmLoading={create.isPending}
       unmountOnExit

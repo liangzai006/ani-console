@@ -1,32 +1,22 @@
 import { Alert, Button, Empty, Select, Space } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
+import { listInferenceServiceLogs, type InferenceServiceLog } from "@/api/ai-services/inference";
 import { DataTable, TableSectionHeader } from "@/components/common";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 
-type InferenceLog = components["schemas"]["InferenceServiceLog"];
 type LogLevel = "all" | "debug" | "info" | "warn" | "error";
 
 export function InferenceLogs({ serviceId }: { serviceId: string }) {
   const [level, setLevel] = useState<LogLevel>("all");
   const logs = useQuery({
     queryKey: ["inference-service-logs", serviceId, level],
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/inference-services/{service_id}/logs", {
-        params: {
-          path: { service_id: serviceId },
-          query: {
-            limit: 200,
-            ...(level === "all" ? {} : { level }),
-          },
-        },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () =>
+      listInferenceServiceLogs(serviceId, {
+        limit: 200,
+        ...(level === "all" ? {} : { level }),
+      }),
   });
 
   return (
@@ -57,7 +47,7 @@ export function InferenceLogs({ serviceId }: { serviceId: string }) {
       {logs.error ? (
         <Alert type="error" showIcon content={getErrorMessage(logs.error, "日志加载失败")} />
       ) : (
-        <DataTable<InferenceLog>
+        <DataTable<InferenceServiceLog>
           loading={logs.isFetching}
           data={logs.data?.items ?? []}
           rowKey={(row) => `${row.timestamp}-${row.container}-${row.stream}-${row.message}`}

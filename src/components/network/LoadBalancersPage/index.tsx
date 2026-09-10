@@ -2,10 +2,14 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dropdown, Menu, Modal, Select } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  deleteNetworkLoadBalancer,
+  listNetworkLoadBalancers,
+  listNetworkVpcs,
+  type NetworkLoadBalancer,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import { CreateLoadBalancerModal } from "@/components/network/CreateLoadBalancerModal";
 import {
   ListDataTable,
@@ -22,13 +26,12 @@ import {
   type ListColumn,
   StatusTag,
 } from "@/components/common";
-import { listOrThrow } from "@/lib/api-list";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
-type LoadBalancer = components["schemas"]["NetworkLoadBalancer"];
-type Vpc = components["schemas"]["NetworkVPC"];
+type LoadBalancer = NetworkLoadBalancer;
+type Vpc = NetworkVPC;
 type StatusFilter = "all" | "running" | "error";
 type SearchField = "name" | "id";
 
@@ -53,34 +56,22 @@ export function LoadBalancersPage() {
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${vpcId}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
-      const { data, error } = await coreApi.GET("/networks/load-balancers", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            vpc_id: vpcId || undefined,
-            status: status === "all" ? undefined : status,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      return listNetworkLoadBalancers({
+        limit,
+        cursor,
+        vpc_id: vpcId || undefined,
+        status: status === "all" ? undefined : status,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error || !data) throw error ?? new Error("负载均衡列表未返回结果");
-      return data;
     },
   });
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "load-balancer-list"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkVpcs({ limit: 100 }),
   });
   const deleteLoadBalancer = useMutation({
-    mutationFn: async (item: LoadBalancer) => {
-      const { error } = await coreApi.DELETE("/networks/load-balancers/{load_balancer_id}", {
-        params: { path: { load_balancer_id: item.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (item: LoadBalancer) => deleteNetworkLoadBalancer(item.id),
     onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-load-balancers"] });

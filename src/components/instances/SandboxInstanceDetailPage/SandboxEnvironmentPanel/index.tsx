@@ -1,9 +1,9 @@
+import type { SandboxInstanceStatus } from "@/api/instances";
 import { Alert, Descriptions, Empty, Space, Tag, Typography } from "@arco-design/web-react";
-import type { components } from "@/api/core-schema";
 import { DataTable } from "@/components/common";
 import { sandboxEgressLabel } from "../utils";
 
-type SandboxStatus = NonNullable<components["schemas"]["SandboxInstanceStatus"]>;
+type SandboxStatus = NonNullable<SandboxInstanceStatus>;
 type SandboxEnv = NonNullable<SandboxStatus["env"]>[number];
 
 export function SandboxEnvironmentPanel({ sandbox }: { sandbox: SandboxStatus }) {

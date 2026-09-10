@@ -1,12 +1,11 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceRecord } from "@/api/instances";
 import { Alert, Form, Message, Modal, Select, Tooltip } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { getImageDisplayName } from "@/lib/render";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 
 export function ContainerInstanceRollbackModal({
   instance,
@@ -18,22 +17,12 @@ export function ContainerInstanceRollbackModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<{ revision: string }>();
-  const scope = useIdempotencyScope("container-instance-rollback", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async ({ revision }: { revision: string }) => {
       const submitData = { action: "rollback" as const, revision };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      scope.reset();
       Message.success("回滚发布已提交");
       onSubmitted();
     },
@@ -43,7 +32,6 @@ export function ContainerInstanceRollbackModal({
     (entry) => entry.revision !== instance.container?.revision,
   );
   const cancel = () => {
-    scope.reset();
     onCancel();
   };
 

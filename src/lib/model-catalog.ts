@@ -1,7 +1,6 @@
-import type { components } from "@/api/services-schema";
+import type { Model, ModelVersion } from "@/api/ai-services/models";
 
-export type Model = components["schemas"]["Model"];
-export type ModelVersion = components["schemas"]["ModelVersion"];
+export type { Model, ModelVersion } from "@/api/ai-services/models";
 
 export const MODEL_SOURCE_LABELS: Record<Model["source"], string> = {
   upload: "本地上传",

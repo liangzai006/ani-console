@@ -1,12 +1,10 @@
 import { Alert, Empty, Space } from "@arco-design/web-react";
 import { Link } from "@tanstack/react-router";
-import type { components } from "@/api/services-schema";
+import type { InferenceService } from "@/api/ai-services/inference";
+import type { Model } from "@/api/ai-services/models";
 import { DataTable, TableSectionHeader, type ListColumn } from "@/components/common";
 import { getErrorMessage } from "@/lib/errors";
 import { getImageDisplayName } from "@/lib/render";
-
-type InferenceService = components["schemas"]["InferenceService"];
-type Model = components["schemas"]["Model"];
 
 interface RelatedResource {
   id: string;

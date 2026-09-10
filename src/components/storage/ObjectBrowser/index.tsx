@@ -10,12 +10,12 @@ import {
 } from "@arco-design/web-react";
 import { IconArrowLeft, IconFile, IconFolder } from "@arco-design/web-react/icon";
 import type { ReactNode } from "react";
-import type { components } from "@/api/core-schema";
+import type { StorageBucketObjectEntry } from "@/api/storage/buckets";
 import { DataTable } from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import styles from "./index.module.css";
 
-type BucketEntry = components["schemas"]["StorageBucketObjectEntry"];
+type BucketEntry = StorageBucketObjectEntry;
 type BrowserEntry = BucketEntry & {
   parentTarget?: string;
 };

@@ -1,24 +1,14 @@
+import type { InstanceRecord } from "@/api/instances";
+import { getGpuSpecAvailability } from "@/api/gpu-inventory";
 import { Form, Select, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
-import { coreApi } from "@/api/client";
-import type { components } from "@/api/core-schema";
 import { StatusTag } from "@/components/common";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import { getErrorMessage } from "@/lib/errors";
 import { GPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instance-compute-specs";
 import { currentCpuMemorySpec, currentGpuSpecValue } from "./helpers";
 
-type Instance = components["schemas"]["InstanceRecord"];
-
-type GpuSpecAvailability = {
-  spec_id: string;
-  status: "available" | "full" | "device_full" | "unavailable";
-  available_count: number;
-};
-
-type GpuSpecAvailabilityListResponse = {
-  items: GpuSpecAvailability[];
-};
+type Instance = InstanceRecord;
 
 export function GpuInstanceResizeFields({
   instance,
@@ -30,17 +20,7 @@ export function GpuInstanceResizeFields({
   const gpuSpecs = useQuery({
     queryKey: ["gpu-specs", "availability", "resize", instance.id],
     enabled,
-    queryFn: async () => {
-      const request = coreApi.GET as unknown as (path: string) => Promise<{
-        data?: GpuSpecAvailabilityListResponse;
-        error?: unknown;
-      }>;
-      const { data, error } = await request("/gpu-specs/availability");
-      if (error || !data) {
-        throw error ?? new Error("GPU 规格可用性未返回结果");
-      }
-      return data;
-    },
+    queryFn: getGpuSpecAvailability,
   });
   const currentCpuSpec = currentCpuMemorySpec(instance);
   const currentGpuValue = currentGpuSpecValue(instance);

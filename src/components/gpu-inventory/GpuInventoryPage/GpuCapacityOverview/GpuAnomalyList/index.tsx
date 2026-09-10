@@ -1,8 +1,6 @@
 import { Card, Empty, Skeleton, Space, Tag, Typography } from "@arco-design/web-react";
-import type { components } from "@/api/core-schema";
+import type { GpuInventoryRecord } from "@/api/gpu-inventory";
 import { ApiErrorAlert } from "@/components/common";
-
-type GpuInventoryRecord = components["schemas"]["GPUInventoryRecord"];
 
 const statusLabel: Record<GpuInventoryRecord["status"], string> = {
   available: "空闲",

@@ -1,9 +1,8 @@
+import { getInstance, type InstanceRecord } from "@/api/instances";
 import { Button, Space, Spin, Tag, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import {
   ApiErrorAlert,
   AliIcon,
@@ -26,7 +25,7 @@ import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { InstanceStorage, type MountKind } from "@/components/instances/InstanceStorage";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 
 const BUSY_STATES = new Set(["pending", "provisioning", "starting", "stopping", "deleting"]);
 
@@ -53,15 +52,7 @@ export function GpuInstanceDetailPage({
   const [mountKind, setMountKind] = useState<MountKind>();
   const detail = useQuery({
     queryKey: ["gpu-instance", instanceId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/instances/{instance_id}", {
-        params: { path: { instance_id: instanceId } },
-      });
-      if (error || !data) {
-        throw error ?? new Error("GPU 容器实例详情未返回结果");
-      }
-      return data as Instance;
-    },
+    queryFn: () => getInstance(instanceId),
   });
   useListErrorNotification({
     id: `gpu-container-detail:${instanceId}`,

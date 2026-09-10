@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import RFB from "@novnc/novnc/lib/rfb";
 import { Alert, Button, Radio, Spin, Tag } from "@arco-design/web-react";
 import clsx from "clsx";
-import { coreApi } from "@/api/client";
+import { createInstanceConsoleSession } from "@/api/instances";
 import { getErrorMessage } from "@/lib/errors";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 type ConsoleStatus = "connecting" | "connected" | "disconnected" | "error" | "expired";
 type ViewMode = "fit" | "native";
@@ -41,11 +40,6 @@ export function InstanceVncConsole({
   instanceId: string;
   protocol?: "vnc" | "novnc";
 }) {
-  const consoleScope = useIdempotencyScope("instance-vnc-session-create", [
-    "POST",
-    instanceId,
-    protocol,
-  ]);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const rfbRef = useRef<RFB | null>(null);
   const expiresAtRef = useRef<string | null>(null);
@@ -77,15 +71,12 @@ export function InstanceVncConsole({
       if (disposed) return;
 
       try {
-        const submitData = { protocol };
-        const { data, error } = await coreApi.POST("/instances/{instance_id}/console", {
-          params: { path: { instance_id: instanceId } },
-          body: consoleScope.withKey(submitData),
-          signal: abortController.signal,
-        });
-        if (error) throw error;
-        consoleScope.reset();
-        const connectUrl = data?.connect_url;
+        const data = await createInstanceConsoleSession(
+          instanceId,
+          protocol,
+          abortController.signal,
+        );
+        const connectUrl = data.connect_url;
         if (!connectUrl) throw new Error("控制台连接地址为空");
         expiresAtRef.current = data?.expires_at ?? null;
         if (isExpired(data?.expires_at)) {
@@ -135,7 +126,7 @@ export function InstanceVncConsole({
       rfbRef.current = null;
       rfb?.disconnect();
     };
-  }, [consoleScope, instanceId, protocol, reconnectKey]);
+  }, [instanceId, protocol, reconnectKey]);
 
   const meta = STATUS_META[status];
   const canReconnect = status === "error" || status === "disconnected" || status === "expired";

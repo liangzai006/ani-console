@@ -1,17 +1,22 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, Empty, List, Modal, Spin, Tag, Typography } from "@arco-design/web-react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import { getInstance, type InstanceRecord } from "@/api/instances";
+import {
+  deleteNetworkRoute,
+  getNetworkRoute,
+  getNetworkVpc,
+  type NetworkRoute,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type NetworkRoute = components["schemas"]["NetworkRoute"];
-type Vpc = components["schemas"]["NetworkVPC"];
-type Instance = components["schemas"]["InstanceRecord"];
+type Vpc = NetworkVPC;
+type Instance = InstanceRecord;
 type RelatedResource = {
   id: string;
   kind: "VPC" | "实例";
@@ -25,34 +30,16 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
   const qc = useQueryClient();
   const detail = useQuery({
     queryKey: ["network-route", routeId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/networks/routes/{route_id}", {
-        params: { path: { route_id: routeId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getNetworkRoute(routeId),
   });
   const vpc = useQuery({
     queryKey: ["network-vpc", detail.data?.vpc_id],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/networks/vpcs/{vpc_id}", {
-        params: { path: { vpc_id: detail.data!.vpc_id } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getNetworkVpc(detail.data!.vpc_id),
     enabled: Boolean(detail.data?.vpc_id),
   });
   const instance = useQuery({
     queryKey: ["instance", "route-next-hop", detail.data?.next_hop_id],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/instances/{instance_id}", {
-        params: { path: { instance_id: detail.data!.next_hop_id } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getInstance(detail.data!.next_hop_id),
     enabled: detail.data?.next_hop_type === "instance" && Boolean(detail.data?.next_hop_id),
     retry: false,
   });
@@ -72,12 +59,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
     error: instance.error,
   });
   const deleteRoute = useMutation({
-    mutationFn: async (_: undefined) => {
-      const { error } = await coreApi.DELETE("/networks/routes/{route_id}", {
-        params: { path: { route_id: routeId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (_: undefined) => deleteNetworkRoute(routeId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["network-routes"] });
       navigate({ to: "/routes" });

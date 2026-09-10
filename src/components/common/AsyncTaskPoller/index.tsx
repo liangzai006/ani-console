@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, Spin } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
-import { coreApi } from "@/api/client";
+import { getTask } from "@/api/tasks";
 import { StatusTag } from "../StatusTag";
 
 interface AsyncTaskPollerProps {
@@ -14,13 +14,7 @@ export function AsyncTaskPoller({ taskId, onComplete }: AsyncTaskPollerProps) {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["task", taskId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/tasks/{task_id}", {
-        params: { path: { task_id: taskId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getTask(taskId),
     enabled: !!taskId && !done,
   });
 

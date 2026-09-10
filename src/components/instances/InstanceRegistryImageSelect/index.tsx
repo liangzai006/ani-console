@@ -1,22 +1,7 @@
 import { Alert, Button, Form, Select } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
+import { listRegistryImages } from "@/api/registry";
 import { ImageNameText } from "@/components/common";
-
-type RegistryImage = {
-  image: string;
-  name?: string | null;
-  purpose?: string;
-  repository: string;
-  tag: string;
-  size_bytes?: number | null;
-};
-
-type RegistryImageListResponse = {
-  items: RegistryImage[];
-  total: number;
-};
 
 export function InstanceRegistryImageSelect({
   field,
@@ -31,17 +16,7 @@ export function InstanceRegistryImageSelect({
   const images = useQuery({
     queryKey: ["registry-images", "instance-select", purpose],
     enabled,
-    queryFn: async () => {
-      const request = coreApi.GET as unknown as (
-        path: string,
-        options: { params: { query: never } },
-      ) => Promise<{ data?: RegistryImageListResponse; error?: unknown }>;
-      const { data, error } = await request("/registry/images", {
-        params: { query: asUncontractedQuery({ limit: 100, purpose }) },
-      });
-      if (error || !data) throw error ?? new Error("容器镜像列表未返回结果");
-      return data.items;
-    },
+    queryFn: () => listRegistryImages({ limit: 100, purpose }).then((data) => data.items),
   });
 
   return (

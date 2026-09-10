@@ -1,4 +1,10 @@
 import {
+  deleteSandboxFile,
+  listSandboxFiles,
+  writeSandboxFile,
+  type SandboxFile,
+} from "@/api/instances";
+import {
   Alert,
   Button,
   Checkbox,
@@ -13,19 +19,9 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { DataTable } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import {
-  copySandboxText,
-  encodeSandboxText,
-  showSandboxError,
-  throwSandboxApiError,
-} from "../utils";
-
-type SandboxFile = components["schemas"]["SandboxFile"];
+import { copySandboxText, encodeSandboxText, showSandboxError } from "../utils";
 
 export function SandboxFilesPanel({
   instanceId,
@@ -36,8 +32,6 @@ export function SandboxFilesPanel({
   running: boolean;
   onChanged: () => void;
 }) {
-  const writeScope = useIdempotencyScope("sandbox-file-write", ["POST", instanceId]);
-  const deleteScope = useIdempotencyScope("sandbox-file-delete", ["DELETE", instanceId]);
   const [directory, setDirectory] = useState(".");
   const [pathInput, setPathInput] = useState(".");
   const [editorVisible, setEditorVisible] = useState(false);
@@ -47,21 +41,7 @@ export function SandboxFilesPanel({
 
   const files = useQuery({
     queryKey: ["sandbox-files", instanceId, directory],
-    queryFn: async () => {
-      const { data, error, response } = await coreApi.GET(
-        "/instances/{instance_id}/sandbox/files",
-        {
-          params: {
-            path: { instance_id: instanceId },
-            query: { path: directory, limit: 500 },
-          },
-        },
-      );
-      if (error || !data) {
-        throwSandboxApiError(error, response.status, "工作区文件加载失败");
-      }
-      return data;
-    },
+    queryFn: () => listSandboxFiles(instanceId, { path: directory, limit: 500 }),
   });
 
   const writeFile = useMutation({
@@ -72,20 +52,9 @@ export function SandboxFilesPanel({
         content_base64: encodeSandboxText(content),
         overwrite,
       };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/sandbox/files",
-        {
-          params: { path: { instance_id: instanceId } },
-          body: writeScope.withKey(submitData),
-        },
-      );
-      if (error || !data) {
-        throwSandboxApiError(error, response.status, "文件写入失败");
-      }
-      return data;
+      return writeSandboxFile(instanceId, submitData);
     },
     onSuccess: () => {
-      writeScope.reset();
       setEditorVisible(false);
       setFilePath("");
       setContent("");
@@ -99,21 +68,10 @@ export function SandboxFilesPanel({
 
   const deleteFile = useMutation({
     mutationFn: async (path: string) => {
-      const { idempotency_key } = deleteScope.withKey({}, [path]);
-      const { error, response } = await coreApi.DELETE("/instances/{instance_id}/sandbox/files", {
-        params: {
-          path: { instance_id: instanceId },
-          query: { path },
-          header: { "Idempotency-Key": idempotency_key },
-        },
-      });
-      if (error) {
-        throwSandboxApiError(error, response.status, "文件删除失败");
-      }
+      await deleteSandboxFile(instanceId, path);
       return path;
     },
-    onSuccess: (path) => {
-      deleteScope.reset([path]);
+    onSuccess: () => {
       Message.success("文件已删除");
       void files.refetch();
       onChanged();
@@ -259,7 +217,6 @@ export function SandboxFilesPanel({
         confirmLoading={writeFile.isPending}
         okButtonProps={{ disabled: !filePath.trim() }}
         onCancel={() => {
-          writeScope.reset();
           setEditorVisible(false);
         }}
         onOk={() => writeFile.mutate()}

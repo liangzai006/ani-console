@@ -11,10 +11,9 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { servicesApi } from "@/api/services-client";
-import { showApiError } from "@/api/helpers";
+import { showApiError } from "@/lib/api-error";
+import { getKnowledgeBasePermissions, updateKnowledgeBasePermissions } from "@/api/knowledge";
 import { ApiErrorAlert } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
 
 type PermissionFormValues = {
@@ -38,16 +37,9 @@ function parseUserIds(value?: string) {
 export function KnowledgePermissionsPanel({ kbId }: { kbId: string }) {
   const [form] = Form.useForm<PermissionFormValues>();
   const qc = useQueryClient();
-  const updateScope = useIdempotencyScope("knowledge-base-permissions-update", ["PUT", kbId]);
   const permissions = useQuery({
     queryKey: ["knowledge-base-permissions", kbId],
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/knowledge-bases/{kb_id}/permissions", {
-        params: { path: { kb_id: kbId } },
-      });
-      if (error || !data) throw error ?? new Error("权限配置未返回结果");
-      return data;
-    },
+    queryFn: () => getKnowledgeBasePermissions(kbId),
   });
 
   useEffect(() => {
@@ -67,14 +59,9 @@ export function KnowledgePermissionsPanel({ kbId }: { kbId: string }) {
         public_read: values.public_read,
         allowed_user_ids: allowedUserIds,
       };
-      const { error } = await servicesApi.PUT("/knowledge-bases/{kb_id}/permissions", {
-        params: { path: { kb_id: kbId } },
-        body: updateScope.withKey(submitData),
-      });
-      if (error) throw error;
+      await updateKnowledgeBasePermissions(kbId, submitData);
     },
     onSuccess: () => {
-      updateScope.reset();
       Message.success("知识库权限已保存");
       void qc.invalidateQueries({ queryKey: ["knowledge-base-permissions", kbId] });
       void qc.invalidateQueries({ queryKey: ["knowledge-base", kbId] });

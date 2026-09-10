@@ -1,5 +1,5 @@
-import type { components } from "@/api/core-schema";
-export type ContainerInstanceRecord = components["schemas"]["InstanceRecord"];
+import type { InstanceRecord } from "@/api/instances";
+export type ContainerInstanceRecord = InstanceRecord;
 export type ContainerInstanceStatus = ContainerInstanceRecord["state"];
 export type ContainerInstanceStatusFilter = "all" | "running" | "stopped" | "deploying" | "failed";
 export type ContainerInstanceSearchField = "name" | "id";

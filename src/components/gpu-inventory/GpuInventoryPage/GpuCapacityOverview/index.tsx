@@ -1,15 +1,16 @@
 import { Alert, Card, Empty, Grid, Skeleton } from "@arco-design/web-react";
 import type { EChartsOption } from "echarts";
-import type { components } from "@/api/core-schema";
+import type {
+  GpuInventoryRecord,
+  GpuOccupancyStats,
+  GpuSpecAvailabilityListResponse,
+  TenantQuotaResponse,
+} from "@/api/gpu-inventory";
 import { ApiErrorAlert, CorePieChart } from "@/components/common";
 import { MetricCard } from "@/components/common/MetricCard";
-import type { GpuSpecAvailabilityListResponse, TenantQuotaResponse } from "../types";
 import { GpuAdmissionSummary } from "./GpuAdmissionSummary";
 import { GpuAnomalyList } from "./GpuAnomalyList";
 import { GpuModelInventory } from "./GpuModelInventory";
-
-type GpuOccupancy = components["schemas"]["GPUOccupancyStats"];
-type GpuInventoryRecord = components["schemas"]["GPUInventoryRecord"];
 
 function CapacityMetric({
   loading,
@@ -46,7 +47,7 @@ export function GpuCapacityOverview({
   anomaliesError,
   onCreate,
 }: {
-  occupancy?: GpuOccupancy;
+  occupancy?: GpuOccupancyStats;
   occupancyLoading: boolean;
   occupancyError: unknown;
   availability?: GpuSpecAvailabilityListResponse;

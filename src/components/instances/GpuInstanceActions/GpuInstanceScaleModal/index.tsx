@@ -1,11 +1,10 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceRecord } from "@/api/instances";
 import { Form, InputNumber, Message, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 
 export function GpuInstanceScaleModal({
   instance,
@@ -17,22 +16,12 @@ export function GpuInstanceScaleModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<{ replicas: number }>();
-  const scope = useIdempotencyScope("gpu-instance-scale", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async ({ replicas }: { replicas: number }) => {
       const submitData = { action: "scale" as const, replicas };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      scope.reset();
       Message.success("扩缩容已提交");
       onSubmitted();
     },
@@ -44,7 +33,6 @@ export function GpuInstanceScaleModal({
       visible
       confirmLoading={mutation.isPending}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={async () => mutation.mutate(await form.validate())}

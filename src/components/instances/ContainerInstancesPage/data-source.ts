@@ -1,4 +1,4 @@
-import { coreApi } from "@/api/client";
+import { listInstances } from "@/api/instances";
 import { getInstanceDisplayIp, getInstanceNetworkValue } from "@/lib/instance-network";
 import { getImageDisplayName } from "@/lib/render";
 import type {
@@ -83,12 +83,8 @@ async function fetchContainerInstancePage(
     status: filters?.status === "all" ? undefined : filters?.status,
     search_field: keyword ? filters?.searchField : undefined,
     keyword: keyword || undefined,
-  } as never;
-  const { data, error } = await coreApi.GET("/instances", {
-    params: { query },
-  });
-  if (error) throw error;
-  return data ?? { items: [], total: 0 };
+  };
+  return listInstances(query);
 }
 
 async function fetchAllContainerInstances(

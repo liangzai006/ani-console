@@ -1,7 +1,6 @@
 import { Message } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { createInstance } from "@/api/instances";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { SandboxInstanceCreateForm } from "./SandboxInstanceCreateForm";
 import { buildCreateRequest, type FormValues, type SandboxTemplate } from "./types";
@@ -14,22 +13,12 @@ type Props = {
 
 export function SandboxInstanceCreateModal({ visible, onCancel, onCreated }: Props) {
   const queryClient = useQueryClient();
-  const createScope = useIdempotencyScope("sandbox-instance-create", ["POST"]);
   const create = useMutation({
     mutationFn: async ({ values, template }: { values: FormValues; template: SandboxTemplate }) => {
       const submitData = buildCreateRequest(values, template);
-      const { data, error, response } = await coreApi.POST("/instances", {
-        body: createScope.withKey(submitData),
-      });
-      if (error || !data) {
-        throw {
-          ...(typeof error === "object" && error ? error : { message: "创建失败" }),
-          status: response.status,
-        };
-      }
+      await createInstance(submitData);
     },
     onSuccess: () => {
-      createScope.reset();
       Message.success("Sandbox 创建已提交");
       void queryClient.invalidateQueries({ queryKey: ["sandbox-instances"] });
       onCreated();
@@ -39,7 +28,6 @@ export function SandboxInstanceCreateModal({ visible, onCancel, onCreated }: Pro
 
   const close = () => {
     if (create.isPending) return;
-    createScope.reset();
     onCancel();
   };
 

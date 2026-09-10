@@ -2,10 +2,14 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal, Select } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  deleteNetworkRoute,
+  listNetworkRoutes,
+  listNetworkVpcs,
+  type NetworkRoute,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import { CreateRouteModal } from "@/components/network/CreateRouteModal";
 import {
   ListDataTable,
@@ -21,12 +25,10 @@ import {
   ToolbarSearch,
   type ListColumn,
 } from "@/components/common";
-import { listOrThrow } from "@/lib/api-list";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type NetworkRoute = components["schemas"]["NetworkRoute"];
-type Vpc = components["schemas"]["NetworkVPC"];
+type Vpc = NetworkVPC;
 type SearchField = "description" | "id";
 type StatusFilter = "all" | "available";
 
@@ -50,34 +52,22 @@ export function NetworkRoutesPage() {
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
-      const { data, error } = await coreApi.GET("/networks/routes", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            vpc_id: filterVpcId || undefined,
-            status: status === "all" ? undefined : status,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      return listNetworkRoutes({
+        limit,
+        cursor,
+        vpc_id: filterVpcId || undefined,
+        status: status === "all" ? undefined : status,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error || !data) throw error ?? new Error("路由列表未返回结果");
-      return data;
     },
   });
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "route-list"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkVpcs({ limit: 100 }),
   });
   const deleteRoute = useMutation({
-    mutationFn: async (item: NetworkRoute) => {
-      const { error } = await coreApi.DELETE("/networks/routes/{route_id}", {
-        params: { path: { route_id: item.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (item: NetworkRoute) => deleteNetworkRoute(item.id),
     onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-routes"] });

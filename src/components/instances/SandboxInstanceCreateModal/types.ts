@@ -1,12 +1,16 @@
-import type { components } from "@/api/core-schema";
+import type {
+  CreateInstanceInput,
+  SandboxNetworkEgressPolicy,
+  SandboxTemplate as ApiSandboxTemplate,
+} from "@/api/instances";
 import {
   CPU_INSTANCE_COMPUTE_SPECS,
   DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
   type CpuInstanceComputeSpec,
 } from "@/lib/instance-compute-specs";
 
-export type SandboxTemplate = components["schemas"]["SandboxTemplate"];
-export type EgressPolicy = components["schemas"]["SandboxNetworkEgressPolicy"];
+export type SandboxTemplate = ApiSandboxTemplate;
+export type EgressPolicy = SandboxNetworkEgressPolicy;
 
 export type FormValues = {
   name: string;
@@ -58,7 +62,7 @@ export function getTemplateComputeSpec(template?: SandboxTemplate): CpuInstanceC
 export function buildCreateRequest(
   values: FormValues,
   template: SandboxTemplate,
-): Omit<components["schemas"]["CreateInstanceRequest"], "idempotency_key"> {
+): CreateInstanceInput {
   const computeSpec =
     CPU_INSTANCE_COMPUTE_SPECS.find((option) => option.value === values.compute_spec) ??
     CPU_INSTANCE_COMPUTE_SPECS[1];

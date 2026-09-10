@@ -9,10 +9,9 @@ import {
   Spin,
   Typography,
 } from "@arco-design/web-react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
+import { completeVolumeOSInit, getVolumeOSInitGuide } from "@/api/storage/volumes";
+import { showApiError } from "@/lib/api-error";
 import { ApiErrorAlert } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
 export function VolumeOSInitGuideModal({
   visible,
@@ -24,29 +23,14 @@ export function VolumeOSInitGuideModal({
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
-  const completeScope = useIdempotencyScope("storage-volume-os-init-complete", ["POST", volumeId]);
   const guide = useQuery({
     queryKey: ["volume-os-init-guide", volumeId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/volumes/{volume_id}/os-init-guide", {
-        params: { path: { volume_id: volumeId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getVolumeOSInitGuide(volumeId),
     enabled: visible,
   });
   const complete = useMutation({
-    mutationFn: async (_: undefined) => {
-      const submitData = { mode: "done" as const };
-      const { error } = await coreApi.POST("/volumes/{volume_id}/os-init-complete", {
-        params: { path: { volume_id: volumeId } },
-        body: completeScope.withKey(submitData),
-      });
-      if (error) throw error;
-    },
+    mutationFn: (_: undefined) => completeVolumeOSInit(volumeId, { mode: "done" }),
     onSuccess: () => {
-      completeScope.reset();
       qc.invalidateQueries({ queryKey: ["volume", volumeId] });
       qc.invalidateQueries({ queryKey: ["volume-os-init-guide", volumeId] });
       onCancel();
@@ -57,20 +41,10 @@ export function VolumeOSInitGuideModal({
     <Modal
       visible={visible}
       title="初始化引导"
-      onCancel={() => {
-        completeScope.reset();
-        onCancel();
-      }}
+      onCancel={onCancel}
       footer={
         <Space>
-          <Button
-            onClick={() => {
-              completeScope.reset();
-              onCancel();
-            }}
-          >
-            关闭
-          </Button>
+          <Button onClick={onCancel}>关闭</Button>
           <Button
             type="primary"
             loading={complete.isPending}

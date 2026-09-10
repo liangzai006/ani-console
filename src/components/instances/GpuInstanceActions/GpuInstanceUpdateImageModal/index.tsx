@@ -1,12 +1,11 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceRecord } from "@/api/instances";
 import { Form, Message, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { InstanceRegistryImageSelect } from "@/components/instances/InstanceRegistryImageSelect";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 
 export function GpuInstanceUpdateImageModal({
   instance,
@@ -18,7 +17,6 @@ export function GpuInstanceUpdateImageModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<{ imageId: string }>();
-  const scope = useIdempotencyScope("gpu-instance-update-image", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async ({ imageId }: { imageId: string }) => {
       const submitData = {
@@ -26,18 +24,9 @@ export function GpuInstanceUpdateImageModal({
         image_id: imageId,
         strategy: "rolling" as const,
       };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      scope.reset();
       Message.success("更新镜像已提交");
       onSubmitted();
     },
@@ -49,7 +38,6 @@ export function GpuInstanceUpdateImageModal({
       visible
       confirmLoading={mutation.isPending}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={async () => mutation.mutate(await form.validate())}

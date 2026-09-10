@@ -11,16 +11,16 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import {
+  searchVectorStore,
+  type VectorStore,
+  type VectorStoreSearchHit,
+} from "@/api/storage/vector-stores";
+import { showApiError } from "@/lib/api-error";
 
-type VectorStore = components["schemas"]["VectorStore"];
-type SearchHit = components["schemas"]["VectorStoreSearchHit"];
+type SearchHit = VectorStoreSearchHit;
 
 export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
-  const searchScope = useIdempotencyScope("storage-vector-store-search", ["POST", store.id]);
   const [searchVector, setSearchVector] = useState("");
   const [topK, setTopK] = useState(10);
   const [filterJson, setFilterJson] = useState("{}");
@@ -34,15 +34,8 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
       if (vector.length !== store.dimension)
         throw new Error(`向量维度必须为 ${store.dimension}，当前为 ${vector.length}`);
       const filter = filterJson.trim() ? JSON.parse(filterJson) : undefined;
-      const submitData = { vector, top_k: topK, filter };
-      const { data, error } = await coreApi.POST("/vector-stores/{vector_store_id}/search", {
-        params: { path: { vector_store_id: store.id } },
-        body: searchScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
+      return searchVectorStore(store.id, { vector, top_k: topK, filter });
     },
-    onSuccess: () => searchScope.reset(),
     onError: (error) => showApiError(error),
   });
   const hits = (search.data?.items ?? []) as SearchHit[];

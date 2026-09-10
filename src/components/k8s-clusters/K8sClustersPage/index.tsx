@@ -13,14 +13,24 @@ import {
   Spin,
 } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
+import {
+  createK8sCluster,
+  deleteK8sCluster,
+  getK8sCluster,
+  getK8sClusterKubeconfig,
+  listK8sClusterNodePools,
+  listK8sClusters,
+  listK8sClusterWorkloads,
+  type K8sCluster,
+  type K8sClusterNodePool,
+  type K8sClusterWorkload,
+} from "@/api/k8s-clusters";
 import {
   DetailPageFrame,
   AliIcon,
   StatusTag,
   DataTable,
   DetailPagePlaceholder,
-  AsyncTaskPoller,
   ListDataTable,
   DataTableNameCell,
   ListPageFrame,
@@ -34,10 +44,7 @@ import {
   ToolbarSearch,
   type ListColumn,
 } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
-import { showApiError } from "@/api/helpers";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { listOrThrow } from "@/lib/api-list";
+import { showApiError } from "@/lib/api-error";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -48,10 +55,8 @@ import {
   K8S_MOCK_ENABLED,
   mockClusters,
 } from "./mock-data";
-import type { components } from "@/api/core-schema";
-
-type Cluster = components["schemas"]["K8sCluster"];
-type NodePool = components["schemas"]["K8sClusterNodePool"];
+type Cluster = K8sCluster;
+type NodePool = K8sClusterNodePool;
 type ClusterStatusFilter = "all" | NonNullable<Cluster["state"]>;
 type ClusterSearchField = "name" | "id";
 
@@ -61,11 +66,9 @@ export function K8sClustersPage() {
 
 function ClusterList() {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("k8s-cluster-create", ["POST"]);
   const [visible, setVisible] = useState(false);
   const [name, setName] = useState("");
   const [version, setVersion] = useState("1.36.0");
-  const [taskId, setTaskId] = useState<string | null>(null);
   const [status, setStatus] = useState<ClusterStatusFilter>("all");
   const [searchField, setSearchField] = useState<ClusterSearchField>("name");
   const [searchText, setSearchText] = useState("");
@@ -94,18 +97,13 @@ function ClusterList() {
         };
       }
       const keyword = searchText.trim();
-      const { data, error } = await coreApi.GET("/k8s-clusters", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            status: status === "all" ? undefined : status,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      const data = await listK8sClusters({
+        limit,
+        cursor,
+        status: status === "all" ? undefined : status,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error || !data) throw error ?? new Error("K8s 集群列表未返回结果");
       return {
         items: data.items ?? [],
         total: data.total ?? 0,
@@ -121,18 +119,8 @@ function ClusterList() {
   });
 
   const createCluster = useMutation({
-    mutationFn: async () => {
-      const submitData = { name, version: version || undefined };
-      const { response, error } = await coreApi.POST("/k8s-clusters", {
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
-      const loc = response.headers.get("Location");
-      const tid = loc?.match(/tasks\/([^/]+)/)?.[1];
-      if (tid) setTaskId(tid);
-    },
+    mutationFn: () => createK8sCluster({ name, version: version || undefined }),
     onSuccess: () => {
-      createScope.reset();
       setVisible(false);
       setName("");
       setVersion("1.36.0");
@@ -148,11 +136,8 @@ function ClusterList() {
       if (!clusterId) throw new Error("缺少集群 ID");
       let content = `apiVersion: v1\nkind: Config\nclusters:\n- name: ${cluster.name ?? clusterId}\n`;
       if (!K8S_MOCK_ENABLED) {
-        const { data, error } = await coreApi.GET("/k8s-clusters/{cluster_id}/kubeconfig", {
-          params: { path: { cluster_id: clusterId } },
-        });
-        if (error) throw error;
-        content = (data as { kubeconfig?: string })?.kubeconfig ?? JSON.stringify(data, null, 2);
+        const data = await getK8sClusterKubeconfig(clusterId);
+        content = data.kubeconfig ?? JSON.stringify(data, null, 2);
       }
       const url = URL.createObjectURL(new Blob([content], { type: "text/yaml" }));
       const anchor = document.createElement("a");
@@ -168,10 +153,7 @@ function ClusterList() {
     mutationFn: async (cluster: Cluster) => {
       if (K8S_MOCK_ENABLED) return;
       if (!cluster.id) throw new Error("缺少集群 ID");
-      const { error } = await coreApi.DELETE("/k8s-clusters/{cluster_id}", {
-        params: { path: { cluster_id: cluster.id } },
-      });
-      if (error) throw error;
+      await deleteK8sCluster(cluster.id);
     },
     onSuccess: () => {
       resetPagination();
@@ -283,7 +265,6 @@ function ClusterList() {
           />
         }
       >
-        {taskId ? <AsyncTaskPoller taskId={taskId} onComplete={() => setTaskId(null)} /> : null}
         <ListDataTable
           data={items}
           rowKey={(cluster) => cluster.id ?? cluster.name ?? ""}
@@ -360,7 +341,6 @@ function ClusterList() {
         visible={visible}
         title="创建集群"
         onCancel={() => {
-          createScope.reset();
           setVisible(false);
         }}
         onOk={() => createCluster.mutateAsync()}
@@ -386,11 +366,7 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
     queryKey: ["k8s-cluster", clusterId],
     queryFn: async () => {
       if (K8S_MOCK_ENABLED) return getMockCluster(clusterId);
-      const { data, error } = await coreApi.GET("/k8s-clusters/{cluster_id}", {
-        params: { path: { cluster_id: clusterId } },
-      });
-      if (error) throw error;
-      return data;
+      return getK8sCluster(clusterId);
     },
   });
 
@@ -403,11 +379,7 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
             total: getMockNodePools(clusterId).length,
             next_cursor: null,
           })
-        : listOrThrow(() =>
-            coreApi.GET("/k8s-clusters/{cluster_id}/node-pools", {
-              params: { path: { cluster_id: clusterId } },
-            }),
-          ),
+        : listK8sClusterNodePools(clusterId),
   });
 
   const workloads = useQuery({
@@ -419,11 +391,7 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
             total: getMockWorkloads().length,
             next_cursor: null,
           })
-        : listOrThrow(() =>
-            coreApi.GET("/k8s-clusters/{cluster_id}/workloads", {
-              params: { path: { cluster_id: clusterId } },
-            }),
-          ),
+        : listK8sClusterWorkloads(clusterId),
   });
   useListErrorNotification({
     id: `k8s-cluster-detail:${clusterId}`,
@@ -443,11 +411,8 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
 
   const downloadKubeconfig = useMutation({
     mutationFn: async () => {
-      const { data, error } = await coreApi.GET("/k8s-clusters/{cluster_id}/kubeconfig", {
-        params: { path: { cluster_id: clusterId } },
-      });
-      if (error) throw error;
-      const blob = new Blob([(data as { kubeconfig?: string })?.kubeconfig ?? ""], {
+      const data = await getK8sClusterKubeconfig(clusterId);
+      const blob = new Blob([data.kubeconfig ?? ""], {
         type: "text/yaml",
       });
       const a = document.createElement("a");
@@ -460,10 +425,7 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
 
   const deleteCluster = useMutation({
     mutationFn: async () => {
-      const { error } = await coreApi.DELETE("/k8s-clusters/{cluster_id}", {
-        params: { path: { cluster_id: clusterId } },
-      });
-      if (error) throw error;
+      await deleteK8sCluster(clusterId);
     },
     onSuccess: () => {
       onBack();
@@ -496,7 +458,7 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
 
   const c = detail.data;
   const poolItems = (nodePools.data?.items ?? []) as NodePool[];
-  const workloadItems = (workloads.data?.items ?? []) as Record<string, unknown>[];
+  const workloadItems = workloads.data?.items ?? [];
 
   const confirmDeleteCluster = () => {
     Modal.confirm({
@@ -527,7 +489,7 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
   );
 
   const workloadTab = (
-    <DataTable<Record<string, unknown>>
+    <DataTable<K8sClusterWorkload>
       columns={[
         { title: "名称", dataIndex: "name" },
         { title: "类型", dataIndex: "kind" },
@@ -537,14 +499,12 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
         {
           title: "状态",
           width: 120,
-          render: (_, r) => <StatusTag status={String(r.status ?? "")} />,
+          render: (_, r) => <StatusTag status={r.status} />,
         },
       ]}
       data={workloadItems}
       loading={workloads.isLoading}
-      rowKey={(row) =>
-        `${String(row.namespace ?? "")}/${String(row.kind ?? "")}/${String(row.name ?? "")}`
-      }
+      rowKey={(row) => `${row.namespace}/${row.kind}/${row.name}`}
       pagination={false}
       noDataElement={<Empty description="暂无工作负载" />}
     />

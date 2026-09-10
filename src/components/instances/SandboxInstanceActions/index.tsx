@@ -1,3 +1,5 @@
+import type { InstanceRecord } from "@/api/instances";
+import { applyInstanceLifecycle } from "@/api/instances";
 import {
   Alert,
   Button,
@@ -11,15 +13,12 @@ import {
 import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import type { SandboxInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
 import { formatDurationSeconds } from "../SandboxInstanceDetailPage/utils";
 
-type SandboxInstance = components["schemas"]["InstanceRecord"];
+type SandboxInstance = InstanceRecord;
 type LifecycleAction = "pause" | "resume" | "extend" | "touch_idle" | "delete";
 
 const TERMINAL_STATES = new Set(["expired", "deleted", "deleting"]);
@@ -44,7 +43,6 @@ export function SandboxInstanceActions({
   onTabChange: (tab: SandboxInstanceDetailTabKey) => void;
   display?: "row" | "detail";
 }) {
-  const lifecycleScope = useIdempotencyScope("sandbox-instance-lifecycle", ["POST", instance.id]);
   const [extendVisible, setExtendVisible] = useState(false);
   const [extendDuration, setExtendDuration] = useState("1h");
   const sandbox = instance.sandbox;
@@ -56,20 +54,10 @@ export function SandboxInstanceActions({
   const lifecycle = useMutation({
     mutationFn: async ({ action, duration }: { action: LifecycleAction; duration?: string }) => {
       const submitData = { action, duration };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: lifecycleScope.withKey(submitData),
-      });
-      if (error) {
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
-      }
+      await applyInstanceLifecycle(instance.id, submitData);
       return action;
     },
     onSuccess: (action) => {
-      lifecycleScope.reset();
       const messages: Record<LifecycleAction, string> = {
         pause: "Sandbox 暂停操作已提交",
         resume: "Sandbox 恢复操作已提交",
@@ -169,7 +157,6 @@ export function SandboxInstanceActions({
         visible={extendVisible}
         confirmLoading={lifecycle.isPending}
         onCancel={() => {
-          lifecycleScope.reset();
           setExtendVisible(false);
         }}
         onOk={() =>

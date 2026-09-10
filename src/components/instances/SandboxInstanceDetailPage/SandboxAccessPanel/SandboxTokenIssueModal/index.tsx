@@ -1,4 +1,9 @@
 import {
+  createSandboxToken,
+  type InstanceRecord,
+  type SandboxTokenResponse,
+} from "@/api/instances";
+import {
   Alert,
   Button,
   Checkbox,
@@ -12,14 +17,11 @@ import {
 } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { formatDateTime } from "@/lib/format";
-import { copySandboxText, showSandboxError, throwSandboxApiError } from "../../utils";
+import { copySandboxText, showSandboxError } from "../../utils";
 
-type SandboxInstance = components["schemas"]["InstanceRecord"];
-type SandboxToken = components["schemas"]["SandboxTokenResponse"];
+type SandboxInstance = InstanceRecord;
+type SandboxToken = SandboxTokenResponse;
 type TokenScope = SandboxToken["scopes"][number];
 
 const TOKEN_SCOPE_OPTIONS = [
@@ -38,7 +40,6 @@ export function SandboxTokenIssueModal({
   visible: boolean;
   onCancel: () => void;
 }) {
-  const tokenScope = useIdempotencyScope("sandbox-access-token", ["POST", instance.id]);
   const [token, setToken] = useState<SandboxToken>();
   const [tokenExpiresIn, setTokenExpiresIn] = useState("15m");
   const [tokenScopes, setTokenScopes] = useState<TokenScope[]>(["connect"]);
@@ -49,20 +50,9 @@ export function SandboxTokenIssueModal({
         expires_in: tokenExpiresIn,
         scopes: tokenScopes,
       };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/sandbox/tokens",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: tokenScope.withKey(submitData),
-        },
-      );
-      if (error || !data) {
-        throwSandboxApiError(error, response.status, "连接令牌签发失败");
-      }
-      return data;
+      return createSandboxToken(instance.id, submitData);
     },
     onSuccess: (data) => {
-      tokenScope.reset();
       setToken(data);
       Message.success("短期连接令牌已签发，请复制后关闭弹窗");
     },
@@ -71,7 +61,6 @@ export function SandboxTokenIssueModal({
 
   const closeModal = () => {
     if (issueToken.isPending) return;
-    tokenScope.reset();
     setToken(undefined);
     onCancel();
   };

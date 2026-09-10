@@ -13,10 +13,16 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { showApiError } from "@/api/helpers";
-import { servicesApi } from "@/api/services-client";
+import {
+  applyInferenceServiceLifecycle,
+  deleteInferenceService,
+  getInferenceService,
+  listInferenceServicePolicies,
+  updateInferenceService,
+} from "@/api/ai-services/inference";
+import { listModels } from "@/api/ai-services/models";
+import { showApiError } from "@/lib/api-error";
 import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { InferenceInvocationTest } from "./InferenceInvocationTest";
@@ -29,41 +35,23 @@ type LifecycleAction = "start" | "stop" | "restart";
 export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", ["POST", serviceId]);
-  const scaleScope = useIdempotencyScope("inference-service-scale", ["PATCH", serviceId]);
   const [scaleVisible, setScaleVisible] = useState(false);
   const [replicas, setReplicas] = useState(1);
   const [activeTabKey, setActiveTabKey] = useState("related");
 
   const service = useQuery({
     queryKey: ["inference-service", serviceId],
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/inference-services/{service_id}", {
-        params: { path: { service_id: serviceId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getInferenceService(serviceId),
   });
   const models = useQuery({
     queryKey: ["inference-service-related-model", serviceId],
     enabled: Boolean(service.data),
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/models");
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listModels(),
   });
   const policies = useQuery({
     queryKey: ["inference-service-policies", serviceId],
     enabled: Boolean(service.data),
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/inference-services/{service_id}/policies", {
-        params: { path: { service_id: serviceId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listInferenceServicePolicies(serviceId),
   });
 
   useListErrorNotification({
@@ -75,15 +63,9 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const lifecycle = useMutation({
     mutationFn: async (action: LifecycleAction) => {
       const submitData = { action };
-      const { data, error } = await servicesApi.POST("/inference-services/{service_id}/lifecycle", {
-        params: { path: { service_id: serviceId } },
-        body: lifecycleScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
+      return applyInferenceServiceLifecycle(serviceId, submitData);
     },
     onSuccess: () => {
-      lifecycleScope.reset();
       Message.success("生命周期操作已提交");
       void qc.invalidateQueries({
         queryKey: ["inference-service", serviceId],
@@ -95,15 +77,9 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const scale = useMutation({
     mutationFn: async () => {
       const submitData = { replicas };
-      const { data, error } = await servicesApi.PATCH("/inference-services/{service_id}", {
-        params: { path: { service_id: serviceId } },
-        body: scaleScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
+      return updateInferenceService(serviceId, submitData);
     },
     onSuccess: () => {
-      scaleScope.reset();
       Message.success("副本调整已提交");
       setScaleVisible(false);
       void qc.invalidateQueries({
@@ -114,13 +90,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
     onError: (error) => showApiError(error),
   });
   const remove = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await servicesApi.DELETE("/inference-services/{service_id}", {
-        params: { path: { service_id: serviceId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    mutationFn: () => deleteInferenceService(serviceId),
     onSuccess: () => {
       Message.success("删除操作已提交");
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
@@ -457,7 +427,6 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
         title="调整副本数"
         onCancel={() => {
           setScaleVisible(false);
-          scaleScope.reset();
         }}
         onOk={() => scale.mutateAsync()}
         confirmLoading={scale.isPending}

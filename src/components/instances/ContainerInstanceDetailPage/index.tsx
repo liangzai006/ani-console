@@ -1,8 +1,8 @@
+import type { InstanceRecord } from "@/api/instances";
 import { Button, Descriptions, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
 import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
@@ -163,10 +163,10 @@ export function ContainerInstanceDetailPage({
           label: "发布与回滚",
           content: (
             <InstanceReleases
-              instance={detail as components["schemas"]["InstanceRecord"]}
+              instance={detail as InstanceRecord}
               actions={
                 <InstanceReleaseActions
-                  instance={detail as components["schemas"]["InstanceRecord"]}
+                  instance={detail as InstanceRecord}
                   onChanged={() => void query.refetch()}
                 />
               }
@@ -202,7 +202,7 @@ export function ContainerInstanceDetailPage({
           label: "存储与挂载",
           content: (
             <InstanceStorage
-              instance={detail as components["schemas"]["InstanceRecord"]}
+              instance={detail as InstanceRecord}
               mountKind={mountKind}
               onMountKindChange={setMountKind}
               onChanged={() => void query.refetch()}
@@ -224,7 +224,7 @@ export function ContainerInstanceDetailPage({
           label: "配置与密钥",
           content: (
             <InstanceConfiguration
-              instance={detail as components["schemas"]["InstanceRecord"]}
+              instance={detail as InstanceRecord}
               onChanged={() => void query.refetch()}
             />
           ),

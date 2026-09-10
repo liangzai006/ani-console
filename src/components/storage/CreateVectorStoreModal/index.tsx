@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { servicesApi } from "@/api/services-client";
+import { listModels } from "@/api/ai-services/models";
+import {
+  createVectorStore,
+  type VectorMetric,
+  type VectorStore,
+} from "@/api/storage/vector-stores";
+import { showApiError } from "@/lib/api-error";
 import { getErrorMessage } from "@/lib/errors";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
-
-type VectorStore = components["schemas"]["VectorStore"];
-type VectorMetric = components["schemas"]["CreateVectorStoreRequest"]["metric"];
 
 export function CreateVectorStoreModal({
   visible,
@@ -21,22 +20,13 @@ export function CreateVectorStoreModal({
   onCreated?: (store: VectorStore) => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("storage-vector-store-create", ["POST"]);
   const [name, setName] = useState("");
   const [embeddingModel, setEmbeddingModel] = useState("");
   const [dimension, setDimension] = useState(1536);
   const [metric, setMetric] = useState<VectorMetric>("cosine");
   const models = useQuery({
     queryKey: ["models", "vector-store-create"],
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/models", {
-        params: {
-          query: { limit: 100, capability: "embedding", status: "ready" },
-        },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listModels({ limit: 100, capability: "embedding", status: "ready" }),
     enabled: visible,
   });
   const modelOptions = useMemo(
@@ -48,7 +38,6 @@ export function CreateVectorStoreModal({
     setEmbeddingModel(modelOptions[0]);
   }, [embeddingModel, modelOptions, visible]);
   const reset = () => {
-    createScope.reset();
     setName("");
     setEmbeddingModel("");
     setDimension(1536);
@@ -67,11 +56,7 @@ export function CreateVectorStoreModal({
         dimension,
         metric,
       };
-      const { data, error } = await coreApi.POST("/vector-stores", {
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
+      return createVectorStore(submitData);
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["vector-stores"] });

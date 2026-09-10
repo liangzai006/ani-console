@@ -1,12 +1,9 @@
+import { listInstanceOperations, type InstanceOperation } from "@/api/instances";
 import { Empty } from "@arco-design/web-react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { DataTable, StatusTag } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
-
-type InstanceOperation = components["schemas"]["InstanceOperation"];
 
 const OPERATION_LABELS: Record<string, string> = {
   create: "创建",
@@ -38,19 +35,7 @@ export function InstanceOperations({ instanceId }: { instanceId: string }) {
       cursorScope: instanceId,
       initialPageSize: 10,
       fetchPage: async ({ cursor, limit }) => {
-        const { data, error } = await coreApi.GET("/instances/{instance_id}/operations", {
-          params: {
-            path: { instance_id: instanceId },
-            query: { limit, cursor },
-          },
-        });
-        if (error || !data) {
-          throw error ?? new Error("操作历史未返回结果");
-        }
-        return {
-          ...data,
-          items: (data.items ?? []) as InstanceOperation[],
-        };
+        return listInstanceOperations(instanceId, { limit, cursor });
       },
     });
   useListErrorNotification({

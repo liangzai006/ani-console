@@ -13,11 +13,14 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
+import { applyInstanceLifecycle, createInstance } from "@/api/instances";
+import { listNetworkSecurityGroups, listNetworkSubnets, listNetworkVpcs } from "@/api/network";
+import { listRegistryImages } from "@/api/registry";
+import { listSecrets } from "@/api/secrets";
+import { listFilesystems } from "@/api/storage/filesystems";
+import { listVolumes } from "@/api/storage/volumes";
 import { ImageNameText, WizardSteps } from "@/components/common";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import {
   CPU_INSTANCE_COMPUTE_SPECS,
   DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
@@ -38,13 +41,6 @@ type Item = {
   name?: string | null;
   cidr?: string | null;
   vpc_id?: string | null;
-};
-type RegistryImage = {
-  image: string;
-  name?: string | null;
-  repository: string;
-  tag: string;
-  size_bytes?: number | null;
 };
 type FormValues = ContainerStorageFormValues & {
   name: string;
@@ -155,51 +151,27 @@ export function ContainerInstanceCreateModal({
 }) {
   const [form] = Form.useForm<FormValues>();
   const queryClient = useQueryClient();
-  const createScope = useIdempotencyScope("container-instance-create", ["POST"]);
-  const bindSecretScope = useIdempotencyScope("container-instance-secret-bind", ["POST"]);
   const [step, setStep] = useState(0);
   const [values, setValues] = useState(INITIAL_VALUES);
 
-  const useListQuery = (path: string, key: string, query?: Record<string, unknown>) =>
+  const useListQuery = <T,>(key: string, request: () => Promise<{ items: T[] }>) =>
     useQuery({
-      queryKey: query ? [key, "container-create", query] : [key, "container-create"],
+      queryKey: [key, "container-create"],
       enabled: visible,
-      queryFn: async () => {
-        const request = coreApi.GET as unknown as (
-          path: string,
-          options: { params: { query: never } },
-        ) => Promise<{ data?: { items?: Item[] }; error?: unknown }>;
-        const { data, error } = await request(path, {
-          params: {
-            query: asUncontractedQuery({ limit: 100, ...(query ?? {}) }),
-          },
-        });
-        if (error) throw error;
-        return data?.items ?? [];
-      },
+      queryFn: async () => (await request()).items,
     });
-  const vpcs = useListQuery("/networks/vpcs", "network-vpcs");
-  const subnets = useListQuery("/networks/subnets", "network-subnets");
-  const securityGroups = useListQuery("/networks/security-groups", "network-security-groups");
-  const volumes = useListQuery("/volumes", "volumes", { in_use: false });
-  const filesystems = useListQuery("/filesystems", "filesystems");
-  const secrets = useListQuery("/secrets", "secrets");
+  const vpcs = useListQuery("network-vpcs", () => listNetworkVpcs({ limit: 100 }));
+  const subnets = useListQuery("network-subnets", () => listNetworkSubnets({ limit: 100 }));
+  const securityGroups = useListQuery("network-security-groups", () =>
+    listNetworkSecurityGroups({ limit: 100 }),
+  );
+  const volumes = useListQuery("volumes", () => listVolumes({ limit: 100, in_use: false }));
+  const filesystems = useListQuery("filesystems", () => listFilesystems({ limit: 100 }));
+  const secrets = useListQuery("secrets", () => listSecrets({ limit: 100 }));
   const images = useQuery({
     queryKey: ["registry-images", "container-create", "container"],
     enabled: visible,
-    queryFn: async () => {
-      const request = coreApi.GET as unknown as (
-        path: string,
-        options: { params: { query: never } },
-      ) => Promise<{ data?: { items?: RegistryImage[] }; error?: unknown }>;
-      const { data, error } = await request("/registry/images", {
-        params: {
-          query: asUncontractedQuery({ limit: 100, purpose: "container" }),
-        },
-      });
-      if (error) throw error;
-      return data?.items ?? [];
-    },
+    queryFn: async () => (await listRegistryImages({ limit: 100, purpose: "container" })).items,
   });
   const availableSubnets = useMemo(
     () => subnets.data?.filter((item) => !values.vpc_id || item.vpc_id === values.vpc_id) ?? [],
@@ -215,53 +187,19 @@ export function ContainerInstanceCreateModal({
 
   const create = useMutation({
     mutationFn: async () => {
-      const request = coreApi.POST as unknown as (
-        path: string,
-        options: {
-          body: ReturnType<typeof buildCreateBody> & {
-            idempotency_key: string;
-          };
-        },
-      ) => Promise<{
-        data?: { instance?: { id?: string } };
-        error?: unknown;
-        response: Response;
-      }>;
       const submitData = buildCreateBody(values);
-      const { data, error, response } = await request("/instances", {
-        body: createScope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
-      const instanceId = data?.instance?.id;
+      const data = await createInstance(submitData);
+      const instanceId = data.instance.id;
       if (values.secret_id && instanceId) {
         const bindData = {
           action: "bind_secret" as const,
           secret_id: values.secret_id,
           binding_type: values.secret_binding_type,
         };
-        const { error: bindingError, response: bindingResponse } = await coreApi.POST(
-          "/instances/{instance_id}/lifecycle",
-          {
-            params: { path: { instance_id: instanceId } },
-            body: bindSecretScope.withKey(bindData, [instanceId]),
-          },
-        );
-        if (bindingError)
-          throw {
-            ...(typeof bindingError === "object" && bindingError
-              ? bindingError
-              : { message: String(bindingError) }),
-            status: bindingResponse.status,
-          };
+        await applyInstanceLifecycle(instanceId, bindData);
       }
     },
     onSuccess: () => {
-      createScope.reset();
-      bindSecretScope.reset();
       Message.success("容器实例创建已提交");
       void queryClient.invalidateQueries({ queryKey: ["container-instances"] });
       onCreated();
@@ -271,8 +209,6 @@ export function ContainerInstanceCreateModal({
 
   const close = () => {
     if (create.isPending) return;
-    createScope.reset();
-    bindSecretScope.reset();
     onCancel();
   };
   const next = async () => {

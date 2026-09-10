@@ -1,15 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, Input, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { listOrThrow } from "@/lib/api-list";
+import {
+  createNetworkSecurityGroup,
+  listNetworkVpcs,
+  type NetworkSecurityGroup,
+  type NetworkSecurityGroupRule,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import { getErrorMessage } from "@/lib/errors";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type SecurityGroupRule = components["schemas"]["NetworkSecurityGroupRule"];
-type Vpc = components["schemas"]["NetworkVPC"];
+type SecurityGroupRule = NetworkSecurityGroupRule;
+type Vpc = NetworkVPC;
 type RuleTemplate = "common" | "open" | "custom";
 
 const RULE_TEMPLATES: Record<RuleTemplate, SecurityGroupRule[]> = {
@@ -52,17 +55,15 @@ export function CreateSecurityGroupModal({
   visible: boolean;
   defaultVpcId?: string;
   onCancel: () => void;
-  onCreated?: (securityGroup: components["schemas"]["NetworkSecurityGroup"]) => void;
+  onCreated?: (securityGroup: NetworkSecurityGroup) => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("network-security-group-create", ["POST"]);
   const [name, setName] = useState("");
   const [vpcId, setVpcId] = useState(defaultVpcId ?? "");
   const [ruleTemplate, setRuleTemplate] = useState<RuleTemplate>("common");
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "security-group-create"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkVpcs({ limit: 100 }),
     enabled: visible,
   });
 
@@ -70,7 +71,6 @@ export function CreateSecurityGroupModal({
     if (visible) setVpcId(defaultVpcId ?? "");
   }, [defaultVpcId, visible]);
   const reset = () => {
-    createScope.reset();
     setName("");
     setVpcId(defaultVpcId ?? "");
     setRuleTemplate("common");
@@ -85,11 +85,7 @@ export function CreateSecurityGroupModal({
         vpc_id: vpcId,
         rules: RULE_TEMPLATES[ruleTemplate],
       };
-      const { data, error } = await coreApi.POST("/networks/security-groups", {
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
+      return createNetworkSecurityGroup(submitData);
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["network-security-groups"] });

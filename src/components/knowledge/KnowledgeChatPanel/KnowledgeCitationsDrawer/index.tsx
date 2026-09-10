@@ -1,10 +1,8 @@
 import { Alert, Button, Drawer, Empty, Spin, Typography } from "@arco-design/web-react";
-import type { components } from "@/api/services-schema";
+import type { KBCitation as Citation } from "@/api/knowledge";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import styles from "./index.module.css";
-
-type Citation = components["schemas"]["KBCitation"];
 
 export function KnowledgeCitationsDrawer({
   visible,

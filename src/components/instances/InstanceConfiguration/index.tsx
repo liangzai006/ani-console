@@ -1,3 +1,5 @@
+import type { InstanceRecord } from "@/api/instances";
+import { applyInstanceLifecycle } from "@/api/instances";
 import {
   Button,
   Descriptions,
@@ -9,13 +11,10 @@ import {
 } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { DataTable, TableSectionHeader } from "@/components/common";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 
 type SecretRow = {
   reference: string;
@@ -47,7 +46,6 @@ export function InstanceConfiguration({
   onChanged: () => void;
   secretAction?: ReactNode;
 }) {
-  const unbindScope = useIdempotencyScope("instance-secret-unbind", ["POST", instance.id]);
   const secretRefs = secretReferences(instance);
   const secretRows: SecretRow[] = secretRefs.map((reference) => ({
     reference,
@@ -61,19 +59,9 @@ export function InstanceConfiguration({
         action: "unbind_secret" as const,
         secret_id: secretId(reference),
       };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: unbindScope.withKey(submitData, [reference]),
-      });
-      if (error) {
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
-      }
+      await applyInstanceLifecycle(instance.id, submitData);
     },
-    onSuccess: (_data, reference) => {
-      unbindScope.reset([reference]);
+    onSuccess: () => {
       Message.success("密钥解绑已提交");
       onChanged();
     },

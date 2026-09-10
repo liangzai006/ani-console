@@ -1,32 +1,25 @@
+import { listInstanceSecurityEvents, type InstanceSecurityEvent } from "@/api/instances";
 import { Empty, Select, Space, Tag, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { DataTable } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
-type SecurityEvent = components["schemas"]["InstanceSecurityEvent"];
+type SecurityEvent = InstanceSecurityEvent;
 type Severity = "all" | "info" | "warning" | "critical";
 
 export function SandboxSecurityEvents({ instanceId }: { instanceId: string }) {
   const [severity, setSeverity] = useState<Severity>("all");
   const query = useQuery({
     queryKey: ["sandbox-security-events", instanceId, severity],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/instances/{instance_id}/security-events", {
-        params: {
-          path: { instance_id: instanceId },
-          query: {
-            limit: 100,
-            severity: severity === "all" ? undefined : severity,
-          },
-        },
-      });
-      if (error || !data) throw error ?? new Error("安全事件未返回结果");
-      return data.items as SecurityEvent[];
-    },
+    queryFn: async () =>
+      (
+        await listInstanceSecurityEvents(instanceId, {
+          limit: 100,
+          severity: severity === "all" ? undefined : severity,
+        })
+      ).items,
   });
   useListErrorNotification({
     id: `sandbox-security:${instanceId}:${severity}`,

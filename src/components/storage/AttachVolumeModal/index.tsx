@@ -1,15 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { listOrThrow } from "@/lib/api-list";
+import { applyInstanceLifecycle, listInstances, type InstanceRecord } from "@/api/instances";
+import { showApiError } from "@/lib/api-error";
 import { getErrorMessage } from "@/lib/errors";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 const attachableInstanceKinds = new Set<Instance["kind"]>(["vm", "container", "gpu_container"]);
 
 export function AttachVolumeModal({
@@ -24,22 +20,15 @@ export function AttachVolumeModal({
   onAttached?: () => void;
 }) {
   const qc = useQueryClient();
-  const attachScope = useIdempotencyScope("storage-volume-attach", ["POST", volumeId]);
   const [instanceId, setInstanceId] = useState("");
   const instances = useQuery({
     queryKey: ["instances", "volume-attach"],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/instances", {
-          params: {
-            query: asUncontractedQuery({
-              limit: 100,
-              kind: "vm,container,gpu_container",
-              status: "running,stopped",
-            }),
-          },
-        }),
-      ),
+      listInstances({
+        limit: 100,
+        kind: "vm,container,gpu_container",
+        status: "running,stopped",
+      }),
     enabled: visible,
   });
   // TODO: 实例接口确认按 kind/status 过滤后，移除此处关联资源选择的本地兜底过滤。
@@ -53,17 +42,14 @@ export function AttachVolumeModal({
   }, [instanceId, instanceItems]);
 
   const attach = useMutation({
-    mutationFn: async () => {
+    mutationFn: () => {
       if (!instanceId) throw new Error("请选择挂载实例");
-      const submitData = { action: "attach_volume" as const, volume_id: volumeId };
-      const { error } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instanceId } },
-        body: attachScope.withKey(submitData, [instanceId]),
+      return applyInstanceLifecycle(instanceId, {
+        action: "attach_volume",
+        volume_id: volumeId,
       });
-      if (error) throw error;
     },
     onSuccess: () => {
-      attachScope.reset([instanceId]);
       qc.invalidateQueries({ queryKey: ["instances"] });
       qc.invalidateQueries({ queryKey: ["volume", volumeId] });
       qc.invalidateQueries({ queryKey: ["volumes"] });
@@ -79,7 +65,6 @@ export function AttachVolumeModal({
       visible={visible}
       title="挂载块存储卷"
       onCancel={() => {
-        attachScope.reset();
         setInstanceId("");
         onCancel();
       }}

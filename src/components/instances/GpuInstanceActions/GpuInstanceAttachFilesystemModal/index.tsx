@@ -1,11 +1,10 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceRecord } from "@/api/instances";
 import { Checkbox, Form, Input, Message, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 type Values = { filesystemId: string; mountPath: string; readOnly?: boolean };
 
 export function GpuInstanceAttachFilesystemModal({
@@ -18,7 +17,6 @@ export function GpuInstanceAttachFilesystemModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<Values>();
-  const scope = useIdempotencyScope("gpu-instance-attach-filesystem", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
       const submitData = {
@@ -27,18 +25,9 @@ export function GpuInstanceAttachFilesystemModal({
         mount_path: values.mountPath.trim(),
         read_only: values.readOnly ?? false,
       };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      scope.reset();
       Message.success("挂载 NFS 已提交");
       onSubmitted();
     },
@@ -50,7 +39,6 @@ export function GpuInstanceAttachFilesystemModal({
       visible
       confirmLoading={mutation.isPending}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={async () => mutation.mutate(await form.validate())}

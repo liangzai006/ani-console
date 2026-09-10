@@ -19,22 +19,31 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import { listInstances, type InstanceRecord } from "@/api/instances";
+import {
+  deleteNetworkSecurityGroup,
+  deleteNetworkSecurityGroupRule,
+  getNetworkSecurityGroup,
+  getNetworkVpc,
+  listNetworkSecurityGroupBindings,
+  listNetworkSecurityGroupRules,
+  type NetworkSecurityGroup,
+  type NetworkSecurityGroupBinding,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import {
   SecurityGroupRuleModal,
   type SecurityGroupRuleResource,
 } from "@/components/network/SecurityGroupRuleModal";
 import { formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
-import { listOrThrow } from "@/lib/api-list";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
-type SecurityGroupBinding = components["schemas"]["NetworkSecurityGroupBinding"];
-type Vpc = components["schemas"]["NetworkVPC"];
-type Instance = components["schemas"]["InstanceRecord"];
+type SecurityGroup = NetworkSecurityGroup;
+type SecurityGroupBinding = NetworkSecurityGroupBinding;
+type Vpc = NetworkVPC;
+type Instance = InstanceRecord;
 
 type RelatedResource = {
   key: string;
@@ -55,53 +64,28 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
   } | null>(null);
   const detail = useQuery({
     queryKey: ["network-security-group", securityGroupId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/networks/security-groups/{security_group_id}", {
-        params: { path: { security_group_id: securityGroupId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getNetworkSecurityGroup(securityGroupId),
   });
   const vpc = useQuery({
     queryKey: ["network-vpc", detail.data?.vpc_id],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/networks/vpcs/{vpc_id}", {
-        params: { path: { vpc_id: detail.data!.vpc_id! } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getNetworkVpc(detail.data!.vpc_id!),
     enabled: Boolean(detail.data?.vpc_id),
   });
   const bindings = useQuery({
     queryKey: ["network-security-group-bindings", securityGroupId],
     queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/security-groups/{security_group_id}/bindings", {
-          params: {
-            path: { security_group_id: securityGroupId },
-            query: { limit: 100, target_type: "instance" },
-          },
-        }),
-      ),
+      listNetworkSecurityGroupBindings(securityGroupId, {
+        limit: 100,
+        target_type: "instance",
+      }),
   });
   const rules = useQuery({
     queryKey: ["network-security-group-rules", securityGroupId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/security-groups/{security_group_id}/rules", {
-          params: {
-            path: { security_group_id: securityGroupId },
-            query: { limit: 100 },
-          },
-        }),
-      ),
+    queryFn: () => listNetworkSecurityGroupRules(securityGroupId, { limit: 100 }),
   });
   const instances = useQuery({
     queryKey: ["instances", "security-group-related"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/instances", { params: { query: { limit: 100 } } })),
+    queryFn: () => listInstances({ limit: 100 }),
   });
   useListErrorNotification({
     id: `security-group-detail:${securityGroupId}`,
@@ -129,17 +113,8 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
     error: instances.error,
   });
   const deleteRule = useMutation({
-    mutationFn: async (rule: SecurityGroupRuleResource) => {
-      const { error } = await coreApi.DELETE(
-        "/networks/security-groups/{security_group_id}/rules/{rule_id}",
-        {
-          params: {
-            path: { security_group_id: securityGroupId, rule_id: rule.id },
-          },
-        },
-      );
-      if (error) throw error;
-    },
+    mutationFn: (rule: SecurityGroupRuleResource) =>
+      deleteNetworkSecurityGroupRule(securityGroupId, rule.id),
     onSuccess: () => {
       qc.invalidateQueries({
         queryKey: ["network-security-group-rules", securityGroupId],
@@ -152,12 +127,7 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
     onError: (error) => showApiError(error),
   });
   const deleteSecurityGroup = useMutation({
-    mutationFn: async () => {
-      const { error } = await coreApi.DELETE("/networks/security-groups/{security_group_id}", {
-        params: { path: { security_group_id: securityGroupId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: () => deleteNetworkSecurityGroup(securityGroupId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["network-security-groups"] });
       navigate({ to: "/security-groups" });

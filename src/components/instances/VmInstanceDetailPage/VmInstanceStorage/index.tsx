@@ -1,6 +1,6 @@
+import type { InstanceRecord } from "@/api/instances";
 import { Empty, Space } from "@arco-design/web-react";
 import { useState, type ReactNode } from "react";
-import type { components } from "@/api/core-schema";
 import {
   DataTable,
   DataTableRowActionButton,
@@ -12,7 +12,7 @@ import { InstanceStorage, type MountKind } from "@/components/instances/Instance
 import { VmInstanceRollbackModal } from "@/components/instances/VmInstanceActions/VmInstanceRollbackModal";
 import { formatDateTime } from "@/lib/format";
 
-type VmInstance = components["schemas"]["InstanceRecord"];
+type VmInstance = InstanceRecord;
 type Snapshot = NonNullable<VmInstance["snapshots"]>[number];
 
 export function VmInstanceStorage({

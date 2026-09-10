@@ -2,10 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal, Select } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  copyNetworkSecurityGroup,
+  deleteNetworkSecurityGroup,
+  listNetworkSecurityGroups,
+  listNetworkVpcs,
+  type NetworkSecurityGroup,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import { CreateSecurityGroupModal } from "@/components/network/CreateSecurityGroupModal";
 import {
   ListDataTable,
@@ -21,19 +26,16 @@ import {
   ToolbarSearch,
   type ListColumn,
 } from "@/components/common";
-import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
-type Vpc = components["schemas"]["NetworkVPC"];
+type SecurityGroup = NetworkSecurityGroup;
+type Vpc = NetworkVPC;
 type StatusFilter = "all" | "available";
 type SearchField = "name" | "id";
 
 export function SecurityGroupsPage() {
-  const copyScope = useIdempotencyScope("network-security-group-copy", ["POST"]);
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
@@ -52,36 +54,24 @@ export function SecurityGroupsPage() {
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
-      const { data, error } = await coreApi.GET("/networks/security-groups", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            vpc_id: filterVpcId || undefined,
-            status: status === "all" ? undefined : status,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      return listNetworkSecurityGroups({
+        limit,
+        cursor,
+        vpc_id: filterVpcId || undefined,
+        status: status === "all" ? undefined : status,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error || !data) throw error ?? new Error("安全组列表未返回结果");
-      return data;
     },
   });
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "security-group-create"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkVpcs({ limit: 100 }),
   });
 
   const qc = useQueryClient();
   const deleteSecurityGroup = useMutation({
-    mutationFn: async (item: SecurityGroup) => {
-      const { error } = await coreApi.DELETE("/networks/security-groups/{security_group_id}", {
-        params: { path: { security_group_id: item.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (item: SecurityGroup) => deleteNetworkSecurityGroup(item.id),
     onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-security-groups"] });
@@ -89,20 +79,8 @@ export function SecurityGroupsPage() {
     onError: (error) => showApiError(error),
   });
   const copySecurityGroup = useMutation({
-    mutationFn: async (item: SecurityGroup) => {
-      const submitData = {
-        name: `${item.name}-copy`,
-        vpc_id: item.vpc_id,
-        description: item.description,
-        rules: item.rules,
-      };
-      const { error } = await coreApi.POST("/networks/security-groups", {
-        body: copyScope.withKey(submitData, [item.id]),
-      });
-      if (error) throw error;
-    },
-    onSuccess: (_data, item) => {
-      copyScope.reset([item.id]);
+    mutationFn: (item: SecurityGroup) => copyNetworkSecurityGroup(item),
+    onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-security-groups"] });
     },

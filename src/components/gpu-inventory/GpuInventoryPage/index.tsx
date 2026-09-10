@@ -1,79 +1,24 @@
 import { Space, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
+import {
+  getGpuOccupancy,
+  getGpuSpecAvailability,
+  getMyQuota,
+  listGpuAnomalies,
+  type GpuOccupancyStats,
+} from "@/api/gpu-inventory";
 import { ListPageFrame, ListPageHeader, ToolbarButton } from "@/components/common";
 import { GpuContainerCreateModal } from "@/components/instances/GpuContainerCreateModal";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { GpuCapacityOverview } from "./GpuCapacityOverview";
-import type { GpuSpecAvailabilityListResponse, TenantQuotaResponse } from "./types";
-
-type GpuOccupancy = components["schemas"]["GPUOccupancyStats"];
-type GpuInventoryRecord = components["schemas"]["GPUInventoryRecord"];
-
-async function getGpuSpecAvailability() {
-  const request = coreApi.GET as unknown as (path: "/gpu-specs/availability") => Promise<{
-    data?: GpuSpecAvailabilityListResponse;
-    error?: unknown;
-  }>;
-  const { data, error } = await request("/gpu-specs/availability");
-
-  if (error || !data) {
-    throw error ?? new Error("GPU 规格可用性未返回结果");
-  }
-
-  return data;
-}
-
-async function getMyQuota() {
-  const request = coreApi.GET as unknown as (path: "/quotas/me") => Promise<{
-    data?: TenantQuotaResponse;
-    error?: unknown;
-  }>;
-  const { data, error } = await request("/quotas/me");
-
-  if (error || !data) {
-    throw error ?? new Error("租户配额未返回结果");
-  }
-
-  return data;
-}
-
-async function getGpuAnomalies(): Promise<GpuInventoryRecord[]> {
-  const [faultResponse, maintenanceResponse] = await Promise.all([
-    coreApi.GET("/gpu-inventory", {
-      params: { query: { status: "fault", limit: 200 } },
-    }),
-    coreApi.GET("/gpu-inventory", {
-      params: { query: { status: "maintenance", limit: 200 } },
-    }),
-  ]);
-
-  if (
-    faultResponse.error ||
-    maintenanceResponse.error ||
-    !faultResponse.data ||
-    !maintenanceResponse.data
-  ) {
-    throw faultResponse.error ?? maintenanceResponse.error ?? new Error("GPU 异常数据未返回结果");
-  }
-
-  return [...faultResponse.data.items, ...maintenanceResponse.data.items];
-}
 
 export function GpuInventoryPage() {
   const queryClient = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
-  const occupancy = useQuery<GpuOccupancy>({
+  const occupancy = useQuery<GpuOccupancyStats>({
     queryKey: ["gpu-occupancy"],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/gpu-inventory/occupancy");
-      if (error || !data) {
-        throw error ?? new Error("GPU 占用数据未返回结果");
-      }
-      return data;
-    },
+    queryFn: getGpuOccupancy,
   });
   const specAvailability = useQuery({
     queryKey: ["gpu-specs", "availability"],
@@ -85,7 +30,7 @@ export function GpuInventoryPage() {
   });
   const anomalies = useQuery({
     queryKey: ["gpu-inventory", "anomalies"],
-    queryFn: getGpuAnomalies,
+    queryFn: listGpuAnomalies,
   });
 
   useListErrorNotification({

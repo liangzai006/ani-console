@@ -8,50 +8,40 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Empty, Modal, Spin } from "@arco-design/web-react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  deleteNetworkLoadBalancer,
+  getNetworkLoadBalancer,
+  getNetworkSubnet,
+  getNetworkVpc,
+  type NetworkLoadBalancer,
+  type NetworkLoadBalancerListener,
+  type NetworkSubnet,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import { formatDateTime } from "@/lib/format";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type LoadBalancer = components["schemas"]["NetworkLoadBalancer"];
-type Listener = components["schemas"]["NetworkLoadBalancerListener"];
-type Vpc = components["schemas"]["NetworkVPC"];
-type Subnet = components["schemas"]["NetworkSubnet"];
+type LoadBalancer = NetworkLoadBalancer;
+type Listener = NetworkLoadBalancerListener;
+type Vpc = NetworkVPC;
+type Subnet = NetworkSubnet;
 
 export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
     queryKey: ["network-load-balancer", loadBalancerId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/networks/load-balancers/{load_balancer_id}", {
-        params: { path: { load_balancer_id: loadBalancerId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getNetworkLoadBalancer(loadBalancerId),
   });
   const vpc = useQuery({
     queryKey: ["network-vpc", detail.data?.vpc_id],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/networks/vpcs/{vpc_id}", {
-        params: { path: { vpc_id: detail.data!.vpc_id } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getNetworkVpc(detail.data!.vpc_id),
     enabled: Boolean(detail.data?.vpc_id),
   });
   const subnet = useQuery({
     queryKey: ["network-subnet", detail.data?.subnet_id],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/networks/subnets/{subnet_id}", {
-        params: { path: { subnet_id: detail.data!.subnet_id! } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getNetworkSubnet(detail.data!.subnet_id!),
     enabled: Boolean(detail.data?.subnet_id),
   });
   useListErrorNotification({
@@ -70,12 +60,7 @@ export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: str
     error: subnet.error,
   });
   const remove = useMutation({
-    mutationFn: async (_: undefined) => {
-      const { error } = await coreApi.DELETE("/networks/load-balancers/{load_balancer_id}", {
-        params: { path: { load_balancer_id: loadBalancerId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (_: undefined) => deleteNetworkLoadBalancer(loadBalancerId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["network-load-balancers"] });
       navigate({ to: "/load-balancers" });

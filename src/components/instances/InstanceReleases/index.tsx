@@ -1,11 +1,11 @@
+import type { InstanceRecord } from "@/api/instances";
 import { Descriptions, Empty, Space } from "@arco-design/web-react";
 import type { ReactNode } from "react";
-import type { components } from "@/api/core-schema";
 import { DataTable, ImageNameText, TableSectionHeader } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 type Release = NonNullable<NonNullable<Instance["container"]>["history"]>[number];
 
 export function InstanceReleases({

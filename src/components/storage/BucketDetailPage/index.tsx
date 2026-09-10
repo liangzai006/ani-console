@@ -16,29 +16,30 @@ import {
   Upload,
 } from "@arco-design/web-react";
 import { useEffect, useRef, useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  createBucketPrefix,
+  deleteBucketLifecycleRule,
+  deleteBucketObject,
+  generateBucketObjectPresignedUrl,
+  getBucket,
+  listBucketLifecycleRules,
+  listBucketObjects,
+  updateBucketAcl,
+  updateBucketStorageClass,
+  type StorageBucketLifecycleRule,
+  type StorageBucketObjectEntry,
+  type StorageBucketRecord,
+} from "@/api/storage/buckets";
+import { uploadStorageObjectFile } from "@/api/storage/objects";
+import { showApiError } from "@/lib/api-error";
 import { CreateLifecycleRuleModal } from "@/components/storage/CreateLifecycleRuleModal";
 import { ObjectBrowser } from "@/components/storage/ObjectBrowser";
-import { listOrThrow } from "@/lib/api-list";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { uploadStorageObjectFile } from "@/lib/object-upload";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type Bucket = components["schemas"]["StorageBucketRecord"];
-type BucketEntry = components["schemas"]["StorageBucketObjectEntry"];
-type LifecycleRule = components["schemas"]["StorageBucketLifecycleRule"];
-
-async function fetchBucketById(bucketId: string): Promise<Bucket> {
-  const data = await listOrThrow(() =>
-    coreApi.GET("/buckets", { params: { query: { limit: 100 } } }),
-  );
-  const bucket = (data.items ?? []).find((item) => item.id === bucketId);
-  if (!bucket) throw new Error("存储桶不存在或无权访问");
-  return bucket as Bucket;
-}
+type Bucket = StorageBucketRecord;
+type BucketEntry = StorageBucketObjectEntry;
+type LifecycleRule = StorageBucketLifecycleRule;
 
 export function BucketDetailPage({
   bucketId,
@@ -51,17 +52,6 @@ export function BucketDetailPage({
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const uploadReservationScope = useIdempotencyScope("storage-object-upload-reserve", [
-    "POST",
-    bucketId,
-  ]);
-  const uploadCompleteScope = useIdempotencyScope("storage-object-upload-complete", [
-    "POST",
-    bucketId,
-  ]);
-  const createFolderScope = useIdempotencyScope("storage-bucket-prefix-create", ["POST", bucketId]);
-  const updateAclScope = useIdempotencyScope("storage-bucket-acl-update", ["PUT", bucketId]);
-  const updateClassScope = useIdempotencyScope("storage-bucket-class-update", ["PUT", bucketId]);
   const uploadTriggerRef = useRef<HTMLButtonElement>(null);
   const [prefix, setPrefix] = useState("/");
   const [folderVisible, setFolderVisible] = useState(false);
@@ -73,7 +63,7 @@ export function BucketDetailPage({
 
   const bucket = useQuery({
     queryKey: ["bucket", bucketId],
-    queryFn: () => fetchBucketById(bucketId),
+    queryFn: () => getBucket(bucketId),
   });
   useListErrorNotification({
     id: `bucket-detail:${bucketId}`,
@@ -82,25 +72,12 @@ export function BucketDetailPage({
   });
   const bucketEntries = useQuery({
     queryKey: ["bucket-objects", bucketId, prefix],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/buckets/{bucket_id}/objects", {
-          params: {
-            path: { bucket_id: bucketId },
-            query: { prefix, limit: 100 },
-          },
-        }),
-      ),
+    queryFn: () => listBucketObjects(bucketId, { prefix, limit: 100 }),
     enabled: !!bucket.data,
   });
   const lifecycleRules = useQuery({
     queryKey: ["bucket-lifecycle-rules", bucketId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/buckets/{bucket_id}/lifecycle-rules", {
-          params: { path: { bucket_id: bucketId } },
-        }),
-      ),
+    queryFn: () => listBucketLifecycleRules(bucketId),
     enabled: !!bucket.data,
   });
   useListErrorNotification({
@@ -147,26 +124,12 @@ export function BucketDetailPage({
         bucketId,
         file,
         prefix,
-        reservationScope: uploadReservationScope,
-        completeScope: uploadCompleteScope,
       }),
     onSuccess: refreshBucket,
     onError: (error) => showApiError(error),
   });
   const deleteEntry = useMutation({
-    mutationFn: async (entry: BucketEntry) => {
-      if (entry.kind === "prefix") {
-        const { error } = await coreApi.DELETE("/buckets/{bucket_id}/objects", {
-          params: { path: { bucket_id: bucketId }, query: { key: entry.key } },
-        });
-        if (error) throw error;
-        return;
-      }
-      const { error } = await coreApi.DELETE("/buckets/{bucket_id}/objects", {
-        params: { path: { bucket_id: bucketId }, query: { key: entry.key } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (entry: BucketEntry) => deleteBucketObject(bucketId, entry.key),
     onSuccess: refreshBucket,
     onError: (error) => showApiError(error),
   });
@@ -174,17 +137,11 @@ export function BucketDetailPage({
     mutationFn: async (_: undefined) => {
       const name = folderName.trim().replace(/^\/+|\/+$/g, "");
       if (!name) throw new Error("请输入文件夹名称");
-      const submitData = {
+      return createBucketPrefix(bucketId, {
         prefix: prefix === "/" ? `${name}/` : `${prefix}${name}/`,
-      };
-      const { error } = await coreApi.POST("/buckets/{bucket_id}/prefixes", {
-        params: { path: { bucket_id: bucketId } },
-        body: createFolderScope.withKey(submitData),
       });
-      if (error) throw error;
     },
     onSuccess: () => {
-      createFolderScope.reset();
       setFolderVisible(false);
       setFolderName("");
       refreshBucket();
@@ -193,11 +150,11 @@ export function BucketDetailPage({
   });
   const generateLink = useMutation({
     mutationFn: async ({ entry, action }: { entry: BucketEntry; action: "download" | "copy" }) => {
-      const { data, error } = await coreApi.POST("/buckets/{bucket_id}/objects/presigned-url", {
-        params: { path: { bucket_id: bucketId } },
-        body: { key: entry.key, method: "GET", expires_hours: 24 },
+      const data = await generateBucketObjectPresignedUrl(bucketId, {
+        key: entry.key,
+        method: "GET",
+        expires_hours: 24,
       });
-      if (error) throw error;
       return { data, action };
     },
     onSuccess: async ({ data, action }) => {
@@ -212,44 +169,22 @@ export function BucketDetailPage({
     onError: (error) => showApiError(error),
   });
   const updateAcl = useMutation({
-    mutationFn: async (_: undefined) => {
-      const submitData = { acl: aclDraft ?? "private" };
-      const { data, error } = await coreApi.PUT("/buckets/{bucket_id}/acl", {
-        params: { path: { bucket_id: bucketId } },
-        body: updateAclScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
-    },
+    mutationFn: (_: undefined) => updateBucketAcl(bucketId, { acl: aclDraft ?? "private" }),
     onSuccess: () => {
-      updateAclScope.reset();
       refreshBucket();
     },
     onError: (error) => showApiError(error),
   });
   const updateClass = useMutation({
-    mutationFn: async (_: undefined) => {
-      const submitData = { storage_class: classDraft ?? "standard" };
-      const { data, error } = await coreApi.PUT("/buckets/{bucket_id}/storage-class", {
-        params: { path: { bucket_id: bucketId } },
-        body: updateClassScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
-    },
+    mutationFn: (_: undefined) =>
+      updateBucketStorageClass(bucketId, { storage_class: classDraft ?? "standard" }),
     onSuccess: () => {
-      updateClassScope.reset();
       refreshBucket();
     },
     onError: (error) => showApiError(error),
   });
   const deleteRule = useMutation({
-    mutationFn: async (rule: LifecycleRule) => {
-      const { error } = await coreApi.DELETE("/buckets/{bucket_id}/lifecycle-rules/{rule_id}", {
-        params: { path: { bucket_id: bucketId, rule_id: rule.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (rule: LifecycleRule) => deleteBucketLifecycleRule(bucketId, rule.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bucket-lifecycle-rules", bucketId] });
       refreshBucket();
@@ -596,7 +531,6 @@ export function BucketDetailPage({
         visible={folderVisible}
         title="新建文件夹"
         onCancel={() => {
-          createFolderScope.reset();
           setFolderVisible(false);
         }}
         onOk={() => createFolder.mutateAsync(undefined)}

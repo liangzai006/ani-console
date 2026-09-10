@@ -1,18 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { listOrThrow } from "@/lib/api-list";
+import {
+  listNetworkSubnets,
+  listNetworkVpcs,
+  type NetworkSubnet,
+  type NetworkVPC,
+} from "@/api/network";
+import {
+  createFilesystem,
+  createFilesystemMountTarget,
+  type StorageFilesystem,
+} from "@/api/storage/filesystems";
+import { showApiError } from "@/lib/api-error";
 import { getErrorMessage } from "@/lib/errors";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type Filesystem = components["schemas"]["StorageFilesystem"];
+type Filesystem = StorageFilesystem;
 type FilesystemProtocol = "nfs" | "cephfs";
 type FilesystemPerformanceMode = "standard" | "throughput";
-type Vpc = components["schemas"]["NetworkVPC"];
-type Subnet = components["schemas"]["NetworkSubnet"];
+type Vpc = NetworkVPC;
+type Subnet = NetworkSubnet;
 
 export function CreateFilesystemModal({
   visible,
@@ -24,8 +31,6 @@ export function CreateFilesystemModal({
   onCreated?: (filesystem: Filesystem) => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("storage-filesystem-create", ["POST"]);
-  const mountTargetScope = useIdempotencyScope("storage-filesystem-mount-target-create", ["POST"]);
   const [name, setName] = useState("");
   const [protocol, setProtocol] = useState<FilesystemProtocol>("nfs");
   const [performanceMode, setPerformanceMode] = useState<FilesystemPerformanceMode>("standard");
@@ -34,18 +39,12 @@ export function CreateFilesystemModal({
   const [subnetId, setSubnetId] = useState("");
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "filesystem-create"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkVpcs({ limit: 100 }),
     enabled: visible,
   });
   const subnets = useQuery({
     queryKey: ["network-subnets", "filesystem-create", vpcId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/subnets", {
-          params: { query: { limit: 100, vpc_id: vpcId || undefined } },
-        }),
-      ),
+    queryFn: () => listNetworkSubnets({ limit: 100, vpc_id: vpcId || undefined }),
     enabled: visible && !!vpcId,
   });
   // TODO: 子网接口确认按 vpc_id 过滤后，移除此处创建表单的本地兜底过滤。
@@ -56,8 +55,6 @@ export function CreateFilesystemModal({
     if (subnetId && !availableSubnets.some((item) => item.id === subnetId)) setSubnetId("");
   }, [availableSubnets, subnetId]);
   const reset = () => {
-    createScope.reset();
-    mountTargetScope.reset();
     setName("");
     setProtocol("nfs");
     setPerformanceMode("standard");
@@ -79,20 +76,9 @@ export function CreateFilesystemModal({
         performance_mode: performanceMode,
         size_gib: sizeGiB,
       };
-      const { data, error } = await coreApi.POST("/filesystems", {
-        body: createScope.withKey(createData),
-      });
-      if (error) throw error;
-      if (!data) throw new Error("文件存储创建成功但未返回资源信息");
+      const data = await createFilesystem(createData);
       const mountTargetData = { vpc_id: vpcId, subnet_id: subnetId };
-      const { error: targetError } = await coreApi.POST(
-        "/filesystems/{filesystem_id}/mount-targets",
-        {
-          params: { path: { filesystem_id: data.id } },
-          body: mountTargetScope.withKey(mountTargetData, [data.id]),
-        },
-      );
-      if (targetError) throw targetError;
+      await createFilesystemMountTarget(data.id, mountTargetData);
       return data;
     },
     onSuccess: (filesystem) => {

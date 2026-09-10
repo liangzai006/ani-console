@@ -1,12 +1,10 @@
 import { Alert, Button, Empty, Modal, Spin } from "@arco-design/web-react";
 import { IconPlus } from "@arco-design/web-react/icon";
 import clsx from "clsx";
-import type { components } from "@/api/services-schema";
+import type { KBSession as Session } from "@/api/knowledge";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import styles from "./index.module.css";
-
-type Session = components["schemas"]["KBSession"];
 
 export function KnowledgeSessionsSidebar({
   sessions,

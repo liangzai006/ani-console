@@ -11,10 +11,14 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import type { components } from "@/api/services-schema";
-import { servicesApi } from "@/api/services-client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
+import {
+  applyInferenceServiceLifecycle,
+  deleteInferenceService,
+  listInferenceServices,
+  updateInferenceService,
+  type InferenceService,
+} from "@/api/ai-services/inference";
+import { showApiError } from "@/lib/api-error";
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
   ListDataTable,
@@ -33,20 +37,12 @@ import {
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type InferenceService = components["schemas"]["InferenceService"];
-type InferenceServiceListResponse = {
-  items: InferenceService[];
-  total?: number;
-};
 type StatusFilter = "all" | "running" | "deploying" | "stopped" | "failed";
 type SearchField = "name" | "id";
 
 export function InferencePage() {
   const qc = useQueryClient();
-  const lifecycleScope = useIdempotencyScope("inference-service-lifecycle", ["POST"]);
-  const resizeScope = useIdempotencyScope("inference-service-resize", ["PATCH"]);
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
@@ -60,24 +56,14 @@ export function InferencePage() {
     queryKey: ["inference-services", { status, searchField, searchText, model, page, pageSize }],
     queryFn: async () => {
       const keyword = searchText.trim();
-      const request = servicesApi.GET as unknown as (
-        path: string,
-        options: { params: { query: never } },
-      ) => Promise<{ data?: InferenceServiceListResponse; error?: unknown }>;
-      const { data, error } = await request("/inference-services", {
-        params: {
-          query: asUncontractedQuery({
-            limit: pageSize,
-            offset: (page - 1) * pageSize,
-            status: status === "all" ? undefined : status,
-            model: model === "all" ? undefined : model,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      return listInferenceServices({
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
+        status: status === "all" ? undefined : status,
+        model: model === "all" ? undefined : model,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error) throw error;
-      return data;
     },
   });
   const lifecycle = useMutation({
@@ -89,15 +75,9 @@ export function InferencePage() {
       action: "start" | "stop" | "restart";
     }) => {
       const submitData = { action };
-      const { data, error } = await servicesApi.POST("/inference-services/{service_id}/lifecycle", {
-        params: { path: { service_id: item.id } },
-        body: lifecycleScope.withKey(submitData, [item.id]),
-      });
-      if (error) throw error;
-      return data;
+      return applyInferenceServiceLifecycle(item.id, submitData);
     },
-    onSuccess: (_data, variables) => {
-      lifecycleScope.reset([variables.item.id]);
+    onSuccess: () => {
       Message.success("生命周期操作已提交");
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
     },
@@ -105,11 +85,7 @@ export function InferencePage() {
   });
   const remove = useMutation({
     mutationFn: async (item: InferenceService) => {
-      const { data, error } = await servicesApi.DELETE("/inference-services/{service_id}", {
-        params: { path: { service_id: item.id } },
-      });
-      if (error) throw error;
-      return data;
+      return deleteInferenceService(item.id);
     },
     onSuccess: () => {
       Message.success("删除操作已提交");
@@ -120,15 +96,9 @@ export function InferencePage() {
   const resize = useMutation({
     mutationFn: async (item: InferenceService) => {
       const submitData = { replicas };
-      const { data, error } = await servicesApi.PATCH("/inference-services/{service_id}", {
-        params: { path: { service_id: item.id } },
-        body: resizeScope.withKey(submitData, [item.id]),
-      });
-      if (error) throw error;
-      return data;
+      return updateInferenceService(item.id, submitData);
     },
-    onSuccess: (_data, item) => {
-      resizeScope.reset([item.id]);
+    onSuccess: () => {
       Message.success("变配操作已提交");
       setResizeTarget(undefined);
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
@@ -369,7 +339,6 @@ export function InferencePage() {
         visible={Boolean(resizeTarget)}
         title={resizeTarget ? `变配 · ${resizeTarget.name}` : "变配"}
         onCancel={() => {
-          if (resizeTarget) resizeScope.reset([resizeTarget.id]);
           setResizeTarget(undefined);
         }}
         onOk={() => (resizeTarget ? resize.mutateAsync(resizeTarget) : undefined)}

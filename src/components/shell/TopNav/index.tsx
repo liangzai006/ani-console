@@ -2,10 +2,9 @@ import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Button, Menu, Modal, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
+import { logout as logoutRequest } from "@/api/auth";
 import { useAuthStore } from "@/stores/auth";
 import { useBrandingStore } from "@/stores/branding";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { firstLeafPath, menuItems } from "@/lib/menu-items";
 
 export const TOPNAV_HEIGHT = 56;
@@ -19,7 +18,6 @@ export function TopNav({ activeKey }: TopNavProps) {
   const branding = useBrandingStore((s) => s.branding);
   const name = branding?.platform_name ?? "ANI Console";
   const clear = useAuthStore((s) => s.clear);
-  const logoutScope = useIdempotencyScope("auth-logout", ["POST"]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([activeKey]);
 
   useEffect(() => {
@@ -31,11 +29,7 @@ export function TopNav({ activeKey }: TopNavProps) {
       const jti = useAuthStore.getState().getAccessTokenJti();
       if (!jti) throw new Error("当前 access token 缺少 jti，无法调用服务端登出");
       const submitData = { jti };
-      const { error } = await coreApi.POST("/auth/logout", {
-        body: logoutScope.withKey(submitData),
-      });
-      if (error) throw error;
-      logoutScope.reset();
+      await logoutRequest(submitData);
     },
     onSettled: () => {
       clear();

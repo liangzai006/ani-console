@@ -1,8 +1,7 @@
+import { listInstances, type InstanceRecord } from "@/api/instances";
 import { Link } from "@tanstack/react-router";
 import { Tooltip } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { GpuInstanceActions } from "@/components/instances/GpuInstanceActions";
 import { GpuContainerCreateModal } from "@/components/instances/GpuContainerCreateModal";
 import {
@@ -23,7 +22,7 @@ import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 type StatusFilter = "all" | "running" | "stopped" | "queued" | "failed";
 type SearchField = "name" | "id";
 
@@ -45,12 +44,8 @@ export function GpuInstancesPage() {
           status: status === "all" ? undefined : status,
           search_field: keyword ? searchField : undefined,
           keyword: keyword || undefined,
-        } as never;
-        const { data, error } = await coreApi.GET("/instances", {
-          params: { query: listQuery },
-        });
-        if (error || !data) throw error ?? new Error("GPU 容器实例列表未返回结果");
-        return data;
+        };
+        return listInstances(listQuery);
       },
     });
   useListErrorNotification({

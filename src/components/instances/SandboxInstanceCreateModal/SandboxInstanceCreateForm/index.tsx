@@ -1,9 +1,8 @@
 import { Button, Form, Input, Message, Modal, Space, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
+import { listSandboxTemplates } from "@/api/instances";
 import { WizardSteps } from "@/components/common";
-import { listOrThrow } from "@/lib/api-list";
 import {
   INITIAL_VALUES,
   getTemplateComputeSpec,
@@ -31,12 +30,7 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
   const templates = useQuery({
     queryKey: ["sandbox-templates", "create-modal"],
     enabled: visible,
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/sandbox-templates", {
-          params: { query: { limit: 100 } },
-        }),
-      ),
+    queryFn: () => listSandboxTemplates({ limit: 100 }),
   });
   const items = useMemo(
     () => (templates.data as { items?: SandboxTemplate[] } | undefined)?.items ?? [],

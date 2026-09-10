@@ -1,15 +1,14 @@
+import { listSecrets } from "@/api/secrets";
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { Secret } from "@/api/secrets";
+import type { InstanceRecord } from "@/api/instances";
 import { Form, Input, Message, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
-import { listOrThrow } from "@/lib/api-list";
 import { getErrorMessage } from "@/lib/errors";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
-type Secret = components["schemas"]["Secret"];
+type Instance = InstanceRecord;
 type Values = {
   secretId: string;
   bindingType: "env" | "file";
@@ -28,11 +27,9 @@ export function ContainerInstanceBindSecretModal({
 }) {
   const [form] = Form.useForm<Values>();
   const [bindingType, setBindingType] = useState<"env" | "file">("env");
-  const scope = useIdempotencyScope("container-instance-bind-secret", ["POST", instance.id]);
   const secrets = useQuery({
     queryKey: ["secrets", "container-instance-bind-secret"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/secrets", { params: { query: { limit: 100 } } })),
+    queryFn: () => listSecrets({ limit: 100 }),
   });
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
@@ -43,18 +40,9 @@ export function ContainerInstanceBindSecretModal({
         env_name: values.bindingType === "env" ? values.envName?.trim() : undefined,
         mount_path: values.bindingType === "file" ? values.mountPath?.trim() : undefined,
       };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      scope.reset();
       Message.success("绑定密钥已提交");
       onSubmitted();
     },
@@ -62,7 +50,6 @@ export function ContainerInstanceBindSecretModal({
   });
   const options = ((secrets.data?.items ?? []) as Secret[]).filter((secret) => secret.id);
   const cancel = () => {
-    scope.reset();
     onCancel();
   };
 

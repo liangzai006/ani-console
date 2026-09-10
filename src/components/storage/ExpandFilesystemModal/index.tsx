@@ -1,12 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, InputNumber, Modal, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { expandFilesystem, type StorageFilesystem } from "@/api/storage/filesystems";
+import { showApiError } from "@/lib/api-error";
 
-type Filesystem = components["schemas"]["StorageFilesystem"];
+type Filesystem = StorageFilesystem;
 
 export function ExpandFilesystemModal({
   visible,
@@ -20,7 +18,6 @@ export function ExpandFilesystemModal({
   onExpanded?: () => void;
 }) {
   const qc = useQueryClient();
-  const expandScope = useIdempotencyScope("storage-filesystem-expand", ["POST", filesystem?.id]);
   const [sizeGiB, setSizeGiB] = useState(1);
   useEffect(() => {
     if (visible && filesystem) setSizeGiB(filesystem.size_gib + 1);
@@ -31,15 +28,9 @@ export function ExpandFilesystemModal({
       if (!Number.isInteger(sizeGiB) || sizeGiB <= filesystem.size_gib) {
         throw new Error(`新容量必须大于当前容量 ${filesystem.size_gib} GiB`);
       }
-      const submitData = { size_gib: sizeGiB };
-      const { error } = await coreApi.POST("/filesystems/{filesystem_id}/expand", {
-        params: { path: { filesystem_id: filesystem.id } },
-        body: expandScope.withKey(submitData),
-      });
-      if (error) throw error;
+      return expandFilesystem(filesystem.id, { size_gib: sizeGiB });
     },
     onSuccess: () => {
-      expandScope.reset();
       qc.invalidateQueries({ queryKey: ["filesystems"] });
       if (filesystem) qc.invalidateQueries({ queryKey: ["filesystem", filesystem.id] });
       onExpanded?.();
@@ -51,10 +42,7 @@ export function ExpandFilesystemModal({
     <Modal
       visible={visible}
       title="扩容文件存储"
-      onCancel={() => {
-        expandScope.reset();
-        onCancel();
-      }}
+      onCancel={onCancel}
       onOk={() => expand.mutateAsync(undefined)}
       confirmLoading={expand.isPending}
       unmountOnExit

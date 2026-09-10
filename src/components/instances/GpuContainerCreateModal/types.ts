@@ -108,7 +108,6 @@ export type GpuSchedulingQueueListResponse = {
 };
 
 export type ExtendedCreateRequest = {
-  idempotency_key: string;
   name: string;
   kind: "gpu_container";
   instance_type: "gpu_container";
@@ -170,7 +169,7 @@ function parseEnv(text: string) {
 export function buildCreateRequest(
   values: FormValues,
   securityGroupId: string,
-): Omit<ExtendedCreateRequest, "idempotency_key"> {
+): ExtendedCreateRequest {
   const computeSpec =
     GPU_INSTANCE_COMPUTE_SPECS.find((option) => option.value === values.compute_spec) ??
     GPU_INSTANCE_COMPUTE_SPECS[0];

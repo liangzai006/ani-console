@@ -10,15 +10,13 @@ import {
   Spin,
   Tooltip,
 } from "@arco-design/web-react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import { deleteVectorStore, getVectorStore, type VectorStore } from "@/api/storage/vector-stores";
+import { showApiError } from "@/lib/api-error";
 import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { VectorStoreWorkbench } from "@/components/storage/VectorStoreWorkbench";
 import { formatDateTime } from "@/lib/format";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type VectorStore = components["schemas"]["VectorStore"];
 export type VectorStoreDetailTabKey = "index" | "search" | "related" | "events";
 
 export function VectorStoreDetailPage({
@@ -32,13 +30,7 @@ export function VectorStoreDetailPage({
   const qc = useQueryClient();
   const detail = useQuery({
     queryKey: ["vector-store", vectorStoreId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/vector-stores/{vector_store_id}", {
-        params: { path: { vector_store_id: vectorStoreId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getVectorStore(vectorStoreId),
   });
   useListErrorNotification({
     id: `vector-store-detail:${vectorStoreId}`,
@@ -46,12 +38,7 @@ export function VectorStoreDetailPage({
     error: detail.error,
   });
   const remove = useMutation({
-    mutationFn: async (_: undefined) => {
-      const { error } = await coreApi.DELETE("/vector-stores/{vector_store_id}", {
-        params: { path: { vector_store_id: vectorStoreId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (_: undefined) => deleteVectorStore(vectorStoreId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vector-stores"] });
       navigate({ to: "/vector-stores" });

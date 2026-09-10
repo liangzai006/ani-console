@@ -1,9 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Form, Input, Modal, Typography } from "@arco-design/web-react";
 import { useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { createVolumeSnapshot } from "@/api/storage/volumes";
+import { showApiError } from "@/lib/api-error";
 
 export function CreateVolumeSnapshotModal({
   visible,
@@ -15,22 +14,15 @@ export function CreateVolumeSnapshotModal({
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("storage-volume-snapshot-create", ["POST", volumeId]);
   const [name, setName] = useState("");
   const reset = () => {
-    createScope.reset();
     setName("");
   };
   const create = useMutation({
     mutationFn: async (_: undefined) => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入快照名称");
-      const submitData = { name: trimmedName };
-      const { error } = await coreApi.POST("/volumes/{volume_id}/snapshots", {
-        params: { path: { volume_id: volumeId } },
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
+      return createVolumeSnapshot(volumeId, { name: trimmedName });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["volume-snapshots", volumeId] });

@@ -2,10 +2,17 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Form, Input, Modal, Typography } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  createNetworkVpc,
+  deleteNetworkVpc,
+  listNetworkRoutes,
+  listNetworkSubnets,
+  listNetworkVpcs,
+  type NetworkRoute,
+  type NetworkSubnet,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import {
   Ipv4CidrInput,
   ListDataTable,
@@ -23,15 +30,12 @@ import {
   StatusTag,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
-import { listOrThrow } from "@/lib/api-list";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { ipv4CidrError, requireIpv4Cidr } from "@/lib/validators";
 
-type Vpc = components["schemas"]["NetworkVPC"];
-type Subnet = components["schemas"]["NetworkSubnet"];
-type NetworkRoute = components["schemas"]["NetworkRoute"];
+type Vpc = NetworkVPC;
+type Subnet = NetworkSubnet;
 type VpcStatusFilter = "all" | Vpc["state"];
 type VpcSearchField = "name" | "id";
 
@@ -41,7 +45,6 @@ export function VpcsPage() {
 
 function VpcList() {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("network-vpc-create", ["POST"]);
   const [createVisible, setCreateVisible] = useState(false);
   const [name, setName] = useState("");
   const [cidr, setCidr] = useState("10.0.0.0/16");
@@ -63,30 +66,22 @@ function VpcList() {
     cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
-      const { data, error } = await coreApi.GET("/networks/vpcs", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            status: status === "all" ? undefined : status,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      return listNetworkVpcs({
+        limit,
+        cursor,
+        status: status === "all" ? undefined : status,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error || !data) throw error ?? new Error("VPC 列表未返回结果");
-      return data;
     },
   });
   const subnets = useQuery({
     queryKey: ["network-subnets", "vpc-counts"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/subnets", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkSubnets({ limit: 100 }),
   });
   const routes = useQuery({
     queryKey: ["network-routes", "vpc-counts"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/routes", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkRoutes({ limit: 100 }),
   });
 
   const createVpc = useMutation({
@@ -97,13 +92,9 @@ function VpcList() {
         name: trimmedName,
         cidr: requireIpv4Cidr(cidr, "IPv4 CIDR"),
       };
-      const { error } = await coreApi.POST("/networks/vpcs", {
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
+      return createNetworkVpc(submitData);
     },
     onSuccess: () => {
-      createScope.reset();
       setCreateVisible(false);
       setName("");
       setCidr("10.0.0.0/16");
@@ -114,12 +105,7 @@ function VpcList() {
   });
 
   const deleteVpc = useMutation({
-    mutationFn: async (vpc: Vpc) => {
-      const { error } = await coreApi.DELETE("/networks/vpcs/{vpc_id}", {
-        params: { path: { vpc_id: vpc.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (vpc: Vpc) => deleteNetworkVpc(vpc.id),
     onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-vpcs"] });
@@ -300,7 +286,6 @@ function VpcList() {
         visible={createVisible}
         title="创建 VPC"
         onCancel={() => {
-          createScope.reset();
           setCreateVisible(false);
         }}
         onOk={() => createVpc.mutateAsync(undefined)}

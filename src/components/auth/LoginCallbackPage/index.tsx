@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Button, Card, Result, Spin, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
+import { exchangeOidcCode } from "@/api/auth";
 import { AuthCenterLayout } from "@/components/shell/AuthCenterLayout";
 import { ApiErrorAlert } from "@/components/common";
-import { exchangeOidcCode } from "@/lib/oidc-exchange";
 import { parseApiError } from "@/lib/errors";
 import { isAuthenticated, useAuthStore } from "@/stores/auth";
 

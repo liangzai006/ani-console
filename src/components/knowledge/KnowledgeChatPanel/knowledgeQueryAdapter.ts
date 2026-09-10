@@ -1,12 +1,11 @@
 import type { ChatModelAdapter, ThreadMessage, ThreadMessageLike } from "@assistant-ui/react";
-import { SERVICES_API_BASE, servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
-import type { IdempotencyScope } from "@/lib/idempotency";
-import { useAuthStore } from "@/stores/auth";
-
-type Answer = components["schemas"]["KBQueryResponse"];
-type SessionMessage = components["schemas"]["KBSessionMessage"];
-type Source = components["schemas"]["KBSourceChunk"];
+import {
+  queryKnowledgeBase,
+  streamKnowledgeBaseQuery,
+  type KBQueryResponse as Answer,
+  type KBSessionMessage as SessionMessage,
+  type KBSourceChunk as Source,
+} from "@/api/knowledge";
 
 export type QueryMode = "sync" | "stream";
 
@@ -64,7 +63,6 @@ export function createKnowledgeBaseAdapter(
   sessionIdRef: { current?: string },
   mode: QueryMode,
   topK: number,
-  queryScope: IdempotencyScope,
   onComplete: (sessionId?: string) => void,
 ): ChatModelAdapter {
   return {
@@ -72,32 +70,16 @@ export function createKnowledgeBaseAdapter(
       const question = getLatestQuestion(messages);
       if (!question) throw new Error("请输入问题");
       if (mode === "stream") {
-        const params = new URLSearchParams({ question, top_k: String(topK) });
-        if (sessionIdRef.current) params.set("session_id", sessionIdRef.current);
-        const token = useAuthStore.getState().getAccessToken();
-        const response = await fetch(
-          `${SERVICES_API_BASE}/knowledge-bases/${encodeURIComponent(kbId)}/query/stream?${params}`,
+        const stream = await streamKnowledgeBaseQuery(
+          kbId,
           {
-            credentials: "include",
-            signal: abortSignal,
-            headers: {
-              Accept: "text/event-stream",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
+            question,
+            top_k: topK,
+            session_id: sessionIdRef.current,
           },
+          abortSignal,
         );
-        if (!response.ok || !response.body) {
-          let message = `流式问答失败（HTTP ${response.status}）`;
-          try {
-            const body = (await response.json()) as { message?: string; detail?: string };
-            message = body.message || body.detail || message;
-          } catch {
-            // Keep the HTTP fallback when the response is not JSON.
-          }
-          throw new Error(message);
-        }
-
-        const reader = response.body.getReader();
+        const reader = stream.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
         let text = "";
@@ -145,12 +127,7 @@ export function createKnowledgeBaseAdapter(
         session_id: sessionIdRef.current,
         top_k: topK,
       };
-      const { data, error } = await servicesApi.POST("/knowledge-bases/{kb_id}/query", {
-        params: { path: { kb_id: kbId } },
-        body: queryScope.withKey(submitData),
-      });
-      if (error || !data) throw error ?? new Error("问答未返回结果");
-      queryScope.reset();
+      const data = await queryKnowledgeBase(kbId, submitData);
       sessionIdRef.current = data.session_id;
       onComplete(data.session_id);
       yield { content: [{ type: "text", text: formatAnswer(data) }] };

@@ -1,10 +1,8 @@
+import type { InstanceLifecycleRequest, InstanceRecord } from "@/api/instances";
 import type { ReactNode } from "react";
-import type { components } from "@/api/core-schema";
-
-type InstanceRecord = components["schemas"]["InstanceRecord"];
 
 export type ContainerDetailPowerAction = "start" | "stop" | "restart" | "delete";
-type LifecycleRequest = components["schemas"]["InstanceLifecycleRequest"];
+type LifecycleRequest = InstanceLifecycleRequest;
 
 export type ContainerDetailInstance = InstanceRecord & { kind: "container" };
 

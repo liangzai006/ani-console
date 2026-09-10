@@ -10,12 +10,16 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { servicesApi } from "@/api/services-client";
-import { showApiError } from "@/api/helpers";
+import { createInferenceService } from "@/api/ai-services/inference";
+import { getModel, listModels } from "@/api/ai-services/models";
+import { getGpuSpecAvailability, listGpuSpecs } from "@/api/gpu-inventory";
+import {
+  listRegistryArtifacts,
+  listRegistryProjects,
+  listRegistryRepositories,
+} from "@/api/registry";
+import { showApiError } from "@/lib/api-error";
 import { getErrorMessage } from "@/lib/errors";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import {
   DEFAULT_GPU_INSTANCE_COMPUTE_SPEC,
   GPU_INSTANCE_COMPUTE_SPECS,
@@ -94,7 +98,6 @@ export function CreateInferenceServiceModal({
   initialModelVersionId,
 }: CreateInferenceServiceModalProps) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("inference-service-create", ["POST"]);
   const [name, setName] = useState("");
   const [modelId, setModelId] = useState("");
   const [modelVersionId, setModelVersionId] = useState("");
@@ -109,13 +112,7 @@ export function CreateInferenceServiceModal({
   const models = useQuery({
     queryKey: ["models", "inference-service-create"],
     enabled: visible,
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/models", {
-        params: { query: { status: "ready", limit: 100 } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => listModels({ status: "ready", limit: 100 }),
   });
   const selectedModelSummary = useMemo(
     () => (models.data?.items ?? []).find((item) => item.id === modelId),
@@ -124,13 +121,7 @@ export function CreateInferenceServiceModal({
   const modelDetail = useQuery({
     queryKey: ["model", modelId],
     enabled: visible && Boolean(modelId),
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/models/{model_id}", {
-        params: { path: { model_id: modelId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getModel(modelId),
   });
   const selectedModel = modelDetail.data ?? selectedModelSummary;
   const modelVersions = useMemo(
@@ -145,35 +136,14 @@ export function CreateInferenceServiceModal({
   const gpuSpecs = useQuery({
     queryKey: ["gpu-specs", "inference-service-create"],
     enabled: visible,
-    queryFn: async () => {
-      const request = coreApi.GET as unknown as (
-        path: string,
-        options: { params: { query: never } },
-      ) => Promise<{ data?: GpuSpecListResponse; error?: unknown }>;
-      const { data, error } = await request("/gpu-specs", {
-        params: {
-          query: asUncontractedQuery({ available: true, limit: 100 }),
-        },
-      });
-      if (error || !data) throw error ?? new Error("GPU 规格列表未返回结果");
-      return data;
-    },
+    queryFn: async () =>
+      (await listGpuSpecs({ available: true, limit: 100 })) as unknown as GpuSpecListResponse,
   });
 
   const gpuSpecAvailability = useQuery({
     queryKey: ["gpu-specs", "availability", "inference-service-create"],
     enabled: visible,
-    queryFn: async () => {
-      const request = coreApi.GET as unknown as (path: string) => Promise<{
-        data?: GpuSpecAvailabilityListResponse;
-        error?: unknown;
-      }>;
-      const { data, error } = await request("/gpu-specs/availability");
-      if (error || !data) {
-        throw error ?? new Error("GPU 规格可用性未返回结果");
-      }
-      return data;
-    },
+    queryFn: async () => (await getGpuSpecAvailability()) as GpuSpecAvailabilityListResponse,
   });
 
   const availabilityBySpecId = useMemo(
@@ -191,33 +161,14 @@ export function CreateInferenceServiceModal({
     queryKey: ["inference-runtime-images"],
     enabled: visible && runtimeImageMode === "registry" && Boolean(selectedModelVersion),
     queryFn: async () => {
-      const { data: projectData, error: projectError } = await coreApi.GET("/registry/projects", {
-        params: { query: { limit: 50 } },
-      });
-      if (projectError) throw projectError;
+      const projectData = await listRegistryProjects({ limit: 50 });
       const images: RuntimeImage[] = [];
       for (const project of projectData?.items ?? []) {
-        const { data: repoData, error: repoError } = await coreApi.GET(
-          "/registry/projects/{project}/repositories",
-          {
-            params: {
-              path: { project: project.name },
-              query: { limit: 50 },
-            },
-          },
-        );
-        if (repoError) throw repoError;
+        const repoData = await listRegistryRepositories(project.name, { limit: 50 });
         for (const repository of repoData?.items ?? []) {
-          const { data: artifactData, error: artifactError } = await coreApi.GET(
-            "/registry/projects/{project}/repositories/{repository}/artifacts",
-            {
-              params: {
-                path: { project: project.name, repository: repository.name },
-                query: { limit: 50 },
-              },
-            },
-          );
-          if (artifactError) throw artifactError;
+          const artifactData = await listRegistryArtifacts(project.name, repository.name, {
+            limit: 50,
+          });
           for (const artifact of artifactData?.items ?? []) {
             for (const tag of artifact.tags) {
               const id = `${artifact.project}/${artifact.repository}:${tag}`;
@@ -349,14 +300,9 @@ export function CreateInferenceServiceModal({
           ...(accelerator ? { accelerator } : {}),
         },
       };
-      const { data, error } = await servicesApi.POST("/inference-services", {
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
+      return createInferenceService(submitData);
     },
     onSuccess: () => {
-      createScope.reset();
       Message.success("推理服务部署请求已提交");
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
       onCancel();
@@ -370,7 +316,6 @@ export function CreateInferenceServiceModal({
       title="部署推理服务"
       okText="开始部署"
       onCancel={() => {
-        createScope.reset();
         onCancel();
       }}
       onOk={() => create.mutateAsync()}

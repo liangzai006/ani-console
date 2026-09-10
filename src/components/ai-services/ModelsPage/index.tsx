@@ -2,8 +2,8 @@ import { Dropdown, Menu, Message, Modal, Select, Space } from "@arco-design/web-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
-import { showApiError } from "@/api/helpers";
-import { servicesApi } from "@/api/services-client";
+import { deleteModel, listModels } from "@/api/ai-services/models";
+import { showApiError } from "@/lib/api-error";
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import { ImportModelModal } from "@/components/ai-services/ImportModelModal";
 import {
@@ -61,19 +61,14 @@ export function ModelsPage() {
     queryKey: ["models", { status, searchText, source, capability }],
     cursorScope,
     fetchPage: async ({ cursor, limit }) => {
-      const { data, error } = await servicesApi.GET("/models", {
-        params: {
-          query: {
-            limit,
-            cursor,
-            keyword: searchText.trim() || undefined,
-            source: source === "all" ? undefined : source,
-            capability: capability === "all" ? undefined : capability,
-            status: getApiStatus(status),
-          },
-        },
+      const data = await listModels({
+        limit,
+        cursor,
+        keyword: searchText.trim() || undefined,
+        source: source === "all" ? undefined : source,
+        capability: capability === "all" ? undefined : capability,
+        status: getApiStatus(status),
       });
-      if (error || !data) throw error ?? new Error("模型列表未返回结果");
       const currentPage = cursor ? (cursorPageRef.current.get(cursorScope + ":" + cursor) ?? 1) : 1;
       if (data.next_cursor) {
         cursorPageRef.current.set(cursorScope + ":" + data.next_cursor, currentPage + 1);
@@ -93,10 +88,7 @@ export function ModelsPage() {
   });
   const remove = useMutation({
     mutationFn: async (item: Model) => {
-      const { error } = await servicesApi.DELETE("/models/{model_id}", {
-        params: { path: { model_id: item.id } },
-      });
-      if (error) throw error;
+      await deleteModel(item.id);
       return item;
     },
     onSuccess: (item) => {

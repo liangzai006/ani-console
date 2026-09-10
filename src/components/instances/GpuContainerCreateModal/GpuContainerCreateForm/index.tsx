@@ -1,18 +1,17 @@
 import { Button, Form, Input, Message, Modal, Space, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
+import { getGpuSpecAvailability, listGpuSchedulingQueues } from "@/api/gpu-inventory";
+import { listNetworkSecurityGroups, listNetworkSubnets, listNetworkVpcs } from "@/api/network";
+import { listRegistryImages } from "@/api/registry";
+import { listFilesystems } from "@/api/storage/filesystems";
 import { WizardSteps } from "@/components/common";
-import { listOrThrow } from "@/lib/api-list";
 import type {
   Filesystem,
   FormValues,
   GpuSchedulingQueue,
   GpuSchedulingQueueListResponse,
-  GpuSpecAvailabilityListResponse,
   GpuSpecOption,
-  RegistryImage,
 } from "../types";
 import { INITIAL_VALUES, isGpuSpecSelectable, TEMPORARY_RTX4090_GPU_SPEC_OPTIONS } from "../types";
 import { GpuConfirmStep } from "./GpuConfirmStep";
@@ -22,7 +21,6 @@ import type { NetworkItem } from "./GpuNetworkStorageStep";
 import { GpuResourceStep } from "./GpuResourceStep";
 import styles from "./index.module.css";
 
-type RegistryResponse = { items: RegistryImage[]; total: number };
 const STEP_TITLES = ["名称", "镜像", "规格与调度", "网络与存储", "确认"];
 
 type Props = {
@@ -38,80 +36,39 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "select"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 50 } } })),
+    queryFn: () => listNetworkVpcs({ limit: 50 }),
     enabled: visible,
   });
   const subnets = useQuery({
     queryKey: ["network-subnets", "select", values.vpc_id],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/subnets", {
-          params: { query: { limit: 50, vpc_id: values.vpc_id || undefined } },
-        }),
-      ),
+    queryFn: () => listNetworkSubnets({ limit: 50, vpc_id: values.vpc_id || undefined }),
     enabled: visible && !!values.vpc_id,
   });
   const securityGroups = useQuery({
     queryKey: ["network-security-groups", "select"],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/security-groups", {
-          params: { query: { limit: 50 } },
-        }),
-      ),
+    queryFn: () => listNetworkSecurityGroups({ limit: 50 }),
     enabled: visible,
   });
   const filesystems = useQuery({
     queryKey: ["filesystems", "select"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/filesystems", { params: { query: { limit: 50 } } })),
+    queryFn: () => listFilesystems({ limit: 50 }),
     enabled: visible,
   });
   const images = useQuery({
     queryKey: ["registry-images", "gpu-create"],
     enabled: visible,
-    queryFn: async () => {
-      const request = coreApi.GET as unknown as (
-        path: string,
-        options: { params: { query: never } },
-      ) => Promise<{ data?: RegistryResponse; error?: unknown }>;
-      const { data, error } = await request("/registry/images", {
-        params: { query: asUncontractedQuery({ limit: 100, purpose: "gpu" }) },
-      });
-      if (error || !data) throw error ?? new Error("GPU 镜像列表未返回结果");
-      return data.items;
-    },
+    queryFn: async () => (await listRegistryImages({ limit: 100, purpose: "gpu" })).items,
   });
   const gpuSpecAvailability = useQuery({
     queryKey: ["gpu-specs", "availability"],
     enabled: visible,
-    queryFn: async () => {
-      const request = coreApi.GET as unknown as (path: string) => Promise<{
-        data?: GpuSpecAvailabilityListResponse;
-        error?: unknown;
-      }>;
-      const { data, error } = await request("/gpu-specs/availability");
-      if (error || !data) {
-        throw error ?? new Error("GPU 规格可用性未返回结果");
-      }
-      return data;
-    },
+    queryFn: getGpuSpecAvailability,
   });
   const gpuSchedulingQueues = useQuery({
     queryKey: ["gpu-scheduling", "queues", "select"],
     enabled: visible,
-    queryFn: async () => {
-      const request = coreApi.GET as unknown as (path: string) => Promise<{
-        data?: GpuSchedulingQueueListResponse;
-        error?: unknown;
-      }>;
-      const { data, error } = await request("/gpu-scheduling/queues");
-      if (error || !data) {
-        throw error ?? new Error("GPU 调度队列未返回结果");
-      }
-      return data;
-    },
+    queryFn: async () =>
+      (await listGpuSchedulingQueues()) as unknown as GpuSchedulingQueueListResponse,
   });
 
   const defaultSecurityGroup = (securityGroups.data?.items ?? []).find(

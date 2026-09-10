@@ -9,19 +9,23 @@ import {
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
-import { coreApi } from "@/api/client";
 import { useState } from "react";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  deleteFilesystem,
+  getFilesystem,
+  listFilesystemMountTargets,
+  type FilesystemMountTarget,
+  type StorageFilesystem,
+} from "@/api/storage/filesystems";
+import { showApiError } from "@/lib/api-error";
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
 import { FilesystemPermissionsTab } from "@/components/storage/FilesystemPermissionsTab";
-import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type Filesystem = components["schemas"]["StorageFilesystem"];
-type MountTarget = components["schemas"]["FilesystemMountTarget"];
+type Filesystem = StorageFilesystem;
+type MountTarget = FilesystemMountTarget;
 
 export function FilesystemDetailPage({ filesystemId }: { filesystemId: string }) {
   const navigate = useNavigate();
@@ -30,13 +34,7 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
   const [mountTargetVisible, setMountTargetVisible] = useState(false);
   const detail = useQuery({
     queryKey: ["filesystem", filesystemId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/filesystems/{filesystem_id}", {
-        params: { path: { filesystem_id: filesystemId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getFilesystem(filesystemId),
   });
   useListErrorNotification({
     id: `filesystem-detail:${filesystemId}`,
@@ -45,15 +43,7 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
   });
   const mounts = useQuery({
     queryKey: ["filesystem-mounts", filesystemId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/filesystems/{filesystem_id}/mount-targets", {
-          params: {
-            path: { filesystem_id: filesystemId },
-            query: { limit: 100 },
-          },
-        }),
-      ),
+    queryFn: () => listFilesystemMountTargets(filesystemId, { limit: 100 }),
   });
   useListErrorNotification({
     id: `filesystem-mounts:${filesystemId}`,
@@ -61,12 +51,7 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
     error: mounts.error,
   });
   const remove = useMutation({
-    mutationFn: async (_: undefined) => {
-      const { error } = await coreApi.DELETE("/filesystems/{filesystem_id}", {
-        params: { path: { filesystem_id: filesystemId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (_: undefined) => deleteFilesystem(filesystemId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["filesystems"] });
       navigate({ to: "/filesystems" });

@@ -2,10 +2,15 @@ import { Link as RouterLink, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Form, Input, Link, Modal, Select } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import {
+  createNetworkSubnet,
+  deleteNetworkSubnet,
+  listNetworkSubnets,
+  listNetworkVpcs,
+  type NetworkSubnet,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import {
   Ipv4CidrInput,
   ListDataTable,
@@ -23,9 +28,7 @@ import {
   StatusTag,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
-import { listOrThrow } from "@/lib/api-list";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import {
   ipv4CidrWithinError,
@@ -38,14 +41,13 @@ import {
   suggestSubnetCidr,
 } from "@/lib/validators";
 
-type Vpc = components["schemas"]["NetworkVPC"];
-type Subnet = components["schemas"]["NetworkSubnet"];
+type Vpc = NetworkVPC;
+type Subnet = NetworkSubnet;
 type SubnetStatusFilter = "all" | Subnet["state"];
 type SubnetSearchField = "name" | "id";
 
 export function SubnetsPage() {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("network-subnet-create", ["POST"]);
   const navigate = useNavigate();
   const [createVisible, setCreateVisible] = useState(false);
   const [name, setName] = useState("");
@@ -59,8 +61,7 @@ export function SubnetsPage() {
 
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "subnet-page"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkVpcs({ limit: 100 }),
   });
   const {
     query: subnets,
@@ -75,20 +76,14 @@ export function SubnetsPage() {
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
       const keyword = searchText.trim();
-      const { data, error } = await coreApi.GET("/networks/subnets", {
-        params: {
-          query: asUncontractedQuery({
-            limit,
-            cursor,
-            vpc_id: filterVpcId || undefined,
-            status: status === "all" ? undefined : status,
-            search_field: keyword ? searchField : undefined,
-            keyword: keyword || undefined,
-          }),
-        },
+      return listNetworkSubnets({
+        limit,
+        cursor,
+        vpc_id: filterVpcId || undefined,
+        status: status === "all" ? undefined : status,
+        search_field: keyword ? searchField : undefined,
+        keyword: keyword || undefined,
       });
-      if (error || !data) throw error ?? new Error("子网列表未返回结果");
-      return data;
     },
   });
   const selectedVpc = ((vpcs.data?.items ?? []) as Vpc[]).find((vpc) => vpc.id === vpcId);
@@ -103,7 +98,6 @@ export function SubnetsPage() {
   const selectedVpcPrefix = selectedVpcCidr ? Number(selectedVpcCidr.split("/")[1]) : 0;
 
   const resetCreateForm = () => {
-    createScope.reset();
     setName("");
     setVpcId("");
     setCidr("10.0.1.0/24");
@@ -128,10 +122,7 @@ export function SubnetsPage() {
         cidr: requireIpv4CidrWithin(cidr, selectedVpcCidr, "CIDR", "VPC CIDR"),
         gateway: optionalIpv4WithinCidr(gateway, cidr, "网关", "CIDR"),
       };
-      const { error } = await coreApi.POST("/networks/subnets", {
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
+      return createNetworkSubnet(submitData);
     },
     onSuccess: () => {
       setCreateVisible(false);
@@ -142,12 +133,7 @@ export function SubnetsPage() {
     onError: (error) => showApiError(error),
   });
   const deleteSubnet = useMutation({
-    mutationFn: async (subnet: Subnet) => {
-      const { error } = await coreApi.DELETE("/networks/subnets/{subnet_id}", {
-        params: { path: { subnet_id: subnet.id } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: (subnet: Subnet) => deleteNetworkSubnet(subnet.id),
     onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-subnets"] });

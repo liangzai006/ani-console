@@ -1,12 +1,11 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceLifecycleRequest, InstanceRecord } from "@/api/instances";
 import { Button, Dropdown, Menu, Message, Space, Tooltip } from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 import { VmInstanceAttachFilesystemModal } from "./VmInstanceAttachFilesystemModal";
 import { VmInstanceAttachVolumeModal } from "./VmInstanceAttachVolumeModal";
@@ -18,8 +17,8 @@ import { VmInstanceResizeModal } from "./VmInstanceResizeModal";
 import { VmInstanceSnapshotModal } from "./VmInstanceSnapshotModal";
 import { VmInstanceStopModal } from "./VmInstanceStopModal";
 
-type VmInstance = components["schemas"]["InstanceRecord"];
-type LifecycleRequest = components["schemas"]["InstanceLifecycleRequest"];
+type VmInstance = InstanceRecord;
+type LifecycleRequest = InstanceLifecycleRequest;
 type LifecycleAction = LifecycleRequest["action"];
 type ModalAction = Extract<
   LifecycleAction,
@@ -49,12 +48,6 @@ export function VmInstanceActions({
   display?: "row" | "detail";
 }) {
   const navigate = useNavigate();
-  const startScope = useIdempotencyScope("vm-instance-start", ["POST", instance.id]);
-  const restartScope = useIdempotencyScope("vm-instance-restart", ["POST", instance.id]);
-  const protectionScope = useIdempotencyScope("vm-instance-termination-protection", [
-    "POST",
-    instance.id,
-  ]);
   const [modalAction, setModalAction] = useState<ModalAction>();
   const [stopVisible, setStopVisible] = useState(false);
   const [rebuildVisible, setRebuildVisible] = useState(false);
@@ -62,22 +55,10 @@ export function VmInstanceActions({
   const start = useMutation({
     mutationFn: async () => {
       const submitData = { action: "start" as const };
-      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: startScope.withKey(submitData),
-      });
-      if (error || !data) {
-        throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error ?? "操作未返回结果") }),
-          status: response.status,
-        };
-      }
+      const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      startScope.reset();
       Message.success("开机已提交");
       onOperationSubmitted(operationId);
     },
@@ -86,21 +67,10 @@ export function VmInstanceActions({
   const restart = useMutation({
     mutationFn: async () => {
       const submitData = { action: "restart" as const };
-      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: restartScope.withKey(submitData),
-      });
-      if (error || !data)
-        throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error ?? "操作未返回结果") }),
-          status: response.status,
-        };
+      const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      restartScope.reset();
       Message.success("重启已提交");
       onOperationSubmitted(operationId);
     },
@@ -112,21 +82,10 @@ export function VmInstanceActions({
         action: "set_termination_protection" as const,
         enabled,
       };
-      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: protectionScope.withKey(submitData),
-      });
-      if (error || !data)
-        throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error ?? "操作未返回结果") }),
-          status: response.status,
-        };
+      const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      protectionScope.reset();
       Message.success("终止保护已更新");
       onOperationSubmitted(operationId);
     },

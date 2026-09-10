@@ -1,11 +1,10 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceRecord } from "@/api/instances";
 import { Alert, Form, Message, Modal, Select } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 
 function attachedVolumeId(volume: NonNullable<Instance["volumes"]>[number]) {
   const sourceRef = volume.source_ref?.trim();
@@ -23,28 +22,16 @@ export function VmInstanceDetachVolumeModal({
   onSubmitted: (operationId: string) => void;
 }) {
   const [form] = Form.useForm<{ volumeId: string }>();
-  const scope = useIdempotencyScope("vm-instance-detach-volume", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async ({ volumeId }: { volumeId: string }) => {
       const submitData = {
         action: "detach_volume" as const,
         volume_id: volumeId,
       };
-      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error || !data)
-        throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error ?? "操作未返回结果") }),
-          status: response.status,
-        };
+      const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      scope.reset();
       Message.success("卸载云盘已提交");
       onSubmitted(operationId);
     },
@@ -59,7 +46,6 @@ export function VmInstanceDetachVolumeModal({
       visible
       confirmLoading={mutation.isPending}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={async () => mutation.mutate(await form.validate())}

@@ -1,10 +1,8 @@
 import { Empty } from "@arco-design/web-react";
 import { Link } from "@tanstack/react-router";
-import type { components } from "@/api/services-schema";
+import type { InferenceService } from "@/api/ai-services/inference";
 import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
-
-type InferenceService = components["schemas"]["InferenceService"];
 
 export function ModelRelatedResources({
   services,

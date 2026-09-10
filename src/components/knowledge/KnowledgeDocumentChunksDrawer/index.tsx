@@ -1,12 +1,8 @@
 import { Alert, Button, Drawer, Empty, List, Spin, Tag, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
-import { servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
+import { listKnowledgeBaseDocumentChunks, type KBChunk, type KBDocument } from "@/api/knowledge";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
-
-type KBDocument = components["schemas"]["KBDocument"];
-type KBChunk = components["schemas"]["KBChunk"];
 
 const CHUNK_TYPE_LABELS: Record<KBChunk["chunk_type"], string> = {
   child: "子分块",
@@ -32,16 +28,10 @@ export function KnowledgeDocumentChunksDrawer({
       const items: KBChunk[] = [];
       let cursor: string | undefined;
       do {
-        const { data, error } = await servicesApi.GET(
-          "/knowledge-bases/{kb_id}/documents/{doc_id}/chunks",
-          {
-            params: {
-              path: { kb_id: kbId, doc_id: document!.id },
-              query: { limit: 100, cursor },
-            },
-          },
-        );
-        if (error || !data) throw error ?? new Error("文档分块未返回结果");
+        const data = await listKnowledgeBaseDocumentChunks(kbId, document!.id, {
+          limit: 100,
+          cursor,
+        });
         items.push(...data.items);
         cursor = data.next_cursor ?? undefined;
       } while (cursor);

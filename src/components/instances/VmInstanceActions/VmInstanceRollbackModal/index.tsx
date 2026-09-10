@@ -1,11 +1,10 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceRecord } from "@/api/instances";
 import { Alert, Message, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 type Snapshot = NonNullable<Instance["snapshots"]>[number];
 
 export function VmInstanceRollbackModal({
@@ -19,28 +18,16 @@ export function VmInstanceRollbackModal({
   onCancel: () => void;
   onSubmitted: (operationId: string) => void;
 }) {
-  const scope = useIdempotencyScope("vm-instance-rollback", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async () => {
       const submitData = {
         action: "rollback" as const,
         snapshot_id: snapshot.id,
       };
-      const { data, error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error || !data)
-        throw {
-          ...(typeof error === "object" && error
-            ? error
-            : { message: String(error ?? "操作未返回结果") }),
-          status: response.status,
-        };
+      const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      scope.reset();
       Message.success("回滚快照已提交");
       onSubmitted(operationId);
     },
@@ -52,7 +39,6 @@ export function VmInstanceRollbackModal({
       visible
       confirmLoading={mutation.isPending}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={() => mutation.mutateAsync()}

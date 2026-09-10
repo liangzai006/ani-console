@@ -1,23 +1,17 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Empty, Modal, Spin } from "@arco-design/web-react";
-import { coreApi } from "@/api/client";
-import { servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
-import type { components as coreComponents } from "@/api/core-schema";
-import { showApiError } from "@/api/helpers";
+import { showApiError } from "@/lib/api-error";
+import { deleteKnowledgeBase, getKnowledgeBase } from "@/api/knowledge";
+import { listVectorStores, type VectorStore } from "@/api/storage/vector-stores";
 import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { KnowledgeChatPanel } from "@/components/knowledge/KnowledgeChatPanel";
 import { KnowledgeDocumentsPanel } from "@/components/knowledge/KnowledgeDocumentsPanel";
 import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeDocumentUploadButton";
 import { KnowledgePermissionsPanel } from "@/components/knowledge/KnowledgePermissionsPanel";
-import { listOrThrow } from "@/lib/api-list";
 import { formatDateTime } from "@/lib/format";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type KnowledgeBase = components["schemas"]["KnowledgeBase"];
-type VectorStore = coreComponents["schemas"]["VectorStore"];
-type VectorStoreListResponse = coreComponents["schemas"]["VectorStoreListResponse"];
 export type KnowledgeBaseDetailTabKey =
   | "overview"
   | "documents"
@@ -36,13 +30,7 @@ export function KnowledgeBaseDetailPage({
   const qc = useQueryClient();
   const detail = useQuery({
     queryKey: ["knowledge-base", kbId],
-    queryFn: async () => {
-      const { data, error } = await servicesApi.GET("/knowledge-bases/{kb_id}", {
-        params: { path: { kb_id: kbId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getKnowledgeBase(kbId),
   });
   useListErrorNotification({
     id: `knowledge-base-detail:${kbId}`,
@@ -51,20 +39,10 @@ export function KnowledgeBaseDetailPage({
   });
   const vectorStores = useQuery({
     queryKey: ["vector-stores", "knowledge-base", kbId],
-    queryFn: () =>
-      listOrThrow<VectorStoreListResponse>(() =>
-        coreApi.GET("/vector-stores", {
-          params: { query: { limit: 100 } },
-        }),
-      ),
+    queryFn: () => listVectorStores({ limit: 100 }),
   });
   const remove = useMutation({
-    mutationFn: async () => {
-      const { error } = await servicesApi.DELETE("/knowledge-bases/{kb_id}", {
-        params: { path: { kb_id: kbId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: () => deleteKnowledgeBase(kbId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["knowledge-bases"] });
       navigate({ to: "/kb" });
@@ -87,7 +65,7 @@ export function KnowledgeBaseDetailPage({
         iconName="zhishiku"
       />
     );
-  const kb = detail.data as KnowledgeBase;
+  const kb = detail.data;
   const relatedVectorStore = (vectorStores.data?.items ?? []).find(
     (item: VectorStore) => item.knowledge_base_ref?.id === kb.id,
   ) as VectorStore | undefined;

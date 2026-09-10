@@ -1,7 +1,6 @@
+import { listInstances, type InstanceRecord } from "@/api/instances";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import type { components } from "@/api/core-schema";
 import {
   DataTableNameCell,
   ListDataTable,
@@ -23,7 +22,7 @@ import { InstanceOperationPoller } from "../InstanceOperationPoller";
 import { VmInstanceActions } from "../VmInstanceActions";
 import { VmInstanceCreateModal } from "../VmInstanceCreateModal";
 
-type VmInstance = components["schemas"]["InstanceRecord"];
+type VmInstance = InstanceRecord;
 type StatusFilter = "all" | VmInstance["state"];
 
 function specLabel(instance: VmInstance) {
@@ -50,19 +49,13 @@ export function VmInstancesPage() {
       cursorScope: `vm:${status}:${searchText.trim()}`,
       fetchPage: async ({ cursor, limit }) => {
         const keyword = searchText.trim();
-        const { data, error } = await coreApi.GET("/instances", {
-          params: {
-            query: {
-              kind: "vm",
-              limit,
-              cursor,
-              state: status === "all" ? undefined : status,
-              keyword: keyword || undefined,
-            },
-          },
+        return listInstances({
+          kind: "vm",
+          limit,
+          cursor,
+          status: status === "all" ? undefined : status,
+          keyword: keyword || undefined,
         });
-        if (error || !data) throw error ?? new Error("云主机列表未返回结果");
-        return data;
       },
     });
 

@@ -1,7 +1,7 @@
-import type { components } from "@/api/core-schema";
+import type { InstanceRecord } from "@/api/instances";
 import { GPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instance-compute-specs";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 
 export const CURRENT_GPU_SPEC_VALUE = "__current_gpu_spec__";
 

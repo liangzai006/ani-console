@@ -1,4 +1,10 @@
 import {
+  createSandboxPort,
+  deleteSandboxPort,
+  type InstanceRecord,
+  type SandboxInstanceStatus,
+} from "@/api/instances";
+import {
   Alert,
   Button,
   Empty,
@@ -14,16 +20,13 @@ import {
 } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import { DataTable } from "@/components/common";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getImageDisplayName } from "@/lib/render";
 import { SandboxTokenIssueModal } from "./SandboxTokenIssueModal";
-import { copySandboxText, showSandboxError, throwSandboxApiError } from "../utils";
+import { copySandboxText, showSandboxError } from "../utils";
 
-type SandboxInstance = components["schemas"]["InstanceRecord"];
-type SandboxStatus = NonNullable<components["schemas"]["SandboxInstanceStatus"]>;
+type SandboxInstance = InstanceRecord;
+type SandboxStatus = NonNullable<SandboxInstanceStatus>;
 type SandboxPortSummary = NonNullable<SandboxStatus["ports"]>[number];
 
 export function SandboxAccessPanel({
@@ -34,11 +37,6 @@ export function SandboxAccessPanel({
   onChanged: () => void;
 }) {
   const sandbox = instance.sandbox!;
-  const createPortScope = useIdempotencyScope("sandbox-preview-port-create", ["POST", instance.id]);
-  const deletePortScope = useIdempotencyScope("sandbox-preview-port-delete", [
-    "DELETE",
-    instance.id,
-  ]);
   const [tokenVisible, setTokenVisible] = useState(false);
   const [portVisible, setPortVisible] = useState(false);
   const [port, setPort] = useState(8080);
@@ -56,20 +54,9 @@ export function SandboxAccessPanel({
         name: portName.trim() || undefined,
         protocol,
       };
-      const { data, error, response } = await coreApi.POST(
-        "/instances/{instance_id}/sandbox/ports",
-        {
-          params: { path: { instance_id: instance.id } },
-          body: createPortScope.withKey(submitData),
-        },
-      );
-      if (error || !data) {
-        throwSandboxApiError(error, response.status, "预览端口开放失败");
-      }
-      return data;
+      return createSandboxPort(instance.id, submitData);
     },
     onSuccess: () => {
-      createPortScope.reset();
       setPortVisible(false);
       setPortName("");
       Message.success("预览端口已开放");
@@ -80,23 +67,10 @@ export function SandboxAccessPanel({
 
   const closePort = useMutation({
     mutationFn: async (targetPort: number) => {
-      const { idempotency_key } = deletePortScope.withKey({}, [targetPort]);
-      const { error, response } = await coreApi.DELETE(
-        "/instances/{instance_id}/sandbox/ports/{port}",
-        {
-          params: {
-            path: { instance_id: instance.id, port: targetPort },
-            header: { "Idempotency-Key": idempotency_key },
-          },
-        },
-      );
-      if (error) {
-        throwSandboxApiError(error, response.status, "预览端口关闭失败");
-      }
+      await deleteSandboxPort(instance.id, targetPort);
       return targetPort;
     },
     onSuccess: (targetPort) => {
-      deletePortScope.reset([targetPort]);
       Message.success(`端口 ${targetPort} 已关闭`);
       onChanged();
     },
@@ -246,7 +220,6 @@ export function SandboxAccessPanel({
         visible={portVisible}
         confirmLoading={createPort.isPending}
         onCancel={() => {
-          createPortScope.reset();
           setPortVisible(false);
         }}
         onOk={() => createPort.mutate()}

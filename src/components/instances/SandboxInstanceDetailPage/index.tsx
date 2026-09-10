@@ -1,8 +1,7 @@
+import { getInstance } from "@/api/instances";
 import { Empty, Spin, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
 import {
   AliIcon,
   ApiErrorAlert,
@@ -33,8 +32,6 @@ import {
   sandboxTimeoutLabel,
 } from "./utils";
 
-type SandboxInstance = components["schemas"]["InstanceRecord"];
-
 export function SandboxInstanceDetailPage({
   instanceId,
   tab,
@@ -49,15 +46,7 @@ export function SandboxInstanceDetailPage({
 
   const detail = useQuery({
     queryKey: ["instance", instanceId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/instances/{instance_id}", {
-        params: { path: { instance_id: instanceId } },
-      });
-      if (error || !data) {
-        throw error ?? new Error("Sandbox 实例详情未返回结果");
-      }
-      return data as SandboxInstance;
-    },
+    queryFn: () => getInstance(instanceId),
   });
   useListErrorNotification({
     id: `sandbox-detail:${instanceId}`,

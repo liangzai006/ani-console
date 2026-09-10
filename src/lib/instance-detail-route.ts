@@ -1,7 +1,7 @@
+import type { InstanceRecord } from "@/api/instances";
 import type { NavigateFn } from "@tanstack/react-router";
-import type { components } from "@/api/core-schema";
 
-type Instance = Pick<components["schemas"]["InstanceRecord"], "id" | "kind">;
+type Instance = Pick<InstanceRecord, "id" | "kind">;
 
 export function navigateToInstanceDetail(navigate: NavigateFn, instance: Instance) {
   if (instance.kind === "vm") {

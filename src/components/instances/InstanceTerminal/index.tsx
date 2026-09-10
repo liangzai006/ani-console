@@ -4,8 +4,8 @@ import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import clsx from "clsx";
 import "@xterm/xterm/css/xterm.css";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { createInstanceExecSession } from "@/api/instances";
+import { ApiError } from "@/api/request";
 import styles from "./index.module.css";
 
 type TerminalStatus = "connecting" | "connected" | "closed" | "error";
@@ -102,7 +102,6 @@ export function InstanceTerminal({
   height?: number | string;
   className?: string;
 }) {
-  const execScope = useIdempotencyScope("instance-terminal-session-create", ["POST", instanceId]);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState<TerminalStatus>("connecting");
@@ -197,14 +196,15 @@ export function InstanceTerminal({
           rows: term.rows,
           cols: term.cols,
         };
-        const { data, error, response } = await coreApi.POST("/instances/{instance_id}/exec", {
-          params: { path: { instance_id: instanceId } },
-          body: execScope.withKey(submitData),
-          signal: abortController.signal,
-        });
-        if (error) throw new Error(getSessionError(error, response.status));
-        execScope.reset();
-        if (!data?.ws_url) throw new Error("终端连接地址为空");
+        let data;
+        try {
+          data = await createInstanceExecSession(instanceId, submitData, abortController.signal);
+        } catch (error) {
+          throw new Error(
+            getSessionError(error, error instanceof ApiError ? (error.status ?? 0) : 0),
+          );
+        }
+        if (!data.ws_url) throw new Error("终端连接地址为空");
         if (disposed) return;
 
         const socket = new WebSocket(data.ws_url, TERMINAL_SUBPROTOCOL);
@@ -264,7 +264,7 @@ export function InstanceTerminal({
         socket.close(1000, "terminal tab closed");
       term.dispose();
     };
-  }, [commandSignature, connectSeq, container, execScope, instanceId]);
+  }, [commandSignature, connectSeq, container, instanceId]);
 
   const meta = STATUS_META[status];
 

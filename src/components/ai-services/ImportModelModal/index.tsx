@@ -1,12 +1,9 @@
 import { Alert, Form, Input, Message, Modal, Select, Typography } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { showApiError } from "@/api/helpers";
-import { servicesApi } from "@/api/services-client";
-import type { components } from "@/api/services-schema";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
+import { importModel, type ImportModelRequest } from "@/api/ai-services/models";
+import { showApiError } from "@/lib/api-error";
 
-type ImportModelRequest = components["schemas"]["ImportModelRequest"];
 type ImportSource = ImportModelRequest["source"];
 
 export function ImportModelModal({
@@ -19,13 +16,11 @@ export function ImportModelModal({
   onSubmitted?: () => void;
 }) {
   const qc = useQueryClient();
-  const importScope = useIdempotencyScope("model-import", ["POST"]);
   const [source, setSource] = useState<ImportSource>("huggingface");
   const [repoId, setRepoId] = useState("");
   const [revision, setRevision] = useState("main");
 
   const reset = () => {
-    importScope.reset();
     setSource("huggingface");
     setRepoId("");
     setRevision("main");
@@ -40,11 +35,7 @@ export function ImportModelModal({
         repo_id: trimmedRepoId,
         revision: revision.trim() || "main",
       };
-      const { data, error } = await servicesApi.POST("/models/import", {
-        body: importScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
+      return importModel(submitData);
     },
     onSuccess: (task) => {
       Message.success("模型导入任务已提交" + (task?.id ? " · " + task.id : ""));

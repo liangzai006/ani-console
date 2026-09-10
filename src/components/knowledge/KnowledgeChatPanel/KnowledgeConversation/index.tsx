@@ -13,14 +13,12 @@ import {
 import { Button, Spin, Typography } from "@arco-design/web-react";
 import { IconCheck, IconCopy, IconSend, IconStop } from "@arco-design/web-react/icon";
 import { useMemo, useRef } from "react";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { KnowledgeMarkdownText } from "../../KnowledgeMarkdownText";
 import { createKnowledgeBaseAdapter, type QueryMode } from "../knowledgeQueryAdapter";
 import styles from "./index.module.css";
 
 export function KnowledgeConversation({
   kbId,
-  sessionKey,
   sessionId,
   initialMessages,
   mode,
@@ -28,7 +26,6 @@ export function KnowledgeConversation({
   onComplete,
 }: {
   kbId: string;
-  sessionKey: string;
   sessionId?: string;
   initialMessages: readonly ThreadMessageLike[];
   mode: QueryMode;
@@ -36,10 +33,9 @@ export function KnowledgeConversation({
   onComplete: (sessionId?: string) => void;
 }) {
   const sessionIdRef = useRef(sessionId);
-  const queryScope = useIdempotencyScope("knowledge-base-query", ["POST", kbId, sessionKey]);
   const adapter = useMemo(
-    () => createKnowledgeBaseAdapter(kbId, sessionIdRef, mode, topK, queryScope, onComplete),
-    [kbId, mode, onComplete, queryScope, topK],
+    () => createKnowledgeBaseAdapter(kbId, sessionIdRef, mode, topK, onComplete),
+    [kbId, mode, onComplete, topK],
   );
   const runtime = useLocalRuntime(adapter, { initialMessages });
 

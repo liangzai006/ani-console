@@ -1,11 +1,10 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceRecord } from "@/api/instances";
 import { Checkbox, Form, Input, Message, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 type Values = { volumeId: string; mountPath: string; readOnly?: boolean };
 
 export function GpuInstanceAttachVolumeModal({
@@ -18,7 +17,6 @@ export function GpuInstanceAttachVolumeModal({
   onSubmitted: () => void;
 }) {
   const [form] = Form.useForm<Values>();
-  const scope = useIdempotencyScope("gpu-instance-attach-volume", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async (values: Values) => {
       const submitData = {
@@ -27,18 +25,9 @@ export function GpuInstanceAttachVolumeModal({
         mount_path: values.mountPath.trim(),
         read_only: values.readOnly ?? false,
       };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      scope.reset();
       Message.success("挂载云盘已提交");
       onSubmitted();
     },
@@ -50,7 +39,6 @@ export function GpuInstanceAttachVolumeModal({
       visible
       confirmLoading={mutation.isPending}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={async () => mutation.mutate(await form.validate())}

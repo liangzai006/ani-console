@@ -10,16 +10,13 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { listOrThrow } from "@/lib/api-list";
+import { listInstances, type InstanceRecord } from "@/api/instances";
+import { createVolume, type StorageVolume } from "@/api/storage/volumes";
+import { showApiError } from "@/lib/api-error";
 import { getErrorMessage } from "@/lib/errors";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type Volume = components["schemas"]["StorageVolume"];
-type Instance = components["schemas"]["InstanceRecord"];
+type Volume = StorageVolume;
+type Instance = InstanceRecord;
 
 const STORAGE_CLASS_OPTIONS = [{ value: "ani-block", label: "ani-block" }];
 
@@ -39,7 +36,6 @@ export function CreateVolumeModal({
   onCreated?: (volume: Volume) => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("storage-volume-create", ["POST"]);
   const [name, setName] = useState("");
   const [sizeGiB, setSizeGiB] = useState(40);
   const [storageClass, setStorageClass] = useState("ani-block");
@@ -47,14 +43,7 @@ export function CreateVolumeModal({
   const [mountInstanceId, setMountInstanceId] = useState("");
   const instances = useQuery({
     queryKey: ["instances", "volume-create"],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/instances", {
-          params: {
-            query: asUncontractedQuery({ limit: 100, mountable: true }),
-          },
-        }),
-      ),
+    queryFn: () => listInstances({ limit: 100, mountable: true }),
     enabled: visible,
   });
   // TODO: 实例接口确认按 mountable 过滤后，移除此处创建表单的本地兜底过滤。
@@ -66,7 +55,6 @@ export function CreateVolumeModal({
     setMountInstanceId("");
   }, [instanceItems, mountInstanceId]);
   const reset = () => {
-    createScope.reset();
     setName("");
     setSizeGiB(40);
     setStorageClass("ani-block");
@@ -89,11 +77,7 @@ export function CreateVolumeModal({
         mount_instance_id: selectedInstance ? selectedInstance.id : undefined,
         mount_route: selectedInstance ? INSTANCE_ROUTE[selectedInstance.kind] : undefined,
       };
-      const { data, error } = await coreApi.POST("/volumes", {
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
+      return createVolume(submitData);
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["volumes"] });

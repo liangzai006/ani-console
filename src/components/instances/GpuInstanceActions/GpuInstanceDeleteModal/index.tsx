@@ -1,11 +1,10 @@
+import { applyInstanceLifecycle } from "@/api/instances";
+import type { InstanceRecord } from "@/api/instances";
 import { Message, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import type { components } from "@/api/core-schema";
-import { coreApi } from "@/api/client";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
-type Instance = components["schemas"]["InstanceRecord"];
+type Instance = InstanceRecord;
 
 export function GpuInstanceDeleteModal({
   instance,
@@ -16,22 +15,12 @@ export function GpuInstanceDeleteModal({
   onCancel: () => void;
   onSubmitted: () => void;
 }) {
-  const scope = useIdempotencyScope("gpu-instance-delete", ["POST", instance.id]);
   const mutation = useMutation({
     mutationFn: async () => {
       const submitData = { action: "delete" as const };
-      const { error, response } = await coreApi.POST("/instances/{instance_id}/lifecycle", {
-        params: { path: { instance_id: instance.id } },
-        body: scope.withKey(submitData),
-      });
-      if (error)
-        throw {
-          ...(typeof error === "object" && error ? error : { message: String(error) }),
-          status: response.status,
-        };
+      await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      scope.reset();
       Message.success("删除已提交");
       onSubmitted();
     },
@@ -44,7 +33,6 @@ export function GpuInstanceDeleteModal({
       confirmLoading={mutation.isPending}
       okButtonProps={{ status: "danger" }}
       onCancel={() => {
-        scope.reset();
         onCancel();
       }}
       onOk={() => mutation.mutate()}

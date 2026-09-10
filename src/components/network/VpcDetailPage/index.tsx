@@ -10,21 +10,30 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Empty, Modal, Space, Spin, Tag, Typography } from "@arco-design/web-react";
-import { coreApi } from "@/api/client";
-import { asUncontractedQuery } from "@/api/uncontracted-query";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
+import { listInstances, type InstanceRecord } from "@/api/instances";
+import {
+  deleteNetworkVpc,
+  getNetworkVpc,
+  listNetworkLoadBalancers,
+  listNetworkRoutes,
+  listNetworkSecurityGroups,
+  listNetworkSubnets,
+  type NetworkLoadBalancer,
+  type NetworkRoute,
+  type NetworkSecurityGroup,
+  type NetworkSubnet,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import { formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
-import { listOrThrow } from "@/lib/api-list";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
-type Vpc = components["schemas"]["NetworkVPC"];
-type Subnet = components["schemas"]["NetworkSubnet"];
-type NetworkRoute = components["schemas"]["NetworkRoute"];
-type SecurityGroup = components["schemas"]["NetworkSecurityGroup"];
-type LoadBalancer = components["schemas"]["NetworkLoadBalancer"];
-type Instance = components["schemas"]["InstanceRecord"];
+type Vpc = NetworkVPC;
+type Subnet = NetworkSubnet;
+type SecurityGroup = NetworkSecurityGroup;
+type LoadBalancer = NetworkLoadBalancer;
+type Instance = InstanceRecord;
 
 type RelatedResource = {
   id: string;
@@ -46,58 +55,27 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
   const qc = useQueryClient();
   const detail = useQuery({
     queryKey: ["network-vpc", vpcId],
-    queryFn: async () => {
-      const { data, error } = await coreApi.GET("/networks/vpcs/{vpc_id}", {
-        params: { path: { vpc_id: vpcId } },
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => getNetworkVpc(vpcId),
   });
   const subnets = useQuery({
     queryKey: ["network-subnets", vpcId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/subnets", {
-          params: { query: { vpc_id: vpcId, limit: 100 } },
-        }),
-      ),
+    queryFn: () => listNetworkSubnets({ vpc_id: vpcId, limit: 100 }),
   });
   const routes = useQuery({
     queryKey: ["network-routes", vpcId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/routes", {
-          params: { query: { vpc_id: vpcId, limit: 100 } },
-        }),
-      ),
+    queryFn: () => listNetworkRoutes({ vpc_id: vpcId, limit: 100 }),
   });
   const securityGroups = useQuery({
     queryKey: ["network-security-groups", "vpc-related"],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/security-groups", {
-          params: { query: asUncontractedQuery({ limit: 100, vpc_id: vpcId }) },
-        }),
-      ),
+    queryFn: () => listNetworkSecurityGroups({ limit: 100, vpc_id: vpcId }),
   });
   const loadBalancers = useQuery({
     queryKey: ["network-load-balancers", "vpc", vpcId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/load-balancers", {
-          params: { query: asUncontractedQuery({ limit: 100, vpc_id: vpcId }) },
-        }),
-      ),
+    queryFn: () => listNetworkLoadBalancers({ limit: 100, vpc_id: vpcId }),
   });
   const instances = useQuery({
     queryKey: ["instances", "vpc", vpcId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/instances", {
-          params: { query: asUncontractedQuery({ limit: 100, vpc_id: vpcId }) },
-        }),
-      ),
+    queryFn: () => listInstances({ limit: 100, vpc_id: vpcId }),
   });
   useListErrorNotification({
     id: `vpc-detail:${vpcId}`,
@@ -130,12 +108,7 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
     error: instances.error,
   });
   const deleteVpc = useMutation({
-    mutationFn: async () => {
-      const { error } = await coreApi.DELETE("/networks/vpcs/{vpc_id}", {
-        params: { path: { vpc_id: vpcId } },
-      });
-      if (error) throw error;
-    },
+    mutationFn: () => deleteNetworkVpc(vpcId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["network-vpcs"] });
       navigate({ to: "/vpcs" });

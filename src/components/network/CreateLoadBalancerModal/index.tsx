@@ -1,16 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { coreApi } from "@/api/client";
-import { showApiError } from "@/api/helpers";
-import type { components } from "@/api/core-schema";
-import { listOrThrow } from "@/lib/api-list";
+import {
+  createNetworkLoadBalancer,
+  listNetworkSubnets,
+  listNetworkVpcs,
+  type NetworkLoadBalancer,
+  type NetworkSubnet,
+  type NetworkVPC,
+} from "@/api/network";
+import { showApiError } from "@/lib/api-error";
 import { getErrorMessage } from "@/lib/errors";
-import { useIdempotencyScope } from "@/hooks/useIdempotencyScope";
 
-type LoadBalancer = components["schemas"]["NetworkLoadBalancer"];
-type Vpc = components["schemas"]["NetworkVPC"];
-type Subnet = components["schemas"]["NetworkSubnet"];
+type LoadBalancer = NetworkLoadBalancer;
+type Vpc = NetworkVPC;
+type Subnet = NetworkSubnet;
 
 export function CreateLoadBalancerModal({
   visible,
@@ -22,7 +26,6 @@ export function CreateLoadBalancerModal({
   onCreated?: (item: LoadBalancer) => void;
 }) {
   const qc = useQueryClient();
-  const createScope = useIdempotencyScope("network-load-balancer-create", ["POST"]);
   const [name, setName] = useState("");
   const [vpcId, setVpcId] = useState("");
   const [subnetId, setSubnetId] = useState("");
@@ -32,18 +35,12 @@ export function CreateLoadBalancerModal({
   const [targetPort, setTargetPort] = useState(80);
   const vpcs = useQuery({
     queryKey: ["network-vpcs", "load-balancer-create"],
-    queryFn: () =>
-      listOrThrow(() => coreApi.GET("/networks/vpcs", { params: { query: { limit: 100 } } })),
+    queryFn: () => listNetworkVpcs({ limit: 100 }),
     enabled: visible,
   });
   const subnets = useQuery({
     queryKey: ["network-subnets", "load-balancer-create", vpcId],
-    queryFn: () =>
-      listOrThrow(() =>
-        coreApi.GET("/networks/subnets", {
-          params: { query: { limit: 100, vpc_id: vpcId || undefined } },
-        }),
-      ),
+    queryFn: () => listNetworkSubnets({ limit: 100, vpc_id: vpcId || undefined }),
     enabled: visible && !!vpcId,
   });
   // TODO: 子网接口确认按 vpc_id 过滤后，移除此处创建表单的本地兜底过滤。
@@ -54,7 +51,6 @@ export function CreateLoadBalancerModal({
     if (subnetId && !availableSubnets.some((item) => item.id === subnetId)) setSubnetId("");
   }, [availableSubnets, subnetId]);
   const reset = () => {
-    createScope.reset();
     setName("");
     setVpcId("");
     setSubnetId("");
@@ -76,11 +72,7 @@ export function CreateLoadBalancerModal({
         scheme,
         listeners: [{ protocol: listenerProtocol, port: listenerPort, target_port: targetPort }],
       };
-      const { data, error } = await coreApi.POST("/networks/load-balancers", {
-        body: createScope.withKey(submitData),
-      });
-      if (error) throw error;
-      return data;
+      return createNetworkLoadBalancer(submitData);
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["network-load-balancers"] });
