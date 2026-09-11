@@ -1,4 +1,5 @@
 import type { Model, ModelVersion } from "@/api/ai-services/models";
+import { compareDateTimesDescending } from "./date";
 
 export type { Model, ModelVersion } from "@/api/ai-services/models";
 
@@ -20,8 +21,8 @@ export function formatModelCapabilities(capabilities: string[] | undefined) {
 }
 
 export function getLatestModelVersion(model: Model): ModelVersion | undefined {
-  return [...(model.versions ?? [])].sort(
-    (left, right) => Date.parse(right.created_at) - Date.parse(left.created_at),
+  return [...(model.versions ?? [])].sort((left, right) =>
+    compareDateTimesDescending(left.created_at, right.created_at),
   )[0];
 }
 

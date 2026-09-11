@@ -1,11 +1,4 @@
-export function formatDateTime(value?: string | null): string {
-  if (!value) return "-";
-  try {
-    return new Date(value).toLocaleString("zh-CN");
-  } catch {
-    return value;
-  }
-}
+export { formatDateTime } from "./date";
 
 export function formatBytes(bytes?: number): string {
   if (bytes == null) return "-";

@@ -3,6 +3,7 @@ import RFB from "@novnc/novnc/lib/rfb";
 import { Alert, Button, Radio, Spin, Tag } from "@arco-design/web-react";
 import clsx from "clsx";
 import { createInstanceConsoleSession } from "@/api/instances";
+import { isDateTimeExpired } from "@/lib/date";
 import { getErrorMessage } from "@/lib/errors";
 
 type ConsoleStatus = "connecting" | "connected" | "disconnected" | "error" | "expired";
@@ -19,9 +20,7 @@ const STATUS_META: Record<ConsoleStatus, { text: string; color: string }> = {
 };
 
 function isExpired(expiresAt?: string | null): boolean {
-  if (!expiresAt) return false;
-  const ms = Date.parse(expiresAt);
-  return Number.isFinite(ms) && Date.now() >= ms;
+  return isDateTimeExpired(expiresAt);
 }
 
 function applyViewMode(rfb: RFB, mode: ViewMode) {

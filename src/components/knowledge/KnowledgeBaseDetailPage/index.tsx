@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Empty, Modal, Spin } from "@arco-design/web-react";
+import { Button, Modal, Spin } from "@arco-design/web-react";
 import { showApiError } from "@/lib/api-error";
 import { deleteKnowledgeBase, getKnowledgeBase } from "@/api/knowledge";
 import { listVectorStores, type VectorStore } from "@/api/storage/vector-stores";
@@ -9,6 +9,7 @@ import { KnowledgeChatPanel } from "@/components/knowledge/KnowledgeChatPanel";
 import { KnowledgeDocumentsPanel } from "@/components/knowledge/KnowledgeDocumentsPanel";
 import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeDocumentUploadButton";
 import { KnowledgePermissionsPanel } from "@/components/knowledge/KnowledgePermissionsPanel";
+import { KnowledgeBaseAuditLogsPanel } from "@/components/knowledge/KnowledgeBaseAuditLogsPanel";
 import { formatDateTime } from "@/lib/format";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
@@ -163,7 +164,7 @@ export function KnowledgeBaseDetailPage({
         {
           key: "history",
           label: "操作历史",
-          content: <Empty description="当前后端暂未提供知识库操作历史接口" />,
+          content: <KnowledgeBaseAuditLogsPanel kbId={kbId} />,
         },
       ]}
       defaultTabKey={tab}

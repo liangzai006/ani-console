@@ -10,6 +10,7 @@ import type { EChartsOption } from "echarts";
 import { useMemo } from "react";
 import { CoreLineBarChart } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { formatTime, getPreviousHoursDateTimeRange } from "@/lib/date";
 import { getErrorMessage } from "@/lib/errors";
 import { formatBytes } from "@/lib/format";
 
@@ -70,12 +71,11 @@ export function InstanceMetrics({
     queryKey: ["instance-gpu-utilization-trend", instanceId],
     enabled: gpuOnly && hasGpuMetrics,
     queryFn: async () => {
-      const end = new Date();
-      const start = new Date(end.getTime() - 60 * 60 * 1000);
+      const { start, end } = getPreviousHoursDateTimeRange(1);
       return queryObservabilityRange({
         query: `avg(DCGM_FI_DEV_GPU_UTIL{namespace="${instanceId}",pod="${instanceId}"})`,
-        start: start.toISOString(),
-        end: end.toISOString(),
+        start,
+        end,
         step: "1m",
       });
     },
@@ -85,8 +85,7 @@ export function InstanceMetrics({
     queryKey: ["instance-resource-trend", instanceId, instanceKind],
     enabled: !gpuOnly,
     queryFn: async () => {
-      const end = new Date();
-      const start = new Date(end.getTime() - 60 * 60 * 1000);
+      const { start, end } = getPreviousHoursDateTimeRange(1);
       const queries: MonitoringTrendQuery[] =
         instanceKind === "vm"
           ? [
@@ -136,8 +135,8 @@ export function InstanceMetrics({
           try {
             const result = await queryObservabilityRange({
               query: promql,
-              start: start.toISOString(),
-              end: end.toISOString(),
+              start,
+              end,
               step: "30s",
             });
             if (!result.dev_profile.real_provider) {
@@ -172,12 +171,7 @@ export function InstanceMetrics({
     () => gpuTrend.data?.results.flatMap((series) => series.values) ?? [],
     [gpuTrend.data],
   );
-  const trendLabels = gpuTrendPoints.map((point) =>
-    new Date(point.timestamp).toLocaleTimeString("zh-CN", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  );
+  const trendLabels = gpuTrendPoints.map((point) => formatTime(point.timestamp));
   const utilizationTrendOption = useMemo<EChartsOption>(
     () => ({
       tooltip: { trigger: "axis", valueFormatter: percentTooltip },

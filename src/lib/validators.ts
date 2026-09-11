@@ -1,3 +1,5 @@
+import { formatIsoDateTime, isValidDateTime } from "./date";
+
 export const scopePattern = /^scope:[a-z0-9_-]+:(\*|[a-z0-9_-]+)$/;
 export const bucketNamePattern = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/;
 
@@ -181,7 +183,6 @@ export function optionalIpv4WithinCidrError(
 export function optionalIsoDateTime(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
-  const timestamp = Date.parse(trimmed);
-  if (Number.isNaN(timestamp)) throw new Error("过期时间必须是有效的日期时间");
-  return new Date(timestamp).toISOString();
+  if (!isValidDateTime(trimmed)) throw new Error("过期时间必须是有效的日期时间");
+  return formatIsoDateTime(trimmed);
 }

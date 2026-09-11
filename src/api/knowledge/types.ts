@@ -27,6 +27,28 @@ export interface KnowledgeBaseListResponse {
   next_cursor?: string | null;
 }
 
+export interface KBAuditLog {
+  id: string;
+  kb_id: string;
+  actor_user_id?: string | null;
+  action: string;
+  before_state?: Record<string, unknown> | null;
+  after_state?: Record<string, unknown> | null;
+  error_code?: string | null;
+  error_msg?: string | null;
+  created_at: string;
+}
+
+export interface KBAuditLogListParams {
+  limit?: number;
+  cursor?: string;
+}
+
+export interface KBAuditLogListResponse {
+  items: KBAuditLog[];
+  next_cursor?: string | null;
+}
+
 export interface CreateKnowledgeBaseInput {
   name: string;
   description?: string;

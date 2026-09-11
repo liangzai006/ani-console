@@ -23,6 +23,8 @@
 
 | 日期 | 摘要 |
 |------|------|
+| 2026-09-11 | 对接知识库管理面审计日志：详情页“操作历史”改接 Services `GET /knowledge-bases/{kb_id}/audit-logs`，支持游标加载、刷新、操作结果及变更前后快照详情；创建表单的分块默认值对齐当前契约为 1024，当前 `POST /knowledge-bases` 仍仅接收 Embedding 模型、不接收推理模型。全局文本链接同步统一主题色及悬停、按下和键盘焦点反馈。 |
+| 2026-09-11 | 新增基于 `date-fns` 的公共时间适配层，统一 ISO 时间解析与校验、日期时间展示、模型版本排序、会话过期判断、镜像轮询计时及监控时间范围生成，并在 `AGENTS.md` 固化使用约束。全部变更代码 Oxlint、全仓 oxfmt、TypeScript 与差异格式检查通过；GitNexus 当前累计工作区检测为 MEDIUM（18 个变更文件、4 条受影响流程），与 `master` 的累计比较为 CRITICAL。 |
 | 2026-09-10 | 完成前端 API 层重构：以 Axios 替换 `openapi-fetch`，移除 Core/Services 生成式 schema、旧客户端及兼容 Hook，将认证、AI、实例、网络、存储等请求与静态类型按资源模块收敛；公共层统一认证刷新、错误、SSE 和隔离预签名上传，写请求幂等迁入 API 内部，页面只提交无 key DTO。同步新增 API 对接流程并收敛工程文档职责，`PROJECT-STATUS.md` 只保留状态、缺口和日期记录。全仓 oxfmt 与格式检查、Oxlint、TypeScript、差异格式及本地文档链接检查通过；GitNexus 累计工作区变更为 CRITICAL，来自 223 个文件的累计改动及 216 条受影响流程。 |
 | 2026-09-10 | 明确所有 Agent 的 pnpm 命令必须在 Codex 沙箱外由系统 Corepack 按项目 `packageManager` 执行，并补齐 route component 仅承担路由输入适配与领域页面组合的薄入口边界。文档链接与内容一致性、Oxlint、全仓 oxfmt、TypeScript 与差异格式检查通过；GitNexus 对本次暂存文档变更评估为 LOW，未命中执行流。 |
 | 2026-09-10 | 收敛向量存储列表交互：有关联时可直接点击“关联知识库”列中的知识库名称打开详情，未关联时继续显示“未关联”，并移除操作列中的独立知识库入口；操作列只保留“检索测试”直接操作，将“重建索引”和“删除”移入“更多”菜单，延续原禁用条件、重建状态与危险操作确认。变更代码 Oxlint、全仓 oxfmt、TypeScript 与差异格式检查通过。 |

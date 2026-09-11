@@ -17,6 +17,26 @@ body {
   color: var(--color-text-1);
 }
 
+/* 全局文本链接：统一路由链接与普通锚点，组件级样式可按需覆盖。 */
+a:where(:link, :visited) {
+  color: rgb(var(--primary-6));
+  text-decoration: none;
+  transition: color 0.1s ease;
+}
+
+a:where(:link, :visited):hover {
+  color: rgb(var(--primary-5));
+}
+
+a:where(:link, :visited):active {
+  color: rgb(var(--primary-7));
+}
+
+a:where(:link, :visited):focus-visible {
+  outline: 2px solid rgb(var(--primary-3));
+  outline-offset: 2px;
+}
+
 .ali-icon {
   display: inline-flex;
   flex: 0 0 auto;

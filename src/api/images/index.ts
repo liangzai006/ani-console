@@ -1,5 +1,6 @@
 import axios from "axios";
 import { coreRequest, externalAxios, toApiError } from "@/api/request";
+import { getCurrentTimestamp, hasElapsed, isDateTimeExpired } from "@/lib/date";
 import { createIdempotencyScope, type IdempotencyBody } from "@/lib/idempotency";
 import type {
   CreateImageUploadInput,
@@ -61,8 +62,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 function assertSessionNotExpired(expiresAt: string): void {
-  const expiresMs = Date.parse(expiresAt);
-  if (Number.isFinite(expiresMs) && Date.now() >= expiresMs) {
+  if (isDateTimeExpired(expiresAt)) {
     throw new Error("上传会话已过期，请重新创建");
   }
 }
@@ -131,8 +131,8 @@ async function uploadFile(input: Parameters<typeof uploadFileOnce>[0]): Promise<
 }
 
 async function waitForImageUploadReady(imageId: string, signal?: AbortSignal): Promise<void> {
-  const started = Date.now();
-  while (Date.now() - started < PREPARE_TIMEOUT_MS) {
+  const started = getCurrentTimestamp();
+  while (!hasElapsed(started, PREPARE_TIMEOUT_MS)) {
     const image = await getImage(imageId, signal);
     if (image.state === "uploading") return;
     if (image.state === "failed") {
@@ -145,8 +145,8 @@ async function waitForImageUploadReady(imageId: string, signal?: AbortSignal): P
 }
 
 async function pollImageUntilTerminal(imageId: string, signal?: AbortSignal): Promise<Image> {
-  const started = Date.now();
-  while (Date.now() - started < PROCESS_TIMEOUT_MS) {
+  const started = getCurrentTimestamp();
+  while (!hasElapsed(started, PROCESS_TIMEOUT_MS)) {
     const image = await getImage(imageId, signal);
     if (image.state === "ready") return image;
     if (image.state === "failed") {

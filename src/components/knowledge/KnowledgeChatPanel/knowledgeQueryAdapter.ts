@@ -6,6 +6,7 @@ import {
   type KBSessionMessage as SessionMessage,
   type KBSourceChunk as Source,
 } from "@/api/knowledge";
+import { parseDateTime } from "@/lib/date";
 
 export type QueryMode = "sync" | "stream";
 
@@ -44,7 +45,7 @@ export function toThreadMessage(message: SessionMessage): ThreadMessageLike {
       message.role === "assistant"
         ? `${message.content}${formatSources(message.sources)}`
         : message.content,
-    createdAt: new Date(message.created_at),
+    createdAt: parseDateTime(message.created_at),
   };
 }
 

@@ -92,7 +92,7 @@ export function CreateKnowledgeBaseModal({
         form={form}
         layout="vertical"
         initialValues={{
-          chunk_size: 800,
+          chunk_size: 1024,
           top_k: 5,
         }}
       >
