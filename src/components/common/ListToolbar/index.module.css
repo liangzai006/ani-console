@@ -3,7 +3,6 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 16px;
-  min-height: 64px;
   padding: 16px 0;
   flex-wrap: wrap;
 }

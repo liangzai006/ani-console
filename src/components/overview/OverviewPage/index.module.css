@@ -41,6 +41,7 @@
   overflow: hidden;
   border-radius: 8px;
   background: #fff;
+  padding: 16px;
 }
 
 .panelHeader {
@@ -48,8 +49,6 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
-  min-height: 48px;
-  padding: 16px 16px 0;
 }
 
 .panelHeader h2 {
@@ -66,7 +65,7 @@
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 12px;
   height: 100%;
@@ -213,7 +212,6 @@
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  padding: 37px 16px 0 40px;
   gap: 16px;
 }
 
@@ -291,8 +289,7 @@
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  margin-top: 27px;
-  padding: 0 16px;
+  margin: 20px 0;
   gap: 8px;
 }
 
@@ -309,40 +306,10 @@
 }
 
 .recentGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: repeat(3, minmax(0, 1fr));
-  margin-top: 20px;
-  padding: 0 16px 16px;
-  gap: 8px;
-}
-
-.recentItem {
   display: flex;
-  min-width: 0;
+  min-height: 120px;
   align-items: center;
-  padding: 12px;
-  gap: 10px;
-  border-radius: 8px;
-  background: var(--home-card-bg);
-  color: var(--home-text);
-  text-decoration: none;
-}
-
-.recentItem:hover {
-  background: #f2f3f7;
-  color: var(--home-primary);
-}
-
-.recentItem span {
-  overflow: hidden;
-  line-height: 22px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recentPlaceholder {
-  visibility: hidden;
+  justify-content: center;
 }
 
 .periodSwitch,
@@ -391,7 +358,7 @@
   display: flex;
   flex: 0 0 42px;
   align-items: center;
-  padding: 0 24px;
+  padding: 0 16px;
   gap: 28px;
 }
 
@@ -426,7 +393,6 @@
 .trendChart {
   flex: 1;
   min-height: 0;
-  padding: 0 8px 8px;
 }
 
 .trendState {
@@ -528,21 +494,26 @@
   content: "";
 }
 
-.alertList,
 .taskList {
   display: flex;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   flex-direction: column;
-  padding: 8px 0;
+  margin: 10px 0 10px -8px;
   gap: 8px;
 }
 
-.alertList {
-  padding-top: 4px;
-  padding-bottom: 4px;
-  gap: 5px;
+.taskState {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+  color: var(--home-text-secondary);
 }
 
 .alertItem,
@@ -551,7 +522,6 @@
   flex: 0 0 auto;
   min-width: 0;
   align-items: center;
-  margin: 0 8px;
   border: 0;
   border-radius: 4px;
   background: transparent;
@@ -956,28 +926,6 @@
   color: #e09100;
 }
 
-.pageState {
-  display: flex;
-  min-height: calc(100vh - 104px);
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 12px;
-  border-radius: 8px;
-  background: #fff;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.pageState button {
-  height: 32px;
-  padding: 0 16px;
-  border: 1px solid var(--home-primary);
-  border-radius: 4px;
-  background: #fff;
-  color: var(--home-primary);
-  cursor: pointer;
-}
-
 @media (max-width: 1500px) {
   .twoColumnRow:first-child {
     height: 420px;
@@ -986,7 +934,7 @@
 
   .summaryGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
   }
 
   .summaryCard {
@@ -1072,7 +1020,6 @@
 
   .greetingRow {
     align-items: flex-start;
-    padding-left: 24px;
     flex-wrap: wrap;
   }
 

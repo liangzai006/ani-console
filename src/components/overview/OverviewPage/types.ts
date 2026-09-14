@@ -2,9 +2,8 @@ export type HomeTimeRange = "1d" | "7d" | "30d";
 export type HomeResourceTrendMetric = "gpu" | "cpu" | "memory";
 export type HomeTaskStatus = "done" | "failed" | "current";
 export type HomeTaskFilter = "done" | "current";
-export type HomeMonitorSource = "external" | "internal";
-
 export type HomeRoute =
+  | "/overview-compute"
   | "/vm-instances"
   | "/container-instances"
   | "/gpu-instances"
@@ -12,6 +11,9 @@ export type HomeRoute =
   | "/k8s-clusters"
   | "/volumes"
   | "/vpcs"
+  | "/models"
+  | "/inference"
+  | "/kb"
   | "/registry"
   | "/vector-stores";
 
@@ -56,11 +58,10 @@ export type HomeTrendSnapshot = {
   series: HomeTrendSeries[];
 };
 
-export type HomeTrendData = {
+export type HomeTrendConfig = {
   title: string;
   yMax: number;
   yInterval: number;
-  ranges: Record<HomeTimeRange, HomeTrendSnapshot>;
 };
 
 export type HomeTask = {
@@ -72,31 +73,9 @@ export type HomeTask = {
   progress?: number;
 };
 
-export type HomeCpuItem = {
-  id: string;
-  instanceId: string;
-  name: string;
-  value: number;
-};
-
-export type HomeOverviewData = {
-  user: {
-    username: string;
-    avatarText: string;
-    greeting: string;
-  };
-  summaries: HomeSummaryCard[];
-  recentItems: HomeShortcut[];
-  quickCreateItems: HomeShortcut[];
-  primaryTrend: HomeTrendData;
-  comparisonTrend: HomeTrendData;
-  percentageTrend: HomeTrendData;
-  tasks: HomeTask[];
-  cpu: Record<HomeMonitorSource, HomeCpuItem[]>;
-};
-
 export interface HomeOverviewDataSource {
-  getOverview(): Promise<HomeOverviewData>;
+  getSummaries(): Promise<HomeSummaryCard[]>;
+  getTasks(filter: HomeTaskFilter): Promise<HomeTask[]>;
   getResourceTrend(
     metric: HomeResourceTrendMetric,
     range: HomeTimeRange,

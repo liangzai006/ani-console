@@ -16,7 +16,6 @@ export function AliIcon({ name, size, color, className = "", style, ...props }: 
       {...props}
       aria-hidden={props["aria-hidden"] ?? (hasAccessibleName ? undefined : true)}
       className={clsx("iconfont", iconClassName, "ali-icon", className)}
-      data-icon-name={name}
       style={{ fontSize: size, color, ...style }}
     />
   );

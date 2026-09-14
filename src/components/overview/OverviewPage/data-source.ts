@@ -1,18 +1,235 @@
 import { queryResourceTrend } from "@/api/observability";
-import { formatTrendTime, getPreviousHoursDateTimeRange, isValidDateTime } from "@/lib/date";
+import { getConsoleOverview, type ConsoleOverviewStatistics } from "@/api/overview";
+import { getTask, listTasks, type AsyncTask, type AsyncTaskStatus } from "@/api/tasks";
+import {
+  formatDateTime,
+  formatTrendTime,
+  getPreviousHoursDateTimeRange,
+  isValidDateTime,
+} from "@/lib/date";
 import type {
-  HomeCpuItem,
-  HomeOverviewData,
   HomeOverviewDataSource,
   HomeResourceTrendMetric,
+  HomeShortcut,
+  HomeSummaryCard,
+  HomeTask,
+  HomeTaskFilter,
   HomeTimeRange,
-  HomeTrendData,
+  HomeTrendConfig,
   HomeTrendHeadline,
   HomeTrendSnapshot,
 } from "./types";
 
 const BLUE = "#0079D3";
-const GREEN = "#67C23A";
+const HOME_TASK_LIMIT = 10;
+
+const taskStatusByFilter: Record<HomeTaskFilter, AsyncTaskStatus> = {
+  done: "completed",
+  current: "running",
+};
+
+const taskStatusLabels: Record<AsyncTask["status"], string> = {
+  pending: "等待中",
+  running: "进行中",
+  completed: "已完成",
+  failed: "失败",
+  cancelled: "已取消",
+  dead_letter: "处理失败",
+};
+
+export const homeSummaryPlaceholders: HomeSummaryCard[] = [
+  {
+    id: "instances",
+    label: "实例总数",
+    value: 0,
+    icon: "yunzhuji",
+    route: "/overview-compute",
+    statuses: [
+      { label: "运行中", value: 0, tone: "success" },
+      { label: "异常", value: 0, tone: "danger" },
+      { label: "其他", value: 0, tone: "neutral" },
+    ],
+  },
+  {
+    id: "inference-services",
+    label: "推理服务",
+    value: 0,
+    icon: "tuili",
+    route: "/inference",
+    statuses: [
+      { label: "运行中", value: 0, tone: "success" },
+      { label: "异常", value: 0, tone: "danger" },
+      { label: "其他", value: 0, tone: "neutral" },
+    ],
+  },
+  {
+    id: "models",
+    label: "模型仓库",
+    value: 0,
+    icon: "moxing",
+    route: "/models",
+    statuses: [
+      { label: "可用", value: 0, tone: "success" },
+      { label: "失败", value: 0, tone: "danger" },
+      { label: "其他", value: 0, tone: "neutral" },
+    ],
+  },
+  {
+    id: "knowledge-bases",
+    label: "知识库",
+    value: 0,
+    icon: "zhishiku",
+    route: "/kb",
+    statuses: [
+      { label: "活跃", value: 0, tone: "success" },
+      { label: "其他", value: 0, tone: "neutral" },
+    ],
+  },
+];
+
+export const homeQuickCreateItems: HomeShortcut[] = [
+  { id: "create-vm", name: "创建云主机", icon: "yunzhuji", route: "/vm-instances" },
+  {
+    id: "create-container",
+    name: "创建容器实例",
+    icon: "rongqishili",
+    route: "/container-instances",
+  },
+  {
+    id: "create-gpu",
+    name: "创建 GPU 容器",
+    icon: "GPUrongqishili",
+    route: "/gpu-instances",
+  },
+  {
+    id: "create-sandbox",
+    name: "创建 Sandbox",
+    icon: "Sandbox",
+    route: "/sandbox-instances",
+  },
+  {
+    id: "create-k8s",
+    name: "创建 K8s 集群",
+    icon: "jiqun",
+    route: "/k8s-clusters",
+  },
+];
+
+export const homeTrendConfigs: Record<HomeResourceTrendMetric, HomeTrendConfig> = {
+  gpu: { title: "GPU资源趋势", yMax: 100, yInterval: 20 },
+  cpu: { title: "CPU资源趋势", yMax: 100, yInterval: 20 },
+  memory: { title: "内存资源趋势", yMax: 100, yInterval: 20 },
+};
+
+const taskDomainLabels: Record<string, string> = {
+  instance: "实例",
+  platform_workload: "工作负载",
+  volume: "云盘",
+  vector_store: "向量存储",
+  kb: "知识库文档",
+  sandbox: "Sandbox",
+};
+
+const taskActionLabels: Record<string, string> = {
+  create: "创建",
+  start: "启动",
+  stop: "停止",
+  restart: "重启",
+  delete: "删除",
+  scale: "扩缩容",
+  expand: "扩容",
+  rebuild: "重建",
+  parse: "解析",
+  import: "导入",
+};
+
+function getOtherCount(total: number, ...displayedCounts: number[]): number {
+  return total - displayedCounts.reduce((sum, count) => sum + count, 0);
+}
+
+function toHomeSummaries(overview: ConsoleOverviewStatistics): HomeSummaryCard[] {
+  const instanceRunning = overview.instances.by_state.running;
+  const instanceFailed = overview.instances.by_state.failed;
+  const inferenceRunning = overview.inference_services.by_status.running;
+  const inferenceFailed = overview.inference_services.by_status.failed;
+  const modelReady = overview.models.by_status.ready;
+  const modelFailed = overview.models.by_status.error;
+  const knowledgeBaseActive = overview.knowledge_bases.by_status.active;
+
+  return [
+    {
+      id: "instances",
+      label: "实例总数",
+      value: overview.instances.total,
+      icon: "yunzhuji",
+      route: "/overview-compute",
+      statuses: [
+        { label: "运行中", value: instanceRunning, tone: "success" },
+        { label: "异常", value: instanceFailed, tone: "danger" },
+        {
+          label: "其他",
+          value: getOtherCount(overview.instances.total, instanceRunning, instanceFailed),
+          tone: "neutral",
+        },
+      ],
+    },
+    {
+      id: "inference-services",
+      label: "推理服务",
+      value: overview.inference_services.total,
+      icon: "tuili",
+      route: "/inference",
+      statuses: [
+        { label: "运行中", value: inferenceRunning, tone: "success" },
+        { label: "异常", value: inferenceFailed, tone: "danger" },
+        {
+          label: "其他",
+          value: getOtherCount(
+            overview.inference_services.total,
+            inferenceRunning,
+            inferenceFailed,
+          ),
+          tone: "neutral",
+        },
+      ],
+    },
+    {
+      id: "models",
+      label: "模型仓库",
+      value: overview.models.total,
+      icon: "moxing",
+      route: "/models",
+      statuses: [
+        { label: "可用", value: modelReady, tone: "success" },
+        { label: "失败", value: modelFailed, tone: "danger" },
+        {
+          label: "其他",
+          value: getOtherCount(overview.models.total, modelReady, modelFailed),
+          tone: "neutral",
+        },
+      ],
+    },
+    {
+      id: "knowledge-bases",
+      label: "知识库",
+      value: overview.knowledge_bases.total,
+      icon: "zhishiku",
+      route: "/kb",
+      statuses: [
+        { label: "活跃", value: knowledgeBaseActive, tone: "success" },
+        {
+          label: "其他",
+          value: getOtherCount(overview.knowledge_bases.total, knowledgeBaseActive),
+          tone: "neutral",
+        },
+      ],
+    },
+  ];
+}
+
+async function getSummaries(): Promise<HomeSummaryCard[]> {
+  return toHomeSummaries(await getConsoleOverview());
+}
 
 const resourceTrendMeta: Record<HomeResourceTrendMetric, { name: string }> = {
   gpu: { name: "GPU 利用率" },
@@ -34,312 +251,68 @@ function snapshot(
   return { labels, headlines, series };
 }
 
-const labelsByRange: Record<HomeTimeRange, string[]> = {
-  "1d": ["08:00", "12:00", "16:00", "20:00", "24:00"],
-  "7d": ["7月13日", "7月14日", "7月15日", "7月16日", "7月17日"],
-  "30d": ["7月1日", "7月8日", "7月15日", "7月22日", "7月30日"],
-};
-
-const primaryTrend: HomeTrendData = {
-  title: "GPU资源趋势",
-  yMax: 100,
-  yInterval: 20,
-  ranges: {
-    "1d": snapshot(
-      labelsByRange["1d"],
-      [{ label: "今日", value: 2.8, unit: "TB", color: BLUE }],
-      [{ name: "资源", color: BLUE, values: [1.8, 2.2, 2.5, 2.3, 2.8] }],
-    ),
-    "7d": snapshot(
-      labelsByRange["7d"],
-      [{ label: "7月13日", value: 3, unit: "TB", color: BLUE }],
-      [{ name: "资源", color: BLUE, values: [1.4, 2.9, 2, 2.6, 3.2] }],
-    ),
-    "30d": snapshot(
-      labelsByRange["30d"],
-      [{ label: "7月", value: 3.4, unit: "TB", color: BLUE }],
-      [{ name: "资源", color: BLUE, values: [1.2, 2.1, 2.7, 2.5, 3.4] }],
-    ),
-  },
-};
-
-const comparisonTrend: HomeTrendData = {
-  title: "内存资源趋势",
-  yMax: 100,
-  yInterval: 20,
-  ranges: {
-    "1d": snapshot(
-      labelsByRange["1d"],
-      [
-        { label: "资源A", value: 76, unit: "%", color: BLUE },
-        { label: "资源B", value: 79, unit: "%", color: GREEN },
-      ],
-      [
-        { name: "资源A", color: BLUE, values: [1.7, 1.4, 2.4, 2.1, 2.8] },
-        { name: "资源B", color: GREEN, values: [2.2, 1.9, 2.8, 2.5, 3.1] },
-      ],
-    ),
-    "7d": snapshot(
-      labelsByRange["7d"],
-      [
-        { label: "资源A", value: 81, unit: "%", color: BLUE },
-        { label: "资源B", value: 81, unit: "%", color: GREEN },
-      ],
-      [
-        { name: "资源A", color: BLUE, values: [2.4, 1.4, 2.7, 1.8, 3.3] },
-        { name: "资源B", color: GREEN, values: [2.9, 2, 3.1, 2.5, 3.5] },
-      ],
-    ),
-    "30d": snapshot(
-      labelsByRange["30d"],
-      [
-        { label: "资源A", value: 84, unit: "%", color: BLUE },
-        { label: "资源B", value: 86, unit: "%", color: GREEN },
-      ],
-      [
-        { name: "资源A", color: BLUE, values: [1.6, 2.2, 2.8, 2.4, 3.4] },
-        { name: "资源B", color: GREEN, values: [2.1, 2.8, 3.2, 2.9, 3.7] },
-      ],
-    ),
-  },
-};
-
-const percentageTrend: HomeTrendData = {
-  title: "CPU资源趋势",
-  yMax: 100,
-  yInterval: 20,
-  ranges: {
-    "1d": snapshot(
-      labelsByRange["1d"],
-      [{ label: "今日", value: 78, unit: "%", color: BLUE }],
-      [{ name: "资源", color: BLUE, values: [1.9, 1.6, 2.3, 2, 2.9] }],
-    ),
-    "7d": snapshot(
-      labelsByRange["7d"],
-      [{ label: "7月13日", value: 81, unit: "%", color: BLUE }],
-      [{ name: "资源", color: BLUE, values: [2.4, 1.4, 2.7, 1.8, 3.3] }],
-    ),
-    "30d": snapshot(
-      labelsByRange["30d"],
-      [{ label: "7月", value: 85, unit: "%", color: BLUE }],
-      [{ name: "资源", color: BLUE, values: [1.7, 2.3, 2.9, 2.6, 3.5] }],
-    ),
-  },
-};
-
-function cpuItems(values: number[]): HomeCpuItem[] {
-  const names = ["oe-24.03txt", "oe-24.03txt", "chenxh-Harbor", "chenxh-Harbor", "chenxh-Harbor"];
-  const ids = ["vm_2krt5t", "vm_3lsu6v", "vm_9xyr1a", "vm_b4nd7c", "vm_p9qm2w"];
-  return values.map((value, index) => ({
-    id: `${ids[index]}-${value}`,
-    instanceId: ids[index],
-    name: names[index],
-    value,
-  }));
+function getTaskResultText(task: AsyncTask, key: string): string | undefined {
+  const value = task.result?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-const mockOverview: HomeOverviewData = {
-  user: {
-    username: "console001",
-    avatarText: "C",
-    greeting: "早上好，欢迎使用AI专有云",
-  },
-  summaries: [
-    {
-      id: "instances",
-      label: "实例总数",
-      value: 99,
-      icon: "yunzhuji",
-      route: "/vm-instances",
-      statuses: [
-        { label: "运行中", value: 59, tone: "success" },
-        { label: "异常", value: 20, tone: "danger" },
-        { label: "其他", value: 20, tone: "neutral" },
-      ],
-    },
-    {
-      id: "inference-a",
-      label: "推理服务",
-      value: 5,
-      icon: "tuili",
-      route: "/container-instances",
-      statuses: [
-        { label: "运行中", value: 4, tone: "success" },
-        { label: "异常", value: 0, tone: "danger" },
-        { label: "其他", value: 1, tone: "neutral" },
-      ],
-    },
-    {
-      id: "inference-b",
-      label: "推理服务",
-      value: 5,
-      icon: "tuili",
-      route: "/container-instances",
-      statuses: [
-        { label: "运行中", value: 4, tone: "success" },
-        { label: "异常", value: 0, tone: "danger" },
-        { label: "其他", value: 1, tone: "neutral" },
-      ],
-    },
-    {
-      id: "models",
-      label: "模型仓库",
-      value: 4,
-      icon: "moxing",
-      route: "/registry",
-      statuses: [
-        { label: "可用", value: 1, tone: "success" },
-        { label: "失败", value: 2, tone: "danger" },
-        { label: "其他", value: 1, tone: "neutral" },
-      ],
-    },
-    {
-      id: "knowledge-a",
-      label: "知识库",
-      value: 3,
-      icon: "zhishiku",
-      route: "/vector-stores",
-      statuses: [
-        { label: "活跃", value: 2, tone: "success" },
-        { label: "其他", value: 1, tone: "neutral" },
-      ],
-    },
-    {
-      id: "knowledge-b",
-      label: "知识库",
-      value: 3,
-      icon: "zhishiku",
-      route: "/vector-stores",
-      statuses: [
-        { label: "活跃", value: 2, tone: "success" },
-        { label: "其他", value: 1, tone: "neutral" },
-      ],
-    },
-  ],
-  recentItems: [
-    { id: "disk", name: "云盘", icon: "yunpan", route: "/volumes" },
-    { id: "vm", name: "云主机", icon: "yunzhuji", route: "/vm-instances" },
-    {
-      id: "vpc",
-      name: "VPC 网络",
-      icon: "VPCwangluo",
-      route: "/vpcs",
-    },
-    { id: "snapshot", name: "快照", icon: "kuaizhaoguanli", route: "/volumes" },
-    {
-      id: "deployment",
-      name: "部署任务",
-      icon: "bushufuwuqi",
-      route: "/vm-instances",
-    },
-  ],
-  quickCreateItems: [
-    {
-      id: "create-vm",
-      name: "创建云主机",
-      icon: "yunzhuji",
-      route: "/vm-instances",
-    },
-    {
-      id: "create-container",
-      name: "创建容器实例",
-      icon: "rongqishili",
-      route: "/container-instances",
-    },
-    {
-      id: "create-gpu",
-      name: "创建 GPU 容器",
-      icon: "GPUrongqishili",
-      route: "/gpu-instances",
-    },
-    {
-      id: "create-sandbox",
-      name: "创建 Sandbox",
-      icon: "Sandbox",
-      route: "/sandbox-instances",
-    },
-    {
-      id: "create-k8s",
-      name: "创建 K8s 集群",
-      icon: "jiqun",
-      route: "/k8s-clusters",
-    },
-  ],
-  primaryTrend,
-  comparisonTrend,
-  percentageTrend,
-  tasks: [
-    {
-      id: "task-1",
-      title: "创建云主机 demo-vm-01",
-      subtitle: "infer-chat",
-      time: "08-09 12:47:58",
-      status: "done",
-    },
-    {
-      id: "task-2",
-      title: "变配 vm_3lsu6v",
-      subtitle: "infer-chat",
-      time: "08-09 12:47:58",
-      status: "done",
-    },
-    {
-      id: "task-3",
-      title: "部署模型 bert-base",
-      subtitle: "infer-chat",
-      time: "08-09 12:47:58",
-      status: "done",
-    },
-    {
-      id: "task-4",
-      title: "创建快照 vm_9xyr1a",
-      subtitle: "infer-demo-vm-0103",
-      time: "08-09 12:47:58",
-      status: "done",
-    },
-    {
-      id: "task-5",
-      title: "上传镜像 Ubuntu 24.04",
-      subtitle: "infer-demo-vm-0103",
-      time: "08-09 12:47:58",
-      status: "done",
-    },
-    {
-      id: "task-6",
-      title: "扩容云盘 disk-01",
-      subtitle: "infer-demo-vm-0103",
-      time: "08-09 12:47:58",
-      status: "failed",
-    },
-    {
-      id: "task-7",
-      title: "回滚快照 snap-02",
-      subtitle: "infer-demo-vm-0103",
-      time: "08-09 12:47:58",
-      status: "failed",
-    },
-    {
-      id: "task-8",
-      title: "部署推理 bert-base",
-      subtitle: "infer-chat",
-      status: "current",
-      progress: 44,
-    },
-    {
-      id: "task-9",
-      title: "物理机修改物理规格配置",
-      subtitle: "infer-chat",
-      status: "current",
-      progress: 52,
-    },
-  ],
-  cpu: {
-    external: cpuItems([97.65, 85.26, 56.32, 56.32, 56.32]),
-    internal: cpuItems([88.34, 73.18, 62.42, 49.8, 31.26]),
-  },
-};
+function getTaskTitle(task: AsyncTask): string {
+  const [domain, action] = task.task_type.split(".");
+  const domainLabel = taskDomainLabels[domain] ?? task.resource_type ?? domain;
+  const actionLabel = taskActionLabels[action];
+  const taskLabel = actionLabel ? `${actionLabel}${domainLabel}` : task.task_type;
+  const resourceName =
+    getTaskResultText(task, "name") ??
+    getTaskResultText(task, "instance_id") ??
+    task.resource_id ??
+    undefined;
+  return resourceName ? `${taskLabel} ${resourceName}` : taskLabel;
+}
 
-const waitForMockResponse = () => new Promise((resolve) => globalThis.setTimeout(resolve, 120));
+function toHomeTask(task: AsyncTask): HomeTask {
+  const status =
+    task.status === "completed"
+      ? "done"
+      : task.status === "pending" || task.status === "running"
+        ? "current"
+        : "failed";
+  const progress = Math.min(100, Math.max(0, task.progress_pct ?? 0));
+
+  return {
+    id: task.id,
+    title: getTaskTitle(task),
+    subtitle: `${taskStatusLabels[task.status]} · ${task.task_type}`,
+    time: formatDateTime(task.created_at),
+    status,
+    progress: status === "current" ? progress : undefined,
+  };
+}
+
+async function getTasks(filter: HomeTaskFilter): Promise<HomeTask[]> {
+  const status = taskStatusByFilter[filter];
+  const response = await listTasks({ limit: HOME_TASK_LIMIT, status });
+  const tasks = await Promise.all(
+    response.items.map(async (task) => {
+      if (
+        !task.task_type.startsWith("instance.") ||
+        (task.status !== "pending" && task.status !== "running")
+      ) {
+        return task;
+      }
+
+      try {
+        return await getTask(task.id);
+      } catch {
+        return task;
+      }
+    }),
+  );
+  const hasStatusChange = tasks.some((task) => task.status !== status);
+  const filteredResponse = hasStatusChange
+    ? await listTasks({ limit: HOME_TASK_LIMIT, status })
+    : response;
+  return filteredResponse.items.map(toHomeTask);
+}
 
 async function getResourceTrend(
   metric: HomeResourceTrendMetric,
@@ -375,32 +348,8 @@ async function getResourceTrend(
   );
 }
 
-export function createMockHomeOverviewDataSource(
-  seed: HomeOverviewData = mockOverview,
-): HomeOverviewDataSource {
-  const data = structuredClone(seed);
-  return {
-    async getOverview() {
-      await waitForMockResponse();
-      return structuredClone(data);
-    },
-    async getResourceTrend(metric, range) {
-      await waitForMockResponse();
-      const trends: Record<HomeResourceTrendMetric, HomeTrendData> = {
-        gpu: data.primaryTrend,
-        cpu: data.percentageTrend,
-        memory: data.comparisonTrend,
-      };
-      return structuredClone(trends[metric].ranges[range]);
-    },
-  };
-}
-
-const mockHomeOverviewDataSource = createMockHomeOverviewDataSource();
-
 export const homeOverviewDataSource: HomeOverviewDataSource = {
-  getOverview: mockHomeOverviewDataSource.getOverview,
+  getSummaries,
+  getTasks,
   getResourceTrend,
 };
-
-export const homeOverviewMockData = structuredClone(mockOverview);

@@ -67,7 +67,6 @@ function renderItems(items: MenuItem[], collapsed: boolean, depth = 0) {
           title={label}
           selectable={false}
           className="sidebar-menu-group"
-          data-menu-key={item.key}
           style={rowStyle(depth)}
         >
           {collapsed && depth === 0 ? (
@@ -87,7 +86,6 @@ function renderItems(items: MenuItem[], collapsed: boolean, depth = 0) {
       <Menu.Item
         key={item.key}
         className="sidebar-menu-leaf"
-        data-menu-key={item.key}
         style={rowStyle(depth)}
         renderItemInTooltip={() => item.label}
       >
@@ -119,8 +117,6 @@ export function Sidebar({ items, activePathname, collapsed, onCollapsedChange }:
 
   return (
     <aside
-      data-component="sidebar"
-      data-collapsed={collapsed ? "true" : "false"}
       className="sidebar-shell"
       style={{
         width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
@@ -128,7 +124,7 @@ export function Sidebar({ items, activePathname, collapsed, onCollapsedChange }:
         borderColor: "var(--color-border-2)",
       }}
     >
-      <div className="sidebar-menu-region" data-component="sidebar-scroll-region">
+      <div className="sidebar-menu-region">
         {items && items.length > 0 ? (
           <Menu
             id="sidebar-navigation-menu"

@@ -22,3 +22,16 @@ export interface AsyncTask {
   created_at: string;
   completed_at?: string | null;
 }
+
+export interface TaskListParams {
+  limit?: number;
+  cursor?: string;
+  status?: AsyncTaskStatus;
+  task_type?: string;
+  resource_type?: string;
+}
+
+export interface TaskListResponse {
+  items: AsyncTask[];
+  next_cursor?: string | null;
+}

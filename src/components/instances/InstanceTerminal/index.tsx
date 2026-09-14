@@ -290,7 +290,6 @@ export function InstanceTerminal({
       <div
         ref={hostRef}
         className={clsx(styles.terminalHost, "min-h-0 flex-1")}
-        data-testid="instance-terminal-output"
         style={{
           height,
           padding: 8,

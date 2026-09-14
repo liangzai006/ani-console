@@ -62,7 +62,7 @@ export function FormPageFrame<FormData extends Record<string, unknown>>({
           scrollToFirstError={formProps?.scrollToFirstError ?? true}
           onSubmit={onSubmit}
         >
-          <div className={styles.scrollArea} data-testid="form-page-scroll-area">
+          <div className={styles.scrollArea}>
             {sections.map((section) => (
               <section
                 key={section.key}

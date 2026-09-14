@@ -125,7 +125,7 @@ export function DetailPageFrame({
         </Breadcrumb>
       </div>
 
-      <section className={styles.headerCard} data-testid="detail-header">
+      <section className={styles.headerCard}>
         <div className={styles.identity}>
           {icon ? <div className={styles.identityIcon}>{icon}</div> : null}
           <div className={styles.identityText}>
@@ -153,13 +153,10 @@ export function DetailPageFrame({
           leftCollapsed && styles.workspaceCollapsed,
         )}
         style={workspaceStyle}
-        data-testid="detail-workspace"
-        data-left-collapsed={leftCollapsed}
       >
         <aside
           className={clsx(styles.leftPane, leftCollapsed && styles.leftPaneCollapsed)}
           aria-label="详情信息"
-          data-testid="detail-left-pane"
         >
           <div className={styles.cardStack}>
             {cards.map((card) => {
@@ -222,7 +219,7 @@ export function DetailPageFrame({
         ) : null}
 
         {hasTabs ? (
-          <section className={styles.rightPane} data-testid="detail-right-pane">
+          <section className={styles.rightPane}>
             <Tabs
               className={styles.tabs}
               type="line"

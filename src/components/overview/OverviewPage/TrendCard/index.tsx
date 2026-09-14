@@ -10,7 +10,7 @@ import type {
   HomeOverviewDataSource,
   HomeResourceTrendMetric,
   HomeTimeRange,
-  HomeTrendData,
+  HomeTrendConfig,
   HomeTrendSnapshot,
 } from "../types";
 import { PeriodSwitch } from "../PeriodSwitch";
@@ -32,15 +32,13 @@ function percentTooltip(value: unknown) {
 }
 
 export function TrendCard({
-  data,
+  config,
   dataSource,
   metric,
-  testId,
 }: {
-  data: HomeTrendData;
+  config: HomeTrendConfig;
   dataSource: HomeOverviewDataSource;
   metric: HomeResourceTrendMetric;
-  testId: string;
 }) {
   const [range, setRange] = useState<HomeTimeRange>("7d");
   const trendQuery = useQuery({
@@ -51,7 +49,7 @@ export function TrendCard({
   });
   useListErrorNotification({
     id: `home-resource-trend:${metric}:${range}`,
-    title: `${data.title}加载失败`,
+    title: `${config.title}加载失败`,
     error: trendQuery.error,
     fallback: "数据服务暂不可用",
   });
@@ -108,8 +106,8 @@ export function TrendCard({
       yAxis: {
         type: "value",
         min: 0,
-        max: data.yMax,
-        interval: data.yInterval,
+        max: config.yMax,
+        interval: config.yInterval,
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
@@ -121,13 +119,13 @@ export function TrendCard({
       },
       series,
     };
-  }, [current, data.yInterval, data.yMax]);
+  }, [config.yInterval, config.yMax, current]);
 
   return (
-    <section className={clsx(styles.panel, styles.trendPanel)} data-testid={`trend-card-${testId}`}>
+    <section className={clsx(styles.panel, styles.trendPanel)}>
       <header className={styles.panelHeader}>
-        <h2>{data.title}</h2>
-        <PeriodSwitch value={range} onChange={setRange} ariaLabel={`${data.title}时间范围`} />
+        <h2>{config.title}</h2>
+        <PeriodSwitch value={range} onChange={setRange} ariaLabel={`${config.title}时间范围`} />
       </header>
       {trendQuery.isLoading ? (
         <div className={styles.trendState} role="status">

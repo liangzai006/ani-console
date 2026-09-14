@@ -1,11 +1,16 @@
-import { Empty, Spin } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { SummaryOverview } from "./SummaryOverview";
 import { TasksPanel } from "./TasksPanel";
 import { TrendCard } from "./TrendCard";
 import { WelcomePanel } from "./WelcomePanel";
-import { homeOverviewDataSource } from "./data-source";
-import type { HomeOverviewDataSource } from "./types";
+import {
+  homeOverviewDataSource,
+  homeQuickCreateItems,
+  homeSummaryPlaceholders,
+  homeTrendConfigs,
+} from "./data-source";
+import type { HomeOverviewDataSource, HomeTaskFilter } from "./types";
 import styles from "./index.module.css";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
@@ -14,57 +19,52 @@ export function OverviewPage({
 }: {
   dataSource?: HomeOverviewDataSource;
 }) {
-  const query = useQuery({
-    queryKey: ["home-overview"],
-    queryFn: () => dataSource.getOverview(),
+  const [taskFilter, setTaskFilter] = useState<HomeTaskFilter>("done");
+  const summariesQuery = useQuery({
+    queryKey: ["home-overview-summaries"],
+    queryFn: () => dataSource.getSummaries(),
+    retry: 1,
+    refetchInterval: 30_000,
+  });
+  const tasksQuery = useQuery({
+    queryKey: ["home-tasks", taskFilter],
+    queryFn: () => dataSource.getTasks(taskFilter),
+    retry: 1,
+    refetchInterval: 5_000,
   });
   useListErrorNotification({
-    id: "home-overview",
-    title: "首页数据加载失败",
-    error: query.error,
+    id: "home-overview-summaries",
+    title: "概览统计加载失败",
+    error: summariesQuery.error,
+  });
+  useListErrorNotification({
+    id: "home-tasks",
+    title: "任务中心加载失败",
+    error: tasksQuery.error,
   });
 
-  if (query.isLoading) {
-    return (
-      <div className={styles.pageState} role="status">
-        <Spin size={32} />
-        <span>正在加载首页数据...</span>
-      </div>
-    );
-  }
-
-  if (!query.data)
-    return (
-      <main className={styles.homePage}>
-        <Empty description="暂无首页数据" />
-      </main>
-    );
-
-  const data = query.data;
   return (
-    <main className={styles.homePage} data-testid="home-overview-page">
-      <div className={styles.twoColumnRow} data-testid="home-top-row">
-        <SummaryOverview items={data.summaries} />
-        <WelcomePanel
-          user={data.user}
-          quickCreateItems={data.quickCreateItems}
-          recentItems={data.recentItems}
-        />
+    <main className={styles.homePage}>
+      <div className={styles.twoColumnRow}>
+        <SummaryOverview items={summariesQuery.data ?? homeSummaryPlaceholders} />
+        <WelcomePanel quickCreateItems={homeQuickCreateItems} />
       </div>
 
-      <div className={styles.twoColumnRow} data-testid="home-middle-row">
-        <TrendCard data={data.primaryTrend} dataSource={dataSource} metric="gpu" testId="gpu" />
-        <TrendCard data={data.percentageTrend} dataSource={dataSource} metric="cpu" testId="cpu" />
+      <div className={styles.twoColumnRow}>
+        <TrendCard config={homeTrendConfigs.gpu} dataSource={dataSource} metric="gpu" />
+        <TrendCard config={homeTrendConfigs.cpu} dataSource={dataSource} metric="cpu" />
       </div>
 
-      <div className={styles.bottomGrid} data-testid="home-bottom-grid">
-        <TrendCard
-          data={data.comparisonTrend}
-          dataSource={dataSource}
-          metric="memory"
-          testId="memory"
+      <div className={styles.bottomGrid}>
+        <TrendCard config={homeTrendConfigs.memory} dataSource={dataSource} metric="memory" />
+        <TasksPanel
+          items={tasksQuery.data ?? []}
+          filter={taskFilter}
+          loading={tasksQuery.isLoading}
+          refreshing={tasksQuery.isFetching && !tasksQuery.isLoading}
+          onFilterChange={setTaskFilter}
+          onRefresh={() => tasksQuery.refetch()}
         />
-        <TasksPanel items={data.tasks} />
       </div>
     </main>
   );

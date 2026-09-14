@@ -220,12 +220,7 @@ export function InstanceLogsPanel({
     <div className="flex flex-col gap-3">
       <Space wrap>
         <Typography.Text type="secondary">级别过滤</Typography.Text>
-        <Select
-          data-testid="instance-log-level-select"
-          value={level}
-          onChange={setLevel}
-          style={{ width: 140 }}
-        >
+        <Select value={level} onChange={setLevel} style={{ width: 140 }}>
           {LEVEL_OPTIONS.map((item) => (
             <Select.Option key={item.value} value={item.value}>
               {item.label}

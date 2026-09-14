@@ -174,7 +174,6 @@ export function InstanceVncConsole({
         ) : null}
         <div
           ref={hostRef}
-          data-testid="instance-vnc-console"
           className={
             viewMode === "native" ? "min-h-full min-w-full" : "h-full w-full overflow-hidden"
           }

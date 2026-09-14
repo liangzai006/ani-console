@@ -236,7 +236,7 @@ export function ImagesPage() {
                 return false;
               }}
             >
-              <Button data-testid="image-upload-file-button">选择文件</Button>
+              <Button>选择文件</Button>
             </Upload>
             {form.file ? (
               <Typography.Text className="mt-2 block text-xs" type="secondary">
@@ -246,7 +246,6 @@ export function ImagesPage() {
           </Form.Item>
           <Form.Item label="名称" required>
             <Input
-              data-testid="image-upload-name-input"
               value={form.name}
               onChange={(name) => setForm((current) => ({ ...current, name }))}
             />
@@ -257,7 +256,6 @@ export function ImagesPage() {
             extra="按文件大小自动计算（向上取整并留 1GiB 余量）；大 ISO 如 openEuler DVD 通常为 20 或 30"
           >
             <InputNumber
-              data-testid="image-upload-size-input"
               value={form.size_gib}
               min={1}
               precision={0}
@@ -296,11 +294,7 @@ export function ImagesPage() {
                 <Progress percent={progress.percent} />
               )}
               {progressLabel ? (
-                <Typography.Text
-                  className="mt-2 block text-xs"
-                  type="secondary"
-                  data-testid="image-upload-phase"
-                >
+                <Typography.Text className="mt-2 block text-xs" type="secondary">
                   {progressLabel}
                 </Typography.Text>
               ) : null}
