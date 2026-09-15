@@ -44,8 +44,7 @@ export function LoginCallbackPage() {
   const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
-    const redirectUri =
-      import.meta.env.VITE_OIDC_REDIRECT_URI || `${window.location.origin}/login/callback`;
+    const redirectUri = `${window.location.origin}/login/callback`;
     const { code, state } = readCallbackParams();
 
     if (!code || !state) {

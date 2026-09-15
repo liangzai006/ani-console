@@ -6,7 +6,7 @@ import path from "node:path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  // 开发态可选：将 /api 代理到 Mock Server 或真实 Gateway（见 .env.development）
+  // 开发态可选：通过 .env.local 中的配置将 /api 代理到 ANI Gateway。
   const apiTarget = env.VITE_API_PROXY_TARGET || "http://127.0.0.1:4010";
 
   return {
@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: "0.0.0.0",
       port: 5173,
       proxy: {
         "/api": {

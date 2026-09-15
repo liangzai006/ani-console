@@ -10,7 +10,7 @@ import {
   useAuiState,
   useLocalRuntime,
 } from "@assistant-ui/react";
-import { Button, Spin, Typography } from "@arco-design/web-react";
+import { Button, InputNumber, Select, Spin, Typography } from "@arco-design/web-react";
 import { IconCheck, IconCopy, IconSend, IconStop } from "@arco-design/web-react/icon";
 import { useMemo, useRef } from "react";
 import { KnowledgeMarkdownText } from "../../KnowledgeMarkdownText";
@@ -23,6 +23,13 @@ export function KnowledgeConversation({
   initialMessages,
   mode,
   topK,
+  onModeChange,
+  onTopKChange,
+  inferenceServiceName,
+  inferenceModelOptions,
+  inferenceModelsLoading,
+  defaultInferenceService,
+  onInferenceServiceChange,
   onComplete,
 }: {
   kbId: string;
@@ -30,25 +37,63 @@ export function KnowledgeConversation({
   initialMessages: readonly ThreadMessageLike[];
   mode: QueryMode;
   topK: number;
+  onModeChange: (value: QueryMode) => void;
+  onTopKChange: (value: number) => void;
+  inferenceServiceName?: string;
+  inferenceModelOptions: { label: string; value: string }[];
+  inferenceModelsLoading: boolean;
+  defaultInferenceService?: string;
+  onInferenceServiceChange: (value?: string) => void;
   onComplete: (sessionId?: string) => void;
 }) {
   const sessionIdRef = useRef(sessionId);
   const adapter = useMemo(
-    () => createKnowledgeBaseAdapter(kbId, sessionIdRef, mode, topK, onComplete),
-    [kbId, mode, onComplete, topK],
+    () =>
+      createKnowledgeBaseAdapter(kbId, sessionIdRef, mode, topK, inferenceServiceName, onComplete),
+    [inferenceServiceName, kbId, mode, onComplete, topK],
   );
   const runtime = useLocalRuntime(adapter, { initialMessages });
 
   return (
     <div className={styles.conversationPane}>
       <AssistantRuntimeProvider runtime={runtime}>
-        <KnowledgeThread />
+        <KnowledgeThread
+          mode={mode}
+          topK={topK}
+          onModeChange={onModeChange}
+          onTopKChange={onTopKChange}
+          inferenceServiceName={inferenceServiceName}
+          inferenceModelOptions={inferenceModelOptions}
+          inferenceModelsLoading={inferenceModelsLoading}
+          defaultInferenceService={defaultInferenceService}
+          onInferenceServiceChange={onInferenceServiceChange}
+        />
       </AssistantRuntimeProvider>
     </div>
   );
 }
 
-function KnowledgeThread() {
+function KnowledgeThread({
+  mode,
+  topK,
+  onModeChange,
+  onTopKChange,
+  inferenceServiceName,
+  inferenceModelOptions,
+  inferenceModelsLoading,
+  defaultInferenceService,
+  onInferenceServiceChange,
+}: {
+  mode: QueryMode;
+  topK: number;
+  onModeChange: (value: QueryMode) => void;
+  onTopKChange: (value: number) => void;
+  inferenceServiceName?: string;
+  inferenceModelOptions: { label: string; value: string }[];
+  inferenceModelsLoading: boolean;
+  defaultInferenceService?: string;
+  onInferenceServiceChange: (value?: string) => void;
+}) {
   return (
     <ThreadPrimitive.Root className={styles.threadRoot}>
       <ThreadPrimitive.Viewport className={styles.viewport}>
@@ -96,7 +141,71 @@ function KnowledgeThread() {
                 className={styles.composerInput}
               />
               <div className={styles.composerActions}>
-                <Typography.Text type="secondary">AI 生成内容仅供参考</Typography.Text>
+                <div className={styles.composerSettings}>
+                  <Select
+                    aria-label="问答模式"
+                    size="small"
+                    trigger="hover"
+                    style={{ width: 80 }}
+                    value={mode}
+                    options={[
+                      { label: "同步", value: "sync" },
+                      { label: "流式", value: "stream" },
+                    ]}
+                    onChange={(value) => onModeChange(value as QueryMode)}
+                  />
+                  <label className={styles.topKControl}>
+                    <Typography.Text type="secondary">TopK</Typography.Text>
+                    <InputNumber
+                      size="small"
+                      min={1}
+                      max={20}
+                      precision={0}
+                      value={topK}
+                      onChange={(value) => onTopKChange(Number(value) || 5)}
+                    />
+                  </label>
+                  <Select
+                    aria-label="推理模型"
+                    className={styles.modelSelect}
+                    size="small"
+                    allowClear
+                    showSearch
+                    loading={inferenceModelsLoading}
+                    disabled={inferenceModelsLoading || inferenceModelOptions.length === 0}
+                    value={inferenceServiceName}
+                    filterOption={(inputValue, option) => {
+                      const normalizedInput = inputValue.trim().toLowerCase();
+                      const optionValue = String(option.props.value).toLowerCase();
+                      const optionLabel = String(option.props.extra ?? "").toLowerCase();
+
+                      return (
+                        optionValue.includes(normalizedInput) ||
+                        optionLabel.includes(normalizedInput)
+                      );
+                    }}
+                    renderFormat={(option, value) => (
+                      <span title={String(option?.extra ?? value)}>{String(value)}</span>
+                    )}
+                    placeholder={
+                      defaultInferenceService
+                        ? `知识库默认：${defaultInferenceService}`
+                        : "平台默认模型"
+                    }
+                    onChange={(value) => onInferenceServiceChange(value || undefined)}
+                  >
+                    {inferenceModelOptions.map((option) => (
+                      <Select.Option
+                        key={option.value}
+                        value={option.value}
+                        extra={option.label}
+                        title={option.label}
+                      >
+                        {option.value}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>
                 <AuiIf condition={(state) => !state.thread.isRunning}>
                   <ComposerPrimitive.Send asChild>
                     <Button

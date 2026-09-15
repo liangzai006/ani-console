@@ -75,4 +75,3 @@
 3. 认证、刷新、错误、幂等、取消、SSE 和预签名上传复用公共基础设施，没有平行实现。
 4. 已手动核对成功、空数据、典型失败、401 刷新、取消与重复提交；流式或上传接口还需核对中断及重试。
 5. 对本次新增或修改的代码运行 Oxlint，通过 `pnpm fmt` 对全仓运行 oxfmt，并运行 `pnpm typecheck`、`git diff --check` 与 GitNexus `detect_changes`。
-6. 在 `docs/PROJECT-STATUS.md` 记录功能、API、网络、存储或验证规则变化。

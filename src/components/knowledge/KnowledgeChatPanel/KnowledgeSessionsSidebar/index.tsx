@@ -16,6 +16,7 @@ export function KnowledgeSessionsSidebar({
   onNew,
   onSelect,
   onDelete,
+  onViewCitations,
 }: {
   sessions?: Session[];
   loading: boolean;
@@ -26,6 +27,7 @@ export function KnowledgeSessionsSidebar({
   onNew: () => void;
   onSelect: (sessionId: string) => void;
   onDelete: (session: Session) => Promise<void>;
+  onViewCitations: () => void;
 }) {
   return (
     <aside className={styles.sidebar} aria-label="问答会话">
@@ -88,6 +90,9 @@ export function KnowledgeSessionsSidebar({
           <Empty description="暂无历史会话" />
         )}
       </div>
+      <Button type="text" long onClick={onViewCitations}>
+        查看本库全部引用
+      </Button>
     </aside>
   );
 }

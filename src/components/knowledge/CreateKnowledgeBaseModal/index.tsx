@@ -10,10 +10,11 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
-import { listModels, type Model } from "@/api/ai-services/models";
+import { listModels } from "@/api/ai-services/models";
 import { showApiError } from "@/lib/api-error";
 import { createKnowledgeBase, type KnowledgeBase } from "@/api/knowledge";
 import { getErrorMessage } from "@/lib/errors";
+import { getReadyModelOptions } from "@/lib/model-catalog";
 
 export function CreateKnowledgeBaseModal({
   visible,
@@ -26,36 +27,34 @@ export function CreateKnowledgeBaseModal({
 }) {
   const [form] = Form.useForm();
   const qc = useQueryClient();
-  const models = useQuery({
-    queryKey: ["models", "knowledge-base-create"],
+  const embeddingModels = useQuery({
+    queryKey: ["models", "knowledge-base-create", "embedding"],
     enabled: visible,
     queryFn: () => listModels({ limit: 100, capability: "embedding", status: "ready" }),
   });
-  const modelOptions = useMemo(() => {
-    const byName = new Map<string, Model>();
-    // TODO: ANI /models currently only applies status in the gateway/model-service.
-    // TODO: Remove this defensive client filter after capability is also enforced server-side.
-    for (const model of models.data?.items ?? []) {
-      if (model.status !== "ready" || !model.capabilities?.includes("embedding")) continue;
-      byName.set(model.name, model);
-    }
-    return Array.from(byName.values()).map((model) => ({
-      value: model.name,
-      label:
-        model.display_name && model.display_name !== model.name
-          ? `${model.display_name}（${model.name}）`
-          : model.name,
-    }));
-  }, [models.data?.items]);
+  const inferenceModels = useQuery({
+    queryKey: ["models", "knowledge-base-create", "text-generation"],
+    enabled: visible,
+    queryFn: () => listModels({ limit: 100, capability: "text-generation", status: "ready" }),
+  });
+  const embeddingModelOptions = useMemo(
+    () => getReadyModelOptions(embeddingModels.data?.items, "embedding"),
+    [embeddingModels.data?.items],
+  );
+  const inferenceModelOptions = useMemo(
+    () => getReadyModelOptions(inferenceModels.data?.items, "text-generation"),
+    [inferenceModels.data?.items],
+  );
   useEffect(() => {
-    if (!visible || form.getFieldValue("embedding_model") || !modelOptions[0]) return;
-    form.setFieldsValue({ embedding_model: modelOptions[0].value });
-  }, [form, modelOptions, visible]);
+    if (!visible || form.getFieldValue("embedding_model") || !embeddingModelOptions[0]) return;
+    form.setFieldsValue({ embedding_model: embeddingModelOptions[0].value });
+  }, [embeddingModelOptions, form, visible]);
   const create = useMutation({
     mutationFn: async (values: {
       name: string;
       description?: string;
       embedding_model: string;
+      default_inference_service?: string;
       chunk_size: number;
       top_k: number;
     }) => {
@@ -63,6 +62,7 @@ export function CreateKnowledgeBaseModal({
         ...values,
         name: values.name.trim(),
         description: values.description?.trim() || undefined,
+        default_inference_service: values.default_inference_service || undefined,
       };
       return createKnowledgeBase(submitData);
     },
@@ -85,7 +85,9 @@ export function CreateKnowledgeBaseModal({
         onCancel();
       }}
       onOk={() => form.validate().then((values) => create.mutate(values))}
-      okButtonProps={{ disabled: models.isLoading || modelOptions.length === 0 }}
+      okButtonProps={{
+        disabled: embeddingModels.isLoading || embeddingModelOptions.length === 0,
+      }}
       unmountOnExit
     >
       <Form
@@ -112,29 +114,97 @@ export function CreateKnowledgeBaseModal({
           rules={[{ required: true, message: "请选择 Embedding 模型" }]}
         >
           <Select
-            loading={models.isLoading}
-            options={modelOptions}
+            loading={embeddingModels.isLoading}
             showSearch
+            filterOption={(inputValue, option) => {
+              const normalizedInput = inputValue.trim().toLowerCase();
+              const optionValue = String(option.props.value).toLowerCase();
+              const optionLabel = String(option.props.extra ?? "").toLowerCase();
+
+              return optionValue.includes(normalizedInput) || optionLabel.includes(normalizedInput);
+            }}
+            renderFormat={(option, value) => (
+              <span title={String(option?.extra ?? value)}>{String(value)}</span>
+            )}
             placeholder="请选择已就绪的 Embedding 模型"
-          />
+          >
+            {embeddingModelOptions.map((option) => (
+              <Select.Option
+                key={option.value}
+                value={option.value}
+                extra={option.label}
+                title={option.label}
+              >
+                {option.value}
+              </Select.Option>
+            ))}
+          </Select>
         </Form.Item>
-        {models.error ? (
+        {embeddingModels.error ? (
           <div className="flex flex-col items-start gap-2">
             <Alert
               type="warning"
               showIcon
-              content={getErrorMessage(models.error, "Embedding 模型列表加载失败")}
+              content={getErrorMessage(embeddingModels.error, "Embedding 模型列表加载失败")}
             />
-            <Button size="small" onClick={() => void models.refetch()}>
+            <Button size="small" onClick={() => void embeddingModels.refetch()}>
               重新加载模型
             </Button>
           </div>
-        ) : !models.isLoading && modelOptions.length === 0 ? (
+        ) : !embeddingModels.isLoading && embeddingModelOptions.length === 0 ? (
           <Alert
             type="warning"
             showIcon
             content="暂无已就绪的 Embedding 模型，暂时无法创建知识库"
           />
+        ) : null}
+        <Form.Item
+          label="默认推理模型"
+          field="default_inference_service"
+          extra="可选；未设置时由平台默认模型处理问答，创建后也可在单次问答中临时切换。"
+        >
+          <Select
+            allowClear
+            showSearch
+            loading={inferenceModels.isLoading}
+            disabled={inferenceModels.isLoading || inferenceModelOptions.length === 0}
+            filterOption={(inputValue, option) => {
+              const normalizedInput = inputValue.trim().toLowerCase();
+              const optionValue = String(option.props.value).toLowerCase();
+              const optionLabel = String(option.props.extra ?? "").toLowerCase();
+
+              return optionValue.includes(normalizedInput) || optionLabel.includes(normalizedInput);
+            }}
+            renderFormat={(option, value) => (
+              <span title={String(option?.extra ?? value)}>{String(value)}</span>
+            )}
+            placeholder="使用平台默认模型"
+          >
+            {inferenceModelOptions.map((option) => (
+              <Select.Option
+                key={option.value}
+                value={option.value}
+                extra={option.label}
+                title={option.label}
+              >
+                {option.value}
+              </Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+        {inferenceModels.error ? (
+          <div className="flex flex-col items-start gap-2">
+            <Alert
+              type="warning"
+              showIcon
+              content={getErrorMessage(inferenceModels.error, "推理模型列表加载失败")}
+            />
+            <Button size="small" onClick={() => void inferenceModels.refetch()}>
+              重新加载模型
+            </Button>
+          </div>
+        ) : !inferenceModels.isLoading && inferenceModelOptions.length === 0 ? (
+          <Alert type="warning" showIcon content="暂无已就绪的文本生成模型，将使用平台默认模型" />
         ) : null}
         <div className="grid grid-cols-2 gap-4">
           <Form.Item label="分块大小" field="chunk_size" rules={[{ required: true }]}>

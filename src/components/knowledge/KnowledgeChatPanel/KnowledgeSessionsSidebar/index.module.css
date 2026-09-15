@@ -1,9 +1,11 @@
 .sidebar {
   display: flex;
+  box-sizing: border-box;
   width: 220px;
+  min-width: 184px;
   min-height: 0;
   padding: 14px;
-  flex: 0 0 220px;
+  flex: 0 1 220px;
   flex-direction: column;
   gap: 12px;
   border-right: 1px solid var(--color-border-1);
@@ -14,6 +16,7 @@
   display: flex;
   min-height: 0;
   overflow-y: auto;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 6px;
 }

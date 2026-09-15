@@ -84,6 +84,7 @@ export function KnowledgeBasesPage() {
       key: "docs",
       title: "文档数",
       dataIndex: "doc_count",
+      width: 80,
       placeholder: 0,
     },
     {
@@ -91,11 +92,20 @@ export function KnowledgeBasesPage() {
       title: "Embedding 模型",
       dataIndex: "embedding_model",
       placeholder: "-",
+      ellipsis: true,
+    },
+    {
+      key: "inference-model",
+      title: "推理模型",
+      dataIndex: "default_inference_service",
+      placeholder: "-",
+      ellipsis: true,
     },
     {
       key: "topk",
       title: "TopK",
       dataIndex: "top_k",
+      width: 80,
       placeholder: "-",
     },
     {

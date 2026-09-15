@@ -41,7 +41,3 @@ git diff --check
 pnpm 命令执行门禁：所有 Agent 执行任何 `pnpm` 命令时，都必须在 Codex 沙箱外的系统环境运行，由系统 Corepack 根据 `package.json` 的 `packageManager` 选择 pnpm 版本；不得使用沙箱内的 fallback pnpm，也不得绕过项目声明手动选择其他版本。
 
 任何新增或修改完成后必须运行 `pnpm lint`、通过 `pnpm fmt` 对全仓运行项目内 oxfmt、TypeScript typecheck、`git diff --check`，并通过当前会话接入的 GitNexus `detect_changes` 工具执行变更检测；回归审查与默认分支 `master` 比较。快速迭代阶段不保留自动化测试资产。构建、页面和交互由用户通过后台运行的 `pnpm dev` 等方式手动验证；Agent 不运行 production build，也不启动、重启或中断该服务。
-
-## 记录
-
-功能、工具链或验证规则变化后，在 [PROJECT-STATUS.md](./PROJECT-STATUS.md) 追加一条简短记录。

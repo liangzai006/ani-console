@@ -42,13 +42,6 @@ import { showApiError } from "@/lib/api-error";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-import {
-  getMockCluster,
-  getMockNodePools,
-  getMockWorkloads,
-  K8S_MOCK_ENABLED,
-  mockClusters,
-} from "./mock-data";
 type Cluster = K8sCluster;
 type NodePool = K8sClusterNodePool;
 type ClusterStatusFilter = "all" | NonNullable<Cluster["state"]>;
@@ -80,16 +73,6 @@ function ClusterList() {
     queryKey: ["k8s-clusters", { status, searchField, searchText }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
-      if (K8S_MOCK_ENABLED) {
-        const offset = Number(cursor ?? 0);
-        const items = mockClusters.slice(offset, offset + limit);
-        const nextOffset = offset + items.length;
-        return {
-          items,
-          total: mockClusters.length,
-          next_cursor: nextOffset < mockClusters.length ? String(nextOffset) : null,
-        };
-      }
       const keyword = searchText.trim();
       const data = await listK8sClusters({
         limit,
@@ -128,11 +111,8 @@ function ClusterList() {
     mutationFn: async (cluster: Cluster) => {
       const clusterId = cluster.id;
       if (!clusterId) throw new Error("缺少集群 ID");
-      let content = `apiVersion: v1\nkind: Config\nclusters:\n- name: ${cluster.name ?? clusterId}\n`;
-      if (!K8S_MOCK_ENABLED) {
-        const data = await getK8sClusterKubeconfig(clusterId);
-        content = data.kubeconfig ?? JSON.stringify(data, null, 2);
-      }
+      const data = await getK8sClusterKubeconfig(clusterId);
+      const content = data.kubeconfig ?? JSON.stringify(data, null, 2);
       const url = URL.createObjectURL(new Blob([content], { type: "text/yaml" }));
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -145,7 +125,6 @@ function ClusterList() {
 
   const deleteCluster = useMutation({
     mutationFn: async (cluster: Cluster) => {
-      if (K8S_MOCK_ENABLED) return;
       if (!cluster.id) throw new Error("缺少集群 ID");
       await deleteK8sCluster(cluster.id);
     },
@@ -365,34 +344,17 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
 
   const detail = useQuery({
     queryKey: ["k8s-cluster", clusterId],
-    queryFn: async () => {
-      if (K8S_MOCK_ENABLED) return getMockCluster(clusterId);
-      return getK8sCluster(clusterId);
-    },
+    queryFn: () => getK8sCluster(clusterId),
   });
 
   const nodePools = useQuery({
     queryKey: ["k8s-node-pools", clusterId],
-    queryFn: () =>
-      K8S_MOCK_ENABLED
-        ? Promise.resolve({
-            items: getMockNodePools(clusterId),
-            total: getMockNodePools(clusterId).length,
-            next_cursor: null,
-          })
-        : listK8sClusterNodePools(clusterId),
+    queryFn: () => listK8sClusterNodePools(clusterId),
   });
 
   const workloads = useQuery({
     queryKey: ["k8s-workloads", clusterId],
-    queryFn: () =>
-      K8S_MOCK_ENABLED
-        ? Promise.resolve({
-            items: getMockWorkloads(),
-            total: getMockWorkloads().length,
-            next_cursor: null,
-          })
-        : listK8sClusterWorkloads(clusterId),
+    queryFn: () => listK8sClusterWorkloads(clusterId),
   });
   useListErrorNotification({
     id: `k8s-cluster-detail:${clusterId}`,

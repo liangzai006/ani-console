@@ -64,6 +64,7 @@ export function createKnowledgeBaseAdapter(
   sessionIdRef: { current?: string },
   mode: QueryMode,
   topK: number,
+  inferenceServiceName: string | undefined,
   onComplete: (sessionId?: string) => void,
 ): ChatModelAdapter {
   return {
@@ -77,6 +78,7 @@ export function createKnowledgeBaseAdapter(
             question,
             top_k: topK,
             session_id: sessionIdRef.current,
+            inference_service_name: inferenceServiceName,
           },
           abortSignal,
         );
@@ -127,6 +129,7 @@ export function createKnowledgeBaseAdapter(
         question,
         session_id: sessionIdRef.current,
         top_k: topK,
+        inference_service_name: inferenceServiceName,
       };
       const data = await queryKnowledgeBase(kbId, submitData);
       sessionIdRef.current = data.session_id;

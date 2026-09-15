@@ -1,14 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  InputNumber,
-  Message,
-  Radio,
-  Spin,
-  Typography,
-} from "@arco-design/web-react";
-import { useCallback, useMemo, useState } from "react";
+import { Alert, Button, Message, Spin } from "@arco-design/web-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { listModels } from "@/api/ai-services/models";
 import {
   deleteKnowledgeBaseSession,
   listKnowledgeBaseCitations,
@@ -19,6 +12,7 @@ import {
   type KBSessionMessage as SessionMessage,
 } from "@/api/knowledge";
 import { getErrorMessage } from "@/lib/errors";
+import { getReadyModelOptions } from "@/lib/model-catalog";
 import { KnowledgeCitationsDrawer } from "./KnowledgeCitationsDrawer";
 import { KnowledgeConversation } from "./KnowledgeConversation";
 import { KnowledgeSessionsSidebar } from "./KnowledgeSessionsSidebar";
@@ -28,16 +22,36 @@ import styles from "./index.module.css";
 export function KnowledgeChatPanel({
   kbId,
   defaultTopK = 5,
+  defaultInferenceService,
 }: {
   kbId: string;
   defaultTopK?: number;
+  defaultInferenceService?: string;
 }) {
   const qc = useQueryClient();
   const [activeSessionId, setActiveSessionId] = useState<string>();
   const [draftVersion, setDraftVersion] = useState(0);
   const [mode, setMode] = useState<QueryMode>("sync");
   const [topK, setTopK] = useState(defaultTopK);
+  const [inferenceServiceName, setInferenceServiceName] = useState<string>();
   const [citationsVisible, setCitationsVisible] = useState(false);
+  const inferenceModels = useQuery({
+    queryKey: ["models", "knowledge-base-query", "text-generation"],
+    queryFn: () => listModels({ limit: 100, capability: "text-generation", status: "ready" }),
+  });
+  const inferenceModelOptions = useMemo(
+    () => getReadyModelOptions(inferenceModels.data?.items, "text-generation"),
+    [inferenceModels.data?.items],
+  );
+  useEffect(() => {
+    if (
+      inferenceServiceName &&
+      inferenceModels.data &&
+      !inferenceModelOptions.some((option) => option.value === inferenceServiceName)
+    ) {
+      setInferenceServiceName(undefined);
+    }
+  }, [inferenceModelOptions, inferenceModels.data, inferenceServiceName]);
   const sessions = useQuery({
     queryKey: ["knowledge-base-sessions", kbId],
     queryFn: async () => {
@@ -126,11 +140,27 @@ export function KnowledgeChatPanel({
   return (
     <>
       <div className={styles.panel}>
-        <Alert
-          type="info"
-          showIcon
-          content="仅已完成解析和索引的文档会参与回答。会话与消息历史已由服务端保存，可在左侧切换或删除。"
-        />
+        {inferenceModels.error ? (
+          <div className="flex items-center gap-2">
+            <Alert
+              type="warning"
+              showIcon
+              content={getErrorMessage(
+                inferenceModels.error,
+                "推理模型列表加载失败，将使用知识库或平台默认模型",
+              )}
+            />
+            <Button size="small" onClick={() => void inferenceModels.refetch()}>
+              重新加载模型
+            </Button>
+          </div>
+        ) : !inferenceModels.isLoading && inferenceModelOptions.length === 0 ? (
+          <Alert
+            type="warning"
+            showIcon
+            content="暂无已就绪的文本生成模型，将使用知识库或平台默认模型"
+          />
+        ) : null}
         <div className={styles.chatWorkspace}>
           <KnowledgeSessionsSidebar
             sessions={sessions.data}
@@ -145,30 +175,9 @@ export function KnowledgeChatPanel({
               setCitationsVisible(false);
             }}
             onDelete={(session) => deleteSession.mutateAsync(session)}
+            onViewCitations={() => setCitationsVisible(true)}
           />
           <div className={styles.conversationArea}>
-            <div className={styles.queryToolbar}>
-              <div className={styles.queryOptions}>
-                <Radio.Group type="button" value={mode} onChange={setMode}>
-                  <Radio value="stream">流式</Radio>
-                  <Radio value="sync">同步</Radio>
-                </Radio.Group>
-                <label className={styles.topKControl}>
-                  <Typography.Text type="secondary">TopK</Typography.Text>
-                  <InputNumber
-                    size="small"
-                    min={1}
-                    max={20}
-                    precision={0}
-                    value={topK}
-                    onChange={(value) => setTopK(Number(value) || 5)}
-                  />
-                </label>
-              </div>
-              <Button type="text" onClick={() => setCitationsVisible(true)}>
-                查看本库全部引用
-              </Button>
-            </div>
             {activeSessionId && messages.isLoading ? (
               <div className={styles.conversationState}>
                 <Spin />
@@ -190,6 +199,13 @@ export function KnowledgeChatPanel({
                 initialMessages={initialMessages}
                 mode={mode}
                 topK={topK}
+                onModeChange={setMode}
+                onTopKChange={setTopK}
+                inferenceServiceName={inferenceServiceName}
+                inferenceModelOptions={inferenceModelOptions}
+                inferenceModelsLoading={inferenceModels.isLoading}
+                defaultInferenceService={defaultInferenceService}
+                onInferenceServiceChange={setInferenceServiceName}
                 onComplete={handleComplete}
               />
             )}

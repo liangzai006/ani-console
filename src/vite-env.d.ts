@@ -3,7 +3,6 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_PROXY_TARGET?: string;
-  readonly VITE_OIDC_REDIRECT_URI?: string;
 }
 
 interface ImportMeta {

@@ -7,9 +7,8 @@
 ## 开发入口
 
 1. 阅读 [UI 开发约定](./docs/UI-CONVENTIONS.md)、[工程约定](./docs/CONVENTIONS.md) 和 [API 对接流程](./docs/API-INTEGRATION.md)。
-2. 当前状态与变更记录见 [docs/PROJECT-STATUS.md](./docs/PROJECT-STATUS.md)。
-3. 任何新增或修改完成后，必须分别执行：对本次新增或修改的代码文件运行 Oxlint、对全仓运行项目内 oxfmt、运行 `pnpm typecheck`、运行 `git diff --check`、运行 GitNexus 变更检测。
-4. 不得运行 production build，或启动、重启、中断用户的 `pnpm dev`。
+2. 任何新增或修改完成后，必须分别执行：对本次新增或修改的代码文件运行 Oxlint、对全仓运行项目内 oxfmt、运行 `pnpm typecheck`、运行 `git diff --check`、运行 GitNexus 变更检测。
+3. 不得运行 production build，或启动、重启、中断用户的 `pnpm dev`。
 
 ## 强制规则
 
@@ -45,14 +44,12 @@
 - 组件只转发一层 props，未隔离状态、行为或展示复杂度。
 - 拆分后需要传递大量零散参数，反而增加调用关系和理解成本。
 
-## 开发记录
+## 验证
 
 - pnpm 命令执行门禁：所有 Agent 执行任何 `pnpm` 命令时，都必须在 Codex 沙箱外的系统环境运行，由系统 Corepack 根据 `package.json` 的 `packageManager` 选择 pnpm 版本；不得使用沙箱内的 fallback pnpm，也不得绕过项目声明手动选择其他版本。
-- 完成并验证实现、修复或测试后，必须在最终回复前更新项目开发记录。
-- Console 功能、UI、API、网络、存储、工具链和验证规则的变化统一记录在 `docs/PROJECT-STATUS.md`。
-- 记录应简短且事实准确，只覆盖变更区域、用户可见行为、重要集成约束和当前缺口；不得记录 Oxlint、oxfmt、TypeScript、`git diff --check`、GitNexus 等常规门禁的通过结果或命令流水，除非验证规则本身发生变化。
-- 不创建重复的记录文件；找不到合适记录位置时，在最终回复中说明。
-- 更新记录后，对记录文件运行 `git diff --check`，最终回复说明记录位置和验证结果。
+- 完成代码或工程配置修改后，在最终回复前必须运行 `pnpm lint` 和 `pnpm fmt:check`；检查失败时应先修复，无法在当前范围处理的既有问题必须如实记录。
+- 不维护集中式项目状态或开发记录文件；变更内容和验证结果在最终回复中说明。
+- 完成修改后运行 `git diff --check`。
 
 ## GitNexus
 

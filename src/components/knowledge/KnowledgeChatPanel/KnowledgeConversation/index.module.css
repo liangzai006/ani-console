@@ -1,8 +1,10 @@
 .conversationPane {
   display: flex;
+  width: 100%;
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .threadRoot {
@@ -14,12 +16,14 @@
 
 .viewport {
   height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
   scroll-behavior: smooth;
 }
 
 .threadContent {
   display: flex;
+  box-sizing: border-box;
   width: min(100%, 760px);
   min-height: 100%;
   margin: 0 auto;
@@ -62,6 +66,7 @@
 
 .messages {
   display: flex;
+  min-width: 0;
   margin-bottom: 24px;
   flex: 1;
   flex-direction: column;
@@ -77,6 +82,7 @@
   max-width: 78%;
   padding: 10px 14px;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   color: var(--color-text-1);
   border-radius: 12px;
   background: var(--color-fill-2);
@@ -90,9 +96,11 @@
 }
 
 .assistantBubble {
+  box-sizing: border-box;
   width: 100%;
   padding: 4px 8px;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   line-height: 1.7;
   color: var(--color-text-1);
 }
@@ -132,6 +140,7 @@
 
 .composer {
   display: flex;
+  min-width: 0;
   padding: 8px;
   flex-direction: column;
   gap: 4px;
@@ -146,11 +155,13 @@
 }
 
 .composerInput {
+  box-sizing: border-box;
   width: 100%;
   min-height: 48px;
   max-height: 132px;
   padding: 8px 10px;
   resize: none;
+  overflow-x: hidden;
   overflow-y: auto;
   color: var(--color-text-1);
   border: 0;
@@ -166,9 +177,42 @@
 .composerActions {
   display: flex;
   min-height: 32px;
-  align-items: center;
+  min-width: 0;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 8px;
+}
+
+.composerSettings,
+.topKControl {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.composerSettings {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
+.topKControl {
+  flex: 0 0 auto;
+}
+
+.modelSelect {
+  width: 220px;
+  max-width: 100%;
+  min-width: 0;
+  flex: 0 1 220px;
+}
+
+.composerActions > :global(.arco-btn) {
+  flex: 0 0 auto;
+}
+
+.topKControl :global(.arco-input-number) {
+  width: 72px;
 }
 
 @media (max-width: 1024px) {

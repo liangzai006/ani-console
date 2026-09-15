@@ -4,6 +4,7 @@ export interface KnowledgeBase {
   name: string;
   description?: string;
   embedding_model?: string;
+  default_inference_service?: string | null;
   chunk_size?: number;
   top_k?: number;
   score_threshold?: number;
@@ -53,6 +54,7 @@ export interface CreateKnowledgeBaseInput {
   name: string;
   description?: string;
   embedding_model?: string;
+  default_inference_service?: string;
   chunk_size?: number;
   top_k?: number;
   score_threshold?: number;
@@ -161,6 +163,7 @@ export interface KBSourceChunk {
 export interface KBQueryInput {
   question: string;
   session_id?: string;
+  inference_service_name?: string;
   top_k?: number;
   score_threshold?: number;
 }
@@ -180,6 +183,7 @@ export interface KBQueryResponse {
 export interface KBStreamQueryParams {
   question: string;
   session_id?: string;
+  inference_service_name?: string;
   top_k?: number;
 }
 

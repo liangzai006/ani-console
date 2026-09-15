@@ -107,6 +107,10 @@ export function KnowledgeBaseDetailPage({
             { label: "状态", value: <StatusTag status={kb.status} /> },
             { label: "描述", value: kb.description || "-" },
             { label: "Embedding 模型", value: kb.embedding_model || "-" },
+            {
+              label: "默认推理模型",
+              value: kb.default_inference_service || "平台默认模型",
+            },
             { label: "分块大小", value: kb.chunk_size ?? "-" },
             { label: "默认 TopK", value: kb.top_k ?? "-" },
             { label: "相似度阈值", value: kb.score_threshold ?? "-" },
@@ -154,7 +158,13 @@ export function KnowledgeBaseDetailPage({
         {
           key: "chat",
           label: "问答",
-          content: <KnowledgeChatPanel kbId={kbId} defaultTopK={kb.top_k ?? 5} />,
+          content: (
+            <KnowledgeChatPanel
+              kbId={kbId}
+              defaultTopK={kb.top_k ?? 5}
+              defaultInferenceService={kb.default_inference_service || undefined}
+            />
+          ),
         },
         {
           key: "permissions",
