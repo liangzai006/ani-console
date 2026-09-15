@@ -13,18 +13,12 @@ import {
 import { showApiError } from "@/lib/api-error";
 import { CreateSecurityGroupModal } from "@/components/network/CreateSecurityGroupModal";
 import {
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
+  ListDataTable,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
@@ -150,76 +144,81 @@ export function SecurityGroupsPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-anquanzu"
-            title="安全组"
-            subtitle="通过入方向和出方向规则控制实例网络访问"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建安全组
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "available", label: "可用" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <div className="flex flex-wrap gap-3">
-                <ToolbarSearch
-                  fields={[
-                    { value: "name", label: "名称" },
-                    { value: "id", label: "ID" },
-                  ]}
-                  field={searchField}
-                  value={searchText}
-                  onFieldChange={setSearchField}
-                  onChange={setSearchText}
-                />
-                <Select
-                  aria-label="按 VPC 筛选"
-                  value={filterVpcId || undefined}
-                  onChange={setFilterVpcId}
-                  allowClear
-                  placeholder="全部 VPC"
-                  loading={vpcs.isLoading}
-                  style={{ width: 220 }}
-                >
-                  {((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => (
-                    <Select.Option key={vpc.id} value={vpc.id}>
-                      {vpc.name}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </div>
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={securityGroups.isFetching || vpcs.isFetching}
-                onClick={() => {
-                  refresh();
-                  void vpcs.refetch();
+        header={{
+          iconClassName: "icon-anquanzu",
+          title: "安全组",
+          subtitle: "通过入方向和出方向规则控制实例网络访问",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建安全组",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "available",
+              label: "可用",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          filters: (
+            <div className="flex flex-wrap gap-3">
+              <Select
+                aria-label="按 VPC 筛选"
+                value={filterVpcId || undefined}
+                onChange={setFilterVpcId}
+                allowClear
+                placeholder="全部 VPC"
+                loading={vpcs.isLoading}
+                style={{
+                  width: 220,
                 }}
-              />
-            }
-          />
-        }
+              >
+                {((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => (
+                  <Select.Option key={vpc.id} value={vpc.id}>
+                    {vpc.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          ),
+          refresh: {
+            label: "刷新",
+            spinning: securityGroups.isFetching || vpcs.isFetching,
+            onClick: () => {
+              refresh();
+              void vpcs.refetch();
+            },
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -243,7 +242,9 @@ export function SecurityGroupsPage() {
                       Modal.confirm({
                         title: "删除安全组",
                         content: `确定删除「${item.name}」？安全组被实例使用时无法删除，请先解除关联。`,
-                        okButtonProps: { status: "danger" },
+                        okButtonProps: {
+                          status: "danger",
+                        },
                         onOk: () => deleteSecurityGroup.mutateAsync(item),
                       })
                     }

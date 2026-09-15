@@ -12,19 +12,13 @@ import {
 import { showApiError } from "@/lib/api-error";
 import { CreateLoadBalancerModal } from "@/components/network/CreateLoadBalancerModal";
 import {
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
   StatusTag,
+  ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -130,77 +124,85 @@ export function LoadBalancersPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-fuzaijunhengqi"
-            title="负载均衡"
-            subtitle="通过 VIP、监听器和后端组对外提供高可用服务"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建负载均衡
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "running", label: "运行中" },
-              { value: "error", label: "异常" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <div className="flex flex-wrap gap-3">
-                <ToolbarSearch
-                  fields={[
-                    { value: "name", label: "名称" },
-                    { value: "id", label: "ID" },
-                  ]}
-                  field={searchField}
-                  value={searchText}
-                  onFieldChange={setSearchField}
-                  onChange={setSearchText}
-                />
-                <Select
-                  aria-label="按 VPC 筛选"
-                  value={vpcId || undefined}
-                  onChange={setVpcId}
-                  allowClear
-                  placeholder="全部 VPC"
-                  loading={vpcs.isLoading}
-                  style={{ width: 220 }}
-                >
-                  {((vpcs.data?.items ?? []) as Vpc[]).map((item) => (
-                    <Select.Option key={item.id} value={item.id}>
-                      {item.name}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </div>
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={loadBalancers.isFetching || vpcs.isFetching}
-                onClick={() => {
-                  refresh();
-                  void vpcs.refetch();
+        header={{
+          iconClassName: "icon-fuzaijunhengqi",
+          title: "负载均衡",
+          subtitle: "通过 VIP、监听器和后端组对外提供高可用服务",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建负载均衡",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "running",
+              label: "运行中",
+            },
+            {
+              value: "error",
+              label: "异常",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          filters: (
+            <div className="flex flex-wrap gap-3">
+              <Select
+                aria-label="按 VPC 筛选"
+                value={vpcId || undefined}
+                onChange={setVpcId}
+                allowClear
+                placeholder="全部 VPC"
+                loading={vpcs.isLoading}
+                style={{
+                  width: 220,
                 }}
-              />
-            }
-          />
-        }
+              >
+                {((vpcs.data?.items ?? []) as Vpc[]).map((item) => (
+                  <Select.Option key={item.id} value={item.id}>
+                    {item.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          ),
+          refresh: {
+            label: "刷新",
+            spinning: loadBalancers.isFetching || vpcs.isFetching,
+            onClick: () => {
+              refresh();
+              void vpcs.refetch();
+            },
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -220,7 +222,9 @@ export function LoadBalancersPage() {
                           onClick={() =>
                             navigate({
                               to: "/load-balancers/$loadBalancerId",
-                              params: { loadBalancerId: item.id },
+                              params: {
+                                loadBalancerId: item.id,
+                              },
                             })
                           }
                         >
@@ -231,7 +235,9 @@ export function LoadBalancersPage() {
                           onClick={() =>
                             navigate({
                               to: "/load-balancers/$loadBalancerId",
-                              params: { loadBalancerId: item.id },
+                              params: {
+                                loadBalancerId: item.id,
+                              },
                             })
                           }
                         >
@@ -243,7 +249,9 @@ export function LoadBalancersPage() {
                             Modal.confirm({
                               title: "删除负载均衡",
                               content: `确定删除「${item.name}」？`,
-                              okButtonProps: { status: "danger" },
+                              okButtonProps: {
+                                status: "danger",
+                              },
                               onOk: () => deleteLoadBalancer.mutateAsync(item),
                             })
                           }

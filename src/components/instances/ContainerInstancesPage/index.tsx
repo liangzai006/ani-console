@@ -2,17 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  ListDataTable,
   ListPageFrame,
-  ListPageHeader,
   DataTableNameCell,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
   StatusTag,
+  ListDataTable,
 } from "@/components/common";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
@@ -154,94 +148,95 @@ export function ContainerInstancesPage({
     { value: "failed" as const, label: "异常" },
   ];
   return (
-    <ListPageFrame
-      header={
-        <ListPageHeader
-          iconClassName="icon-rongqishili"
-          title="容器实例"
-          subtitle="当前租户权限范围内的资源与操作"
-          extra={
-            <ToolbarButton
-              variant="primary"
-              iconClassName="icon-add-1"
-              onClick={() => setCreateVisible(true)}
-            >
-              创建容器实例
-            </ToolbarButton>
-          }
-        />
-      }
-      tabs={<StatusTabs items={statusTabs} value={status} onChange={setStatus} />}
-      toolbar={
-        <ListToolbar
-          filters={
-            <ToolbarSearch
-              fields={[
-                { value: "name", label: "名称" },
-                { value: "id", label: "ID" },
-              ]}
-              field={searchField}
-              value={searchText}
-              onFieldChange={setSearchField}
-              onChange={setSearchText}
-            />
-          }
-          tools={
-            <>
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={query.isFetching}
-                onClick={() => void query.refetch()}
-              />
-            </>
-          }
-        />
-      }
-    >
-      <ListDataTable
-        data={result.items}
-        columns={[
-          ...allColumns,
-          {
-            key: "__actions",
-            title: "操作",
-            fixed: "right",
-            render: (_value, row) => (
-              <ContainerInstanceActions
-                instance={row.record}
-                onChanged={() => void query.refetch()}
-              />
-            ),
+    <>
+      <ListPageFrame
+        header={{
+          iconClassName: "icon-rongqishili",
+          title: "容器实例",
+          subtitle: "当前租户权限范围内的资源与操作",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建容器实例",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          items: statusTabs,
+          value: status,
+          onChange: setStatus,
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
           },
-        ]}
-        loading={query.isFetching}
-        emptyIconClassName="icon-rongqishili"
-        emptyText={
-          status === "all" && !keyword
-            ? "还没有容器实例，点击「创建容器实例」开始"
-            : "后端未返回符合当前条件的容器实例"
-        }
-        tableLabel="容器实例列表"
-        preserveTableOnEmpty
-        pagination={{
-          page,
-          pageSize,
-          total: result.total,
-          onPageChange: (nextPage) => {
-            setPage(nextPage);
-          },
-          onPageSizeChange: (nextPageSize) => {
-            setPageSize(nextPageSize);
-            setPage(1);
+          refresh: {
+            label: "刷新",
+            spinning: query.isFetching,
+            onClick: () => void query.refetch(),
           },
         }}
-      />
+      >
+        <ListDataTable
+          data={result.items}
+          columns={[
+            ...allColumns,
+            {
+              key: "__actions",
+              title: "操作",
+              fixed: "right",
+              render: (_value, row) => (
+                <ContainerInstanceActions
+                  instance={row.record}
+                  onChanged={() => void query.refetch()}
+                />
+              ),
+            },
+          ]}
+          loading={query.isFetching}
+          emptyIconClassName="icon-rongqishili"
+          emptyText={
+            status === "all" && !keyword
+              ? "还没有容器实例，点击「创建容器实例」开始"
+              : "后端未返回符合当前条件的容器实例"
+          }
+          tableLabel="容器实例列表"
+          preserveTableOnEmpty
+          pagination={{
+            page,
+            pageSize,
+            total: result.total,
+            onPageChange: (nextPage) => {
+              setPage(nextPage);
+            },
+            onPageSizeChange: (nextPageSize) => {
+              setPageSize(nextPageSize);
+              setPage(1);
+            },
+          }}
+        />
+      </ListPageFrame>
       <ContainerInstanceCreateModal
         visible={createVisible}
         onCancel={() => setCreateVisible(false)}
         onCreated={() => setCreateVisible(false)}
       />
-    </ListPageFrame>
+    </>
   );
 }

@@ -1,4 +1,3 @@
-import { Space, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
@@ -8,7 +7,7 @@ import {
   listGpuAnomalies,
   type GpuOccupancyStats,
 } from "@/api/gpu-inventory";
-import { ListPageFrame, ListPageHeader, ToolbarButton } from "@/components/common";
+import { ListPageFrame } from "@/components/common";
 import { GpuContainerCreateModal } from "@/components/instances/GpuContainerCreateModal";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { GpuCapacityOverview } from "./GpuCapacityOverview";
@@ -66,29 +65,26 @@ export function GpuInventoryPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-GPU"
-            title="GPU 算力管理"
-            subtitle="查看租户配额、规格准入、占用分布与型号库存"
-            extra={
-              <Space size={8}>
-                <Tooltip content="当前 Core API 尚未开放 GPU 配额申请">
-                  <span>
-                    <ToolbarButton disabled>申请扩容</ToolbarButton>
-                  </span>
-                </Tooltip>
-                <ToolbarButton
-                  variant="primary"
-                  iconClassName="icon-add-1"
-                  onClick={() => setCreateVisible(true)}
-                >
-                  创建 GPU 容器
-                </ToolbarButton>
-              </Space>
-            }
-          />
-        }
+        header={{
+          iconClassName: "icon-GPU",
+          title: "GPU 算力管理",
+          subtitle: "查看租户配额、规格准入、占用分布与型号库存",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "申请扩容",
+              disabled: true,
+              tooltip: "当前 Core API 尚未开放 GPU 配额申请",
+            },
+            {
+              key: "header-action-2",
+              label: "创建 GPU 容器",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
       >
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
           <GpuCapacityOverview

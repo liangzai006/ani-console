@@ -14,19 +14,13 @@ import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnap
 import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
 import { AttachVolumeModal } from "@/components/storage/AttachVolumeModal";
 import {
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
   StatusTag,
+  ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -156,58 +150,65 @@ export function VolumesPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-kuaicunchu"
-            title="块存储"
-            subtitle="管理可挂载到实例的块存储卷及快照"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建卷
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "available", label: "可用" },
-              { value: "mounted", label: "已挂载" },
-              { value: "failed", label: "异常" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <ToolbarSearch
-                fields={[
-                  { value: "name", label: "名称" },
-                  { value: "id", label: "ID" },
-                ]}
-                field={searchField}
-                value={searchText}
-                onFieldChange={setSearchField}
-                onChange={setSearchText}
-              />
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={volumes.isFetching}
-                onClick={refresh}
-              />
-            }
-          />
-        }
+        header={{
+          iconClassName: "icon-kuaicunchu",
+          title: "块存储",
+          subtitle: "管理可挂载到实例的块存储卷及快照",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建卷",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "available",
+              label: "可用",
+            },
+            {
+              value: "mounted",
+              label: "已挂载",
+            },
+            {
+              value: "failed",
+              label: "异常",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          refresh: {
+            label: "刷新",
+            spinning: volumes.isFetching,
+            onClick: refresh,
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -226,7 +227,9 @@ export function VolumesPage() {
                         Modal.confirm({
                           title: "卸载块存储卷",
                           content: `确定从「${item.mount_name ?? item.mount_instance_id}」卸载「${item.name}」？请先确保实例内没有进程正在读写该卷。`,
-                          okButtonProps: { status: "danger" },
+                          okButtonProps: {
+                            status: "danger",
+                          },
                           onOk: () => detachVolume.mutateAsync(item),
                         })
                       }
@@ -250,7 +253,9 @@ export function VolumesPage() {
                       Modal.confirm({
                         title: "删除块存储卷",
                         content: `确定删除「${item.name}」？卷被实例挂载时无法删除。`,
-                        okButtonProps: { status: "danger" },
+                        okButtonProps: {
+                          status: "danger",
+                        },
                         onOk: () => deleteVolume.mutateAsync(item),
                       })
                     }

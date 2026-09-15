@@ -1,14 +1,19 @@
+import { Space, Tooltip } from "@arco-design/web-react";
 import clsx from "clsx";
-import type { ReactNode } from "react";
+import { ListToolbar, ToolbarButton, ToolbarIconButton, ToolbarSearch } from "../ListToolbar";
+import { StatusTabs } from "../StatusTabs";
+import type { ListPageFrameProps, ListPageHeaderAction, ListPageHeaderConfig } from "./types";
 import styles from "./index.module.css";
 
-export type ListPageTitleProps = {
+function ListPageTitle({
+  iconClassName,
+  title,
+  subtitle,
+}: {
   iconClassName: string;
   title: string;
   subtitle?: string;
-};
-
-export function ListPageTitle({ iconClassName, title, subtitle }: ListPageTitleProps) {
+}) {
   return (
     <>
       <div className={styles.pageHeaderIcon} aria-hidden="true">
@@ -22,35 +27,94 @@ export function ListPageTitle({ iconClassName, title, subtitle }: ListPageTitleP
   );
 }
 
-type ListPageHeaderProps = ListPageTitleProps & {
-  extra?: ReactNode;
-};
+function HeaderAction({ action }: { action: ListPageHeaderAction }) {
+  const button = (
+    <ToolbarButton
+      {...action.buttonProps}
+      iconClassName={action.iconClassName}
+      variant={action.variant}
+      disabled={action.disabled}
+      onClick={action.onClick}
+    >
+      {action.label}
+    </ToolbarButton>
+  );
 
-export function ListPageHeader({ iconClassName, title, subtitle, extra }: ListPageHeaderProps) {
+  if (!action.tooltip) return button;
+
+  return (
+    <Tooltip content={action.tooltip}>
+      <span>{button}</span>
+    </Tooltip>
+  );
+}
+
+function ListPageHeader({ iconClassName, title, subtitle, actions, extra }: ListPageHeaderConfig) {
+  const actionArea = actions?.length ? (
+    <Space size={8}>
+      {actions.map((action) => (
+        <HeaderAction key={action.key} action={action} />
+      ))}
+    </Space>
+  ) : (
+    extra
+  );
+
   return (
     <header className={styles.pageHeader}>
       <ListPageTitle iconClassName={iconClassName} title={title} subtitle={subtitle} />
-      {extra ? <div className={styles.pageHeaderExtra}>{extra}</div> : null}
+      {actionArea ? <div className={styles.pageHeaderExtra}>{actionArea}</div> : null}
     </header>
   );
 }
 
-type ListPageFrameProps = {
-  header: ReactNode;
-  tabs?: ReactNode;
-  toolbar?: ReactNode;
-  children: ReactNode;
-};
+export function ListPageFrame<
+  TStatus extends string = string,
+  TSearchField extends string = string,
+>({ header, tabs, toolbar, children }: ListPageFrameProps<TStatus, TSearchField>) {
+  const toolbarFilters =
+    toolbar?.search || toolbar?.filters ? (
+      <>
+        {toolbar.search ? <ToolbarSearch {...toolbar.search} /> : null}
+        {toolbar.filters}
+      </>
+    ) : undefined;
+  const toolbarTools =
+    toolbar?.tools || toolbar?.refresh ? (
+      <>
+        {toolbar.tools}
+        {toolbar.refresh ? (
+          <ToolbarIconButton
+            iconClassName="icon-refresh-1"
+            label={toolbar.refresh.label ?? "刷新"}
+            spinning={toolbar.refresh.spinning}
+            disabled={toolbar.refresh.disabled}
+            onClick={toolbar.refresh.onClick}
+          />
+        ) : null}
+      </>
+    ) : undefined;
 
-export function ListPageFrame({ header, tabs, toolbar, children }: ListPageFrameProps) {
   return (
     <div className={styles.page}>
-      {header}
+      <ListPageHeader {...header} />
       <section className={styles.contentPanel}>
-        {tabs}
-        {toolbar}
+        {tabs ? <StatusTabs {...tabs} /> : null}
+        {toolbar ? (
+          <ListToolbar actions={toolbar.actions} filters={toolbarFilters} tools={toolbarTools} />
+        ) : null}
         {children}
       </section>
     </div>
   );
 }
+
+export type {
+  ListPageFrameProps,
+  ListPageHeaderAction,
+  ListPageHeaderConfig,
+  ListPageRefreshConfig,
+  ListPageSearchConfig,
+  ListPageTabsConfig,
+  ListPageToolbarConfig,
+} from "./types";

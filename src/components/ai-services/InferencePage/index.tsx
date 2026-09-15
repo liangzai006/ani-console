@@ -21,19 +21,13 @@ import {
 import { showApiError } from "@/lib/api-error";
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
   StatusTag,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
+  ListDataTable,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -184,67 +178,85 @@ export function InferencePage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-tuili"
-            title="推理服务"
-            subtitle="部署模型并管理推理运行实例"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                一键部署
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "running", label: "运行中" },
-              { value: "deploying", label: "部署中" },
-              { value: "stopped", label: "已停止" },
-              { value: "failed", label: "异常" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <Space wrap>
-                <ToolbarSearch
-                  fields={[
-                    { value: "name", label: "名称" },
-                    { value: "id", label: "ID" },
-                  ]}
-                  field={searchField}
-                  value={searchText}
-                  onFieldChange={setSearchField}
-                  onChange={setSearchText}
-                />
-                <Select
-                  value={model}
-                  onChange={setModel}
-                  className="w-55"
-                  options={[{ value: "all", label: "全部模型" }, ...modelOptions]}
-                />
-              </Space>
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={services.isFetching}
-                onClick={() => void services.refetch()}
+        header={{
+          iconClassName: "icon-tuili",
+          title: "推理服务",
+          subtitle: "部署模型并管理推理运行实例",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "一键部署",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "running",
+              label: "运行中",
+            },
+            {
+              value: "deploying",
+              label: "部署中",
+            },
+            {
+              value: "stopped",
+              label: "已停止",
+            },
+            {
+              value: "failed",
+              label: "异常",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          filters: (
+            <Space wrap>
+              <Select
+                value={model}
+                onChange={setModel}
+                className="w-55"
+                options={[
+                  {
+                    value: "all",
+                    label: "全部模型",
+                  },
+                  ...modelOptions,
+                ]}
               />
-            }
-          />
-        }
+            </Space>
+          ),
+          refresh: {
+            label: "刷新",
+            spinning: services.isFetching,
+            onClick: () => void services.refetch(),
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -259,14 +271,24 @@ export function InferencePage() {
                   {item.status === "running" ? (
                     <DataTableRowActionButton
                       disabled={lifecycle.isPending}
-                      onClick={() => lifecycle.mutate({ item, action: "stop" })}
+                      onClick={() =>
+                        lifecycle.mutate({
+                          item,
+                          action: "stop",
+                        })
+                      }
                     >
                       停止
                     </DataTableRowActionButton>
                   ) : (
                     <DataTableRowActionButton
                       disabled={item.status !== "stopped" || lifecycle.isPending}
-                      onClick={() => lifecycle.mutate({ item, action: "start" })}
+                      onClick={() =>
+                        lifecycle.mutate({
+                          item,
+                          action: "start",
+                        })
+                      }
                     >
                       启动
                     </DataTableRowActionButton>
@@ -286,7 +308,9 @@ export function InferencePage() {
                           Modal.confirm({
                             title: "删除推理服务",
                             content: `确定删除「${item.name}」？删除请求提交后将异步停止并清理该服务。`,
-                            okButtonProps: { status: "danger" },
+                            okButtonProps: {
+                              status: "danger",
+                            },
                             onOk: () => remove.mutateAsync(item),
                           });
                         }}

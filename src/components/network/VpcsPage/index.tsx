@@ -15,19 +15,13 @@ import {
 import { showApiError } from "@/lib/api-error";
 import {
   Ipv4CidrInput,
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
   StatusTag,
+  ListDataTable,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
@@ -181,61 +175,68 @@ function VpcList() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-VPCwangluo"
-            title="VPC"
-            subtitle="创建和管理相互隔离的虚拟私有云网络"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建 VPC
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "available", label: "可用" },
-              { value: "pending", label: "创建中" },
-              { value: "failed", label: "异常" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <ToolbarSearch
-                fields={[
-                  { value: "name", label: "名称" },
-                  { value: "id", label: "ID" },
-                ]}
-                field={searchField}
-                value={searchText}
-                onFieldChange={setSearchField}
-                onChange={setSearchText}
-              />
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={vpcs.isFetching}
-                onClick={() => {
-                  refresh();
-                  void Promise.all([subnets.refetch(), routes.refetch()]);
-                }}
-              />
-            }
-          />
-        }
+        header={{
+          iconClassName: "icon-VPCwangluo",
+          title: "VPC",
+          subtitle: "创建和管理相互隔离的虚拟私有云网络",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建 VPC",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "available",
+              label: "可用",
+            },
+            {
+              value: "pending",
+              label: "创建中",
+            },
+            {
+              value: "failed",
+              label: "异常",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          refresh: {
+            label: "刷新",
+            spinning: vpcs.isFetching,
+            onClick: () => {
+              refresh();
+              void Promise.all([subnets.refetch(), routes.refetch()]);
+            },
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -253,7 +254,9 @@ function VpcList() {
                       Modal.confirm({
                         title: "删除 VPC",
                         content: `确定删除「${vpc.name}」？存在子网或关联资源时无法删除，请先清理相关资源。`,
-                        okButtonProps: { status: "danger" },
+                        okButtonProps: {
+                          status: "danger",
+                        },
                         onOk: () => deleteVpc.mutateAsync(vpc),
                       })
                     }

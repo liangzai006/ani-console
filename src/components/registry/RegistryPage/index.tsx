@@ -22,15 +22,11 @@ import {
   type RegistryScanResult,
 } from "@/api/registry";
 import {
-  ListDataTable,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
+  ListDataTable,
 } from "@/components/common";
 import { getErrorMessage } from "@/lib/errors";
 import { formatBytes, formatDateTime } from "@/lib/format";
@@ -175,66 +171,70 @@ export function RegistryPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-moxing"
-            title="镜像仓库"
-            subtitle="推送入库 · 扫描摘要 · 四类实例共用选 Tag"
-            extra={
-              <Button type="primary" onClick={() => setGuideVisible(true)}>
-                推送镜像说明
-              </Button>
-            }
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <Space wrap>
-                <ToolbarSearch
-                  fields={[{ value: "keyword", label: "关键词" }]}
-                  field="keyword"
-                  value={keyword}
-                  onFieldChange={() => undefined}
-                  onChange={setKeyword}
-                  placeholder="搜索镜像名 / Tag / 项目"
-                />
-                <Select
-                  value={purpose}
-                  onChange={setPurpose}
-                  className="w-[140px]"
-                  options={[
-                    { value: "all", label: "全部用途" },
-                    ...Object.entries(PURPOSE_LABELS).map(([value, label]) => ({
-                      value,
-                      label,
-                    })),
-                  ]}
-                />
-                <Select
-                  value={project}
-                  onChange={setProject}
-                  className="w-[160px]"
-                  options={[
-                    { value: "all", label: "全部项目" },
-                    ...(projects.data ?? []).map((item) => ({
-                      value: item.name,
-                      label: item.name,
-                    })),
-                  ]}
-                />
-              </Space>
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={images.isFetching}
-                onClick={refresh}
+        header={{
+          iconClassName: "icon-moxing",
+          title: "镜像仓库",
+          subtitle: "推送入库 · 扫描摘要 · 四类实例共用选 Tag",
+          extra: (
+            <Button type="primary" onClick={() => setGuideVisible(true)}>
+              推送镜像说明
+            </Button>
+          ),
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "keyword",
+                label: "关键词",
+              },
+            ],
+            field: "keyword",
+            value: keyword,
+            onFieldChange: () => undefined,
+            onChange: setKeyword,
+            placeholder: "搜索镜像名 / Tag / 项目",
+          },
+          filters: (
+            <Space wrap>
+              <Select
+                value={purpose}
+                onChange={setPurpose}
+                className="w-[140px]"
+                options={[
+                  {
+                    value: "all",
+                    label: "全部用途",
+                  },
+                  ...Object.entries(PURPOSE_LABELS).map(([value, label]) => ({
+                    value,
+                    label,
+                  })),
+                ]}
               />
-            }
-          />
-        }
+              <Select
+                value={project}
+                onChange={setProject}
+                className="w-[160px]"
+                options={[
+                  {
+                    value: "all",
+                    label: "全部项目",
+                  },
+                  ...(projects.data ?? []).map((item) => ({
+                    value: item.name,
+                    label: item.name,
+                  })),
+                ]}
+              />
+            </Space>
+          ),
+          refresh: {
+            label: "刷新",
+            spinning: images.isFetching,
+            onClick: refresh,
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -296,7 +296,9 @@ export function RegistryPage() {
         title="推送镜像说明"
         footer={null}
         onCancel={() => setGuideVisible(false)}
-        style={{ width: 720 }}
+        style={{
+          width: 720,
+        }}
       >
         <Typography.Paragraph type="secondary">
           镜像通过 docker push 入库，不支持网页上传。项目由平台按当前租户自动创建，Console

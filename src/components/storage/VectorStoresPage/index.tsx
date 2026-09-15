@@ -11,19 +11,13 @@ import {
 import { showApiError } from "@/lib/api-error";
 import { CreateVectorStoreModal } from "@/components/storage/CreateVectorStoreModal";
 import {
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
   StatusTag,
+  ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -160,57 +154,61 @@ export function VectorStoresPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-xiangliangcunchu"
-            title="向量存储"
-            subtitle="管理用于语义检索和 AI 应用的向量数据"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建向量存储
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "ready", label: "可用" },
-              { value: "pending", label: "创建中" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <ToolbarSearch
-                fields={[
-                  { value: "name", label: "名称" },
-                  { value: "id", label: "ID" },
-                ]}
-                field={searchField}
-                value={searchText}
-                onFieldChange={setSearchField}
-                onChange={setSearchText}
-              />
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={stores.isFetching}
-                onClick={refresh}
-              />
-            }
-          />
-        }
+        header={{
+          iconClassName: "icon-xiangliangcunchu",
+          title: "向量存储",
+          subtitle: "管理用于语义检索和 AI 应用的向量数据",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建向量存储",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "ready",
+              label: "可用",
+            },
+            {
+              value: "pending",
+              label: "创建中",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          refresh: {
+            label: "刷新",
+            spinning: stores.isFetching,
+            onClick: refresh,
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -229,8 +227,12 @@ export function VectorStoresPage() {
                         onClick={() =>
                           navigate({
                             to: "/vector-stores/$vectorStoreId",
-                            params: { vectorStoreId: item.id },
-                            search: { tab: "search" },
+                            params: {
+                              vectorStoreId: item.id,
+                            },
+                            search: {
+                              tab: "search",
+                            },
                           })
                         }
                       >
@@ -264,14 +266,18 @@ export function VectorStoresPage() {
                         </Menu.Item>
                         <Menu.Item
                           key="delete"
-                          style={{ color: "var(--color-danger-6)" }}
+                          style={{
+                            color: "var(--color-danger-6)",
+                          }}
                           disabled={Boolean(item.knowledge_base_ref)}
                           title={item.knowledge_base_ref ? "请先解除知识库关联后再删除" : undefined}
                           onClick={() =>
                             Modal.confirm({
                               title: "删除向量存储",
                               content: `确定删除「${item.name}」？其中的向量数据将不可恢复。`,
-                              okButtonProps: { status: "danger" },
+                              okButtonProps: {
+                                status: "danger",
+                              },
                               onOk: () => remove.mutateAsync(item),
                             })
                           }

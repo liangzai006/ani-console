@@ -12,18 +12,12 @@ import {
 import { showApiError } from "@/lib/api-error";
 import { CreateRouteModal } from "@/components/network/CreateRouteModal";
 import {
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
+  ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -132,76 +126,81 @@ export function NetworkRoutesPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-VPCluyouqi"
-            title="路由"
-            subtitle="管理 VPC 的自定义流量转发规则"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建路由
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "available", label: "可用" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <div className="flex flex-wrap gap-3">
-                <ToolbarSearch
-                  fields={[
-                    { value: "description", label: "名称" },
-                    { value: "id", label: "ID" },
-                  ]}
-                  field={searchField}
-                  value={searchText}
-                  onFieldChange={setSearchField}
-                  onChange={setSearchText}
-                />
-                <Select
-                  aria-label="按 VPC 筛选"
-                  value={filterVpcId || undefined}
-                  onChange={setFilterVpcId}
-                  allowClear
-                  placeholder="全部 VPC"
-                  loading={vpcs.isLoading}
-                  style={{ width: 220 }}
-                >
-                  {((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => (
-                    <Select.Option key={vpc.id} value={vpc.id}>
-                      {vpc.name}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </div>
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={routes.isFetching || vpcs.isFetching}
-                onClick={() => {
-                  refresh();
-                  void vpcs.refetch();
+        header={{
+          iconClassName: "icon-VPCluyouqi",
+          title: "路由",
+          subtitle: "管理 VPC 的自定义流量转发规则",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建路由",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "available",
+              label: "可用",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "description",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          filters: (
+            <div className="flex flex-wrap gap-3">
+              <Select
+                aria-label="按 VPC 筛选"
+                value={filterVpcId || undefined}
+                onChange={setFilterVpcId}
+                allowClear
+                placeholder="全部 VPC"
+                loading={vpcs.isLoading}
+                style={{
+                  width: 220,
                 }}
-              />
-            }
-          />
-        }
+              >
+                {((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => (
+                  <Select.Option key={vpc.id} value={vpc.id}>
+                    {vpc.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          ),
+          refresh: {
+            label: "刷新",
+            spinning: routes.isFetching || vpcs.isFetching,
+            onClick: () => {
+              refresh();
+              void vpcs.refetch();
+            },
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -219,7 +218,9 @@ export function NetworkRoutesPage() {
                       Modal.confirm({
                         title: "删除路由",
                         content: `确定删除「${item.description?.trim() || item.destination_cidr}」？删除后该转发规则将立即失效。`,
-                        okButtonProps: { status: "danger" },
+                        okButtonProps: {
+                          status: "danger",
+                        },
                         onOk: () => deleteRoute.mutateAsync(item),
                       })
                     }

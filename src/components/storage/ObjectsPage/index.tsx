@@ -4,17 +4,12 @@ import { useState } from "react";
 import { listBuckets, type StorageBucketRecord } from "@/api/storage/buckets";
 import { CreateBucketModal } from "@/components/storage/CreateBucketModal";
 import {
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
+  ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -108,46 +103,43 @@ export function ObjectsPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-duixiangcunchu1"
-            title="对象存储"
-            subtitle="S3 兼容存储桶，用于保存非结构化对象数据"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建存储桶
-              </ToolbarButton>
-            }
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <ToolbarSearch
-                fields={[
-                  { value: "name", label: "名称" },
-                  { value: "id", label: "ID" },
-                ]}
-                field={searchField}
-                value={searchText}
-                onFieldChange={setSearchField}
-                onChange={setSearchText}
-              />
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={buckets.isFetching}
-                onClick={refresh}
-              />
-            }
-          />
-        }
+        header={{
+          iconClassName: "icon-duixiangcunchu1",
+          title: "对象存储",
+          subtitle: "S3 兼容存储桶，用于保存非结构化对象数据",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建存储桶",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          refresh: {
+            label: "刷新",
+            spinning: buckets.isFetching,
+            onClick: refresh,
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -163,8 +155,12 @@ export function ObjectsPage() {
                     onClick={() =>
                       navigate({
                         to: "/objects/$bucketId",
-                        params: { bucketId: item.id },
-                        search: { tab: "objects" },
+                        params: {
+                          bucketId: item.id,
+                        },
+                        search: {
+                          tab: "objects",
+                        },
                       })
                     }
                   >
@@ -174,8 +170,13 @@ export function ObjectsPage() {
                     onClick={() =>
                       navigate({
                         to: "/objects/$bucketId",
-                        params: { bucketId: item.id },
-                        search: { tab: "objects", action: "upload" },
+                        params: {
+                          bucketId: item.id,
+                        },
+                        search: {
+                          tab: "objects",
+                          action: "upload",
+                        },
                       })
                     }
                   >
@@ -185,8 +186,12 @@ export function ObjectsPage() {
                     onClick={() =>
                       navigate({
                         to: "/objects/$bucketId",
-                        params: { bucketId: item.id },
-                        search: { tab: "permissions" },
+                        params: {
+                          bucketId: item.id,
+                        },
+                        search: {
+                          tab: "permissions",
+                        },
                       })
                     }
                   >

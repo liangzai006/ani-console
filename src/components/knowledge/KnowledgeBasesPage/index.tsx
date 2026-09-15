@@ -6,19 +6,13 @@ import { deleteKnowledgeBase, listKnowledgeBases, type KnowledgeBase } from "@/a
 import { showApiError } from "@/lib/api-error";
 import { CreateKnowledgeBaseModal } from "@/components/knowledge/CreateKnowledgeBaseModal";
 import {
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
   StatusTag,
+  ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -113,69 +107,70 @@ export function KnowledgeBasesPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-zhishiku"
-            title="知识库管理"
-            subtitle="创建知识库、管理文档并验证知识问答"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建知识库
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={(value) => {
-              resetPagination();
-              setStatus(value);
-            }}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "active", label: "活跃" },
+        header={{
+          iconClassName: "icon-zhishiku",
+          title: "知识库管理",
+          subtitle: "创建知识库、管理文档并验证知识问答",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建知识库",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: (value) => {
+            resetPagination();
+            setStatus(value);
+          },
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "active",
+              label: "活跃",
+            },
+            {
+              value: "rebuilding",
+              label: "重建中",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
               {
-                value: "rebuilding",
-                label: "重建中",
+                value: "name",
+                label: "名称",
               },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <ToolbarSearch
-                fields={[
-                  { value: "name", label: "名称" },
-                  { value: "id", label: "ID" },
-                ]}
-                field={searchField}
-                value={searchText}
-                onFieldChange={(value) => {
-                  resetPagination();
-                  setSearchField(value);
-                }}
-                onChange={(value) => {
-                  resetPagination();
-                  setSearchText(value);
-                }}
-              />
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={query.isFetching}
-                onClick={refresh}
-              />
-            }
-          />
-        }
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: (value) => {
+              resetPagination();
+              setSearchField(value);
+            },
+            onChange: (value) => {
+              resetPagination();
+              setSearchText(value);
+            },
+          },
+          refresh: {
+            label: "刷新",
+            spinning: query.isFetching,
+            onClick: refresh,
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -191,8 +186,12 @@ export function KnowledgeBasesPage() {
                     onClick={() =>
                       navigate({
                         to: "/kb/$kbId",
-                        params: { kbId: item.id },
-                        search: { tab: "chat" },
+                        params: {
+                          kbId: item.id,
+                        },
+                        search: {
+                          tab: "chat",
+                        },
                       })
                     }
                   >
@@ -204,7 +203,9 @@ export function KnowledgeBasesPage() {
                       Modal.confirm({
                         title: "删除知识库",
                         content: `确定删除「${item.name}」？知识库及其文档将不可恢复。`,
-                        okButtonProps: { status: "danger" },
+                        okButtonProps: {
+                          status: "danger",
+                        },
                         onOk: () => remove.mutateAsync(item),
                       })
                     }

@@ -3,16 +3,10 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   DataTableNameCell,
-  ListDataTable,
   ListPageFrame,
-  ListPageHeader,
-  ListToolbar,
-  StatusTabs,
   StatusTag,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
+  ListDataTable,
 } from "@/components/common";
 import { SandboxInstanceActions } from "@/components/instances/SandboxInstanceActions";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
@@ -148,70 +142,73 @@ export function SandboxInstancesPage() {
   ];
 
   return (
-    <ListPageFrame
-      header={
-        <ListPageHeader
-          iconClassName="icon-Sandbox"
-          title="Sandbox 实例"
-          subtitle="隔离会话、双超时与受控网络出口"
-          extra={
-            <ToolbarButton
-              variant="primary"
-              iconClassName="icon-add-1"
-              onClick={() => setCreateVisible(true)}
-            >
-              创建 Sandbox
-            </ToolbarButton>
-          }
-        />
-      }
-      tabs={<StatusTabs items={statusTabs} value={status} onChange={setStatus} />}
-      toolbar={
-        <ListToolbar
-          filters={
-            <ToolbarSearch
-              fields={[
-                { value: "name", label: "名称" },
-                { value: "id", label: "ID" },
-              ]}
-              field={searchField}
-              value={searchText}
-              onFieldChange={setSearchField}
-              onChange={setSearchText}
-            />
-          }
-          tools={
-            <ToolbarIconButton
-              iconClassName="icon-refresh-1"
-              label="刷新"
-              spinning={query.isFetching}
-              onClick={refresh}
-            />
-          }
-        />
-      }
-    >
-      <ListDataTable
-        data={rows}
-        columns={columns}
-        loading={query.isFetching}
-        emptyIconClassName="icon-Sandbox"
-        emptyText="还没有 Sandbox 实例，点击右上角创建"
-        tableLabel="Sandbox 实例列表"
-        preserveTableOnEmpty
-        pagination={{
-          page,
-          pageSize,
-          total: query.data?.total ?? rows.length,
-          onPageChange: setPage,
-          onPageSizeChange: setPageSize,
+    <>
+      <ListPageFrame
+        header={{
+          iconClassName: "icon-Sandbox",
+          title: "Sandbox 实例",
+          subtitle: "隔离会话、双超时与受控网络出口",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建 Sandbox",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
         }}
-      />
+        tabs={{
+          items: statusTabs,
+          value: status,
+          onChange: setStatus,
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          refresh: {
+            label: "刷新",
+            spinning: query.isFetching,
+            onClick: refresh,
+          },
+        }}
+      >
+        <ListDataTable
+          data={rows}
+          columns={columns}
+          loading={query.isFetching}
+          emptyIconClassName="icon-Sandbox"
+          emptyText="还没有 Sandbox 实例，点击右上角创建"
+          tableLabel="Sandbox 实例列表"
+          preserveTableOnEmpty
+          pagination={{
+            page,
+            pageSize,
+            total: query.data?.total ?? rows.length,
+            onPageChange: setPage,
+            onPageSizeChange: setPageSize,
+          }}
+        />
+      </ListPageFrame>
       <SandboxInstanceCreateModal
         visible={createVisible}
         onCancel={() => setCreateVisible(false)}
         onCreated={() => setCreateVisible(false)}
       />
-    </ListPageFrame>
+    </>
   );
 }

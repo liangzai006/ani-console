@@ -3,16 +3,10 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   DataTableNameCell,
-  ListDataTable,
   ListPageFrame,
-  ListPageHeader,
-  ListToolbar,
-  StatusTabs,
   StatusTag,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
+  ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -140,45 +134,45 @@ export function VmInstancesPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-yunzhuji"
-            title="云主机 VM"
-            subtitle="弹性虚拟计算资源，支持生命周期管理、VNC 控制台与运行状态观测"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建云主机
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={<StatusTabs items={statusTabs} value={status} onChange={setStatus} />}
-        toolbar={
-          <ListToolbar
-            filters={
-              <ToolbarSearch
-                fields={[{ value: "keyword", label: "名称 / ID" }]}
-                field="keyword"
-                value={searchText}
-                placeholder="搜索云主机名称或 ID"
-                onFieldChange={() => undefined}
-                onChange={setSearchText}
-              />
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={query.isFetching}
-                onClick={refresh}
-              />
-            }
-          />
-        }
+        header={{
+          iconClassName: "icon-yunzhuji",
+          title: "云主机 VM",
+          subtitle: "弹性虚拟计算资源，支持生命周期管理、VNC 控制台与运行状态观测",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建云主机",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          items: statusTabs,
+          value: status,
+          onChange: setStatus,
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "keyword",
+                label: "名称 / ID",
+              },
+            ],
+            field: "keyword",
+            value: searchText,
+            placeholder: "搜索云主机名称或 ID",
+            onFieldChange: () => undefined,
+            onChange: setSearchText,
+          },
+          refresh: {
+            label: "刷新",
+            spinning: query.isFetching,
+            onClick: refresh,
+          },
+        }}
       >
         {operationId ? (
           <InstanceOperationPoller

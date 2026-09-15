@@ -13,19 +13,13 @@ import {
 import { showApiError } from "@/lib/api-error";
 import {
   Ipv4CidrInput,
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
   StatusTag,
+  ListDataTable,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
@@ -213,78 +207,89 @@ export function SubnetsPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-VPCwangluo"
-            title="子网"
-            subtitle="在 VPC 内划分相互隔离的私有网络地址空间"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建子网
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "available", label: "可用" },
-              { value: "pending", label: "创建中" },
-              { value: "failed", label: "异常" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <div className="flex flex-wrap gap-3">
-                <ToolbarSearch
-                  fields={[
-                    { value: "name", label: "名称" },
-                    { value: "id", label: "ID" },
-                  ]}
-                  field={searchField}
-                  value={searchText}
-                  onFieldChange={setSearchField}
-                  onChange={setSearchText}
-                />
-                <Select
-                  aria-label="按 VPC 筛选"
-                  value={filterVpcId || undefined}
-                  onChange={setFilterVpcId}
-                  allowClear
-                  placeholder="全部 VPC"
-                  loading={vpcs.isLoading}
-                  style={{ width: 220 }}
-                >
-                  {((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => (
-                    <Select.Option key={vpc.id} value={vpc.id}>
-                      {vpc.name}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </div>
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={subnets.isFetching || vpcs.isFetching}
-                onClick={() => {
-                  refresh();
-                  void vpcs.refetch();
+        header={{
+          iconClassName: "icon-VPCwangluo",
+          title: "子网",
+          subtitle: "在 VPC 内划分相互隔离的私有网络地址空间",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建子网",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "available",
+              label: "可用",
+            },
+            {
+              value: "pending",
+              label: "创建中",
+            },
+            {
+              value: "failed",
+              label: "异常",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          filters: (
+            <div className="flex flex-wrap gap-3">
+              <Select
+                aria-label="按 VPC 筛选"
+                value={filterVpcId || undefined}
+                onChange={setFilterVpcId}
+                allowClear
+                placeholder="全部 VPC"
+                loading={vpcs.isLoading}
+                style={{
+                  width: 220,
                 }}
-              />
-            }
-          />
-        }
+              >
+                {((vpcs.data?.items ?? []) as Vpc[]).map((vpc) => (
+                  <Select.Option key={vpc.id} value={vpc.id}>
+                    {vpc.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          ),
+          refresh: {
+            label: "刷新",
+            spinning: subnets.isFetching || vpcs.isFetching,
+            onClick: () => {
+              refresh();
+              void vpcs.refetch();
+            },
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -302,7 +307,9 @@ export function SubnetsPage() {
                       Modal.confirm({
                         title: "删除子网",
                         content: `确定删除「${subnet.name}」？存在关联实例时无法删除，请先清理相关资源。`,
-                        okButtonProps: { status: "danger" },
+                        okButtonProps: {
+                          status: "danger",
+                        },
                         onOk: () => deleteSubnet.mutateAsync(subnet),
                       })
                     }

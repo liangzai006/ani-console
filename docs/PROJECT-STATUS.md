@@ -23,6 +23,7 @@
 
 | 日期 | 摘要 |
 |------|------|
+| 2026-09-14 | 将 `ListPageFrame` 升级为强类型配置驱动组件，统一标题操作、状态页签、搜索/筛选与刷新工具栏，19 个列表页已完成迁移；18 个标准页面继续通过 `children` 直接组合 `ListDataTable`，GPU 算力管理保留自定义内容，VM 操作轮询器位于表格前，页面弹窗保持在 Frame 外。标题、工具栏与页签的低层组件不再从 common barrel 公开，`ListDataTable` 及表格类型继续公开。变更代码 Oxlint、全仓 oxfmt、TypeScript、暂存与未暂存差异格式检查通过；GitNexus 当前工作区检测为 CRITICAL，命中共享列表结构及 63 条相关流程，与 `master` 的累计比较为 CRITICAL。 |
 | 2026-09-14 | 首页资源总览与任务中心改用真实数据，补齐加载、空态、刷新和失败降级，移除模拟内容及无数据来源模块；同步清理无实际依赖的页面标记，统一主内容区、列表和首页卡片布局。 |
 | 2026-09-11 | 按当前 Axios API 架构重做概览页资源趋势：保留既有页面结构，将可观测性契约收敛到独立 API 模块，GPU、CPU、内存三张趋势卡分别调用 Core `GET /observability/resource_trend`，支持 1 天/7 天/30 天区间、独立加载与错误重试、真实空数据空态，并将 `real_provider=false` 作为数据服务降级处理；实例详情原 `query_range` 导出保持兼容。变更代码 Oxlint、全仓 oxfmt、TypeScript 与差异格式检查通过；GitNexus 当前工作区检测为 MEDIUM，命中概览错误处理及日期文件相邻差异共 3 条流程，与 `master` 的累计比较为 CRITICAL。 |
 | 2026-09-11 | 移除无当前页面入口、仅使用前端样例数据的云主机挂载云盘二级详情页及其嵌套路由，清理专用遗留数据源、类型和样式；块存储列表可进入的真实云盘详情 `/volumes/:volumeId` 保持不变，并同步更新生成路由树。生成路由文件 Oxlint、全仓 oxfmt、TypeScript、路由残留与差异格式检查通过；GitNexus 变更检测为 LOW，未影响执行流程。 |

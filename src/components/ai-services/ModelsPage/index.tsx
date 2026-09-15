@@ -10,16 +10,10 @@ import {
   DataTableNameCell,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListDataTable,
   ListPageFrame,
-  ListPageHeader,
-  ListToolbar,
   StatusTag,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
+  ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -140,80 +134,115 @@ export function ModelsPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-moxing"
-            title="模型仓库"
-            subtitle="统一管理模型 Catalog、版本与部署入口"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setImportVisible(true)}
-              >
-                导入模型
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "available", label: "可用" },
-              { value: "importing", label: "导入中" },
-              { value: "failed", label: "失败" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <Space wrap>
-                <ToolbarSearch
-                  fields={[{ value: "name", label: "名称" }]}
-                  field={searchField}
-                  value={searchText}
-                  onFieldChange={setSearchField}
-                  onChange={setSearchText}
-                />
-                <Select
-                  value={source}
-                  onChange={setSource}
-                  className="w-[140px]"
-                  options={[
-                    { value: "all", label: "全部来源" },
-                    { value: "huggingface", label: "HuggingFace" },
-                    { value: "modelscope", label: "ModelScope" },
-                    { value: "upload", label: "本地上传" },
-                    { value: "builtin", label: "内置" },
-                  ]}
-                />
-                <Select
-                  value={capability}
-                  onChange={setCapability}
-                  className="w-[140px]"
-                  options={[
-                    { value: "all", label: "全部任务" },
-                    { value: "text-generation", label: "文本生成" },
-                    { value: "embedding", label: "文本向量化" },
-                    { value: "speech-to-text", label: "语音识别" },
-                  ]}
-                />
-              </Space>
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={models.isFetching}
-                onClick={refresh}
+        header={{
+          iconClassName: "icon-moxing",
+          title: "模型仓库",
+          subtitle: "统一管理模型 Catalog、版本与部署入口",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "导入模型",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setImportVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "available",
+              label: "可用",
+            },
+            {
+              value: "importing",
+              label: "导入中",
+            },
+            {
+              value: "failed",
+              label: "失败",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          filters: (
+            <Space wrap>
+              <Select
+                value={source}
+                onChange={setSource}
+                className="w-[140px]"
+                options={[
+                  {
+                    value: "all",
+                    label: "全部来源",
+                  },
+                  {
+                    value: "huggingface",
+                    label: "HuggingFace",
+                  },
+                  {
+                    value: "modelscope",
+                    label: "ModelScope",
+                  },
+                  {
+                    value: "upload",
+                    label: "本地上传",
+                  },
+                  {
+                    value: "builtin",
+                    label: "内置",
+                  },
+                ]}
               />
-            }
-          />
-        }
+              <Select
+                value={capability}
+                onChange={setCapability}
+                className="w-[140px]"
+                options={[
+                  {
+                    value: "all",
+                    label: "全部任务",
+                  },
+                  {
+                    value: "text-generation",
+                    label: "文本生成",
+                  },
+                  {
+                    value: "embedding",
+                    label: "文本向量化",
+                  },
+                  {
+                    value: "speech-to-text",
+                    label: "语音识别",
+                  },
+                ]}
+              />
+            </Space>
+          ),
+          refresh: {
+            label: "刷新",
+            spinning: models.isFetching,
+            onClick: refresh,
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -249,7 +278,9 @@ export function ModelsPage() {
                         <Menu.Item
                           key="delete"
                           disabled={item.status === "deleted" || remove.isPending}
-                          style={{ color: "var(--color-danger-6)" }}
+                          style={{
+                            color: "var(--color-danger-6)",
+                          }}
                           onClick={() =>
                             Modal.confirm({
                               title: "删除模型",
@@ -257,7 +288,9 @@ export function ModelsPage() {
                                 "确定删除「" +
                                 (item.display_name || item.name) +
                                 "」？有关联推理服务时后端将拒绝删除。",
-                              okButtonProps: { status: "danger" },
+                              okButtonProps: {
+                                status: "danger",
+                              },
                               onOk: () => remove.mutateAsync(item),
                             })
                           }

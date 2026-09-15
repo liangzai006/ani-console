@@ -31,18 +31,12 @@ import {
   StatusTag,
   DataTable,
   DetailPagePlaceholder,
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
+  ListDataTable,
 } from "@/components/common";
 import { showApiError } from "@/lib/api-error";
 import { formatDateTime } from "@/lib/format";
@@ -212,58 +206,65 @@ function ClusterList() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-jiqun"
-            title="K8s 集群"
-            subtitle="创建和管理托管 Kubernetes 集群，统一维护版本、节点池与工作负载"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setVisible(true)}
-              >
-                创建集群
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "running", label: "运行中" },
-              { value: "provisioning", label: "创建中" },
-              { value: "deleting", label: "删除中" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <ToolbarSearch
-                fields={[
-                  { value: "name", label: "名称" },
-                  { value: "id", label: "ID" },
-                ]}
-                field={searchField}
-                value={searchText}
-                onFieldChange={setSearchField}
-                onChange={setSearchText}
-              />
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={isFetching}
-                onClick={refresh}
-              />
-            }
-          />
-        }
+        header={{
+          iconClassName: "icon-jiqun",
+          title: "K8s 集群",
+          subtitle: "创建和管理托管 Kubernetes 集群，统一维护版本、节点池与工作负载",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建集群",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "running",
+              label: "运行中",
+            },
+            {
+              value: "provisioning",
+              label: "创建中",
+            },
+            {
+              value: "deleting",
+              label: "删除中",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          refresh: {
+            label: "刷新",
+            spinning: isFetching,
+            onClick: refresh,
+          },
+        }}
       >
         <ListDataTable
           data={items}

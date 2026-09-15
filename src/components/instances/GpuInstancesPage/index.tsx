@@ -5,17 +5,11 @@ import { useEffect, useState } from "react";
 import { GpuInstanceActions } from "@/components/instances/GpuInstanceActions";
 import { GpuContainerCreateModal } from "@/components/instances/GpuContainerCreateModal";
 import {
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
-  ListToolbar,
   type ListColumn,
   StatusTag,
+  ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -145,47 +139,48 @@ export function GpuInstancesPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-GPUrongqishili"
-            title="GPU 容器实例"
-            subtitle="GPU 工作负载的调度、发布与运行状态"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建 GPU 容器
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={<StatusTabs items={tabs} value={status} onChange={setStatus} />}
-        toolbar={
-          <ListToolbar
-            filters={
-              <ToolbarSearch
-                fields={[
-                  { value: "name", label: "名称" },
-                  { value: "id", label: "ID" },
-                ]}
-                field={searchField}
-                value={searchText}
-                onFieldChange={setSearchField}
-                onChange={setSearchText}
-              />
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={query.isFetching}
-                onClick={refresh}
-              />
-            }
-          />
-        }
+        header={{
+          iconClassName: "icon-GPUrongqishili",
+          title: "GPU 容器实例",
+          subtitle: "GPU 工作负载的调度、发布与运行状态",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建 GPU 容器",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          items: tabs,
+          value: status,
+          onChange: setStatus,
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          refresh: {
+            label: "刷新",
+            spinning: query.isFetching,
+            onClick: refresh,
+          },
+        }}
       >
         <ListDataTable
           data={items}

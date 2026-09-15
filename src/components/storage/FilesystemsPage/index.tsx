@@ -13,19 +13,13 @@ import { CreateFilesystemModal } from "@/components/storage/CreateFilesystemModa
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
 import {
-  ListDataTable,
   DataTableNameCell,
   ListPageFrame,
-  ListPageHeader,
   DataTableRowActionButton,
   DataTableRowActions,
-  ListToolbar,
-  StatusTabs,
-  ToolbarButton,
-  ToolbarIconButton,
-  ToolbarSearch,
   type ListColumn,
   StatusTag,
+  ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { useListErrorNotification } from "@/hooks/useListErrorNotification";
@@ -147,57 +141,61 @@ export function FilesystemsPage() {
   return (
     <>
       <ListPageFrame
-        header={
-          <ListPageHeader
-            iconClassName="icon-wenjiancunchu"
-            title="文件存储"
-            subtitle="管理共享文件系统、挂载目标与访问方式"
-            extra={
-              <ToolbarButton
-                variant="primary"
-                iconClassName="icon-add-1"
-                onClick={() => setCreateVisible(true)}
-              >
-                创建文件存储
-              </ToolbarButton>
-            }
-          />
-        }
-        tabs={
-          <StatusTabs
-            value={status}
-            onChange={setStatus}
-            items={[
-              { value: "all", label: "全部" },
-              { value: "available", label: "可用" },
-              { value: "pending", label: "创建中" },
-            ]}
-          />
-        }
-        toolbar={
-          <ListToolbar
-            filters={
-              <ToolbarSearch
-                fields={[
-                  { value: "name", label: "名称" },
-                  { value: "id", label: "ID" },
-                ]}
-                field={searchField}
-                value={searchText}
-                onFieldChange={setSearchField}
-                onChange={setSearchText}
-              />
-            }
-            tools={
-              <ToolbarIconButton
-                iconClassName="icon-refresh-1"
-                label="刷新"
-                spinning={filesystems.isFetching}
-                onClick={refresh}
-              />
-            }
-          />
-        }
+        header={{
+          iconClassName: "icon-wenjiancunchu",
+          title: "文件存储",
+          subtitle: "管理共享文件系统、挂载目标与访问方式",
+          actions: [
+            {
+              key: "header-action-1",
+              label: "创建文件存储",
+              iconClassName: "icon-add-1",
+              variant: "primary",
+              onClick: () => setCreateVisible(true),
+            },
+          ],
+        }}
+        tabs={{
+          value: status,
+          onChange: setStatus,
+          items: [
+            {
+              value: "all",
+              label: "全部",
+            },
+            {
+              value: "available",
+              label: "可用",
+            },
+            {
+              value: "pending",
+              label: "创建中",
+            },
+          ],
+        }}
+        toolbar={{
+          search: {
+            fields: [
+              {
+                value: "name",
+                label: "名称",
+              },
+              {
+                value: "id",
+                label: "ID",
+              },
+            ],
+            field: searchField,
+            value: searchText,
+            onFieldChange: setSearchField,
+            onChange: setSearchText,
+          },
+          refresh: {
+            label: "刷新",
+            spinning: filesystems.isFetching,
+            onClick: refresh,
+          },
+        }}
       >
         <ListDataTable
           data={items}
@@ -225,12 +223,16 @@ export function FilesystemsPage() {
                         </Menu.Item>
                         <Menu.Item
                           key="delete"
-                          style={{ color: "var(--color-danger-6)" }}
+                          style={{
+                            color: "var(--color-danger-6)",
+                          }}
                           onClick={() =>
                             Modal.confirm({
                               title: "删除文件存储",
                               content: `确定删除「${item.name}」？请先确认没有实例正在使用该文件系统。`,
-                              okButtonProps: { status: "danger" },
+                              okButtonProps: {
+                                status: "danger",
+                              },
                               onOk: () => remove.mutateAsync(item),
                             })
                           }
