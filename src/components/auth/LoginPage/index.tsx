@@ -1,4 +1,4 @@
-import { Button, Divider, Form, Input, Message } from "@arco-design/web-react";
+import { Button, Divider, Form, Input } from "@arco-design/web-react";
 import { IconDriveFile, IconLock } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -6,9 +6,10 @@ import { useEffect } from "react";
 import backgroundImageUrl from "@/assets/auth/background-01-cqy.png";
 import logoUrl from "@/assets/brand/logo.png";
 import { passwordLogin } from "@/api/auth";
-import { parseApiError } from "@/lib/errors";
+import { ApiError } from "@/api/request";
 import { isAuthenticated, useAuthStore } from "@/stores/auth";
 import styles from "./index.module.css";
+import { showMessage } from "@/lib/feedback";
 
 export function LoginPage({ redirect = "/" }: { redirect?: string }) {
   const navigate = useNavigate();
@@ -22,27 +23,35 @@ export function LoginPage({ redirect = "/" }: { redirect?: string }) {
   }, [navigate, redirect]);
 
   const login = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "登录",
+        successText: "登录成功",
+        errorFallback: "登录失败，请稍后重试",
+      },
+    },
     mutationFn: async (values: PasswordLoginValues) => {
       const submitData = {
         tenant_name: values.tenant_name.trim(),
         username: values.username.trim(),
         password: values.password,
       };
-      return passwordLogin(submitData);
+      try {
+        return await passwordLogin(submitData);
+      } catch (error) {
+        throw new Error(getPasswordLoginErrorMessage(error));
+      }
     },
     onSuccess: (tokens) => {
       setTokens(tokens);
-      Message.success("登录成功");
       navigate({ to: redirect, replace: true });
-    },
-    onError: (error) => {
-      Message.error(getPasswordLoginErrorMessage(error));
     },
   });
 
   const skipLogin = () => {
     setDevelopmentBypass(true);
-    Message.info("已进入开发预览模式");
+    showMessage({ type: "info", content: "已进入开发预览模式" });
     navigate({ to: redirect, replace: true });
   };
 
@@ -162,9 +171,9 @@ interface PasswordLoginValues {
 }
 
 function getPasswordLoginErrorMessage(error: unknown): string {
-  const parsed = parseApiError(error);
-  if (parsed.code === "INVALID_CREDENTIALS") return "用户名或密码错误";
-  if (parsed.code === "TENANT_NOT_FOUND") return "租户不存在，请检查租户标识";
+  if (error instanceof ApiError && error.code === "INVALID_CREDENTIALS") return "用户名或密码错误";
+  if (error instanceof ApiError && error.code === "TENANT_NOT_FOUND")
+    return "租户不存在，请检查租户标识";
   if (typeof navigator !== "undefined" && !navigator.onLine) return "网络异常，请稍后重试";
-  return parsed.message || "登录失败，请稍后重试";
+  return error instanceof Error && error.message.trim() ? error.message : "登录失败，请稍后重试";
 }

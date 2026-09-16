@@ -20,6 +20,16 @@
 - 当前快速迭代阶段不保留自动化测试资产；页面与交互由用户手动验证。
 - 不覆盖或清理用户已有的无关工作区改动。
 
+### 用户反馈
+
+- 业务代码不得直接调用 Arco `Message.*` 或 `Notification.*`；即时轻反馈统一使用 `src/lib/feedback.ts` 的 `showMessage`，查询、非表单操作和后台任务反馈统一通过 TanStack Query meta 或反馈模块声明。
+- 所有用户可见查询必须配置 `meta.errorNotification`；确需静默的查询必须在查询定义旁注明原因。查询成功时由全局 `QueryCache` 关闭同 ID 的旧错误通知。
+- 所有 mutation 必须配置 `meta.feedback`。表单提交使用 `channel: "message"`，非表单操作及后台任务使用 `channel: "notification"`；组件回调只保留缓存失效、关闭弹窗、导航等业务副作用。
+- Query 与 mutation 的反馈 ID 必须使用短且页面无关的业务语义名称；同一数据源或同一操作在不同入口复用同一 ID，禁止包含文件路径、组件名或页面名。需要关联资源 ID 等动态维度时统一使用 `src/lib/id.ts` 的 `withId`；查询键等需要稳定作用域标识的场景复用同一工具。
+- 禁止新增远程错误的组件内 `Alert`、`Result`、错误文本或错误专用重试占位。列表、表格查询失败且无数据时直接使用组件既有空占位，不得为错误状态新增 `loadFailed`、`failed`、空白壳层或条件包装；已有缓存数据继续展示。
+- 表单必须同时保留 `Form.Item` 字段级校验和提交级 Message；直接调用 `form.validate()` 时必须经过统一校验入口，避免漏提示或重复提示。
+- 资源自身业务状态（包括名为 `error` 或 `failed` 的状态值）及静态说明、风险提示类 Alert 不属于远程请求错误提示，不得机械删除。
+
 ### 组件拆分判断
 
 文件行数用于提示职责是否过多，不作为机械拆分目标：
@@ -62,7 +72,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ani-console** (3023 symbols, 7816 relationships, 241 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ani-console** (3010 symbols, 7784 relationships, 239 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 

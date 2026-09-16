@@ -1,12 +1,13 @@
+import { withId } from "@/lib/id";
 import { listFilesystemMountTargets, listFilesystems } from "@/api/storage/filesystems";
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { StorageFilesystem } from "@/api/storage/filesystems";
 import type { InstanceRecord } from "@/api/instances";
-import { Alert, Checkbox, Form, Input, Message, Modal, Select } from "@arco-design/web-react";
+import { Alert, Checkbox, Form, Input, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { getErrorMessage } from "@/lib/errors";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 type Values = { filesystemId: string; mountPath: string; readOnly?: boolean };
@@ -23,6 +24,13 @@ export function ContainerInstanceAttachFilesystemModal({
   const [form] = Form.useForm<Values>();
   const [selectedId, setSelectedId] = useState("");
   const filesystems = useQuery({
+    meta: {
+      errorNotification: {
+        id: "filesystems",
+        action: "文件存储列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["filesystems", "container-instance-attach-filesystem", instance.id],
     queryFn: () =>
       listFilesystems({
@@ -32,11 +40,26 @@ export function ContainerInstanceAttachFilesystemModal({
       }),
   });
   const mountTargets = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("filesystem-mounts", selectedId),
+        action: "NFS 挂载目标检查",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["filesystem-mount-targets", selectedId],
     queryFn: async () => (await listFilesystemMountTargets(selectedId, { limit: 100 })).items,
     enabled: Boolean(selectedId),
   });
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "挂载 NFS 已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (values: Values) => {
       const submitData = {
         action: "attach_filesystem" as const,
@@ -47,10 +70,8 @@ export function ContainerInstanceAttachFilesystemModal({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("挂载 NFS 已提交");
       onSubmitted();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const attachedIds = new Set(
     (instance.storage_attachments ?? [])
@@ -76,18 +97,13 @@ export function ContainerInstanceAttachFilesystemModal({
         disabled: Boolean(selectedId) && (mountTargets.isLoading || !hasMountTarget),
       }}
       onCancel={cancel}
-      onOk={async () => mutation.mutate(await form.validate())}
+      onOk={async () => mutation.mutate(await validateForm(form))}
       unmountOnExit
     >
       <Form form={form} layout="vertical" initialValues={{ readOnly: false }}>
         <Form.Item
           field="filesystemId"
           label="文件存储 NFS"
-          extra={
-            filesystems.error
-              ? getErrorMessage(filesystems.error, "文件存储列表加载失败")
-              : undefined
-          }
           rules={[{ required: true, message: "请选择 NFS" }]}
         >
           <Select
@@ -104,14 +120,6 @@ export function ContainerInstanceAttachFilesystemModal({
             ))}
           </Select>
         </Form.Item>
-        {selectedId && mountTargets.error ? (
-          <Alert
-            type="error"
-            showIcon
-            content={getErrorMessage(mountTargets.error, "NFS 挂载目标检查失败")}
-            className="mb-4"
-          />
-        ) : null}
         {selectedId && !mountTargets.isLoading && !mountTargets.error && !hasMountTarget ? (
           <Alert
             type="warning"

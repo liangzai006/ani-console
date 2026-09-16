@@ -2,10 +2,10 @@ import { listVolumes } from "@/api/storage/volumes";
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { StorageVolume } from "@/api/storage/volumes";
 import type { InstanceRecord } from "@/api/instances";
-import { Checkbox, Form, Input, Message, Modal, Select } from "@arco-design/web-react";
+import { Checkbox, Form, Input, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getErrorMessage } from "@/lib/errors";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 type Values = { volumeId: string; mountPath: string; readOnly?: boolean };
@@ -27,6 +27,13 @@ export function VmInstanceAttachVolumeModal({
 }) {
   const [form] = Form.useForm<Values>();
   const volumes = useQuery({
+    meta: {
+      errorNotification: {
+        id: "volumes",
+        action: "云盘列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["volumes", "vm-instance-attach-volume", instance.id],
     queryFn: () =>
       listVolumes({
@@ -36,6 +43,14 @@ export function VmInstanceAttachVolumeModal({
       }),
   });
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "挂载云盘已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (values: Values) => {
       const submitData = {
         action: "attach_volume" as const,
@@ -47,10 +62,8 @@ export function VmInstanceAttachVolumeModal({
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      Message.success("挂载云盘已提交");
       onSubmitted(operationId);
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const attachedIds = new Set((instance.volumes ?? []).map(attachedVolumeId).filter(Boolean));
   const options = ((volumes.data?.items ?? []) as StorageVolume[]).filter(
@@ -67,14 +80,13 @@ export function VmInstanceAttachVolumeModal({
       onCancel={() => {
         onCancel();
       }}
-      onOk={async () => mutation.mutate(await form.validate())}
+      onOk={async () => mutation.mutate(await validateForm(form))}
       unmountOnExit
     >
       <Form form={form} layout="vertical" initialValues={{ readOnly: false }}>
         <Form.Item
           field="volumeId"
           label="云盘"
-          extra={volumes.error ? getErrorMessage(volumes.error, "云盘列表加载失败") : undefined}
           rules={[{ required: true, message: "请选择云盘" }]}
         >
           <Select loading={volumes.isLoading} placeholder="请选择可挂载云盘" showSearch>

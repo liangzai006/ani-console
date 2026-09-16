@@ -6,7 +6,6 @@ import {
   updateNetworkSecurityGroupRule,
   type NetworkSecurityGroupRuleResource,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
 
 export type SecurityGroupRuleResource = NetworkSecurityGroupRuleResource;
 type Direction = SecurityGroupRuleResource["direction"];
@@ -59,6 +58,7 @@ export function SecurityGroupRuleModal({
       );
   }, [direction, rule, visible]);
   const save = useMutation({
+    meta: { feedback: { channel: "message", action: "更新", errorFallback: "请求失败" } },
     mutationFn: async () => {
       const submitData = {
         ...draft,
@@ -80,7 +80,6 @@ export function SecurityGroupRuleModal({
       onSuccess?.();
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
 
   return (

@@ -1,17 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Empty,
-  Message,
-  Modal,
-  Space,
-  Spin,
-  Typography,
-} from "@arco-design/web-react";
+import { Alert, Button, Empty, Modal, Space, Spin, Typography } from "@arco-design/web-react";
 import { completeVolumeOSInit, getVolumeOSInitGuide } from "@/api/storage/volumes";
-import { showApiError } from "@/lib/api-error";
-import { ApiErrorAlert } from "@/components/common";
+
+import { showMessage } from "@/lib/feedback";
+import { withId } from "@/lib/id";
 
 export function VolumeOSInitGuideModal({
   visible,
@@ -24,18 +16,25 @@ export function VolumeOSInitGuideModal({
 }) {
   const qc = useQueryClient();
   const guide = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("volume-init", volumeId),
+        action: "初始化说明加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["volume-os-init-guide", volumeId],
     queryFn: () => getVolumeOSInitGuide(volumeId),
     enabled: visible,
   });
   const complete = useMutation({
+    meta: { feedback: { channel: "message", action: "操作", errorFallback: "请求失败" } },
     mutationFn: (_: undefined) => completeVolumeOSInit(volumeId, { mode: "done" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["volume", volumeId] });
       qc.invalidateQueries({ queryKey: ["volume-os-init-guide", volumeId] });
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal
@@ -61,8 +60,6 @@ export function VolumeOSInitGuideModal({
         <div className="flex justify-center py-12">
           <Spin />
         </div>
-      ) : guide.error ? (
-        <ApiErrorAlert error={guide.error} />
       ) : guide.data ? (
         <Space direction="vertical" size={16} className="w-full">
           <Alert type="info" showIcon content={guide.data.hint || `设备：${guide.data.device}`} />
@@ -89,7 +86,7 @@ export function VolumeOSInitGuideModal({
                   size="small"
                   onClick={() => {
                     void navigator.clipboard.writeText(step.command);
-                    Message.success("命令已复制");
+                    showMessage({ type: "success", content: "命令已复制" });
                   }}
                 >
                   复制命令
@@ -100,7 +97,9 @@ export function VolumeOSInitGuideModal({
             <Empty description="当前无需执行初始化步骤" />
           )}
         </Space>
-      ) : null}
+      ) : (
+        <div className="min-h-32" />
+      )}
     </Modal>
   );
 }

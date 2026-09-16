@@ -1,8 +1,8 @@
+import { withId } from "@/lib/id";
 import { listInstanceOperations, type InstanceOperation } from "@/api/instances";
 import { Empty } from "@arco-design/web-react";
 import { DataTable, StatusTag } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
 const OPERATION_LABELS: Record<string, string> = {
@@ -31,6 +31,11 @@ const OPERATION_LABELS: Record<string, string> = {
 export function InstanceOperations({ instanceId }: { instanceId: string }) {
   const { query, page, pageSize, setPage, setPageSize } =
     useCursorPaginatedQuery<InstanceOperation>({
+      errorNotification: {
+        id: withId("instance-operations", instanceId),
+        action: "操作历史加载",
+        fallback: "请求失败，请稍后重试",
+      },
       queryKey: ["instance-operations", instanceId],
       cursorScope: instanceId,
       initialPageSize: 10,
@@ -38,11 +43,6 @@ export function InstanceOperations({ instanceId }: { instanceId: string }) {
         return listInstanceOperations(instanceId, { limit, cursor });
       },
     });
-  useListErrorNotification({
-    id: `instance-operations:${instanceId}`,
-    title: "操作历史加载失败",
-    error: query.error,
-  });
   return (
     <DataTable<InstanceOperation>
       data={query.data?.items ?? []}

@@ -1,12 +1,12 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceLifecycleRequest, InstanceRecord } from "@/api/instances";
-import { Button, Dropdown, Menu, Message, Space, Tooltip } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Space, Tooltip } from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
 import { VmInstanceAttachFilesystemModal } from "./VmInstanceAttachFilesystemModal";
 import { VmInstanceAttachVolumeModal } from "./VmInstanceAttachVolumeModal";
 import { VmInstanceChangeSecurityGroupsModal } from "./VmInstanceChangeSecurityGroupsModal";
@@ -53,30 +53,53 @@ export function VmInstanceActions({
   const [rebuildVisible, setRebuildVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const start = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "vm-start",
+        action: "操作",
+        successText: "开机已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = { action: "start" as const };
       const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      Message.success("开机已提交");
       onOperationSubmitted(operationId);
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const restart = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "vm-restart",
+        action: "操作",
+        successText: "重启已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = { action: "restart" as const };
       const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      Message.success("重启已提交");
       onOperationSubmitted(operationId);
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const terminationProtection = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "vm-protection",
+        action: "操作",
+        successText: "终止保护已更新",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (enabled: boolean) => {
       const submitData = {
         action: "set_termination_protection" as const,
@@ -86,10 +109,8 @@ export function VmInstanceActions({
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      Message.success("终止保护已更新");
       onOperationSubmitted(operationId);
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   const busy =

@@ -1,7 +1,7 @@
-import { Alert, Button, Drawer, Empty, List, Spin, Tag, Typography } from "@arco-design/web-react";
+import { withId } from "@/lib/id";
+import { Drawer, Empty, List, Spin, Tag, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { listKnowledgeBaseDocumentChunks, type KBChunk, type KBDocument } from "@/api/knowledge";
-import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 
 const CHUNK_TYPE_LABELS: Record<KBChunk["chunk_type"], string> = {
@@ -22,6 +22,13 @@ export function KnowledgeDocumentChunksDrawer({
   onCancel: () => void;
 }) {
   const chunks = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("knowledge-chunks", kbId, document?.id ?? "none"),
+        action: "文档分块加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["knowledge-base-document-chunks", kbId, document?.id],
     enabled: visible && Boolean(document),
     queryFn: async () => {
@@ -38,7 +45,6 @@ export function KnowledgeDocumentChunksDrawer({
       return items;
     },
   });
-
   return (
     <Drawer
       width={680}
@@ -51,17 +57,6 @@ export function KnowledgeDocumentChunksDrawer({
       {chunks.isLoading ? (
         <div className="flex justify-center py-16">
           <Spin />
-        </div>
-      ) : chunks.error ? (
-        <div className="flex flex-col items-center gap-2 py-8">
-          <Alert
-            type="error"
-            showIcon
-            content={getErrorMessage(chunks.error, "文档分块加载失败")}
-          />
-          <Button size="small" onClick={() => void chunks.refetch()}>
-            重试
-          </Button>
         </div>
       ) : (
         <List

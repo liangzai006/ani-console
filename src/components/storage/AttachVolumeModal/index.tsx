@@ -2,8 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { applyInstanceLifecycle, listInstances, type InstanceRecord } from "@/api/instances";
-import { showApiError } from "@/lib/api-error";
-import { getErrorMessage } from "@/lib/errors";
+import { withId } from "@/lib/id";
 
 type Instance = InstanceRecord;
 const attachableInstanceKinds = new Set<Instance["kind"]>(["vm", "container", "gpu_container"]);
@@ -22,6 +21,13 @@ export function AttachVolumeModal({
   const qc = useQueryClient();
   const [instanceId, setInstanceId] = useState("");
   const instances = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("instances", "volume-attach"),
+        action: "实例列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["instances", "volume-attach"],
     queryFn: () =>
       listInstances({
@@ -42,6 +48,7 @@ export function AttachVolumeModal({
   }, [instanceId, instanceItems]);
 
   const attach = useMutation({
+    meta: { feedback: { channel: "message", action: "挂载", errorFallback: "请求失败" } },
     mutationFn: () => {
       if (!instanceId) throw new Error("请选择挂载实例");
       return applyInstanceLifecycle(instanceId, {
@@ -57,7 +64,6 @@ export function AttachVolumeModal({
       onAttached?.();
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
 
   return (
@@ -92,14 +98,6 @@ export function AttachVolumeModal({
             ))}
           </Select>
         </Form.Item>
-        {instances.error ? (
-          <Alert
-            type="error"
-            showIcon
-            content={getErrorMessage(instances.error, "实例列表加载失败")}
-            className="mb-4"
-          />
-        ) : null}
         {!instances.isLoading && !instances.error && instanceItems.length === 0 ? (
           <Alert
             type="info"

@@ -1,8 +1,9 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Checkbox, Form, Input, Message, Modal } from "@arco-design/web-react";
+import { Checkbox, Form, Input, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 type Values = { volumeId: string; mountPath: string; readOnly?: boolean };
@@ -18,6 +19,14 @@ export function GpuInstanceAttachVolumeModal({
 }) {
   const [form] = Form.useForm<Values>();
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "挂载云盘已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (values: Values) => {
       const submitData = {
         action: "attach_volume" as const,
@@ -28,10 +37,8 @@ export function GpuInstanceAttachVolumeModal({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("挂载云盘已提交");
       onSubmitted();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal
@@ -41,7 +48,7 @@ export function GpuInstanceAttachVolumeModal({
       onCancel={() => {
         onCancel();
       }}
-      onOk={async () => mutation.mutate(await form.validate())}
+      onOk={async () => mutation.mutate(await validateForm(form))}
       unmountOnExit
     >
       <Form form={form} layout="vertical" initialValues={{ readOnly: false }}>

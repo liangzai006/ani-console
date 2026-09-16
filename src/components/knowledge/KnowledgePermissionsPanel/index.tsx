@@ -1,9 +1,9 @@
+import { withId } from "@/lib/id";
 import {
   Alert,
   Button,
   Form,
   Input,
-  Message,
   Space,
   Spin,
   Switch,
@@ -11,10 +11,10 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { showApiError } from "@/lib/api-error";
+
 import { getKnowledgeBasePermissions, updateKnowledgeBasePermissions } from "@/api/knowledge";
-import { ApiErrorAlert } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
+import { validateForm } from "@/lib/form";
 
 type PermissionFormValues = {
   public_read: boolean;
@@ -38,10 +38,16 @@ export function KnowledgePermissionsPanel({ kbId }: { kbId: string }) {
   const [form] = Form.useForm<PermissionFormValues>();
   const qc = useQueryClient();
   const permissions = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("knowledge-permissions", kbId),
+        action: "权限配置加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["knowledge-base-permissions", kbId],
     queryFn: () => getKnowledgeBasePermissions(kbId),
   });
-
   useEffect(() => {
     if (!permissions.data) return;
     form.setFieldsValue({
@@ -51,6 +57,15 @@ export function KnowledgePermissionsPanel({ kbId }: { kbId: string }) {
   }, [form, permissions.data]);
 
   const update = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "knowledge-permissions-update",
+        action: "保存知识库权限",
+        successText: "知识库权限已保存",
+        errorFallback: "保存知识库权限失败",
+      },
+    },
     mutationFn: async (values: PermissionFormValues) => {
       const allowedUserIds = parseUserIds(values.allowed_user_ids_text);
       const invalidId = allowedUserIds.find((id) => !UUID_PATTERN.test(id));
@@ -62,11 +77,9 @@ export function KnowledgePermissionsPanel({ kbId }: { kbId: string }) {
       await updateKnowledgeBasePermissions(kbId, submitData);
     },
     onSuccess: () => {
-      Message.success("知识库权限已保存");
       void qc.invalidateQueries({ queryKey: ["knowledge-base-permissions", kbId] });
       void qc.invalidateQueries({ queryKey: ["knowledge-base", kbId] });
     },
-    onError: (error) => showApiError(error, "保存知识库权限失败"),
   });
 
   if (permissions.isLoading && !permissions.data) {
@@ -78,12 +91,7 @@ export function KnowledgePermissionsPanel({ kbId }: { kbId: string }) {
   }
 
   if (permissions.error && !permissions.data) {
-    return (
-      <Space direction="vertical" size={8} className="w-full">
-        <ApiErrorAlert error={permissions.error} title="权限配置加载失败" />
-        <Button onClick={() => void permissions.refetch()}>重试</Button>
-      </Space>
-    );
+    return <div className="min-h-40" />;
   }
 
   return (
@@ -120,7 +128,9 @@ export function KnowledgePermissionsPanel({ kbId }: { kbId: string }) {
           <Button
             type="primary"
             loading={update.isPending}
-            onClick={() => form.validate().then((values) => update.mutate(values))}
+            onClick={() =>
+              validateForm<PermissionFormValues>(form).then((values) => update.mutate(values))
+            }
           >
             保存权限
           </Button>

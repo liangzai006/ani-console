@@ -1,17 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  Button,
-  Form,
-  Input,
-  Message,
-  Modal,
-  Select,
-  Space,
-  Typography,
-} from "@arco-design/web-react";
+import { Button, Form, Input, Modal, Select, Space, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { getRegistryPushInstructions, type RegistryProject } from "@/api/registry";
-import { getErrorMessage } from "@/lib/errors";
+import { showMessage } from "@/lib/feedback";
+import { withId } from "@/lib/id";
 
 interface RegistryPushInstructionsModalProps {
   visible: boolean;
@@ -20,7 +12,9 @@ interface RegistryPushInstructionsModalProps {
 }
 
 function copyCommand(command: string) {
-  void navigator.clipboard.writeText(command).then(() => Message.success("命令已复制"));
+  void navigator.clipboard
+    .writeText(command)
+    .then(() => showMessage({ type: "success", content: "命令已复制" }));
 }
 
 export function RegistryPushInstructionsModal({
@@ -31,11 +25,17 @@ export function RegistryPushInstructionsModal({
   const [project, setProject] = useState("");
   const [repository, setRepository] = useState("demo/app");
   const instructions = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("registry-push", project, repository),
+        action: "推送说明加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["registry-push-instructions", project, repository],
     queryFn: () => getRegistryPushInstructions(project, repository.trim() || "demo/app"),
     enabled: visible && Boolean(project),
   });
-
   useEffect(() => {
     if (!project && projects?.[0]) setProject(projects[0].name);
   }, [project, projects]);
@@ -69,10 +69,6 @@ export function RegistryPushInstructionsModal({
       </Form>
       {instructions.isLoading ? (
         <Typography.Text type="secondary">正在获取推送说明…</Typography.Text>
-      ) : instructions.isError ? (
-        <Typography.Text type="error">
-          {getErrorMessage(instructions.error, "推送说明加载失败")}
-        </Typography.Text>
       ) : instructions.data ? (
         <Space direction="vertical" className="w-full">
           {instructions.data.commands.map((item) => (
@@ -90,7 +86,7 @@ export function RegistryPushInstructionsModal({
           ))}
         </Space>
       ) : (
-        <Typography.Text type="secondary">当前租户项目暂不可用，请刷新后重试。</Typography.Text>
+        <div className="min-h-24" />
       )}
     </Modal>
   );

@@ -8,7 +8,7 @@ import {
   listFilesystems,
   type StorageFilesystem,
 } from "@/api/storage/filesystems";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateFilesystemModal } from "@/components/storage/CreateFilesystemModal";
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
@@ -22,7 +22,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
 type Filesystem = StorageFilesystem;
@@ -46,6 +45,11 @@ export function FilesystemsPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<Filesystem>({
+    errorNotification: {
+      id: "filesystems",
+      action: "文件存储列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["filesystems", { status, searchField, searchText }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -60,23 +64,25 @@ export function FilesystemsPage() {
     },
   });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "filesystem-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (item: Filesystem) => deleteFilesystem(item.id),
     onSuccess: () => {
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["filesystems"] });
     },
-    onError: (error) => showApiError(error),
   });
   const items = useMemo(
     () => (filesystems.data?.items ?? []) as Filesystem[],
     [filesystems.data?.items],
   );
   const paginationTotal = filesystems.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "filesystems-list",
-    title: "文件存储列表加载失败",
-    error: filesystems.error,
-  });
   const mountTargetQueries = useQueries({
     queries: items.map((item) => ({
       queryKey: ["filesystem-mounts", item.id, "count"],

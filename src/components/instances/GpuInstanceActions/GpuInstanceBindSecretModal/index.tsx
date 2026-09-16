@@ -2,11 +2,11 @@ import { listSecrets } from "@/api/secrets";
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { Secret } from "@/api/secrets";
 import type { InstanceRecord } from "@/api/instances";
-import { Form, Input, Message, Modal, Select } from "@arco-design/web-react";
+import { Form, Input, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { getErrorMessage } from "@/lib/errors";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 type Values = {
@@ -28,10 +28,25 @@ export function GpuInstanceBindSecretModal({
   const [form] = Form.useForm<Values>();
   const [bindingType, setBindingType] = useState<"env" | "file">("env");
   const secrets = useQuery({
+    meta: {
+      errorNotification: {
+        id: "secrets",
+        action: "密钥列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["secrets", "gpu-instance-bind-secret"],
     queryFn: () => listSecrets({ limit: 100 }),
   });
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "绑定密钥已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (values: Values) => {
       const submitData = {
         action: "bind_secret" as const,
@@ -43,10 +58,8 @@ export function GpuInstanceBindSecretModal({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("绑定密钥已提交");
       onSubmitted();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const options = ((secrets.data?.items ?? []) as Secret[]).filter((secret) => secret.id);
   return (
@@ -57,14 +70,13 @@ export function GpuInstanceBindSecretModal({
       onCancel={() => {
         onCancel();
       }}
-      onOk={async () => mutation.mutate(await form.validate())}
+      onOk={async () => mutation.mutate(await validateForm(form))}
       unmountOnExit
     >
       <Form form={form} layout="vertical" initialValues={{ bindingType: "env" }}>
         <Form.Item
           field="secretId"
           label="密钥"
-          extra={secrets.error ? getErrorMessage(secrets.error, "密钥列表加载失败") : undefined}
           rules={[{ required: true, message: "请选择密钥" }]}
         >
           <Select

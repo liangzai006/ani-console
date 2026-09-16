@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Form, Input, InputNumber, Modal, Select } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { createBucketLifecycleRule, type StorageBucketLifecycleRule } from "@/api/storage/buckets";
-import { showApiError } from "@/lib/api-error";
 
 type LifecycleRule = StorageBucketLifecycleRule;
 
@@ -32,6 +31,7 @@ export function CreateLifecycleRuleModal({
     setEnabled(rule?.enabled ?? true);
   }, [rule, visible]);
   const create = useMutation({
+    meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       if (!name.trim()) throw new Error("请输入规则名称");
       return createBucketLifecycleRule(bucketId, {
@@ -47,7 +47,6 @@ export function CreateLifecycleRuleModal({
       qc.invalidateQueries({ queryKey: ["bucket", bucketId] });
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal

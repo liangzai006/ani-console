@@ -12,7 +12,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatBytes, formatDateTime } from "@/lib/format";
 
 type Bucket = StorageBucketRecord;
@@ -31,6 +30,11 @@ export function ObjectsPage() {
     setPageSize,
     refresh,
   } = useCursorPaginatedQuery<Bucket>({
+    errorNotification: {
+      id: "buckets",
+      action: "对象存储桶列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["buckets", { searchField, searchText }],
     cursorScope: `${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -45,12 +49,6 @@ export function ObjectsPage() {
   });
   const items = (buckets.data?.items ?? []) as Bucket[];
   const paginationTotal = buckets.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "buckets-list",
-    title: "对象存储桶列表加载失败",
-    error: buckets.error,
-  });
-
   const columns: Array<ListColumn<Bucket>> = [
     {
       key: "name",

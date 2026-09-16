@@ -1,21 +1,15 @@
+import { withId } from "@/lib/id";
 import { getInstance, type InstanceRecord } from "@/api/instances";
-import { Button, Space, Spin, Tag, Tooltip } from "@arco-design/web-react";
+import { Button, Empty, Space, Spin, Tag, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  ApiErrorAlert,
-  AliIcon,
-  DetailPageFrame,
-  ImageNameText,
-  StatusTag,
-} from "@/components/common";
+import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceTerminal } from "@/components/instances/InstanceTerminal";
 import { InstanceNetwork } from "@/components/instances/InstanceNetwork";
 import { InstanceReleases } from "@/components/instances/InstanceReleases";
 import { GpuInstanceActions } from "@/components/instances/GpuInstanceActions";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import type { GpuInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
@@ -51,15 +45,16 @@ export function GpuInstanceDetailPage({
   const queryClient = useQueryClient();
   const [mountKind, setMountKind] = useState<MountKind>();
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("gpu-container", instanceId),
+        action: "GPU 容器实例加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["gpu-instance", instanceId],
     queryFn: () => getInstance(instanceId),
   });
-  useListErrorNotification({
-    id: `gpu-container-detail:${instanceId}`,
-    title: "GPU 容器实例加载失败",
-    error: detail.error,
-  });
-
   if (detail.isLoading && !detail.data) {
     return (
       <div className="flex justify-center py-20">
@@ -99,7 +94,7 @@ export function GpuInstanceDetailPage({
   const terminalAvailable =
     instance.state === "running" && instance.access?.exec_available !== false;
   if (instance.kind !== "gpu_container") {
-    return <ApiErrorAlert error={new Error("当前资源不是 GPU 容器实例")} title="资源类型不匹配" />;
+    return <Empty description="当前资源不是 GPU 容器实例" />;
   }
 
   const nodeName = instance.compute?.node_name ?? instance.node_name ?? "-";

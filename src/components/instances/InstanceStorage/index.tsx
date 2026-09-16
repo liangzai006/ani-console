@@ -1,25 +1,16 @@
+import { withId } from "@/lib/id";
 import { listVolumes } from "@/api/storage/volumes";
 import { listFilesystemMountTargets, listFilesystems } from "@/api/storage/filesystems";
 import type { StorageFilesystem } from "@/api/storage/filesystems";
 import type { StorageVolume } from "@/api/storage/volumes";
 import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import {
-  Alert,
-  Checkbox,
-  Empty,
-  Form,
-  Input,
-  Message,
-  Modal,
-  Select,
-  Space,
-} from "@arco-design/web-react";
+import { Alert, Checkbox, Empty, Form, Input, Modal, Select, Space } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
-import { getErrorMessage } from "@/lib/errors";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 type Volume = NonNullable<Instance["volumes"]>[number];
@@ -60,6 +51,13 @@ export function InstanceStorage({
   );
   const attachedFilesystemIds = new Set(filesystems.map((filesystem) => filesystem.resource_id));
   const volumeOptions = useQuery({
+    meta: {
+      errorNotification: {
+        id: "volumes",
+        action: "云盘列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["volumes", "instance-mount", instance.id],
     queryFn: () =>
       listVolumes({
@@ -70,6 +68,13 @@ export function InstanceStorage({
     enabled: mountKind === "volume",
   });
   const filesystemOptions = useQuery({
+    meta: {
+      errorNotification: {
+        id: "filesystems",
+        action: "文件存储列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["filesystems", "instance-mount", instance.id],
     queryFn: () =>
       listFilesystems({
@@ -80,6 +85,13 @@ export function InstanceStorage({
     enabled: mountKind === "filesystem",
   });
   const mountTargets = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("filesystem-mounts", selectedResourceId),
+        action: "NFS 挂载目标检查",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["filesystem-mount-targets", selectedResourceId],
     queryFn: async () =>
       (await listFilesystemMountTargets(selectedResourceId, { limit: 100 })).items,
@@ -112,6 +124,14 @@ export function InstanceStorage({
   }, [form, mountKind]);
 
   const mount = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "instance-storage-mount",
+        action: "操作",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (values: MountFormValues) => {
       const resourceId = values.resourceId?.trim();
       const mountPath = values.mountPath?.trim();
@@ -128,13 +148,11 @@ export function InstanceStorage({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success(mountKind === "volume" ? "云盘挂载已提交" : "NFS 挂载已提交");
       onMountKindChange(undefined);
       setSelectedResourceId("");
       form.resetFields();
       onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   return (
@@ -214,7 +232,7 @@ export function InstanceStorage({
           setSelectedResourceId("");
           form.resetFields();
         }}
-        onOk={async () => mount.mutate(await form.validate())}
+        onOk={async () => mount.mutate(await validateForm(form))}
         unmountOnExit
       >
         <Form form={form} layout="vertical">
@@ -249,30 +267,6 @@ export function InstanceStorage({
                   ))}
             </Select>
           </Form.Item>
-          {mountKind === "volume" && volumeOptions.error ? (
-            <Alert
-              className="mb-4"
-              type="error"
-              showIcon
-              content={getErrorMessage(volumeOptions.error, "云盘列表加载失败")}
-            />
-          ) : null}
-          {mountKind === "filesystem" && filesystemOptions.error ? (
-            <Alert
-              className="mb-4"
-              type="error"
-              showIcon
-              content={getErrorMessage(filesystemOptions.error, "文件存储列表加载失败")}
-            />
-          ) : null}
-          {mountKind === "filesystem" && selectedResourceId && mountTargets.error ? (
-            <Alert
-              className="mb-4"
-              type="error"
-              showIcon
-              content={getErrorMessage(mountTargets.error, "NFS 挂载目标检查失败")}
-            />
-          ) : null}
           {mountKind === "filesystem" &&
           selectedResourceId &&
           !mountTargets.isLoading &&

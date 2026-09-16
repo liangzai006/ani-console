@@ -1,18 +1,9 @@
 import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import {
-  Button,
-  Descriptions,
-  Empty,
-  Message,
-  Modal,
-  Space,
-  Typography,
-} from "@arco-design/web-react";
+import { Button, Descriptions, Empty, Modal, Space, Typography } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { DataTable, TableSectionHeader } from "@/components/common";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
 type Instance = InstanceRecord;
 
@@ -54,6 +45,15 @@ export function InstanceConfiguration({
   }));
   const scopes = instance.workload_identity?.scopes ?? [];
   const unbindSecret = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "secret-unbind",
+        action: "操作",
+        successText: "密钥解绑已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (reference: string) => {
       const submitData = {
         action: "unbind_secret" as const,
@@ -62,10 +62,8 @@ export function InstanceConfiguration({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("密钥解绑已提交");
       onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   return (

@@ -7,8 +7,7 @@ import {
   type VectorMetric,
   type VectorStore,
 } from "@/api/storage/vector-stores";
-import { showApiError } from "@/lib/api-error";
-import { getErrorMessage } from "@/lib/errors";
+import { withId } from "@/lib/id";
 
 export function CreateVectorStoreModal({
   visible,
@@ -25,6 +24,13 @@ export function CreateVectorStoreModal({
   const [dimension, setDimension] = useState(1536);
   const [metric, setMetric] = useState<VectorMetric>("cosine");
   const models = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("models", "embedding"),
+        action: "Embedding 模型列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["models", "vector-store-create"],
     queryFn: () => listModels({ limit: 100, capability: "embedding", status: "ready" }),
     enabled: visible,
@@ -44,6 +50,7 @@ export function CreateVectorStoreModal({
     setMetric("cosine");
   };
   const create = useMutation({
+    meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入向量存储名称");
@@ -64,7 +71,6 @@ export function CreateVectorStoreModal({
       onCreated?.(data);
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal
@@ -103,13 +109,7 @@ export function CreateVectorStoreModal({
             ))}
           </Select>
         </Form.Item>
-        {models.error ? (
-          <Alert
-            type="warning"
-            showIcon
-            content={getErrorMessage(models.error, "Embedding 模型列表加载失败")}
-          />
-        ) : !models.isLoading && modelOptions.length === 0 ? (
+        {!models.error && !models.isLoading && modelOptions.length === 0 ? (
           <Alert type="warning" showIcon content="暂无已就绪的 Embedding 模型" />
         ) : null}
         <Form.Item label="向量维度" required>

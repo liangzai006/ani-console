@@ -10,7 +10,6 @@ import {
 } from "@/components/common";
 import { SandboxInstanceActions } from "@/components/instances/SandboxInstanceActions";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { SandboxInstanceCreateModal } from "@/components/instances/SandboxInstanceCreateModal";
@@ -32,6 +31,11 @@ export function SandboxInstancesPage() {
 
   const { query, page, pageSize, setPage, setPageSize, refresh } =
     useCursorPaginatedQuery<SandboxInstance>({
+      errorNotification: {
+        id: "sandboxes",
+        action: "Sandbox 实例列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
       queryKey: ["sandbox-instances", { status, searchField, searchText }],
       cursorScope: `sandbox:${status}:${searchField}:${searchText.trim()}`,
       fetchPage: async ({ cursor, limit }) => {
@@ -46,12 +50,6 @@ export function SandboxInstancesPage() {
         });
       },
     });
-
-  useListErrorNotification({
-    id: "sandbox-instances:list",
-    title: "Sandbox 实例列表加载失败",
-    error: query.error,
-  });
 
   useEffect(() => setPage(1), [searchField, searchText, setPage, status]);
 

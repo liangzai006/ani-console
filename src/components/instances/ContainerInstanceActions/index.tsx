@@ -1,11 +1,11 @@
 import type { InstanceLifecycleRequest, InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { Button, Dropdown, Menu, Message, Space, Tooltip } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Space, Tooltip } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
 import { ContainerInstanceAttachFilesystemModal } from "./ContainerInstanceAttachFilesystemModal";
 import { ContainerInstanceAttachVolumeModal } from "./ContainerInstanceAttachVolumeModal";
 import { ContainerInstanceBindSecretModal } from "./ContainerInstanceBindSecretModal";
@@ -17,6 +17,7 @@ import { ContainerInstanceRollbackModal } from "./ContainerInstanceRollbackModal
 import { ContainerInstanceScaleModal } from "./ContainerInstanceScaleModal";
 import { ContainerInstanceStopModal } from "./ContainerInstanceStopModal";
 import { ContainerInstanceUpdateImageModal } from "./ContainerInstanceUpdateImageModal";
+import { showMessage } from "@/lib/feedback";
 
 type Instance = InstanceRecord;
 type LifecycleRequest = InstanceLifecycleRequest;
@@ -58,30 +59,53 @@ export function ContainerInstanceActions({
   const [stopVisible, setStopVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const start = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "container-start",
+        action: "操作",
+        successText: "启动已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = { action: "start" as const };
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("启动已提交");
       onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   const restart = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "container-restart",
+        action: "操作",
+        successText: "重启已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = { action: "restart" as const };
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("重启已提交");
       onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   const terminationProtection = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "container-protection",
+        action: "操作",
+        successText: "终止保护已更新",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (enabled: boolean) => {
       const submitData = {
         action: "set_termination_protection" as const,
@@ -90,10 +114,8 @@ export function ContainerInstanceActions({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("终止保护已更新");
       onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   const busy =
@@ -130,9 +152,9 @@ export function ContainerInstanceActions({
       if (!instance.endpoint) return;
       try {
         await navigator.clipboard.writeText(instance.endpoint);
-        Message.success("访问地址已复制");
+        showMessage({ type: "success", content: "访问地址已复制" });
       } catch {
-        Message.error("访问地址复制失败");
+        showMessage({ type: "error", content: "访问地址复制失败" });
       }
       return;
     }

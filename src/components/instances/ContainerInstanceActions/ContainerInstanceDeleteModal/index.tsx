@@ -1,8 +1,7 @@
 import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { Message, Modal } from "@arco-design/web-react";
+import { Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
 type Instance = InstanceRecord;
 
@@ -16,15 +15,21 @@ export function ContainerInstanceDeleteModal({
   onSubmitted: () => void;
 }) {
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "删除已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = { action: "delete" as const };
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("删除已提交");
       onSubmitted();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   return (

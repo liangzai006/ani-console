@@ -9,7 +9,7 @@ import {
   type StorageBucketClass,
   type StorageBucketRecord,
 } from "@/api/storage/buckets";
-import { showApiError } from "@/lib/api-error";
+
 import { bucketNamePattern } from "@/lib/validators";
 
 type Bucket = StorageBucketRecord;
@@ -35,6 +35,7 @@ export function CreateBucketModal({
     setStorageClass("standard");
   };
   const create = useMutation({
+    meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       const trimmedName = name.trim();
       if (!bucketNamePattern.test(trimmedName)) {
@@ -57,7 +58,6 @@ export function CreateBucketModal({
       onCreated?.(data);
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal

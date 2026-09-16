@@ -1,12 +1,12 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Button, Dropdown, Menu, Message, Space, Tooltip } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Space, Tooltip } from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
 import { GpuInstanceAttachFilesystemModal } from "./GpuInstanceAttachFilesystemModal";
 import { GpuInstanceAttachVolumeModal } from "./GpuInstanceAttachVolumeModal";
 import { GpuInstanceBindSecretModal } from "./GpuInstanceBindSecretModal";
@@ -19,6 +19,7 @@ import { GpuInstanceRollbackModal } from "./GpuInstanceRollbackModal";
 import { GpuInstanceScaleModal } from "./GpuInstanceScaleModal";
 import { GpuInstanceStopModal } from "./GpuInstanceStopModal";
 import { GpuInstanceUpdateImageModal } from "./GpuInstanceUpdateImageModal";
+import { showMessage } from "@/lib/feedback";
 
 type Instance = InstanceRecord;
 type ModalAction =
@@ -53,28 +54,51 @@ export function GpuInstanceActions({
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [rollbackLatestVisible, setRollbackLatestVisible] = useState(false);
   const start = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "gpu-container-start",
+        action: "操作",
+        successText: "启动已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = { action: "start" as const };
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("启动已提交");
       onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const restart = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "gpu-container-restart",
+        action: "操作",
+        successText: "重启已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = { action: "restart" as const };
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("重启已提交");
       onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const terminationProtection = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "gpu-container-protection",
+        action: "操作",
+        successText: "终止保护已更新",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (enabled: boolean) => {
       const submitData = {
         action: "set_termination_protection" as const,
@@ -83,10 +107,8 @@ export function GpuInstanceActions({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("终止保护已更新");
       onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const actionPending = start.isPending || restart.isPending || terminationProtection.isPending;
   const busy = BUSY_STATES.has(instance.state) || actionPending;
@@ -122,9 +144,9 @@ export function GpuInstanceActions({
       if (!instance.endpoint) return;
       try {
         await navigator.clipboard.writeText(instance.endpoint);
-        Message.success("访问地址已复制");
+        showMessage({ type: "success", content: "访问地址已复制" });
       } catch {
-        Message.error("访问地址复制失败");
+        showMessage({ type: "error", content: "访问地址复制失败" });
       }
       return;
     }

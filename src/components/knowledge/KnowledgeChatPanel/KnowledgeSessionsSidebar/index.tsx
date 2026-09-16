@@ -1,8 +1,7 @@
-import { Alert, Button, Empty, Modal, Spin } from "@arco-design/web-react";
+import { Button, Empty, Modal, Spin } from "@arco-design/web-react";
 import { IconPlus } from "@arco-design/web-react/icon";
 import clsx from "clsx";
 import type { KBSession as Session } from "@/api/knowledge";
-import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import styles from "./index.module.css";
 
@@ -12,7 +11,6 @@ export function KnowledgeSessionsSidebar({
   error,
   activeSessionId,
   deletingSessionId,
-  onRetry,
   onNew,
   onSelect,
   onDelete,
@@ -23,7 +21,6 @@ export function KnowledgeSessionsSidebar({
   error: unknown;
   activeSessionId?: string;
   deletingSessionId?: string;
-  onRetry: () => void;
   onNew: () => void;
   onSelect: (sessionId: string) => void;
   onDelete: (session: Session) => Promise<void>;
@@ -46,12 +43,7 @@ export function KnowledgeSessionsSidebar({
             <Spin size={18} />
           </div>
         ) : error ? (
-          <div className={styles.state}>
-            <Alert type="error" showIcon content={getErrorMessage(error, "会话列表加载失败")} />
-            <Button size="small" onClick={onRetry}>
-              重试
-            </Button>
-          </div>
+          <div className={styles.state} />
         ) : sessions?.length ? (
           sessions.map((session) => (
             <div key={session.id} className={styles.row}>

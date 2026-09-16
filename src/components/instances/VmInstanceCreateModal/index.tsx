@@ -12,7 +12,6 @@ import {
   Descriptions,
   Form,
   Input,
-  Message,
   Modal,
   Radio,
   Select,
@@ -27,9 +26,12 @@ import {
   CPU_INSTANCE_COMPUTE_SPECS,
   type CpuInstanceComputeSpec,
 } from "@/lib/instance-compute-specs";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
 import { optionalIpv4WithinCidrError, subnetFixedOctets, suggestGatewayIp } from "@/lib/validators";
 import styles from "./index.module.css";
+import { showMessage } from "@/lib/feedback";
+import { validateForm } from "@/lib/form";
+import { withId } from "@/lib/id";
 
 type SecurityGroup = NetworkSecurityGroup;
 type Filesystem = StorageFilesystem;
@@ -161,31 +163,73 @@ export function VmInstanceCreateModal({
   }, [form, visible]);
 
   const images = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("system-images", "vm"),
+        action: "系统镜像加载",
+        fallback: "请稍后重试",
+      },
+    },
     queryKey: ["registry-images", "vm-create", "system"],
     enabled: visible,
     queryFn: async () => (await listRegistryImages({ limit: 100, purpose: "system" })).items,
   });
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "VPC 列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "vm-create"],
     enabled: visible,
     queryFn: () => listNetworkVpcs({ limit: 100 }),
   });
   const subnets = useQuery({
+    meta: {
+      errorNotification: {
+        id: "subnets",
+        action: "子网列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-subnets", "vm-create", values.vpcId],
     enabled: visible && !!values.vpcId,
     queryFn: () => listNetworkSubnets({ limit: 100, vpc_id: values.vpcId }),
   });
   const securityGroups = useQuery({
+    meta: {
+      errorNotification: {
+        id: "security-groups",
+        action: "安全组列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-security-groups", "vm-create", values.vpcId],
     enabled: visible && !!values.vpcId,
     queryFn: () => listNetworkSecurityGroups({ limit: 100, vpc_id: values.vpcId }),
   });
   const filesystems = useQuery({
+    meta: {
+      errorNotification: {
+        id: "filesystems",
+        action: "文件存储列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["filesystems", "vm-create"],
     enabled: visible,
     queryFn: () => listFilesystems({ limit: 100 }),
   });
   const secrets = useQuery({
+    meta: {
+      errorNotification: {
+        id: "secrets",
+        action: "密钥列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["secrets", "vm-create"],
     enabled: visible,
     queryFn: () => listSecrets({ limit: 100 }),
@@ -211,6 +255,14 @@ export function VmInstanceCreateModal({
   );
 
   const create = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "创建",
+        successText: "云主机创建已提交",
+        errorFallback: "创建失败，请检查配置后重试",
+      },
+    },
     mutationFn: async () => {
       const instanceName = values.name.trim();
       const spec =
@@ -281,11 +333,9 @@ export function VmInstanceCreateModal({
       return (await createInstance(submitData)).operation_id;
     },
     onSuccess: async (operationId) => {
-      Message.success("云主机创建已提交");
       await queryClient.invalidateQueries({ queryKey: ["vm-instances"] });
       onCreated(operationId);
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "create")),
   });
 
   const close = () => {
@@ -293,7 +343,7 @@ export function VmInstanceCreateModal({
   };
   const next = async () => {
     try {
-      await form.validate();
+      await validateForm(form);
       if (step === 1 && !values.imageRef) throw new Error();
       if (step === 3 && (!values.vpcId || !values.subnetId)) throw new Error();
       if (step === 3 && values.ipMode === "manual" && (!values.privateIp || privateIpError))
@@ -302,7 +352,7 @@ export function VmInstanceCreateModal({
       if (step === 3 && values.loginMode === "password" && !values.password) throw new Error();
       setStep((current) => Math.min(STEPS.length - 1, current + 1));
     } catch {
-      Message.warning("请先完成当前步骤的必填项");
+      showMessage({ type: "warning", content: "请先完成当前步骤的必填项" });
     }
   };
   const setValue = <K extends keyof Values>(key: K, value: Values[K]) => {
@@ -377,9 +427,6 @@ export function VmInstanceCreateModal({
                     ))}
                   </Select>
                 </Form.Item>
-                {images.error ? (
-                  <Alert type="error" content="系统镜像加载失败，请稍后重试。" />
-                ) : null}
                 <Form.Item field="userData" label="cloud-init / user-data">
                   <Input.TextArea
                     disabled={values.loginMode === "password"}
@@ -507,7 +554,10 @@ export function VmInstanceCreateModal({
                     onChange={(mode) => {
                       if (mode === "password" && values.userData.trim()) {
                         setValue("userData", "");
-                        Message.info("密码登录会自动生成内联 user-data，已清除自定义内容");
+                        showMessage({
+                          type: "info",
+                          content: "密码登录会自动生成内联 user-data，已清除自定义内容",
+                        });
                       }
                       setValue("loginMode", mode);
                       setValue("sshKeyRef", "");

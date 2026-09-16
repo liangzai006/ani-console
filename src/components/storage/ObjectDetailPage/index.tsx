@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
@@ -8,47 +9,62 @@ import {
   getStorageObjectDownload,
   type StorageObject,
 } from "@/api/storage/objects";
-import { showApiError } from "@/lib/api-error";
+
 import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; objectId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("object", objectId),
+        action: "对象加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["object", objectId],
     queryFn: () => getStorageObject(objectId),
   });
-  useListErrorNotification({
-    id: `object-detail:${objectId}`,
-    title: "对象加载失败",
-    error: detail.error,
-  });
   const completeUpload = useMutation({
+    meta: { feedback: { channel: "message", action: "上传", errorFallback: "请求失败" } },
     mutationFn: (_: undefined) => completeStorageObjectUpload(objectId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["object", objectId] });
       qc.invalidateQueries({ queryKey: ["bucket-objects", bucketId] });
       qc.invalidateQueries({ queryKey: ["buckets"] });
     },
-    onError: (error) => showApiError(error),
   });
   const downloadObject = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "object-download",
+        action: "操作",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async (_: undefined) => {
       const data = await getStorageObjectDownload(objectId);
       if (data?.download_url) window.open(data.download_url, "_blank");
     },
-    onError: (error) => showApiError(error),
   });
   const deleteObject = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "object-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (_: undefined) => deleteStorageObject(objectId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["buckets"] });
       qc.invalidateQueries({ queryKey: ["bucket-objects", bucketId] });
       navigate({ to: "/objects/$bucketId", params: { bucketId } });
     },
-    onError: (error) => showApiError(error),
   });
 
   if (detail.isLoading && !detail.data)

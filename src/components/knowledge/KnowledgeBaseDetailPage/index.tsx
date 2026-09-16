@@ -1,7 +1,8 @@
+import { withId } from "@/lib/id";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Modal, Spin } from "@arco-design/web-react";
-import { showApiError } from "@/lib/api-error";
+
 import { deleteKnowledgeBase, getKnowledgeBase } from "@/api/knowledge";
 import { listVectorStores, type VectorStore } from "@/api/storage/vector-stores";
 import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
@@ -11,7 +12,6 @@ import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeD
 import { KnowledgePermissionsPanel } from "@/components/knowledge/KnowledgePermissionsPanel";
 import { KnowledgeBaseAuditLogsPanel } from "@/components/knowledge/KnowledgeBaseAuditLogsPanel";
 import { formatDateTime } from "@/lib/format";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 export type KnowledgeBaseDetailTabKey =
   | "overview"
@@ -30,25 +30,41 @@ export function KnowledgeBaseDetailPage({
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("knowledge-base", kbId),
+        action: "知识库加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["knowledge-base", kbId],
     queryFn: () => getKnowledgeBase(kbId),
   });
-  useListErrorNotification({
-    id: `knowledge-base-detail:${kbId}`,
-    title: "知识库加载失败",
-    error: detail.error,
-  });
   const vectorStores = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("knowledge-vector-stores", kbId),
+        action: "关联向量存储加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["vector-stores", "knowledge-base", kbId],
     queryFn: () => listVectorStores({ limit: 100 }),
   });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "knowledge-base-delete",
+        action: "删除知识库",
+        errorFallback: "删除知识库失败",
+      },
+    },
     mutationFn: () => deleteKnowledgeBase(kbId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["knowledge-bases"] });
       navigate({ to: "/kb" });
     },
-    onError: (error) => showApiError(error, "删除知识库失败"),
   });
   if (detail.isLoading && !detail.data)
     return (
@@ -128,7 +144,7 @@ export function KnowledgeBaseDetailPage({
               value: vectorStores.isLoading ? (
                 "加载中"
               ) : vectorStores.error ? (
-                "加载失败"
+                "-"
               ) : relatedVectorStore ? (
                 <Link
                   to="/vector-stores/$vectorStoreId"

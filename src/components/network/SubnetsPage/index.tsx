@@ -10,7 +10,7 @@ import {
   type NetworkSubnet,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import {
   Ipv4CidrInput,
   DataTableNameCell,
@@ -23,7 +23,6 @@ import {
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import {
   ipv4CidrWithinError,
   optionalIpv4Error,
@@ -54,6 +53,13 @@ export function SubnetsPage() {
   const [filterVpcId, setFilterVpcId] = useState("");
 
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "数据加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "subnet-page"],
     queryFn: () => listNetworkVpcs({ limit: 100 }),
   });
@@ -66,6 +72,11 @@ export function SubnetsPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<Subnet>({
+    errorNotification: {
+      id: "subnets",
+      action: "子网列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["network-subnets", { status, searchField, searchText, filterVpcId }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -106,6 +117,14 @@ export function SubnetsPage() {
     }
   };
   const createSubnet = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "subnet-create",
+        action: "创建",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async () => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入子网名称");
@@ -124,15 +143,21 @@ export function SubnetsPage() {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-subnets"] });
     },
-    onError: (error) => showApiError(error),
   });
   const deleteSubnet = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "subnet-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (subnet: Subnet) => deleteNetworkSubnet(subnet.id),
     onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-subnets"] });
     },
-    onError: (error) => showApiError(error),
   });
 
   const items = useMemo(() => (subnets.data?.items ?? []) as Subnet[], [subnets.data?.items]);
@@ -141,12 +166,6 @@ export function SubnetsPage() {
     [vpcs.data?.items],
   );
   const paginationTotal = subnets.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "subnets-list",
-    title: "子网列表加载失败",
-    error: subnets.error,
-  });
-
   const columns: Array<ListColumn<Subnet>> = [
     {
       key: "name",

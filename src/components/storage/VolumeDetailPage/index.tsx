@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import {
   DataTable,
   DetailPageFrame,
@@ -18,14 +19,13 @@ import {
   type StorageVolume,
   type VolumeSnapshotRecord,
 } from "@/api/storage/volumes";
-import { showApiError } from "@/lib/api-error";
+
 import { AttachVolumeModal } from "@/components/storage/AttachVolumeModal";
 import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnapshotModal";
 import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
 import { VolumeOSInitGuideModal } from "@/components/storage/VolumeOSInitGuideModal";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type Volume = StorageVolume;
 type VolumeSnapshot = VolumeSnapshotRecord;
@@ -39,32 +39,51 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const [expandVisible, setExpandVisible] = useState(false);
   const [initGuideVisible, setInitGuideVisible] = useState(false);
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("volume", volumeId),
+        action: "块存储卷加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["volume", volumeId],
     queryFn: () => getVolume(volumeId),
   });
-  useListErrorNotification({
-    id: `volume-detail:${volumeId}`,
-    title: "块存储卷加载失败",
-    error: detail.error,
-  });
   const snapshots = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("volume-snapshots", volumeId),
+        action: "快照列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["volume-snapshots", volumeId],
     queryFn: () => listVolumeSnapshots(volumeId, { limit: 100 }),
   });
-  useListErrorNotification({
-    id: `volume-snapshots:${volumeId}`,
-    title: "快照列表加载失败",
-    error: snapshots.error,
-  });
   const deleteVolume = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "volume-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (_: undefined) => removeVolume(volumeId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["volumes"] });
       navigate({ to: "/volumes" });
     },
-    onError: (error) => showApiError(error),
   });
   const detachVolume = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "volume-detach",
+        action: "卸载",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (instanceId: string) =>
       applyInstanceLifecycle(instanceId, {
         action: "detach_volume" as const,
@@ -75,7 +94,6 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
       qc.invalidateQueries({ queryKey: ["volume", volumeId] });
       qc.invalidateQueries({ queryKey: ["volumes"] });
     },
-    onError: (error) => showApiError(error),
   });
 
   if (detail.isLoading && !detail.data)
@@ -101,10 +119,20 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const openMountedInstance = async () => {
     if (!volume.mount_instance_id) return;
     try {
-      const instance = await getInstance(volume.mount_instance_id);
+      const instanceId = volume.mount_instance_id;
+      const instance = await qc.fetchQuery({
+        meta: {
+          errorNotification: {
+            id: withId("instance", instanceId),
+            action: "挂载实例加载",
+            fallback: "请求失败，请稍后重试",
+          },
+        },
+        queryKey: ["instance", instanceId],
+        queryFn: () => getInstance(instanceId),
+      });
       navigateToInstanceDetail(navigate, instance);
-    } catch (error) {
-      showApiError(error);
+    } catch {
       return;
     }
   };

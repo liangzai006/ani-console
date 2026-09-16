@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -38,10 +39,9 @@ import {
   type ListColumn,
   ListDataTable,
 } from "@/components/common";
-import { showApiError } from "@/lib/api-error";
+
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 type Cluster = K8sCluster;
 type NodePool = K8sClusterNodePool;
 type ClusterStatusFilter = "all" | NonNullable<Cluster["state"]>;
@@ -70,6 +70,11 @@ function ClusterList() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<Cluster>({
+    errorNotification: {
+      id: "k8s-clusters",
+      action: "K8s 集群列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["k8s-clusters", { status, searchField, searchText }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -88,14 +93,16 @@ function ClusterList() {
       };
     },
   });
-  const { data, isFetching, error } = clusters;
-  useListErrorNotification({
-    id: "k8s-clusters-list",
-    title: "K8s 集群列表加载失败",
-    error,
-  });
-
+  const { data, isFetching } = clusters;
   const createCluster = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "k8s-cluster-create",
+        action: "创建",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: () => createK8sCluster({ name, version: version || undefined }),
     onSuccess: () => {
       setVisible(false);
@@ -104,10 +111,17 @@ function ClusterList() {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["k8s-clusters"] });
     },
-    onError: (e) => showApiError(e),
   });
 
   const downloadKubeconfig = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "kubeconfig-download",
+        action: "操作",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async (cluster: Cluster) => {
       const clusterId = cluster.id;
       if (!clusterId) throw new Error("缺少集群 ID");
@@ -120,10 +134,17 @@ function ClusterList() {
       anchor.click();
       URL.revokeObjectURL(url);
     },
-    onError: (e) => showApiError(e),
   });
 
   const deleteCluster = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "k8s-cluster-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async (cluster: Cluster) => {
       if (!cluster.id) throw new Error("缺少集群 ID");
       await deleteK8sCluster(cluster.id);
@@ -132,7 +153,6 @@ function ClusterList() {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["k8s-clusters"] });
     },
-    onError: (e) => showApiError(e),
   });
 
   const items = useMemo(() => (data?.items ?? []) as Cluster[], [data?.items]);
@@ -343,36 +363,49 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
   const qc = useQueryClient();
 
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("k8s-cluster", clusterId),
+        action: "K8s 集群加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["k8s-cluster", clusterId],
     queryFn: () => getK8sCluster(clusterId),
   });
 
   const nodePools = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("k8s-node-pools", clusterId),
+        action: "节点池加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["k8s-node-pools", clusterId],
     queryFn: () => listK8sClusterNodePools(clusterId),
   });
 
   const workloads = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("k8s-workloads", clusterId),
+        action: "工作负载加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["k8s-workloads", clusterId],
     queryFn: () => listK8sClusterWorkloads(clusterId),
   });
-  useListErrorNotification({
-    id: `k8s-cluster-detail:${clusterId}`,
-    title: "K8s 集群加载失败",
-    error: detail.error,
-  });
-  useListErrorNotification({
-    id: `k8s-node-pools:${clusterId}`,
-    title: "节点池加载失败",
-    error: nodePools.error,
-  });
-  useListErrorNotification({
-    id: `k8s-workloads:${clusterId}`,
-    title: "工作负载加载失败",
-    error: workloads.error,
-  });
-
   const downloadKubeconfig = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "kubeconfig-download",
+        action: "操作",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async () => {
       const data = await getK8sClusterKubeconfig(clusterId);
       const blob = new Blob([data.kubeconfig ?? ""], {
@@ -383,10 +416,17 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
       a.download = `kubeconfig-${clusterId}.yaml`;
       a.click();
     },
-    onError: (e) => showApiError(e),
   });
 
   const deleteCluster = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "k8s-cluster-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async () => {
       await deleteK8sCluster(clusterId);
     },
@@ -394,7 +434,6 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
       onBack();
       qc.invalidateQueries({ queryKey: ["k8s-clusters"] });
     },
-    onError: (e) => showApiError(e),
   });
 
   if (detail.isLoading && !detail.data) {

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import RFB from "@novnc/novnc/lib/rfb";
-import { Alert, Button, Radio, Spin, Tag } from "@arco-design/web-react";
+import { Button, Radio, Spin, Tag } from "@arco-design/web-react";
 import clsx from "clsx";
 import { createInstanceConsoleSession } from "@/api/instances";
 import { isDateTimeExpired } from "@/lib/date";
-import { getErrorMessage } from "@/lib/errors";
+import { closeNotification, showNotification } from "@/lib/feedback";
+import { withId } from "@/lib/id";
 
 type ConsoleStatus = "connecting" | "connected" | "disconnected" | "error" | "expired";
 type ViewMode = "fit" | "native";
@@ -44,7 +45,6 @@ export function InstanceVncConsole({
   const expiresAtRef = useRef<string | null>(null);
   const viewModeRef = useRef<ViewMode>("fit");
   const [status, setStatus] = useState<ConsoleStatus>("connecting");
-  const [errorText, setErrorText] = useState<string | null>(null);
   const [reconnectKey, setReconnectKey] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>("fit");
 
@@ -65,7 +65,7 @@ export function InstanceVncConsole({
 
     const connect = async () => {
       setStatus("connecting");
-      setErrorText(null);
+      closeNotification(withId("instance-vnc", instanceId));
       await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
       if (disposed) return;
 
@@ -87,13 +87,21 @@ export function InstanceVncConsole({
         applyViewMode(rfb, viewModeRef.current);
         rfb.background = "#0b0e16";
         rfb.addEventListener("connect", () => {
-          if (!disposed) setStatus("connected");
+          if (!disposed) {
+            closeNotification(withId("instance-vnc", instanceId));
+            setStatus("connected");
+          }
         });
         rfb.addEventListener("disconnect", () => {
           if (disposed) return;
           if (isExpired(expiresAtRef.current)) {
             setStatus("expired");
-            setErrorText("控制台会话已过期，请重新申请");
+            showNotification({
+              id: withId("instance-vnc", instanceId),
+              state: "error",
+              action: "控制台连接",
+              content: "控制台会话已过期，请重新申请",
+            });
             return;
           }
           setStatus("disconnected");
@@ -102,18 +110,28 @@ export function InstanceVncConsole({
           if (disposed) return;
           setStatus("error");
           const detail = event instanceof CustomEvent ? event.detail : undefined;
-          setErrorText(typeof detail?.reason === "string" ? detail.reason : "VNC 安全握手失败");
+          showNotification({
+            id: withId("instance-vnc", instanceId),
+            state: "error",
+            action: "控制台连接",
+            content: typeof detail?.reason === "string" ? detail.reason : "VNC 安全握手失败",
+          });
         });
         rfbRef.current = rfb;
       } catch (e) {
         if (disposed) return;
-        const message = getErrorMessage(e, "控制台连接失败");
+        const message = e instanceof Error && e.message.trim() ? e.message : "控制台连接失败";
         if (message.includes("过期")) {
           setStatus("expired");
         } else {
           setStatus("error");
         }
-        setErrorText(message);
+        showNotification({
+          id: withId("instance-vnc", instanceId),
+          state: "error",
+          action: "控制台连接",
+          content: { error: e, fallback: "控制台连接失败" },
+        });
       }
     };
 
@@ -156,11 +174,6 @@ export function InstanceVncConsole({
           ) : null}
         </div>
       </div>
-      {errorText ? (
-        <div className="p-3">
-          <Alert type="error" content={errorText} />
-        </div>
-      ) : null}
       <div
         className={clsx(
           "relative min-h-0 flex-1",

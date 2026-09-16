@@ -1,20 +1,11 @@
 import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import {
-  Alert,
-  Button,
-  Dropdown,
-  Menu,
-  Message,
-  Modal,
-  Select,
-  Space,
-} from "@arco-design/web-react";
+import { Alert, Button, Dropdown, Menu, Modal, Select, Space } from "@arco-design/web-react";
 import { IconDown } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
 import type { SandboxInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
 import { formatDurationSeconds } from "../SandboxInstanceDetailPage/utils";
 
@@ -52,25 +43,24 @@ export function SandboxInstanceActions({
   const terminalAvailable = running && instance.access?.exec_available !== false;
 
   const lifecycle = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "sandbox-lifecycle",
+        action: "操作",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async ({ action, duration }: { action: LifecycleAction; duration?: string }) => {
       const submitData = { action, duration };
       await applyInstanceLifecycle(instance.id, submitData);
       return action;
     },
     onSuccess: (action) => {
-      const messages: Record<LifecycleAction, string> = {
-        pause: "Sandbox 暂停操作已提交",
-        resume: "Sandbox 恢复操作已提交",
-        extend: "会话时长已延长",
-        touch_idle: "空闲计时已刷新",
-        delete: "Sandbox 已销毁",
-      };
-      Message.success(messages[action]);
       if (action === "extend") setExtendVisible(false);
       if (action === "delete") onDeleted();
       else onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   const busy = lifecycle.isPending || BUSY_INSTANCE_STATES.has(instance.state ?? "");

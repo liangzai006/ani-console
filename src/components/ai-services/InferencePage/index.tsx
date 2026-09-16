@@ -3,7 +3,6 @@ import {
   Dropdown,
   InputNumber,
   Menu,
-  Message,
   Modal,
   Select,
   Space,
@@ -18,7 +17,7 @@ import {
   updateInferenceService,
   type InferenceService,
 } from "@/api/ai-services/inference";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
   DataTableNameCell,
@@ -30,7 +29,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type StatusFilter = "all" | "running" | "deploying" | "stopped" | "failed";
 type SearchField = "name" | "id";
@@ -47,6 +45,13 @@ export function InferencePage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const services = useQuery({
+    meta: {
+      errorNotification: {
+        id: "inference-services",
+        action: "推理服务列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["inference-services", { status, searchField, searchText, model, page, pageSize }],
     queryFn: async () => {
       const keyword = searchText.trim();
@@ -61,6 +66,15 @@ export function InferencePage() {
     },
   });
   const lifecycle = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "inference-lifecycle",
+        action: "操作",
+        successText: "生命周期操作已提交",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async ({
       item,
       action,
@@ -72,39 +86,46 @@ export function InferencePage() {
       return applyInferenceServiceLifecycle(item.id, submitData);
     },
     onSuccess: () => {
-      Message.success("生命周期操作已提交");
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
     },
-    onError: (error) => showApiError(error),
   });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "inference-delete",
+        action: "删除",
+        successText: "删除操作已提交",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async (item: InferenceService) => {
       return deleteInferenceService(item.id);
     },
     onSuccess: () => {
-      Message.success("删除操作已提交");
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
     },
-    onError: (error) => showApiError(error),
   });
   const resize = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "inference-resize",
+        action: "变配",
+        successText: "变配操作已提交",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async (item: InferenceService) => {
       const submitData = { replicas };
       return updateInferenceService(item.id, submitData);
     },
     onSuccess: () => {
-      Message.success("变配操作已提交");
       setResizeTarget(undefined);
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
     },
-    onError: (error) => showApiError(error),
   });
   const items = useMemo(() => services.data?.items ?? [], [services.data?.items]);
-  useListErrorNotification({
-    id: "inference-services-list",
-    title: "推理服务列表加载失败",
-    error: services.error,
-  });
   const modelOptions = useMemo(
     () =>
       Array.from(new Set(items.map((item) => item.model))).map((value) => ({

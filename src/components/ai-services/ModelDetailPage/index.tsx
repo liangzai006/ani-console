@@ -1,13 +1,13 @@
-import { Button, Empty, Message, Modal, Space, Spin } from "@arco-design/web-react";
+import { withId } from "@/lib/id";
+import { Button, Empty, Modal, Space, Spin } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { listInferenceServices } from "@/api/ai-services/inference";
 import { deleteModel, getModel } from "@/api/ai-services/models";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import { AliIcon, DetailPageFrame, StatusTag, type DetailCard } from "@/components/common";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import {
   formatModelCapabilities,
@@ -21,32 +21,43 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
   const qc = useQueryClient();
   const [deployVisible, setDeployVisible] = useState(false);
   const model = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("model", modelId),
+        action: "模型详情加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["model", modelId],
     queryFn: () => getModel(modelId),
   });
   const relatedServices = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("model-services", modelId),
+        action: "关联推理服务加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["model-related-inference-services", modelId],
     enabled: Boolean(model.data),
     queryFn: () => listInferenceServices(),
   });
-  useListErrorNotification({
-    id: "model-detail:" + modelId,
-    title: "模型详情加载失败",
-    error: model.error,
-  });
-  useListErrorNotification({
-    id: "model-related-inference-services:" + modelId,
-    title: "关联推理服务加载失败",
-    error: relatedServices.error,
-  });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "model-delete",
+        action: "删除模型",
+        successText: "模型已删除",
+        errorFallback: "删除模型失败",
+      },
+    },
     mutationFn: () => deleteModel(modelId),
     onSuccess: () => {
-      Message.success("模型已删除");
       void qc.invalidateQueries({ queryKey: ["models"] });
       navigate({ to: "/models" });
     },
-    onError: (error) => showApiError(error, "删除模型失败"),
   });
 
   if (model.isLoading) {
@@ -72,12 +83,11 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
           { label: "状态", value: "-" },
           { label: "更新时间", value: "-" },
         ]}
-        actions={<Button onClick={() => model.refetch()}>重新加载</Button>}
         cards={[
           {
             key: "basic",
             title: "基本信息",
-            fields: [{ label: "加载结果", value: "未能获取该模型详情" }],
+            fields: [{ label: "模型 ID", value: modelId }],
           },
         ]}
         onBack={() => navigate({ to: "/models" })}

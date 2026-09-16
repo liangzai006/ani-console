@@ -1,9 +1,9 @@
+import { withId } from "@/lib/id";
 import { listInstanceSecurityEvents, type InstanceSecurityEvent } from "@/api/instances";
 import { Empty, Select, Space, Tag, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { DataTable } from "@/components/common";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
 type SecurityEvent = InstanceSecurityEvent;
@@ -12,6 +12,13 @@ type Severity = "all" | "info" | "warning" | "critical";
 export function SandboxSecurityEvents({ instanceId }: { instanceId: string }) {
   const [severity, setSeverity] = useState<Severity>("all");
   const query = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("sandbox-security", instanceId, severity),
+        action: "安全事件加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["sandbox-security-events", instanceId, severity],
     queryFn: async () =>
       (
@@ -21,12 +28,6 @@ export function SandboxSecurityEvents({ instanceId }: { instanceId: string }) {
         })
       ).items,
   });
-  useListErrorNotification({
-    id: `sandbox-security:${instanceId}:${severity}`,
-    title: "安全事件加载失败",
-    error: query.error,
-  });
-
   return (
     <Space direction="vertical" size={24} className="w-full">
       <section>

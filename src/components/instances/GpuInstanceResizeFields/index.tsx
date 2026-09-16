@@ -4,7 +4,6 @@ import { Form, Select, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { StatusTag } from "@/components/common";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
-import { getErrorMessage } from "@/lib/errors";
 import { GPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instance-compute-specs";
 import { currentCpuMemorySpec, currentGpuSpecValue } from "./helpers";
 
@@ -18,6 +17,13 @@ export function GpuInstanceResizeFields({
   enabled: boolean;
 }) {
   const gpuSpecs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "gpu-specs",
+        action: "GPU 规格加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["gpu-specs", "availability", "resize", instance.id],
     enabled,
     queryFn: getGpuSpecAvailability,
@@ -67,7 +73,6 @@ export function GpuInstanceResizeFields({
       <Form.Item
         field="gpu_spec_id"
         label="GPU 规格"
-        extra={gpuSpecs.error ? getErrorMessage(gpuSpecs.error, "GPU 规格加载失败") : undefined}
         rules={[{ required: true, message: "请选择 GPU 规格" }]}
       >
         <Select loading={gpuSpecs.isLoading} options={gpuOptions} placeholder="请选择 GPU 规格" />

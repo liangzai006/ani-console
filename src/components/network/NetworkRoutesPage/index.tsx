@@ -9,7 +9,7 @@ import {
   type NetworkRoute,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateRouteModal } from "@/components/network/CreateRouteModal";
 import {
   DataTableNameCell,
@@ -20,7 +20,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type Vpc = NetworkVPC;
 type SearchField = "description" | "id";
@@ -42,6 +41,11 @@ export function NetworkRoutesPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<NetworkRoute>({
+    errorNotification: {
+      id: "routes",
+      action: "路由列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["network-routes", { status, searchField, searchText, filterVpcId }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -57,16 +61,30 @@ export function NetworkRoutesPage() {
     },
   });
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "VPC 列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "route-list"],
     queryFn: () => listNetworkVpcs({ limit: 100 }),
   });
   const deleteRoute = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "route-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (item: NetworkRoute) => deleteNetworkRoute(item.id),
     onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-routes"] });
     },
-    onError: (error) => showApiError(error),
   });
 
   const items = (routes.data?.items ?? []) as NetworkRoute[];
@@ -75,11 +93,6 @@ export function NetworkRoutesPage() {
     [vpcs.data?.items],
   );
   const paginationTotal = routes.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "network-routes-list",
-    title: "路由列表加载失败",
-    error: routes.error,
-  });
   const columns: Array<ListColumn<NetworkRoute>> = [
     {
       key: "name",

@@ -1,5 +1,6 @@
+import { withId } from "@/lib/id";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Message, Spin } from "@arco-design/web-react";
+import { Alert, Spin } from "@arco-design/web-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { listModels } from "@/api/ai-services/models";
 import {
@@ -11,7 +12,7 @@ import {
   type KBSession as Session,
   type KBSessionMessage as SessionMessage,
 } from "@/api/knowledge";
-import { getErrorMessage } from "@/lib/errors";
+
 import { getReadyModelOptions } from "@/lib/model-catalog";
 import { KnowledgeCitationsDrawer } from "./KnowledgeCitationsDrawer";
 import { KnowledgeConversation } from "./KnowledgeConversation";
@@ -36,6 +37,13 @@ export function KnowledgeChatPanel({
   const [inferenceServiceName, setInferenceServiceName] = useState<string>();
   const [citationsVisible, setCitationsVisible] = useState(false);
   const inferenceModels = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("knowledge-models", kbId),
+        action: "推理模型列表加载",
+        fallback: "将使用知识库或平台默认模型",
+      },
+    },
     queryKey: ["models", "knowledge-base-query", "text-generation"],
     queryFn: () => listModels({ limit: 100, capability: "text-generation", status: "ready" }),
   });
@@ -53,6 +61,7 @@ export function KnowledgeChatPanel({
     }
   }, [inferenceModelOptions, inferenceModels.data, inferenceServiceName]);
   const sessions = useQuery({
+    meta: { errorNotification: { id: withId("knowledge-sessions", kbId), action: "会话列表加载" } },
     queryKey: ["knowledge-base-sessions", kbId],
     queryFn: async () => {
       const items: Session[] = [];
@@ -66,6 +75,13 @@ export function KnowledgeChatPanel({
     },
   });
   const messages = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("knowledge-messages", kbId, activeSessionId ?? "none"),
+        action: "会话消息加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["knowledge-base-session-messages", kbId, activeSessionId],
     enabled: Boolean(activeSessionId),
     queryFn: async () => {
@@ -83,6 +99,9 @@ export function KnowledgeChatPanel({
     },
   });
   const citations = useQuery({
+    meta: {
+      errorNotification: { id: withId("knowledge-citations", kbId), action: "引用记录加载" },
+    },
     queryKey: ["knowledge-base-citations", kbId],
     enabled: citationsVisible,
     queryFn: async () => {
@@ -101,19 +120,23 @@ export function KnowledgeChatPanel({
     [messages.data],
   );
   const deleteSession = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "knowledge-session-delete",
+        action: "删除会话",
+        successText: "会话已删除",
+        errorFallback: "删除会话失败",
+      },
+    },
     mutationFn: (session: Session) => deleteKnowledgeBaseSession(kbId, session.id),
     onSuccess: (_, session) => {
-      Message.success("会话已删除");
       if (activeSessionId === session.id) {
         setActiveSessionId(undefined);
         setDraftVersion((current) => current + 1);
       }
       void qc.invalidateQueries({ queryKey: ["knowledge-base-sessions", kbId] });
       void qc.invalidateQueries({ queryKey: ["knowledge-base-citations", kbId] });
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "删除会话失败");
-      Message.error(message);
     },
   });
 
@@ -140,21 +163,9 @@ export function KnowledgeChatPanel({
   return (
     <>
       <div className={styles.panel}>
-        {inferenceModels.error ? (
-          <div className="flex items-center gap-2">
-            <Alert
-              type="warning"
-              showIcon
-              content={getErrorMessage(
-                inferenceModels.error,
-                "推理模型列表加载失败，将使用知识库或平台默认模型",
-              )}
-            />
-            <Button size="small" onClick={() => void inferenceModels.refetch()}>
-              重新加载模型
-            </Button>
-          </div>
-        ) : !inferenceModels.isLoading && inferenceModelOptions.length === 0 ? (
+        {!inferenceModels.error &&
+        !inferenceModels.isLoading &&
+        inferenceModelOptions.length === 0 ? (
           <Alert
             type="warning"
             showIcon
@@ -168,7 +179,6 @@ export function KnowledgeChatPanel({
             error={sessions.error}
             activeSessionId={activeSessionId}
             deletingSessionId={deleteSession.isPending ? deleteSession.variables?.id : undefined}
-            onRetry={() => void sessions.refetch()}
             onNew={addSession}
             onSelect={(sessionId) => {
               setActiveSessionId(sessionId);
@@ -183,14 +193,7 @@ export function KnowledgeChatPanel({
                 <Spin />
               </div>
             ) : activeSessionId && messages.error ? (
-              <div className={styles.conversationState}>
-                <Alert
-                  type="error"
-                  showIcon
-                  content={getErrorMessage(messages.error, "会话消息加载失败")}
-                />
-                <Button onClick={() => void messages.refetch()}>重试</Button>
-              </div>
+              <div className={styles.conversationState} />
             ) : (
               <KnowledgeConversation
                 key={sessionKey}
@@ -217,7 +220,6 @@ export function KnowledgeChatPanel({
         citations={citations.data?.items}
         loading={citations.isLoading}
         error={citations.error}
-        onRetry={() => void citations.refetch()}
         onCancel={() => setCitationsVisible(false)}
         onSelectSession={(sessionId) => {
           setActiveSessionId(sessionId);

@@ -1,4 +1,4 @@
-import { Button, Form, Input, Message, Modal, Space, Typography } from "@arco-design/web-react";
+import { Button, Form, Input, Modal, Space, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { getGpuSpecAvailability, listGpuSchedulingQueues } from "@/api/gpu-inventory";
@@ -20,6 +20,9 @@ import { GpuNetworkStorageStep } from "./GpuNetworkStorageStep";
 import type { NetworkItem } from "./GpuNetworkStorageStep";
 import { GpuResourceStep } from "./GpuResourceStep";
 import styles from "./index.module.css";
+import { showMessage } from "@/lib/feedback";
+import { validateForm } from "@/lib/form";
+import { withId } from "@/lib/id";
 
 const STEP_TITLES = ["名称", "镜像", "规格与调度", "网络与存储", "确认"];
 
@@ -35,36 +38,85 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "VPC 列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "select"],
     queryFn: () => listNetworkVpcs({ limit: 50 }),
     enabled: visible,
   });
   const subnets = useQuery({
+    meta: {
+      errorNotification: {
+        id: "subnets",
+        action: "子网列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-subnets", "select", values.vpc_id],
     queryFn: () => listNetworkSubnets({ limit: 50, vpc_id: values.vpc_id || undefined }),
     enabled: visible && !!values.vpc_id,
   });
   const securityGroups = useQuery({
+    meta: {
+      errorNotification: {
+        id: "security-groups",
+        action: "安全组列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-security-groups", "select"],
     queryFn: () => listNetworkSecurityGroups({ limit: 50 }),
     enabled: visible,
   });
   const filesystems = useQuery({
+    meta: {
+      errorNotification: {
+        id: "filesystems",
+        action: "文件存储列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["filesystems", "select"],
     queryFn: () => listFilesystems({ limit: 50 }),
     enabled: visible,
   });
   const images = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("registry-images", "gpu"),
+        action: "GPU 容器镜像加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["registry-images", "gpu-create"],
     enabled: visible,
     queryFn: async () => (await listRegistryImages({ limit: 100, purpose: "gpu" })).items,
   });
   const gpuSpecAvailability = useQuery({
+    meta: {
+      errorNotification: {
+        id: "gpu-specs",
+        action: "GPU 规格加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["gpu-specs", "availability"],
     enabled: visible,
     queryFn: getGpuSpecAvailability,
   });
   const gpuSchedulingQueues = useQuery({
+    meta: {
+      errorNotification: {
+        id: "gpu-queues",
+        action: "GPU 调度队列加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["gpu-scheduling", "queues", "select"],
     enabled: visible,
     queryFn: async () =>
@@ -104,10 +156,10 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
 
   const next = async () => {
     try {
-      await form.validate();
+      await validateForm(form);
       setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
     } catch {
-      Message.warning("请先完成当前步骤的必填项");
+      showMessage({ type: "warning", content: "请先完成当前步骤的必填项" });
     }
   };
 

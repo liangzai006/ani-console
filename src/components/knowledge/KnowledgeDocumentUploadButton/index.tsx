@@ -1,6 +1,6 @@
-import { Button, Message, Upload } from "@arco-design/web-react";
+import { Button, Upload } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { showApiError } from "@/lib/api-error";
+
 import {
   notifyKnowledgeDocumentUploaded,
   reserveKnowledgeDocumentUpload,
@@ -17,6 +17,14 @@ async function sha256(file: File) {
 export function KnowledgeDocumentUploadButton({ kbId }: { kbId: string }) {
   const qc = useQueryClient();
   const upload = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "文档上传",
+        successText: "文档已上传，正在解析",
+        errorFallback: "文档上传失败",
+      },
+    },
     mutationFn: async (file: File) => {
       const fileType = file.name.split(".").pop()?.toLowerCase();
       if (!allowedTypes.includes(fileType as (typeof allowedTypes)[number]))
@@ -38,11 +46,9 @@ export function KnowledgeDocumentUploadButton({ kbId }: { kbId: string }) {
       await notifyKnowledgeDocumentUploaded(kbId, reservation.doc_id, notifyData);
     },
     onSuccess: () => {
-      Message.success("文档已上传，正在解析");
       void qc.invalidateQueries({ queryKey: ["knowledge-base-documents", kbId] });
       void qc.invalidateQueries({ queryKey: ["knowledge-base", kbId] });
     },
-    onError: (error) => showApiError(error, "文档上传失败"),
   });
 
   return (

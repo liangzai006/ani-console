@@ -1,8 +1,9 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Form, Input, Message, Modal } from "@arco-design/web-react";
+import { Form, Input, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 
@@ -17,6 +18,14 @@ export function GpuInstanceRollbackModal({
 }) {
   const [form] = Form.useForm<{ revision: string }>();
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "回滚发布已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async ({ revision }: { revision: string }) => {
       const submitData = {
         action: "rollback" as const,
@@ -25,10 +34,8 @@ export function GpuInstanceRollbackModal({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("回滚发布已提交");
       onSubmitted();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal
@@ -38,7 +45,7 @@ export function GpuInstanceRollbackModal({
       onCancel={() => {
         onCancel();
       }}
-      onOk={async () => mutation.mutate(await form.validate())}
+      onOk={async () => mutation.mutate(await validateForm(form))}
       unmountOnExit
     >
       <Form form={form} layout="vertical">

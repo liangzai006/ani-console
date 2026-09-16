@@ -1,6 +1,6 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceLifecycleInput, InstanceRecord } from "@/api/instances";
-import { Form, Message, Modal } from "@arco-design/web-react";
+import { Form, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { GpuInstanceResizeFields } from "@/components/instances/GpuInstanceResizeFields";
 import {
@@ -9,7 +9,9 @@ import {
   isGpuInstanceResizeUnchanged,
   type GpuInstanceResizeFormValues,
 } from "@/components/instances/GpuInstanceResizeFields/helpers";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { showMessage } from "@/lib/feedback";
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 
@@ -24,6 +26,14 @@ export function GpuInstanceResizeModal({
 }) {
   const [form] = Form.useForm<GpuInstanceResizeFormValues>();
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "变配已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (values: GpuInstanceResizeFormValues) => {
       const submitData = {
         action: "resize" as const,
@@ -32,10 +42,8 @@ export function GpuInstanceResizeModal({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("变配已提交");
       onSubmitted();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal
@@ -47,9 +55,9 @@ export function GpuInstanceResizeModal({
         onCancel();
       }}
       onOk={async () => {
-        const values = await form.validate();
+        const values = await validateForm<GpuInstanceResizeFormValues>(form);
         if (isGpuInstanceResizeUnchanged(instance, values)) {
-          Message.info("规格未变化");
+          showMessage({ type: "info", content: "规格未变化" });
           return;
         }
         mutation.mutate(values);

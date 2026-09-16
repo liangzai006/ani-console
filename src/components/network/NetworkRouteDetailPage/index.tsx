@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, Empty, List, Modal, Spin, Tag, Typography } from "@arco-design/web-react";
@@ -9,11 +10,10 @@ import {
   type NetworkRoute,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type Vpc = NetworkVPC;
 type Instance = InstanceRecord;
@@ -29,42 +29,55 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("route", routeId),
+        action: `路由加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-route", routeId],
     queryFn: () => getNetworkRoute(routeId),
   });
   const vpc = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("route-vpc", routeId),
+        action: `VPC 加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpc", detail.data?.vpc_id],
     queryFn: () => getNetworkVpc(detail.data!.vpc_id),
     enabled: Boolean(detail.data?.vpc_id),
   });
   const instance = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("route-instance", routeId),
+        action: `下一跳实例加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["instance", "route-next-hop", detail.data?.next_hop_id],
     queryFn: () => getInstance(detail.data!.next_hop_id),
     enabled: detail.data?.next_hop_type === "instance" && Boolean(detail.data?.next_hop_id),
     retry: false,
   });
-  useListErrorNotification({
-    id: `network-route-detail:${routeId}`,
-    title: `路由加载失败`,
-    error: detail.error,
-  });
-  useListErrorNotification({
-    id: `network-route-vpc:${routeId}`,
-    title: `VPC 加载失败`,
-    error: vpc.error,
-  });
-  useListErrorNotification({
-    id: `network-route-instance:${routeId}`,
-    title: `下一跳实例加载失败`,
-    error: instance.error,
-  });
   const deleteRoute = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "route-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (_: undefined) => deleteNetworkRoute(routeId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["network-routes"] });
       navigate({ to: "/routes" });
     },
-    onError: (error) => showApiError(error),
   });
 
   if (detail.isLoading && !detail.data)

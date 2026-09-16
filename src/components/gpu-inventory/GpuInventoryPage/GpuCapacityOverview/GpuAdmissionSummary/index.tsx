@@ -8,17 +8,14 @@ import {
   Tag,
   Typography,
 } from "@arco-design/web-react";
-import { ApiErrorAlert } from "@/components/common";
 import type { GpuSpecAvailabilityListResponse } from "@/api/gpu-inventory";
 
 export function GpuAdmissionSummary({
   availability,
   loading,
-  error,
 }: {
   availability?: GpuSpecAvailabilityListResponse;
   loading: boolean;
-  error: unknown;
 }) {
   const specs = availability?.items ?? [];
   const availableSpecs = specs.filter(
@@ -31,9 +28,7 @@ export function GpuAdmissionSummary({
 
   return (
     <Card title="创建准入预检" className="h-full">
-      {error ? (
-        <ApiErrorAlert error={error} title="GPU 规格可用性加载失败" />
-      ) : loading ? (
+      {loading ? (
         <Skeleton animation text={{ rows: 5 }} />
       ) : specs.length === 0 ? (
         <div className="flex h-56 items-center justify-center">

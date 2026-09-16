@@ -1,6 +1,5 @@
 export { AliIcon } from "./AliIcon";
 export type { AliIconProps } from "./AliIcon";
-export { ApiErrorAlert } from "./ApiErrorAlert";
 export { AsyncTaskPoller } from "./AsyncTaskPoller";
 export { CoreLineBarChart } from "./CoreLineBarChart";
 export { CorePieChart } from "./CorePieChart";

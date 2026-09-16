@@ -4,14 +4,14 @@ import {
   type InstanceRecord,
   type ObservabilityRangeQueryResponse,
 } from "@/api/instances";
-import { Alert, Card, Empty, Grid, Statistic, Tooltip } from "@arco-design/web-react";
+import { Card, Empty, Grid, Statistic, Tooltip } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import type { EChartsOption } from "echarts";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { CoreLineBarChart } from "@/components/common";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatTime, getPreviousHoursDateTimeRange } from "@/lib/date";
-import { getErrorMessage } from "@/lib/errors";
+import { closeNotification, showNotification } from "@/lib/feedback";
+import { withId } from "@/lib/id";
 import { formatBytes } from "@/lib/format";
 
 type InstanceKind = InstanceRecord["kind"];
@@ -63,11 +63,25 @@ export function InstanceMetrics({
 }) {
   const hasGpuMetrics = instanceKind === "gpu_container";
   const metrics = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("instance-metrics", instanceId, gpuOnly ? "gpu" : "all"),
+        action: "监控指标加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["instance-metrics", instanceId],
     queryFn: () => getInstanceMetrics(instanceId),
     refetchInterval: 5_000,
   });
   const gpuTrend = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("gpu-trend", instanceId),
+        action: "GPU 利用率趋势加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["instance-gpu-utilization-trend", instanceId],
     enabled: gpuOnly && hasGpuMetrics,
     queryFn: async () => {
@@ -82,6 +96,13 @@ export function InstanceMetrics({
     refetchInterval: 5_000,
   });
   const monitoringTrend = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("resource-trend", instanceId),
+        action: "资源利用率趋势加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["instance-resource-trend", instanceId, instanceKind],
     enabled: !gpuOnly,
     queryFn: async () => {
@@ -159,7 +180,10 @@ export function InstanceMetrics({
             return {
               name,
               values: [],
-              error: getErrorMessage(error, `${name}趋势查询失败`),
+              error:
+                error instanceof Error && error.message.trim()
+                  ? error.message
+                  : `${name}趋势查询失败`,
             };
           }
         }),
@@ -219,21 +243,24 @@ export function InstanceMetrics({
   const monitoringTrendErrors = (monitoringTrend.data ?? [])
     .filter((series) => series.error)
     .map((series) => `${series.name}：${series.error}`);
-  useListErrorNotification({
-    id: `instance-metrics:${instanceId}:${gpuOnly ? "gpu" : "all"}`,
-    title: "监控指标加载失败",
-    error: metrics.error,
-  });
-  useListErrorNotification({
-    id: `instance-gpu-utilization-trend:${instanceId}`,
-    title: "GPU 利用率趋势加载失败",
-    error: gpuTrend.error,
-  });
-  useListErrorNotification({
-    id: `instance-resource-trend:${instanceId}`,
-    title: "资源利用率趋势加载失败",
-    error: monitoringTrend.error,
-  });
+  const monitoringTrendErrorMessage = monitoringTrendErrors.join("；");
+  const monitoringTrendPartialError = useMemo(
+    () => (monitoringTrendErrorMessage ? new Error(monitoringTrendErrorMessage) : undefined),
+    [monitoringTrendErrorMessage],
+  );
+  useEffect(() => {
+    const id = `instance-resource-trend-partial:${instanceId}`;
+    if (!monitoringTrendPartialError) {
+      closeNotification(id);
+      return;
+    }
+    showNotification({
+      id,
+      state: "error",
+      action: "部分资源利用率趋势加载",
+      content: { error: monitoringTrendPartialError, fallback: "部分指标暂时不可用" },
+    });
+  }, [instanceId, monitoringTrendPartialError]);
   if (gpuOnly && hasGpuMetrics) {
     if (!metrics.data) return <Empty description="暂无监控指标" />;
     const data = metrics.data;
@@ -335,19 +362,11 @@ export function InstanceMetrics({
       </Grid.Col>
       <Grid.Col span={24}>
         <Card title="资源利用率趋势" size="small">
-          {monitoringTrendErrors.length ? (
-            <Alert
-              type="warning"
-              showIcon
-              content={monitoringTrendErrors.join("；")}
-              className="mb-4"
-            />
-          ) : null}
           {hasMonitoringTrend ? (
             <CoreLineBarChart option={monitoringTrendOption} style={{ height: 280 }} />
-          ) : monitoringTrendErrors.length === 0 ? (
+          ) : (
             <Empty description="暂无资源利用率趋势数据" />
-          ) : null}
+          )}
         </Card>
       </Grid.Col>
     </Grid.Row>

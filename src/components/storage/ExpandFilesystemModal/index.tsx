@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, InputNumber, Modal, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { expandFilesystem, type StorageFilesystem } from "@/api/storage/filesystems";
-import { showApiError } from "@/lib/api-error";
 
 type Filesystem = StorageFilesystem;
 
@@ -23,6 +22,7 @@ export function ExpandFilesystemModal({
     if (visible && filesystem) setSizeGiB(filesystem.size_gib + 1);
   }, [filesystem, visible]);
   const expand = useMutation({
+    meta: { feedback: { channel: "message", action: "扩容", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       if (!filesystem) throw new Error("文件存储不存在");
       if (!Number.isInteger(sizeGiB) || sizeGiB <= filesystem.size_gib) {
@@ -36,7 +36,6 @@ export function ExpandFilesystemModal({
       onExpanded?.();
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal

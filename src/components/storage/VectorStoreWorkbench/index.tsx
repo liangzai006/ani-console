@@ -16,7 +16,6 @@ import {
   type VectorStore,
   type VectorStoreSearchHit,
 } from "@/api/storage/vector-stores";
-import { showApiError } from "@/lib/api-error";
 
 type SearchHit = VectorStoreSearchHit;
 
@@ -28,6 +27,14 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
     setSearchVector(Array.from({ length: store.dimension }, () => "0").join(","));
   }, [store.dimension, store.id]);
   const search = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "vector-search",
+        action: "操作",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async (_: undefined) => {
       const vector = searchVector.split(",").map((value) => Number.parseFloat(value.trim()));
       if (vector.some(Number.isNaN)) throw new Error("向量必须为逗号分隔的数字");
@@ -36,7 +43,6 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
       const filter = filterJson.trim() ? JSON.parse(filterJson) : undefined;
       return searchVectorStore(store.id, { vector, top_k: topK, filter });
     },
-    onError: (error) => showApiError(error),
   });
   const hits = (search.data?.items ?? []) as SearchHit[];
   return (

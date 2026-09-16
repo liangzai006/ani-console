@@ -1,6 +1,5 @@
 import { Card, Empty, Skeleton, Space, Tag, Typography } from "@arco-design/web-react";
 import type { GpuInventoryRecord } from "@/api/gpu-inventory";
-import { ApiErrorAlert } from "@/components/common";
 
 const statusLabel: Record<GpuInventoryRecord["status"], string> = {
   available: "空闲",
@@ -12,23 +11,18 @@ const statusLabel: Record<GpuInventoryRecord["status"], string> = {
 export function GpuAnomalyList({
   items,
   loading,
-  error,
 }: {
   items?: GpuInventoryRecord[];
   loading: boolean;
-  error: unknown;
 }) {
   const anomalies = items ?? [];
-
   return (
     <Card
       title="异常"
       className="h-full"
       extra={<Typography.Text type="secondary">{anomalies.length} 项</Typography.Text>}
     >
-      {error ? (
-        <ApiErrorAlert error={error} title="GPU 异常数据加载失败" />
-      ) : loading ? (
+      {loading ? (
         <Skeleton animation text={{ rows: 4 }} />
       ) : anomalies.length === 0 ? (
         <div className="flex h-52 items-center justify-center">

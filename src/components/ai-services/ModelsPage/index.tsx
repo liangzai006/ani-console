@@ -1,9 +1,9 @@
-import { Dropdown, Menu, Message, Modal, Select, Space } from "@arco-design/web-react";
+import { Dropdown, Menu, Modal, Select, Space } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { deleteModel, listModels } from "@/api/ai-services/models";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import { ImportModelModal } from "@/components/ai-services/ImportModelModal";
 import {
@@ -16,7 +16,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { MODEL_SOURCE_LABELS, type Model } from "@/lib/model-catalog";
 
@@ -52,6 +51,11 @@ export function ModelsPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<Model>({
+    errorNotification: {
+      id: "models",
+      action: "模型列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["models", { status, searchText, source, capability }],
     cursorScope,
     fetchPage: async ({ cursor, limit }) => {
@@ -75,22 +79,23 @@ export function ModelsPage() {
   const items = models.data?.items ?? [];
   const paginationTotal = models.data?.total ?? items.length;
 
-  useListErrorNotification({
-    id: "models-list",
-    title: "模型列表加载失败",
-    error: models.error,
-  });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "model-delete",
+        action: "删除模型",
+        errorFallback: "删除模型失败",
+      },
+    },
     mutationFn: async (item: Model) => {
       await deleteModel(item.id);
       return item;
     },
-    onSuccess: (item) => {
-      Message.success("模型「" + (item.display_name || item.name) + "」已删除");
+    onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["models"] });
       refresh();
     },
-    onError: (error) => showApiError(error, "删除模型失败"),
   });
 
   const columns: Array<ListColumn<Model>> = [

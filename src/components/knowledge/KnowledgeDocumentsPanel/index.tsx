@@ -1,16 +1,8 @@
-import {
-  Empty,
-  Button,
-  Message,
-  Modal,
-  Space,
-  Tag,
-  Tooltip,
-  Typography,
-} from "@arco-design/web-react";
+import { withId } from "@/lib/id";
+import { Empty, Modal, Space, Tag, Tooltip, Typography } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { showApiError } from "@/lib/api-error";
+
 import {
   deleteKnowledgeBaseDocument,
   listKnowledgeBaseDocuments,
@@ -18,7 +10,6 @@ import {
   type KBDocument,
 } from "@/api/knowledge";
 import {
-  ApiErrorAlert,
   DataTable,
   DataTableNameCell,
   DataTableRowActionButton,
@@ -94,29 +85,48 @@ export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action
     setPageSize,
     resetPagination,
   } = useCursorPaginatedQuery<KBDocument>({
+    errorNotification: {
+      id: withId("knowledge-documents", kbId),
+      action: "文档列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["knowledge-base-documents", kbId],
     cursorScope: kbId,
     fetchPage: ({ cursor, limit }) => listKnowledgeBaseDocuments(kbId, { limit, cursor }),
   });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "knowledge-document-delete",
+        action: "删除文档",
+        successText: "文档已删除",
+        errorFallback: "删除文档失败",
+      },
+    },
     mutationFn: (doc: KBDocument) => deleteKnowledgeBaseDocument(kbId, doc.id),
     onSuccess: () => {
-      Message.success("文档已删除");
       resetPagination();
       qc.invalidateQueries({ queryKey: ["knowledge-base-documents", kbId] });
       qc.invalidateQueries({ queryKey: ["knowledge-base", kbId] });
     },
-    onError: (error) => showApiError(error, "删除文档失败"),
   });
   const reparse = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "knowledge-document-reparse",
+        action: "重新解析文档",
+        successText: "已提交重新解析",
+        errorFallback: "重新解析文档失败",
+      },
+    },
     mutationFn: (doc: KBDocument) => reparseKnowledgeBaseDocument(kbId, doc.id),
     onSuccess: () => {
-      Message.success("已提交重新解析");
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["knowledge-base-documents", kbId] });
       void qc.invalidateQueries({ queryKey: ["knowledge-base", kbId] });
     },
-    onError: (error) => showApiError(error, "重新解析文档失败"),
   });
   const rows = documents.data?.items ?? [];
   const columns: Array<ListColumn<KBDocument>> = [
@@ -221,16 +231,10 @@ export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action
   return (
     <Space direction="vertical" size={16} className="w-full">
       <TableSectionHeader title="文档列表" extra={action} className="mb-0" />
-      {documents.error ? (
-        <Space direction="vertical" size={8} className="w-full">
-          <ApiErrorAlert error={documents.error} title="文档列表加载失败" />
-          <Button onClick={() => void documents.refetch()}>重试</Button>
-        </Space>
-      ) : null}
       <DataTable<KBDocument>
         columns={columns}
         loading={documents.isLoading}
-        data={documents.error ? [] : rows}
+        data={rows}
         noDataElement={<Empty description="还没有文档，上传后可进行解析和问答" />}
         tableLabel="知识库文档与解析列表"
         scroll={{ x: 1370 }}

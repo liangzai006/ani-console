@@ -10,7 +10,7 @@ import {
   type NetworkSecurityGroup,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateSecurityGroupModal } from "@/components/network/CreateSecurityGroupModal";
 import {
   DataTableNameCell,
@@ -22,7 +22,6 @@ import {
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type SecurityGroup = NetworkSecurityGroup;
 type Vpc = NetworkVPC;
@@ -44,6 +43,11 @@ export function SecurityGroupsPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<SecurityGroup>({
+    errorNotification: {
+      id: "security-groups",
+      action: "安全组列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["network-security-groups", { status, searchField, searchText, filterVpcId }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${filterVpcId}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -59,26 +63,47 @@ export function SecurityGroupsPage() {
     },
   });
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "VPC 列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "security-group-create"],
     queryFn: () => listNetworkVpcs({ limit: 100 }),
   });
 
   const qc = useQueryClient();
   const deleteSecurityGroup = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "security-group-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (item: SecurityGroup) => deleteNetworkSecurityGroup(item.id),
     onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-security-groups"] });
     },
-    onError: (error) => showApiError(error),
   });
   const copySecurityGroup = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "security-group-copy",
+        action: "操作",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (item: SecurityGroup) => copyNetworkSecurityGroup(item),
     onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-security-groups"] });
     },
-    onError: (error) => showApiError(error),
   });
 
   const items = useMemo(
@@ -90,12 +115,6 @@ export function SecurityGroupsPage() {
     [vpcs.data?.items],
   );
   const paginationTotal = securityGroups.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "security-groups-list",
-    title: "安全组列表加载失败",
-    error: securityGroups.error,
-  });
-
   const columns: Array<ListColumn<SecurityGroup>> = [
     {
       key: "name",

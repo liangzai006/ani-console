@@ -1,8 +1,7 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Message, Modal } from "@arco-design/web-react";
+import { Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
 type Instance = InstanceRecord;
 
@@ -16,16 +15,22 @@ export function VmInstanceRebuildModal({
   onSubmitted: (operationId: string) => void;
 }) {
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "重建已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = { action: "rebuild" as const };
       const data = await applyInstanceLifecycle(instance.id, submitData);
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      Message.success("重建已提交");
       onSubmitted(operationId);
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal

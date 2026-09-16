@@ -25,6 +25,14 @@ export function TopNav({ activeKey }: TopNavProps) {
   }, [activeKey]);
 
   const logout = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "logout",
+        action: "操作",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const jti = useAuthStore.getState().getAccessTokenJti();
       if (!jti) throw new Error("当前 access token 缺少 jti，无法调用服务端登出");

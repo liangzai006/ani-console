@@ -8,7 +8,6 @@ import {
   StatusTag,
   ListDataTable,
 } from "@/components/common";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { ContainerInstanceActions } from "@/components/instances/ContainerInstanceActions";
@@ -63,15 +62,16 @@ export function ContainerInstancesPage({
   }, [keyword, searchField, status]);
 
   const query = useQuery({
+    meta: {
+      errorNotification: {
+        id: "containers",
+        action: "容器实例加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["container-instances", { status, searchField, keyword, page, pageSize }],
     queryFn: () => dataSource.list({ status, searchField, keyword, page, pageSize }),
     placeholderData: (previous) => previous,
-  });
-
-  useListErrorNotification({
-    id: "container-instances-list-error",
-    title: "容器实例加载失败",
-    error: query.error,
   });
 
   const result = query.data ?? {

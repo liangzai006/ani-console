@@ -4,7 +4,6 @@ import {
   Form,
   Input,
   InputNumber,
-  Message,
   Modal,
   Select,
   Space,
@@ -26,13 +25,16 @@ import {
   DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
   type CpuInstanceComputeSpec,
 } from "@/lib/instance-compute-specs";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
 import { ContainerStorageFields } from "./ContainerStorageFields";
 import {
   type ContainerStorageFormValues,
   hasDuplicateContainerMountPath,
 } from "./ContainerStorageFields/storage";
 import styles from "./index.module.css";
+import { showMessage } from "@/lib/feedback";
+import { withId } from "@/lib/id";
+import { validateForm } from "@/lib/form";
 
 const STEP_TITLES = ["基本信息", "资源规格", "网络", "存储与挂载", "配置与密钥", "确认"];
 
@@ -154,21 +156,45 @@ export function ContainerInstanceCreateModal({
   const [step, setStep] = useState(0);
   const [values, setValues] = useState(INITIAL_VALUES);
 
-  const useListQuery = <T,>(key: string, request: () => Promise<{ items: T[] }>) =>
+  const useListQuery = <T,>(
+    key: string,
+    feedbackId: string,
+    request: () => Promise<{ items: T[] }>,
+  ) =>
     useQuery({
+      meta: {
+        errorNotification: {
+          id: feedbackId,
+          action: "创建选项加载",
+          fallback: "请求失败，请稍后重试",
+        },
+      },
       queryKey: [key, "container-create"],
       enabled: visible,
       queryFn: async () => (await request()).items,
     });
-  const vpcs = useListQuery("network-vpcs", () => listNetworkVpcs({ limit: 100 }));
-  const subnets = useListQuery("network-subnets", () => listNetworkSubnets({ limit: 100 }));
-  const securityGroups = useListQuery("network-security-groups", () =>
+  const vpcs = useListQuery("network-vpcs", "vpcs", () => listNetworkVpcs({ limit: 100 }));
+  const subnets = useListQuery("network-subnets", "subnets", () =>
+    listNetworkSubnets({ limit: 100 }),
+  );
+  const securityGroups = useListQuery("network-security-groups", "security-groups", () =>
     listNetworkSecurityGroups({ limit: 100 }),
   );
-  const volumes = useListQuery("volumes", () => listVolumes({ limit: 100, in_use: false }));
-  const filesystems = useListQuery("filesystems", () => listFilesystems({ limit: 100 }));
-  const secrets = useListQuery("secrets", () => listSecrets({ limit: 100 }));
+  const volumes = useListQuery("volumes", "volumes", () =>
+    listVolumes({ limit: 100, in_use: false }),
+  );
+  const filesystems = useListQuery("filesystems", "filesystems", () =>
+    listFilesystems({ limit: 100 }),
+  );
+  const secrets = useListQuery("secrets", "secrets", () => listSecrets({ limit: 100 }));
   const images = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("registry-images", "container"),
+        action: "容器镜像加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["registry-images", "container-create", "container"],
     enabled: visible,
     queryFn: async () => (await listRegistryImages({ limit: 100, purpose: "container" })).items,
@@ -186,6 +212,14 @@ export function ContainerInstanceCreateModal({
   }, [form, visible]);
 
   const create = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "创建",
+        successText: "容器实例创建已提交",
+        errorFallback: "创建失败，请检查配置后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = buildCreateBody(values);
       const data = await createInstance(submitData);
@@ -200,11 +234,9 @@ export function ContainerInstanceCreateModal({
       }
     },
     onSuccess: () => {
-      Message.success("容器实例创建已提交");
       void queryClient.invalidateQueries({ queryKey: ["container-instances"] });
       onCreated();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "create")),
   });
 
   const close = () => {
@@ -213,14 +245,14 @@ export function ContainerInstanceCreateModal({
   };
   const next = async () => {
     if (step === 3 && hasDuplicateContainerMountPath(values)) {
-      Message.warning("请为块存储卷和文件存储设置不同的挂载路径");
+      showMessage({ type: "warning", content: "请为块存储卷和文件存储设置不同的挂载路径" });
       return;
     }
     try {
-      await form.validate();
+      await validateForm(form);
       setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
     } catch {
-      Message.warning("请先完成当前步骤的必填项");
+      showMessage({ type: "warning", content: "请先完成当前步骤的必填项" });
     }
   };
   const itemName = (items: Item[] | undefined, id: string) =>
@@ -228,7 +260,7 @@ export function ContainerInstanceCreateModal({
   const submit = () => {
     if (hasDuplicateContainerMountPath(values)) {
       setStep(3);
-      Message.warning("请为块存储卷和文件存储设置不同的挂载路径");
+      showMessage({ type: "warning", content: "请为块存储卷和文件存储设置不同的挂载路径" });
       return;
     }
     create.mutate();

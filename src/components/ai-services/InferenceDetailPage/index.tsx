@@ -3,7 +3,6 @@ import {
   Empty,
   InputNumber,
   Link as ArcoLink,
-  Message,
   Modal,
   Space,
   Spin,
@@ -20,15 +19,15 @@ import {
   listInferenceServicePolicies,
   updateInferenceService,
 } from "@/api/ai-services/inference";
-import { listModels } from "@/api/ai-services/models";
-import { showApiError } from "@/lib/api-error";
+
 import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { InferenceInvocationTest } from "./InferenceInvocationTest";
 import { InferenceLogs } from "./InferenceLogs";
 import { InferencePolicies } from "./InferencePolicies";
 import { InferenceRelatedResources } from "./InferenceRelatedResources";
+import { showMessage } from "@/lib/feedback";
+import { withId } from "@/lib/id";
 
 type LifecycleAction = "start" | "stop" | "restart";
 
@@ -40,63 +39,87 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const [activeTabKey, setActiveTabKey] = useState("related");
 
   const service = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("inference-service", serviceId),
+        action: "推理服务详情加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["inference-service", serviceId],
     queryFn: () => getInferenceService(serviceId),
   });
-  const models = useQuery({
-    queryKey: ["inference-service-related-model", serviceId],
-    enabled: Boolean(service.data),
-    queryFn: () => listModels(),
-  });
   const policies = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("inference-policies", serviceId),
+        action: "访问策略加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["inference-service-policies", serviceId],
     enabled: Boolean(service.data),
     queryFn: () => listInferenceServicePolicies(serviceId),
   });
 
-  useListErrorNotification({
-    id: `inference-service-detail:${serviceId}`,
-    title: "推理服务详情加载失败",
-    error: service.error,
-  });
-
   const lifecycle = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "inference-lifecycle",
+        action: "操作",
+        successText: "生命周期操作已提交",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async (action: LifecycleAction) => {
       const submitData = { action };
       return applyInferenceServiceLifecycle(serviceId, submitData);
     },
     onSuccess: () => {
-      Message.success("生命周期操作已提交");
       void qc.invalidateQueries({
         queryKey: ["inference-service", serviceId],
       });
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
     },
-    onError: (error) => showApiError(error),
   });
   const scale = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "inference-scale",
+        action: "操作",
+        successText: "副本调整已提交",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async () => {
       const submitData = { replicas };
       return updateInferenceService(serviceId, submitData);
     },
     onSuccess: () => {
-      Message.success("副本调整已提交");
       setScaleVisible(false);
       void qc.invalidateQueries({
         queryKey: ["inference-service", serviceId],
       });
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
     },
-    onError: (error) => showApiError(error),
   });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "inference-delete",
+        action: "删除",
+        successText: "删除操作已提交",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: () => deleteInferenceService(serviceId),
     onSuccess: () => {
-      Message.success("删除操作已提交");
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
       navigate({ to: "/inference" });
     },
-    onError: (error) => showApiError(error),
   });
 
   if (service.isLoading) {
@@ -122,12 +145,11 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
           { label: "状态", value: "-" },
           { label: "创建时间", value: "-" },
         ]}
-        actions={<Button onClick={() => service.refetch()}>重新加载</Button>}
         cards={[
           {
             key: "basic",
             title: "基本信息",
-            fields: [{ label: "加载结果", value: "未能获取该推理服务详情" }],
+            fields: [{ label: "服务 ID", value: serviceId }],
           },
         ]}
         onBack={() => navigate({ to: "/inference" })}
@@ -136,14 +158,6 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   }
 
   const item = service.data;
-  const relatedModel = models.data?.items.find(
-    (model) =>
-      model.name === item.model ||
-      model.versions?.some((version) => version.id === item.model_version_id),
-  );
-  const relatedModelVersion = relatedModel?.versions?.find(
-    (version) => version.id === item.model_version_id,
-  );
   const invocationUrl = item.invocation_url ?? item.endpoint_url;
   const compatibilityPath = (() => {
     if (!invocationUrl) return "-";
@@ -271,12 +285,10 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
               { label: "规格", value: "-" },
               {
                 label: "模型",
-                value: relatedModel ? (
-                  <Link to="/models/$modelId" params={{ modelId: relatedModel.id }}>
-                    {relatedModel.display_name || relatedModel.name}
+                value: (
+                  <Link to="/models/$modelId" params={{ modelId: item.model }}>
+                    {item.served_model_name || item.model}
                   </Link>
-                ) : (
-                  item.model
                 ),
               },
               {
@@ -308,8 +320,10 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
                       onClick={() => {
                         void navigator.clipboard
                           .writeText(invocationUrl)
-                          .then(() => Message.success("调用地址已复制"))
-                          .catch(() => Message.error("复制失败，请手动复制调用地址"));
+                          .then(() => showMessage({ type: "success", content: "调用地址已复制" }))
+                          .catch(() =>
+                            showMessage({ type: "error", content: "复制失败，请手动复制调用地址" }),
+                          );
                       }}
                     >
                       复制
@@ -339,44 +353,31 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
           {
             key: "related-summary",
             title: "关联摘要",
-            fields: models.isLoading
-              ? [{ label: "加载中…", value: "-" }]
-              : models.error
-                ? [{ label: "加载结果", value: "关联信息加载失败" }]
-                : [
-                    {
-                      label: "模型",
-                      value: relatedModel ? (
-                        <Link to="/models/$modelId" params={{ modelId: relatedModel.id }}>
-                          {relatedModel.display_name || relatedModel.name}
-                        </Link>
-                      ) : (
-                        item.model
-                      ),
-                    },
-                    {
-                      label: "模型版本",
-                      value: relatedModelVersion?.version ?? item.model_version_id ?? "-",
-                    },
-                    {
-                      label: "运行镜像",
-                      value: <ImageNameText image={item.image_ref ?? item.image_id} />,
-                    },
-                  ],
+            fields: [
+              {
+                label: "模型",
+                value: (
+                  <Link to="/models/$modelId" params={{ modelId: item.model }}>
+                    {item.served_model_name || item.model}
+                  </Link>
+                ),
+              },
+              {
+                label: "模型版本",
+                value: item.model_version_id ?? "-",
+              },
+              {
+                label: "运行镜像",
+                value: <ImageNameText image={item.image_ref ?? item.image_id} />,
+              },
+            ],
           },
         ]}
         tabs={[
           {
             key: "related",
             label: "关联资源",
-            content: (
-              <InferenceRelatedResources
-                service={item}
-                model={relatedModel}
-                loading={models.isFetching}
-                error={models.error}
-              />
-            ),
+            content: <InferenceRelatedResources service={item} />,
           },
           {
             key: "policies",

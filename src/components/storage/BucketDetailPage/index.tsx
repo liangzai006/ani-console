@@ -6,7 +6,6 @@ import {
   Descriptions,
   Empty,
   Input,
-  Message,
   Modal,
   Select,
   Space,
@@ -31,11 +30,12 @@ import {
   type StorageBucketRecord,
 } from "@/api/storage/buckets";
 import { uploadStorageObjectFile } from "@/api/storage/objects";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateLifecycleRuleModal } from "@/components/storage/CreateLifecycleRuleModal";
 import { ObjectBrowser } from "@/components/storage/ObjectBrowser";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { showMessage } from "@/lib/feedback";
+import { withId } from "@/lib/id";
 
 type Bucket = StorageBucketRecord;
 type BucketEntry = StorageBucketObjectEntry;
@@ -62,35 +62,40 @@ export function BucketDetailPage({
   const [classDraft, setClassDraft] = useState<Bucket["storage_class"]>("standard");
 
   const bucket = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("bucket", bucketId),
+        action: "存储桶加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["bucket", bucketId],
     queryFn: () => getBucket(bucketId),
   });
-  useListErrorNotification({
-    id: `bucket-detail:${bucketId}`,
-    title: "存储桶加载失败",
-    error: bucket.error,
-  });
   const bucketEntries = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("bucket-objects", bucketId, prefix),
+        action: "对象列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["bucket-objects", bucketId, prefix],
     queryFn: () => listBucketObjects(bucketId, { prefix, limit: 100 }),
     enabled: !!bucket.data,
   });
   const lifecycleRules = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("bucket-lifecycle", bucketId),
+        action: "生命周期规则加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["bucket-lifecycle-rules", bucketId],
     queryFn: () => listBucketLifecycleRules(bucketId),
     enabled: !!bucket.data,
   });
-  useListErrorNotification({
-    id: `bucket-objects:${bucketId}:${prefix}`,
-    title: "对象列表加载失败",
-    error: bucketEntries.error,
-  });
-  useListErrorNotification({
-    id: `bucket-lifecycle-rules:${bucketId}`,
-    title: "生命周期规则加载失败",
-    error: lifecycleRules.error,
-  });
-
   useEffect(() => {
     if (bucket.data) {
       setAclDraft(bucket.data.acl ?? "private");
@@ -119,6 +124,14 @@ export function BucketDetailPage({
   };
 
   const upload = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "object-upload",
+        action: "上传",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (file: File) =>
       uploadStorageObjectFile({
         bucketId,
@@ -126,14 +139,28 @@ export function BucketDetailPage({
         prefix,
       }),
     onSuccess: refreshBucket,
-    onError: (error) => showApiError(error),
   });
   const deleteEntry = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "object-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (entry: BucketEntry) => deleteBucketObject(bucketId, entry.key),
     onSuccess: refreshBucket,
-    onError: (error) => showApiError(error),
   });
   const createFolder = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "folder-create",
+        action: "创建",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async (_: undefined) => {
       const name = folderName.trim().replace(/^\/+|\/+$/g, "");
       if (!name) throw new Error("请输入文件夹名称");
@@ -146,9 +173,17 @@ export function BucketDetailPage({
       setFolderName("");
       refreshBucket();
     },
-    onError: (error) => showApiError(error),
   });
   const generateLink = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "object-link",
+        action: "操作",
+        successText: "临时链接已复制",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async ({ entry, action }: { entry: BucketEntry; action: "download" | "copy" }) => {
       const data = await generateBucketObjectPresignedUrl(bucketId, {
         key: entry.key,
@@ -164,32 +199,51 @@ export function BucketDetailPage({
         return;
       }
       await navigator.clipboard.writeText(data.download_url);
-      Message.success("临时链接已复制");
     },
-    onError: (error) => showApiError(error),
   });
   const updateAcl = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "bucket-acl-update",
+        action: "更新",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (_: undefined) => updateBucketAcl(bucketId, { acl: aclDraft ?? "private" }),
     onSuccess: () => {
       refreshBucket();
     },
-    onError: (error) => showApiError(error),
   });
   const updateClass = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "bucket-class-update",
+        action: "更新",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (_: undefined) =>
       updateBucketStorageClass(bucketId, { storage_class: classDraft ?? "standard" }),
     onSuccess: () => {
       refreshBucket();
     },
-    onError: (error) => showApiError(error),
   });
   const deleteRule = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "lifecycle-rule-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (rule: LifecycleRule) => deleteBucketLifecycleRule(bucketId, rule.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bucket-lifecycle-rules", bucketId] });
       refreshBucket();
     },
-    onError: (error) => showApiError(error),
   });
 
   if (bucket.isLoading && !bucket.data)
@@ -223,7 +277,7 @@ export function BucketDetailPage({
   const storageClassLabel = bucketInfo.storage_class === "infrequent_access" ? "低频" : "标准";
   const copyText = async (text: string, successMessage: string) => {
     await navigator.clipboard.writeText(text);
-    Message.success(successMessage);
+    showMessage({ type: "success", content: successMessage });
   };
 
   return (

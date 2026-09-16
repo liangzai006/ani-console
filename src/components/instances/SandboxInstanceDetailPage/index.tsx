@@ -1,21 +1,15 @@
+import { withId } from "@/lib/id";
 import { getInstance } from "@/api/instances";
 import { Empty, Spin, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  AliIcon,
-  ApiErrorAlert,
-  DetailPageFrame,
-  ImageNameText,
-  StatusTag,
-} from "@/components/common";
+import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { SandboxInstanceActions } from "@/components/instances/SandboxInstanceActions";
 import { InstanceTerminal } from "@/components/instances/InstanceTerminal";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import type { SandboxInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
 import { getSandboxProviderLabel } from "@/lib/sandbox-instance";
@@ -45,15 +39,16 @@ export function SandboxInstanceDetailPage({
   const queryClient = useQueryClient();
 
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("sandbox", instanceId),
+        action: "Sandbox 实例加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["instance", instanceId],
     queryFn: () => getInstance(instanceId),
   });
-  useListErrorNotification({
-    id: `sandbox-detail:${instanceId}`,
-    title: "Sandbox 实例加载失败",
-    error: detail.error,
-  });
-
   const refreshDetail = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["instance", instanceId] }),
@@ -69,22 +64,28 @@ export function SandboxInstanceDetailPage({
     );
   }
 
-  if (detail.error && !detail.data) {
-    return <ApiErrorAlert error={detail.error} title="Sandbox 实例加载失败" />;
-  }
-
   if (!detail.data) {
-    return <ApiErrorAlert error={new Error("Sandbox 实例不存在")} title="未找到资源" />;
+    return (
+      <DetailPageFrame
+        breadcrumbs={[
+          { label: "算力" },
+          { label: "Sandbox 实例", to: "/sandbox-instances" },
+          { label: instanceId },
+        ]}
+        title={instanceId}
+        headerItems={[
+          { label: "实例 ID", value: instanceId },
+          { label: "状态", value: "-" },
+          { label: "创建时间", value: "-" },
+        ]}
+        cards={[]}
+      />
+    );
   }
 
   const instance = detail.data;
   if (instance.kind !== "sandbox" || !instance.sandbox) {
-    return (
-      <ApiErrorAlert
-        error={new Error("当前资源不是 Sandbox 实例，或缺少 Sandbox 运行摘要")}
-        title="资源类型不匹配"
-      />
-    );
+    return <Empty description="当前资源不是 Sandbox 实例，或缺少 Sandbox 运行摘要" />;
   }
 
   const sandbox = instance.sandbox;

@@ -1,4 +1,5 @@
-import { Alert, Button, Form, Select } from "@arco-design/web-react";
+import { withId } from "@/lib/id";
+import { Form, Select } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { listRegistryImages } from "@/api/registry";
 import { ImageNameText } from "@/components/common";
@@ -14,25 +15,19 @@ export function InstanceRegistryImageSelect({
 }) {
   const purpose = instanceKind === "gpu_container" ? "gpu" : "container";
   const images = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("registry-images", purpose),
+        action: "容器镜像列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["registry-images", "instance-select", purpose],
     enabled,
     queryFn: () => listRegistryImages({ limit: 100, purpose }).then((data) => data.items),
   });
-
   return (
     <>
-      {images.isError ? (
-        <Alert
-          type="error"
-          content="容器镜像列表加载失败，请重试。"
-          action={
-            <Button size="mini" onClick={() => images.refetch()}>
-              重试
-            </Button>
-          }
-          className="mb-4"
-        />
-      ) : null}
       <Form.Item
         field={field}
         label="镜像"

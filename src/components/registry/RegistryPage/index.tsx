@@ -1,8 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Message, Modal, Select, Space, Typography } from "@arco-design/web-react";
+import { Button, Modal, Select, Space, Typography } from "@arco-design/web-react";
 import { useState } from "react";
-import { showApiError } from "@/lib/api-error";
+
 import {
   deleteRegistryTag,
   listRegistryImages,
@@ -22,7 +22,7 @@ import {
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
+import { showMessage } from "@/lib/feedback";
 
 const PURPOSE_LABELS: Record<RegistryPurpose, string> = {
   container: "容器镜像",
@@ -32,7 +32,9 @@ const PURPOSE_LABELS: Record<RegistryPurpose, string> = {
 };
 
 function copyText(value: string, success: string) {
-  void navigator.clipboard.writeText(value).then(() => Message.success(success));
+  void navigator.clipboard
+    .writeText(value)
+    .then(() => showMessage({ type: "success", content: success }));
 }
 
 function scanSummary(scan: RegistryScanResult) {
@@ -52,6 +54,13 @@ export function RegistryPage() {
   const [guideVisible, setGuideVisible] = useState(false);
 
   const projects = useQuery({
+    meta: {
+      errorNotification: {
+        id: "registry-projects",
+        action: "数据加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["registry-projects"],
     queryFn: () => listRegistryProjects({ limit: 100 }).then((data) => data.items),
   });
@@ -64,6 +73,11 @@ export function RegistryPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<RegistryImage>({
+    errorNotification: {
+      id: "registry-images",
+      action: "镜像列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["registry-images", { keyword, project, purpose }],
     cursorScope: `${keyword.trim()}:${project}:${purpose}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -77,22 +91,24 @@ export function RegistryPage() {
     },
   });
   const deleteTag = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "registry-tag-delete",
+        action: "删除",
+        successText: "镜像 Tag 已删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (item: RegistryImage) => deleteRegistryTag(item.project, item.repository, item.tag),
     onSuccess: () => {
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["registry-images"] });
-      Message.success("镜像 Tag 已删除");
     },
-    onError: (error) => showApiError(error),
   });
 
   const items = images.data?.items ?? [];
   const paginationTotal = images.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "registry-images-list",
-    title: "镜像列表加载失败",
-    error: images.error,
-  });
   const columns: Array<ListColumn<RegistryImage>> = [
     {
       key: "image",

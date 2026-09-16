@@ -1,6 +1,5 @@
-import { Alert, Button, Drawer, Empty, Spin, Typography } from "@arco-design/web-react";
+import { Button, Drawer, Empty, Spin, Typography } from "@arco-design/web-react";
 import type { KBCitation as Citation } from "@/api/knowledge";
-import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 import styles from "./index.module.css";
 
@@ -9,7 +8,6 @@ export function KnowledgeCitationsDrawer({
   citations,
   loading,
   error,
-  onRetry,
   onCancel,
   onSelectSession,
 }: {
@@ -17,7 +15,6 @@ export function KnowledgeCitationsDrawer({
   citations?: Citation[];
   loading: boolean;
   error: unknown;
-  onRetry: () => void;
   onCancel: () => void;
   onSelectSession: (sessionId: string) => void;
 }) {
@@ -28,12 +25,7 @@ export function KnowledgeCitationsDrawer({
           <Spin />
         </div>
       ) : error ? (
-        <div className={styles.state}>
-          <Alert type="error" showIcon content={getErrorMessage(error, "引用列表加载失败")} />
-          <Button size="small" onClick={onRetry}>
-            重试
-          </Button>
-        </div>
+        <div className={styles.state} />
       ) : citations?.length ? (
         <div className={styles.list}>
           {citations.map((citation) => (

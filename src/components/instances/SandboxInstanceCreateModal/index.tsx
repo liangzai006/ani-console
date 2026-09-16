@@ -1,7 +1,6 @@
-import { Message } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createInstance } from "@/api/instances";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
 import { SandboxInstanceCreateForm } from "./SandboxInstanceCreateForm";
 import { buildCreateRequest, type FormValues, type SandboxTemplate } from "./types";
 
@@ -14,16 +13,22 @@ type Props = {
 export function SandboxInstanceCreateModal({ visible, onCancel, onCreated }: Props) {
   const queryClient = useQueryClient();
   const create = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "创建",
+        successText: "Sandbox 创建已提交",
+        errorFallback: "创建失败，请检查配置后重试",
+      },
+    },
     mutationFn: async ({ values, template }: { values: FormValues; template: SandboxTemplate }) => {
       const submitData = buildCreateRequest(values, template);
       await createInstance(submitData);
     },
     onSuccess: () => {
-      Message.success("Sandbox 创建已提交");
       void queryClient.invalidateQueries({ queryKey: ["sandbox-instances"] });
       onCreated();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "create")),
   });
 
   const close = () => {

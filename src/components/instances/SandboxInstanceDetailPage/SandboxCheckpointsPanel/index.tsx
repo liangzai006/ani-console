@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import {
   cloneSandboxCheckpoint,
   createSandboxCheckpoint,
@@ -11,7 +12,6 @@ import {
   Empty,
   Form,
   Input,
-  Message,
   Modal,
   Space,
   Switch,
@@ -24,7 +24,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DataTable } from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { showSandboxError } from "../utils";
 
 export function SandboxCheckpointsPanel({
   instanceId,
@@ -44,11 +43,26 @@ export function SandboxCheckpointsPanel({
   const canCheckpoint = ["running", "paused"].includes(sessionState);
 
   const checkpoints = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("sandbox-checkpoints", instanceId),
+        action: "检查点加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["sandbox-checkpoints", instanceId],
     queryFn: () => listSandboxCheckpoints(instanceId),
   });
-
   const createCheckpoint = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "sandbox-checkpoint-create",
+        action: "检查点创建",
+        successText: "检查点已创建",
+        errorFallback: "检查点创建失败",
+      },
+    },
     mutationFn: async () => {
       const submitData = {
         name: checkpointName.trim(),
@@ -60,27 +74,40 @@ export function SandboxCheckpointsPanel({
       setCreateVisible(false);
       setCheckpointName("");
       setKeepMemory(false);
-      Message.success("检查点已创建");
       void checkpoints.refetch();
       onChanged();
     },
-    onError: (error) => showSandboxError(error, "检查点创建失败"),
   });
 
   const restoreCheckpoint = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "sandbox-checkpoint-restore",
+        action: "检查点恢复",
+        successText: "检查点已恢复",
+        errorFallback: "检查点恢复失败",
+      },
+    },
     mutationFn: async (checkpoint: SandboxCheckpoint) => {
       await restoreSandboxCheckpoint(instanceId, checkpoint.id);
       return checkpoint;
     },
     onSuccess: () => {
-      Message.success("检查点已恢复");
       void checkpoints.refetch();
       onChanged();
     },
-    onError: (error) => showSandboxError(error, "检查点恢复失败"),
   });
 
   const cloneCheckpoint = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "sandbox-checkpoint-clone",
+        action: "检查点克隆",
+        errorFallback: "检查点克隆失败",
+      },
+    },
     mutationFn: async () => {
       if (!cloneTarget) throw new Error("请选择要克隆的检查点");
       const submitData = { name: cloneName.trim() };
@@ -101,7 +128,6 @@ export function SandboxCheckpointsPanel({
           }),
       });
     },
-    onError: (error) => showSandboxError(error, "检查点克隆失败"),
   });
 
   const confirmRestore = (checkpoint: SandboxCheckpoint) => {
@@ -141,10 +167,6 @@ export function SandboxCheckpointsPanel({
               </Button>
             </Space>
           </div>
-
-          {checkpoints.error ? (
-            <Alert className="mb-3" type="error" content="检查点加载失败，请刷新重试。" />
-          ) : null}
 
           <DataTable<SandboxCheckpoint>
             data={checkpoints.data?.items ?? []}

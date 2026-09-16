@@ -11,7 +11,6 @@ import {
   Form,
   Input,
   InputNumber,
-  Message,
   Modal,
   Select,
   Space,
@@ -23,7 +22,7 @@ import { useState } from "react";
 import { DataTable } from "@/components/common";
 import { getImageDisplayName } from "@/lib/render";
 import { SandboxTokenIssueModal } from "./SandboxTokenIssueModal";
-import { copySandboxText, showSandboxError } from "../utils";
+import { copySandboxText } from "../utils";
 
 type SandboxInstance = InstanceRecord;
 type SandboxStatus = NonNullable<SandboxInstanceStatus>;
@@ -48,6 +47,15 @@ export function SandboxAccessPanel({
   const browserTemplate = getImageDisplayName(instance.image).toLowerCase().includes("browser");
 
   const createPort = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "sandbox-port-open",
+        action: "预览端口开放",
+        successText: "预览端口已开放",
+        errorFallback: "预览端口开放失败",
+      },
+    },
     mutationFn: async () => {
       const submitData = {
         port,
@@ -59,22 +67,27 @@ export function SandboxAccessPanel({
     onSuccess: () => {
       setPortVisible(false);
       setPortName("");
-      Message.success("预览端口已开放");
       onChanged();
     },
-    onError: (error) => showSandboxError(error, "预览端口开放失败"),
   });
 
   const closePort = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "sandbox-port-close",
+        action: "预览端口关闭",
+        successText: "预览端口已关闭",
+        errorFallback: "预览端口关闭失败",
+      },
+    },
     mutationFn: async (targetPort: number) => {
       await deleteSandboxPort(instance.id, targetPort);
       return targetPort;
     },
-    onSuccess: (targetPort) => {
-      Message.success(`端口 ${targetPort} 已关闭`);
+    onSuccess: () => {
       onChanged();
     },
-    onError: (error) => showSandboxError(error, "预览端口关闭失败"),
   });
 
   const confirmClosePort = (targetPort: number) => {

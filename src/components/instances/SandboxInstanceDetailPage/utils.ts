@@ -1,16 +1,4 @@
-import { Message } from "@arco-design/web-react";
-import { getErrorMessage } from "@/lib/errors";
-
-export function throwSandboxApiError(error: unknown, status: number, fallback: string): never {
-  if (error && typeof error === "object") {
-    throw { ...error, status };
-  }
-  throw { message: fallback, status };
-}
-
-export function showSandboxError(error: unknown, fallback: string) {
-  Message.error(getErrorMessage(error, fallback));
-}
+import { showMessage } from "@/lib/feedback";
 
 export function formatDurationSeconds(value?: number | null): string {
   if (value == null) return "-";
@@ -58,9 +46,9 @@ export function sandboxTimeoutLabel(value?: string | null): string {
 export async function copySandboxText(value: string, success: string) {
   try {
     await navigator.clipboard.writeText(value);
-    Message.success(success);
+    showMessage({ type: "success", content: success });
   } catch {
-    Message.error("复制失败，请手动复制");
+    showMessage({ type: "error", content: "复制失败，请手动复制" });
   }
 }
 

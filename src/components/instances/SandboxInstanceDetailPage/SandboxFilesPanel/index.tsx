@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import {
   deleteSandboxFile,
   listSandboxFiles,
@@ -11,7 +12,6 @@ import {
   Empty,
   Form,
   Input,
-  Message,
   Modal,
   Space,
   Tag,
@@ -21,7 +21,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { DataTable } from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { copySandboxText, encodeSandboxText, showSandboxError } from "../utils";
+import { copySandboxText, encodeSandboxText } from "../utils";
 
 export function SandboxFilesPanel({
   instanceId,
@@ -40,11 +40,26 @@ export function SandboxFilesPanel({
   const [overwrite, setOverwrite] = useState(false);
 
   const files = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("sandbox-files", instanceId, directory),
+        action: "工作区文件加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["sandbox-files", instanceId, directory],
     queryFn: () => listSandboxFiles(instanceId, { path: directory, limit: 500 }),
   });
-
   const writeFile = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "sandbox-file-write",
+        action: "文件写入",
+        successText: "文件已写入 Sandbox 工作区",
+        errorFallback: "文件写入失败",
+      },
+    },
     mutationFn: async () => {
       const path = resolvePath(directory, filePath.trim());
       const submitData = {
@@ -59,24 +74,29 @@ export function SandboxFilesPanel({
       setFilePath("");
       setContent("");
       setOverwrite(false);
-      Message.success("文件已写入 Sandbox 工作区");
       void files.refetch();
       onChanged();
     },
-    onError: (error) => showSandboxError(error, "文件写入失败"),
   });
 
   const deleteFile = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "sandbox-file-delete",
+        action: "文件删除",
+        successText: "文件已删除",
+        errorFallback: "文件删除失败",
+      },
+    },
     mutationFn: async (path: string) => {
       await deleteSandboxFile(instanceId, path);
       return path;
     },
     onSuccess: () => {
-      Message.success("文件已删除");
       void files.refetch();
       onChanged();
     },
-    onError: (error) => showSandboxError(error, "文件删除失败"),
   });
 
   const openDirectory = (path: string) => {
@@ -128,21 +148,6 @@ export function SandboxFilesPanel({
               刷新
             </Button>
           </div>
-
-          {files.error ? (
-            <Alert
-              className="mb-3"
-              type="error"
-              content={
-                <Space>
-                  <span>工作区文件加载失败。</span>
-                  <Button size="small" onClick={() => files.refetch()}>
-                    重试
-                  </Button>
-                </Space>
-              }
-            />
-          ) : null}
 
           <DataTable<SandboxFile>
             data={files.data?.items ?? []}

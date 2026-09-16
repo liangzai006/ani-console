@@ -7,6 +7,13 @@ export function useBranding() {
   const setBranding = useBrandingStore((s) => s.setBranding);
 
   const query = useQuery({
+    meta: {
+      errorNotification: {
+        id: "branding",
+        action: "品牌配置加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["branding"],
     queryFn: getBranding,
     staleTime: 300_000,

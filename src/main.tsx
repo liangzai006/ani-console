@@ -5,12 +5,18 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ConfigProvider } from "@arco-design/web-react";
 import { AppRoot } from "@/components/shell/AppRoot";
+import { showMessage } from "@/lib/feedback";
 
 const ARCO_THEME = { primaryColor: "#0079D3" };
+const COMPONENT_CONFIG = {
+  Form: {
+    onSubmitFailed: () => showMessage({ type: "error", content: "请检查并修正表单中的错误项" }),
+  },
+};
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ConfigProvider theme={ARCO_THEME}>
+    <ConfigProvider theme={ARCO_THEME} componentConfig={COMPONENT_CONFIG}>
       <AppRoot />
     </ConfigProvider>
   </StrictMode>,

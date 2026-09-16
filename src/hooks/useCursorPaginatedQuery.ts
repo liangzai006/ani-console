@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import type { QueryErrorNotificationMeta } from "@/types/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type CursorPage<T> = {
@@ -13,6 +14,7 @@ type UseCursorPaginatedQueryOptions<T> = {
   initialPageSize?: number;
   enabled?: boolean;
   cursorScope?: unknown;
+  errorNotification?: QueryErrorNotificationMeta;
 };
 
 export function useCursorPaginatedQuery<T>({
@@ -21,6 +23,7 @@ export function useCursorPaginatedQuery<T>({
   initialPageSize = 10,
   enabled = true,
   cursorScope,
+  errorNotification,
 }: UseCursorPaginatedQueryOptions<T>) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(initialPageSize);
@@ -36,6 +39,7 @@ export function useCursorPaginatedQuery<T>({
   const query = useQuery({
     queryKey: [...queryKey, { page, pageSize }],
     enabled,
+    meta: { errorNotification },
     queryFn: async () => {
       let startPage = page;
       while (startPage > 1 && !pageCursors.current.has(startPage)) startPage -= 1;

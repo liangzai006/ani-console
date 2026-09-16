@@ -2,9 +2,9 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Button, Card, Result, Spin, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { exchangeOidcCode } from "@/api/auth";
+import { ApiError } from "@/api/request";
 import { AuthCenterLayout } from "@/components/shell/AuthCenterLayout";
-import { ApiErrorAlert } from "@/components/common";
-import { parseApiError } from "@/lib/errors";
+import { closeNotification, showNotification } from "@/lib/feedback";
 import { isAuthenticated, useAuthStore } from "@/stores/auth";
 
 type CallbackPhase = "loading" | "missing" | "error";
@@ -41,7 +41,6 @@ export function LoginCallbackPage() {
   const navigate = useNavigate();
   const setTokens = useAuthStore((s) => s.setTokens);
   const [phase, setPhase] = useState<CallbackPhase>("loading");
-  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     const redirectUri = `${window.location.origin}/login/callback`;
@@ -64,6 +63,7 @@ export function LoginCallbackPage() {
 
     exchangeOidcCode(code, state, redirectUri)
       .then((tokens) => {
+        closeNotification("oidc-login");
         setTokens(tokens);
         sessionStorage.setItem(exchangeDoneKey(code, state), "1");
         sessionStorage.removeItem(PENDING_KEY);
@@ -73,7 +73,11 @@ export function LoginCallbackPage() {
       .catch((e) => {
         sessionStorage.removeItem(PENDING_KEY);
         sessionStorage.removeItem(exchangeDoneKey(code, state));
-        setError(e);
+        const content =
+          e instanceof ApiError && e.code === "UNAUTHORIZED"
+            ? "授权信息已失效，请返回登录页重新发起登录"
+            : { error: e, fallback: "登录失败，请稍后重试" };
+        showNotification({ id: "oidc-login", state: "error", action: "登录", content });
         setPhase("error");
       });
   }, [navigate, setTokens]);
@@ -98,22 +102,9 @@ export function LoginCallbackPage() {
   }
 
   if (phase === "error") {
-    const parsed = parseApiError(error);
-    const detail =
-      parsed.code === "UNAUTHORIZED"
-        ? "Gateway 无法用此 code 完成 Dex 换票（常见于 code 已用过、state 过期或 Dex 不可达）。请返回登录页重新发起一次完整登录。"
-        : undefined;
-
     return (
       <AuthCenterLayout>
-        <Card className="w-full max-w-120 space-y-4">
-          <ApiErrorAlert error={error} title="登录失败" />
-          {detail ? <Typography.Paragraph type="secondary">{detail}</Typography.Paragraph> : null}
-          {parsed.request_id ? (
-            <Typography.Text type="secondary" className="text-xs">
-              request_id: {parsed.request_id}
-            </Typography.Text>
-          ) : null}
+        <Card className="w-full max-w-120 text-center">
           <Link to="/login">
             <Button type="primary">返回登录</Button>
           </Link>

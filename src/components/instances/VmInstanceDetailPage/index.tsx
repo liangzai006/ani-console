@@ -1,15 +1,10 @@
+import { withId } from "@/lib/id";
 import { getInstance, type InstanceRecord } from "@/api/instances";
 import { Button, Empty, Spin, Tooltip } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  AliIcon,
-  ApiErrorAlert,
-  DetailPageFrame,
-  ImageNameText,
-  StatusTag,
-} from "@/components/common";
+import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
@@ -18,7 +13,6 @@ import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { InstanceVncConsole } from "@/components/instances/InstanceVncConsole";
 import { VmInstanceActions } from "@/components/instances/VmInstanceActions";
 import { VmInstanceSnapshotModal } from "@/components/instances/VmInstanceActions/VmInstanceSnapshotModal";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import type { ComputeInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
@@ -70,15 +64,16 @@ export function VmInstanceDetailPage({
   const [mountKind, setMountKind] = useState<"volume" | "filesystem">();
   const [snapshotVisible, setSnapshotVisible] = useState(false);
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("vm", instanceId),
+        action: "云主机详情加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["vm-instance", instanceId],
     queryFn: () => getInstance(instanceId),
   });
-  useListErrorNotification({
-    id: `vm-instance-detail:${instanceId}`,
-    title: "云主机详情加载失败",
-    error: detail.error,
-  });
-
   if (detail.isLoading && !detail.data) {
     return (
       <div className="flex justify-center py-20">
@@ -89,16 +84,26 @@ export function VmInstanceDetailPage({
 
   if (!detail.data) {
     return (
-      <ApiErrorAlert
-        error={detail.error ?? new Error("云主机详情未返回结果")}
-        title="云主机详情加载失败"
+      <DetailPageFrame
+        breadcrumbs={[
+          { label: "算力" },
+          { label: "云主机", to: "/vm-instances" },
+          { label: instanceId },
+        ]}
+        title={instanceId}
+        headerItems={[
+          { label: "实例 ID", value: instanceId },
+          { label: "状态", value: "-" },
+          { label: "创建时间", value: "-" },
+        ]}
+        cards={[]}
       />
     );
   }
 
   const instance = detail.data;
   if (instance.kind !== "vm") {
-    return <ApiErrorAlert error={new Error("当前资源不是云主机 VM")} title="资源类型不匹配" />;
+    return <Empty description="当前资源不是云主机 VM" />;
   }
 
   const autoStart = (instance as VmInstance & { auto_start?: boolean | null }).auto_start;

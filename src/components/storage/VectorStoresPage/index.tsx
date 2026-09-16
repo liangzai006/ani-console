@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dropdown, Menu, Message, Modal, Tooltip } from "@arco-design/web-react";
+import { Dropdown, Menu, Modal, Tooltip } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
 import {
   deleteVectorStore,
@@ -8,7 +8,7 @@ import {
   rebuildVectorStoreIndex,
   type VectorStore,
 } from "@/api/storage/vector-stores";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateVectorStoreModal } from "@/components/storage/CreateVectorStoreModal";
 import {
   DataTableNameCell,
@@ -20,7 +20,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
 type StatusFilter = "all" | "ready" | "pending";
@@ -42,6 +41,11 @@ export function VectorStoresPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<VectorStore>({
+    errorNotification: {
+      id: "vector-stores",
+      action: "向量存储列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["vector-stores", { status, searchField, searchText }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -56,29 +60,38 @@ export function VectorStoresPage() {
     },
   });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "vector-store-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (item: VectorStore) => deleteVectorStore(item.id),
     onSuccess: () => {
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["vector-stores"] });
     },
-    onError: (error) => showApiError(error),
   });
   const rebuildIndex = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "vector-index-rebuild",
+        action: "重建",
+        successText: "索引重建已提交",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (item: VectorStore) => rebuildVectorStoreIndex(item.id),
     onSuccess: (_, item) => {
-      Message.success(`已提交「${item.name}」索引重建`);
       void qc.invalidateQueries({ queryKey: ["vector-stores"] });
       void qc.invalidateQueries({ queryKey: ["vector-store", item.id] });
     },
-    onError: (error) => showApiError(error),
   });
   const items = useMemo(() => (stores.data?.items ?? []) as VectorStore[], [stores.data?.items]);
   const paginationTotal = stores.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "vector-stores-list",
-    title: "向量存储列表加载失败",
-    error: stores.error,
-  });
   const columns: Array<ListColumn<VectorStore>> = [
     {
       key: "name",

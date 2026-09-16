@@ -8,7 +8,7 @@ import {
   listVolumes,
   type StorageVolume,
 } from "@/api/storage/volumes";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateVolumeModal } from "@/components/storage/CreateVolumeModal";
 import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnapshotModal";
 import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
@@ -23,7 +23,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
 type Volume = StorageVolume;
@@ -48,6 +47,11 @@ export function VolumesPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<Volume>({
+    errorNotification: {
+      id: "volumes",
+      action: "块存储卷列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["volumes", { status, searchField, searchText }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -62,14 +66,29 @@ export function VolumesPage() {
     },
   });
   const deleteVolume = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "volume-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (item: Volume) => removeVolume(item.id),
     onSuccess: () => {
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["volumes"] });
     },
-    onError: (error) => showApiError(error),
   });
   const detachVolume = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "volume-detach",
+        action: "卸载",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async (item: Volume) => {
       if (!item.mount_instance_id) throw new Error("块存储卷未挂载实例");
       return applyInstanceLifecycle(item.mount_instance_id, {
@@ -82,17 +101,10 @@ export function VolumesPage() {
       void qc.invalidateQueries({ queryKey: ["volume", item.id] });
       void qc.invalidateQueries({ queryKey: ["volumes"] });
     },
-    onError: (error) => showApiError(error),
   });
   const items = useMemo(() => (volumes.data?.items ?? []) as Volume[], [volumes.data?.items]);
   const isMounted = (item: Volume) => Boolean(item.mount_instance_id);
   const paginationTotal = volumes.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "volumes-list",
-    title: "块存储卷列表加载失败",
-    error: volumes.error,
-  });
-
   const columns: Array<ListColumn<Volume>> = [
     {
       key: "name",

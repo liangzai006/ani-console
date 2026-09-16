@@ -1,10 +1,11 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Alert, Form, Message, Modal } from "@arco-design/web-react";
+import { Alert, Form, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import { CPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instance-compute-specs";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 type Values = { spec: string };
@@ -42,6 +43,14 @@ export function ContainerInstanceResizeModal({
     ? [...CPU_INSTANCE_COMPUTE_SPECS]
     : [currentSpec, ...CPU_INSTANCE_COMPUTE_SPECS];
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "变配已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (values: Values) => {
       const spec = resizeSpecs.find((option) => option.value === values.spec);
       if (!spec) throw new Error("请选择有效的规格档位");
@@ -54,10 +63,8 @@ export function ContainerInstanceResizeModal({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("变配已提交");
       onSubmitted();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   const cancel = () => {
@@ -71,7 +78,7 @@ export function ContainerInstanceResizeModal({
       confirmLoading={mutation.isPending}
       okText="确认变配"
       onCancel={cancel}
-      onOk={async () => mutation.mutate(await form.validate())}
+      onOk={async () => mutation.mutate(await validateForm(form))}
       unmountOnExit
     >
       <Form form={form} layout="vertical" initialValues={{ spec: currentSpec.value }}>

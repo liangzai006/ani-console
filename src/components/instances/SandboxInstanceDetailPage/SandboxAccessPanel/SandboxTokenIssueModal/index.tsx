@@ -10,7 +10,6 @@ import {
   Descriptions,
   Form,
   Input,
-  Message,
   Modal,
   Select,
   Space,
@@ -18,7 +17,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
-import { copySandboxText, showSandboxError } from "../../utils";
+import { copySandboxText } from "../../utils";
 
 type SandboxInstance = InstanceRecord;
 type SandboxToken = SandboxTokenResponse;
@@ -45,6 +44,14 @@ export function SandboxTokenIssueModal({
   const [tokenScopes, setTokenScopes] = useState<TokenScope[]>(["connect"]);
 
   const issueToken = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "连接令牌签发",
+        successText: "短期连接令牌已签发，请复制后关闭弹窗",
+        errorFallback: "连接令牌签发失败",
+      },
+    },
     mutationFn: async () => {
       const submitData = {
         expires_in: tokenExpiresIn,
@@ -54,9 +61,7 @@ export function SandboxTokenIssueModal({
     },
     onSuccess: (data) => {
       setToken(data);
-      Message.success("短期连接令牌已签发，请复制后关闭弹窗");
     },
-    onError: (error) => showSandboxError(error, "连接令牌签发失败"),
   });
 
   const closeModal = () => {

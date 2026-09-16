@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import {
   DataTable,
   DetailPageFrame,
@@ -17,12 +18,11 @@ import {
   type FilesystemMountTarget,
   type StorageFilesystem,
 } from "@/api/storage/filesystems";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
 import { FilesystemPermissionsTab } from "@/components/storage/FilesystemPermissionsTab";
 import { formatDateTime } from "@/lib/format";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type Filesystem = StorageFilesystem;
 type MountTarget = FilesystemMountTarget;
@@ -33,30 +33,41 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
   const [expandVisible, setExpandVisible] = useState(false);
   const [mountTargetVisible, setMountTargetVisible] = useState(false);
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("filesystem", filesystemId),
+        action: "文件存储加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["filesystem", filesystemId],
     queryFn: () => getFilesystem(filesystemId),
   });
-  useListErrorNotification({
-    id: `filesystem-detail:${filesystemId}`,
-    title: "文件存储加载失败",
-    error: detail.error,
-  });
   const mounts = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("filesystem-mounts", filesystemId),
+        action: "挂载目标加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["filesystem-mounts", filesystemId],
     queryFn: () => listFilesystemMountTargets(filesystemId, { limit: 100 }),
   });
-  useListErrorNotification({
-    id: `filesystem-mounts:${filesystemId}`,
-    title: "挂载目标加载失败",
-    error: mounts.error,
-  });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "filesystem-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (_: undefined) => deleteFilesystem(filesystemId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["filesystems"] });
       navigate({ to: "/filesystems" });
     },
-    onError: (error) => showApiError(error),
   });
   if (detail.isLoading && !detail.data)
     return (

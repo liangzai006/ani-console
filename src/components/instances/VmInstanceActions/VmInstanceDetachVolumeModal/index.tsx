@@ -1,8 +1,9 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Alert, Form, Message, Modal, Select } from "@arco-design/web-react";
+import { Alert, Form, Modal, Select } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 
@@ -23,6 +24,14 @@ export function VmInstanceDetachVolumeModal({
 }) {
   const [form] = Form.useForm<{ volumeId: string }>();
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "卸载云盘已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async ({ volumeId }: { volumeId: string }) => {
       const submitData = {
         action: "detach_volume" as const,
@@ -32,10 +41,8 @@ export function VmInstanceDetachVolumeModal({
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      Message.success("卸载云盘已提交");
       onSubmitted(operationId);
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const options = (instance.volumes ?? []).filter(
     (volume) => volume.kind !== "root_disk" && Boolean(attachedVolumeId(volume)),
@@ -48,7 +55,7 @@ export function VmInstanceDetachVolumeModal({
       onCancel={() => {
         onCancel();
       }}
-      onOk={async () => mutation.mutate(await form.validate())}
+      onOk={async () => mutation.mutate(await validateForm(form))}
       unmountOnExit
     >
       <Form form={form} layout="vertical">

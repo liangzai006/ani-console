@@ -1,11 +1,10 @@
-import { Button, Empty, Spin } from "@arco-design/web-react";
+import { withId } from "@/lib/id";
+import { Empty, Spin } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import type { EChartsOption, LineSeriesOption } from "echarts";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { CoreLineBarChart } from "@/components/common";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
-import { getErrorMessage } from "@/lib/errors";
 import type {
   HomeOverviewDataSource,
   HomeResourceTrendMetric,
@@ -42,20 +41,20 @@ export function TrendCard({
 }) {
   const [range, setRange] = useState<HomeTimeRange>("7d");
   const trendQuery = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("resource-trend", metric, range),
+        action: `${config.title}加载`,
+        fallback: "数据服务暂不可用",
+      },
+    },
     queryKey: ["home-resource-trend", metric, range],
     queryFn: () => dataSource.getResourceTrend(metric, range),
     retry: 1,
     staleTime: 60_000,
   });
-  useListErrorNotification({
-    id: `home-resource-trend:${metric}:${range}`,
-    title: `${config.title}加载失败`,
-    error: trendQuery.error,
-    fallback: "数据服务暂不可用",
-  });
   const current = trendQuery.data ?? emptyTrend;
   const hasData = current.series.some((series) => series.values.length > 0);
-  const errorMessage = getErrorMessage(trendQuery.error, "数据服务暂不可用");
 
   const option = useMemo<EChartsOption>(() => {
     const series: LineSeriesOption[] = current.series.map((item) => ({
@@ -133,12 +132,7 @@ export function TrendCard({
           <span>正在加载趋势数据...</span>
         </div>
       ) : trendQuery.isError ? (
-        <div className={styles.trendState}>
-          <Empty description={errorMessage} />
-          <Button type="primary" size="small" onClick={() => trendQuery.refetch()}>
-            重试
-          </Button>
-        </div>
+        <div className={styles.trendState} />
       ) : !hasData ? (
         <div className={styles.trendState}>
           <Empty description="暂无数据" />

@@ -9,48 +9,54 @@ import {
 } from "@/api/gpu-inventory";
 import { ListPageFrame } from "@/components/common";
 import { GpuContainerCreateModal } from "@/components/instances/GpuContainerCreateModal";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { GpuCapacityOverview } from "./GpuCapacityOverview";
 
 export function GpuInventoryPage() {
   const queryClient = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
   const occupancy = useQuery<GpuOccupancyStats>({
+    meta: {
+      errorNotification: {
+        id: "gpu-inventory-occupancy",
+        action: "GPU 占用数据加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["gpu-occupancy"],
     queryFn: getGpuOccupancy,
   });
   const specAvailability = useQuery({
+    meta: {
+      errorNotification: {
+        id: "gpu-spec-availability-summary",
+        action: "GPU 规格可用性加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["gpu-specs", "availability"],
     queryFn: getGpuSpecAvailability,
   });
   const tenantQuota = useQuery({
+    meta: {
+      errorNotification: {
+        id: "gpu-tenant-quota",
+        action: "租户 GPU 配额加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["quotas", "me"],
     queryFn: getMyQuota,
   });
   const anomalies = useQuery({
+    meta: {
+      errorNotification: {
+        id: "gpu-inventory-anomalies",
+        action: "GPU 异常数据加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["gpu-inventory", "anomalies"],
     queryFn: listGpuAnomalies,
-  });
-
-  useListErrorNotification({
-    id: "gpu-inventory-occupancy",
-    title: "GPU 占用数据加载失败",
-    error: occupancy.error,
-  });
-  useListErrorNotification({
-    id: "gpu-spec-availability-summary",
-    title: "GPU 规格可用性加载失败",
-    error: specAvailability.error,
-  });
-  useListErrorNotification({
-    id: "gpu-tenant-quota",
-    title: "租户 GPU 配额加载失败",
-    error: tenantQuota.error,
-  });
-  useListErrorNotification({
-    id: "gpu-inventory-anomalies",
-    title: "GPU 异常数据加载失败",
-    error: anomalies.error,
   });
 
   const refreshGpuData = () => {
@@ -90,16 +96,12 @@ export function GpuInventoryPage() {
           <GpuCapacityOverview
             occupancy={occupancy.data}
             occupancyLoading={occupancy.isLoading}
-            occupancyError={occupancy.error}
             availability={specAvailability.data}
             availabilityLoading={specAvailability.isLoading}
-            availabilityError={specAvailability.error}
             quota={tenantQuota.data}
             quotaLoading={tenantQuota.isLoading}
-            quotaError={tenantQuota.error}
             anomalies={anomalies.data}
             anomaliesLoading={anomalies.isLoading}
-            anomaliesError={anomalies.error}
             onCreate={() => setCreateVisible(true)}
           />
         </div>

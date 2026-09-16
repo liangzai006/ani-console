@@ -8,8 +8,6 @@ import {
   type NetworkVPC,
 } from "@/api/network";
 import { createFilesystemMountTarget } from "@/api/storage/filesystems";
-import { showApiError } from "@/lib/api-error";
-import { getErrorMessage } from "@/lib/errors";
 
 type Vpc = NetworkVPC;
 type Subnet = NetworkSubnet;
@@ -27,11 +25,25 @@ export function CreateFilesystemMountTargetModal({
   const [vpcId, setVpcId] = useState("");
   const [subnetId, setSubnetId] = useState("");
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "VPC 列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "filesystem-mount-target-create"],
     queryFn: () => listNetworkVpcs({ limit: 100 }),
     enabled: visible,
   });
   const subnets = useQuery({
+    meta: {
+      errorNotification: {
+        id: "subnets",
+        action: "子网列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-subnets", "filesystem-mount-target-create", vpcId],
     queryFn: () => listNetworkSubnets({ limit: 100, vpc_id: vpcId || undefined }),
     enabled: visible && !!vpcId,
@@ -51,6 +63,7 @@ export function CreateFilesystemMountTargetModal({
     onCancel();
   };
   const create = useMutation({
+    meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       if (!vpcId) throw new Error("请选择 VPC");
       if (!subnetId) throw new Error("请选择子网");
@@ -61,7 +74,6 @@ export function CreateFilesystemMountTargetModal({
       qc.invalidateQueries({ queryKey: ["filesystems"] });
       close();
     },
-    onError: (error) => showApiError(error),
   });
 
   return (
@@ -104,13 +116,6 @@ export function CreateFilesystemMountTargetModal({
             ))}
           </Select>
         </Form.Item>
-        {vpcs.error || subnets.error ? (
-          <Alert
-            type="error"
-            showIcon
-            content={getErrorMessage(vpcs.error ?? subnets.error, "网络选项加载失败")}
-          />
-        ) : null}
         <Typography.Text type="secondary">IP 地址由后端在所选子网中分配。</Typography.Text>
       </Form>
     </Modal>

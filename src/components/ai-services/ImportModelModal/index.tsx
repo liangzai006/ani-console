@@ -1,8 +1,7 @@
-import { Alert, Form, Input, Message, Modal, Select, Typography } from "@arco-design/web-react";
+import { Alert, Form, Input, Modal, Select, Typography } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { importModel, type ImportModelRequest } from "@/api/ai-services/models";
-import { showApiError } from "@/lib/api-error";
 
 type ImportSource = ImportModelRequest["source"];
 
@@ -27,6 +26,13 @@ export function ImportModelModal({
   };
 
   const submit = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "提交模型导入任务",
+        errorFallback: "提交模型导入任务失败",
+      },
+    },
     mutationFn: async () => {
       const trimmedRepoId = repoId.trim();
       if (trimmedRepoId.length < 3) throw new Error("请输入有效的模型仓库 ID");
@@ -37,14 +43,12 @@ export function ImportModelModal({
       };
       return importModel(submitData);
     },
-    onSuccess: (task) => {
-      Message.success("模型导入任务已提交" + (task?.id ? " · " + task.id : ""));
+    onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["models"] });
       reset();
       onCancel();
       onSubmitted?.();
     },
-    onError: (error) => showApiError(error, "提交模型导入任务失败"),
   });
 
   return (

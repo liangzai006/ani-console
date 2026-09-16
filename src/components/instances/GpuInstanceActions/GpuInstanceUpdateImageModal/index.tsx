@@ -1,9 +1,10 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Form, Message, Modal } from "@arco-design/web-react";
+import { Form, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { InstanceRegistryImageSelect } from "@/components/instances/InstanceRegistryImageSelect";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 
@@ -18,6 +19,14 @@ export function GpuInstanceUpdateImageModal({
 }) {
   const [form] = Form.useForm<{ imageId: string }>();
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "更新镜像已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async ({ imageId }: { imageId: string }) => {
       const submitData = {
         action: "update_image" as const,
@@ -27,10 +36,8 @@ export function GpuInstanceUpdateImageModal({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("更新镜像已提交");
       onSubmitted();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal
@@ -40,7 +47,7 @@ export function GpuInstanceUpdateImageModal({
       onCancel={() => {
         onCancel();
       }}
-      onOk={async () => mutation.mutate(await form.validate())}
+      onOk={async () => mutation.mutate(await validateForm(form))}
       unmountOnExit
     >
       <Form form={form} layout="vertical">

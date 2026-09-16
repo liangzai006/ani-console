@@ -6,7 +6,7 @@ import type {
   GpuSpecAvailabilityListResponse,
   TenantQuotaResponse,
 } from "@/api/gpu-inventory";
-import { ApiErrorAlert, CorePieChart } from "@/components/common";
+import { CorePieChart } from "@/components/common";
 import { MetricCard } from "@/components/common/MetricCard";
 import { GpuAdmissionSummary } from "./GpuAdmissionSummary";
 import { GpuAnomalyList } from "./GpuAnomalyList";
@@ -35,30 +35,22 @@ function CapacityMetric({
 export function GpuCapacityOverview({
   occupancy,
   occupancyLoading,
-  occupancyError,
   availability,
   availabilityLoading,
-  availabilityError,
   quota,
   quotaLoading,
-  quotaError,
   anomalies,
   anomaliesLoading,
-  anomaliesError,
   onCreate,
 }: {
   occupancy?: GpuOccupancyStats;
   occupancyLoading: boolean;
-  occupancyError: unknown;
   availability?: GpuSpecAvailabilityListResponse;
   availabilityLoading: boolean;
-  availabilityError: unknown;
   quota?: TenantQuotaResponse;
   quotaLoading: boolean;
-  quotaError: unknown;
   anomalies?: GpuInventoryRecord[];
   anomaliesLoading: boolean;
-  anomaliesError: unknown;
   onCreate: () => void;
 }) {
   const total = occupancy?.total ?? 0;
@@ -88,10 +80,6 @@ export function GpuCapacityOverview({
 
   return (
     <div>
-      {occupancyError ? (
-        <ApiErrorAlert error={occupancyError} title="GPU 占用数据加载失败" />
-      ) : null}
-      {quotaError ? <ApiErrorAlert error={quotaError} title="租户 GPU 配额加载失败" /> : null}
       {occupancy?.dev_profile.real_provider === false ? (
         <Alert
           className="mb-4"
@@ -151,18 +139,14 @@ export function GpuCapacityOverview({
           </Card>
         </Grid.Col>
         <Grid.Col xs={24} lg={15}>
-          <GpuAdmissionSummary
-            availability={availability}
-            loading={availabilityLoading}
-            error={availabilityError}
-          />
+          <GpuAdmissionSummary availability={availability} loading={availabilityLoading} />
         </Grid.Col>
       </Grid.Row>
 
       <GpuModelInventory occupancy={occupancy} loading={occupancyLoading} onCreate={onCreate} />
 
       <section className="mt-5">
-        <GpuAnomalyList items={anomalies} loading={anomaliesLoading} error={anomaliesError} />
+        <GpuAnomalyList items={anomalies} loading={anomaliesLoading} />
       </section>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
+import { Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import {
   createNetworkLoadBalancer,
@@ -9,8 +9,6 @@ import {
   type NetworkSubnet,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
-import { getErrorMessage } from "@/lib/errors";
 
 type LoadBalancer = NetworkLoadBalancer;
 type Vpc = NetworkVPC;
@@ -34,11 +32,25 @@ export function CreateLoadBalancerModal({
   const [listenerPort, setListenerPort] = useState(80);
   const [targetPort, setTargetPort] = useState(80);
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "VPC 列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "load-balancer-create"],
     queryFn: () => listNetworkVpcs({ limit: 100 }),
     enabled: visible,
   });
   const subnets = useQuery({
+    meta: {
+      errorNotification: {
+        id: "subnets",
+        action: "子网列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-subnets", "load-balancer-create", vpcId],
     queryFn: () => listNetworkSubnets({ limit: 100, vpc_id: vpcId || undefined }),
     enabled: visible && !!vpcId,
@@ -60,6 +72,7 @@ export function CreateLoadBalancerModal({
     setTargetPort(80);
   };
   const create = useMutation({
+    meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       if (!name.trim()) throw new Error("请输入负载均衡名称");
       if (!vpcId) throw new Error("请选择 VPC");
@@ -80,7 +93,6 @@ export function CreateLoadBalancerModal({
       onCreated?.(data);
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal
@@ -168,13 +180,6 @@ export function CreateLoadBalancerModal({
             />
           </Form.Item>
         </div>
-        {vpcs.error || subnets.error ? (
-          <Alert
-            type="error"
-            showIcon
-            content={getErrorMessage(vpcs.error ?? subnets.error, "网络选项加载失败")}
-          />
-        ) : null}
         <Typography.Text type="secondary">
           Kubernetes Service 至少需要一个监听端口；当前 Core API 暂不支持创建后独立添加监听器。
         </Typography.Text>

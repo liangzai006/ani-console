@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import {
   DataTable,
   DetailPageFrame,
@@ -20,10 +21,9 @@ import {
   type NetworkSubnet,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import { formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type Subnet = NetworkSubnet;
 type Vpc = NetworkVPC;
@@ -42,50 +42,65 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("subnet", subnetId),
+        action: `子网加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-subnet", subnetId],
     queryFn: () => getNetworkSubnet(subnetId),
   });
   const vpc = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("subnet-vpc", subnetId),
+        action: `VPC 加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpc", detail.data?.vpc_id],
     queryFn: () => getNetworkVpc(detail.data!.vpc_id),
     enabled: Boolean(detail.data?.vpc_id),
   });
   const instances = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("subnet-instances", subnetId),
+        action: `关联实例加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["instances", "subnet", subnetId],
     queryFn: () => listInstances({ limit: 100, subnet_id: subnetId }),
   });
   const routes = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("subnet-routes", subnetId),
+        action: `路由加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-routes", "subnet-vpc", detail.data?.vpc_id],
     queryFn: () => listNetworkRoutes({ vpc_id: detail.data!.vpc_id, limit: 100 }),
     enabled: Boolean(detail.data?.vpc_id),
   });
-  useListErrorNotification({
-    id: `subnet-detail:${subnetId}`,
-    title: `子网加载失败`,
-    error: detail.error,
-  });
-  useListErrorNotification({
-    id: `subnet-vpc:${subnetId}`,
-    title: `VPC 加载失败`,
-    error: vpc.error,
-  });
-  useListErrorNotification({
-    id: `subnet-instances:${subnetId}`,
-    title: `关联实例加载失败`,
-    error: instances.error,
-  });
-  useListErrorNotification({
-    id: `subnet-routes:${subnetId}`,
-    title: `路由加载失败`,
-    error: routes.error,
-  });
   const deleteSubnet = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "subnet-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: () => deleteNetworkSubnet(subnetId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["network-subnets"] });
       navigate({ to: "/subnets" });
     },
-    onError: (error) => showApiError(error),
   });
 
   if (detail.isLoading && !detail.data)

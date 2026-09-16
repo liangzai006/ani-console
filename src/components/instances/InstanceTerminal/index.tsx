@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Message, Space, Tag } from "@arco-design/web-react";
+import { Button, Space, Tag } from "@arco-design/web-react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import clsx from "clsx";
@@ -7,6 +7,8 @@ import "@xterm/xterm/css/xterm.css";
 import { createInstanceExecSession } from "@/api/instances";
 import { ApiError } from "@/api/request";
 import styles from "./index.module.css";
+import { closeNotification, showMessage, showNotification } from "@/lib/feedback";
+import { withId } from "@/lib/id";
 
 type TerminalStatus = "connecting" | "connected" | "closed" | "error";
 
@@ -68,7 +70,7 @@ function writeGatewayMessage(term: Terminal, raw: string, onError: (message: str
     return;
   }
   if (message.type === "toast" && typeof message.data === "string") {
-    Message.info(message.data);
+    showMessage({ type: "info", content: message.data });
     return;
   }
   if (message.type === "exit") {
@@ -81,7 +83,6 @@ function writeGatewayMessage(term: Terminal, raw: string, onError: (message: str
     const detail = typeof message.message === "string" ? message.message : "终端流处理失败";
     const code = typeof message.code === "string" ? `（${message.code}）` : "";
     const error = `${detail}${code}`;
-    term.writeln(`\r\n\x1b[31m${error}\x1b[0m`);
     onError(error);
     return;
   }
@@ -105,7 +106,6 @@ export function InstanceTerminal({
   const hostRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const [status, setStatus] = useState<TerminalStatus>("connecting");
-  const [errorMessage, setErrorMessage] = useState("");
   const [connectSeq, setConnectSeq] = useState(0);
   const commandSignature = JSON.stringify(command);
 
@@ -132,7 +132,7 @@ export function InstanceTerminal({
     let lastResize = "";
 
     setStatus("connecting");
-    setErrorMessage("");
+    closeNotification(withId("instance-terminal", instanceId));
     term.loadAddon(fitAddon);
     term.open(host);
 
@@ -177,7 +177,12 @@ export function InstanceTerminal({
       if (!disposed) {
         writeGatewayMessage(term, text, (message) => {
           setStatus("error");
-          setErrorMessage(message);
+          showNotification({
+            id: withId("instance-terminal", instanceId),
+            state: "error",
+            action: "终端连接",
+            content: message,
+          });
         });
       }
     };
@@ -214,6 +219,7 @@ export function InstanceTerminal({
         socket.onopen = () => {
           if (disposed || socketRef.current !== socket) return;
           setStatus("connected");
+          closeNotification(withId("instance-terminal", instanceId));
           scheduleFit();
           sendResize(term.cols, term.rows);
           term.focus();
@@ -228,24 +234,36 @@ export function InstanceTerminal({
           if (disposed || socketRef.current !== socket) return;
           socketFailed = true;
           setStatus("error");
-          setErrorMessage("WebSocket 连接失败，请检查网络和终端网关");
-          term.writeln("\r\n\x1b[31m终端连接异常\x1b[0m");
+          showNotification({
+            id: withId("instance-terminal", instanceId),
+            state: "error",
+            action: "终端连接",
+            content: "WebSocket 连接失败，请检查网络和终端网关",
+          });
         };
         socket.onclose = (event) => {
           if (disposed || socketRef.current !== socket) return;
           socketRef.current = null;
           if (!socketFailed) {
             setStatus("closed");
-            setErrorMessage(event.reason || `连接已关闭（${event.code}）`);
-            term.writeln("\r\n\x1b[90m连接已关闭\x1b[0m");
+            showNotification({
+              id: withId("instance-terminal", instanceId),
+              state: "warning",
+              action: "终端连接已关闭",
+              content: event.reason || `关闭代码：${event.code}`,
+            });
           }
         };
       } catch (error) {
         if (disposed || abortController.signal.aborted) return;
         const message = error instanceof Error ? error.message : "终端连接失败";
         setStatus("error");
-        setErrorMessage(message);
-        term.writeln(`\r\n\x1b[31m${message}\x1b[0m`);
+        showNotification({
+          id: withId("instance-terminal", instanceId),
+          state: "error",
+          action: "终端连接",
+          content: message,
+        });
       }
     };
 
@@ -274,9 +292,6 @@ export function InstanceTerminal({
         <Space>
           <span className="text-sm text-(--color-text-2)">状态</span>
           <Tag color={meta.color}>{meta.text}</Tag>
-          {errorMessage ? (
-            <span className="text-sm text-(--color-text-3)">{errorMessage}</span>
-          ) : null}
         </Space>
         <Button
           size="small"

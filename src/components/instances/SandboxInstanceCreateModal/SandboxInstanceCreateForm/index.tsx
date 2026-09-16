@@ -1,4 +1,4 @@
-import { Button, Form, Input, Message, Modal, Space, Typography } from "@arco-design/web-react";
+import { Button, Form, Input, Modal, Space, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { listSandboxTemplates } from "@/api/instances";
@@ -13,6 +13,8 @@ import { SandboxConfirmStep } from "./SandboxConfirmStep";
 import { SandboxResourceStep } from "./SandboxResourceStep";
 import { SandboxRuntimeStep } from "./SandboxRuntimeStep";
 import { SandboxTemplateStep } from "./SandboxTemplateStep";
+import { showMessage } from "@/lib/feedback";
+import { validateForm } from "@/lib/form";
 
 const STEP_TITLES = ["名称", "模板", "规格", "会话与网络", "确认"];
 
@@ -28,6 +30,13 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
   const [step, setStep] = useState(0);
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const templates = useQuery({
+    meta: {
+      errorNotification: {
+        id: "sandbox-templates",
+        action: "数据加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["sandbox-templates", "create-modal"],
     enabled: visible,
     queryFn: () => listSandboxTemplates({ limit: 100 }),
@@ -67,10 +76,10 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
 
   const next = async () => {
     try {
-      await form.validate();
+      await validateForm(form);
       setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
     } catch {
-      Message.warning("请先完成当前步骤的必填项");
+      showMessage({ type: "warning", content: "请先完成当前步骤的必填项" });
     }
   };
 
@@ -141,7 +150,6 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
                 templates={items}
                 loading={templates.isLoading}
                 error={templates.isError}
-                onRetry={() => void templates.refetch()}
                 onChange={selectTemplate}
               />
             ) : null}

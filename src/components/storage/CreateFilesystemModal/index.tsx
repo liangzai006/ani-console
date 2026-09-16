@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
+import { Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import {
   listNetworkSubnets,
@@ -12,8 +12,6 @@ import {
   createFilesystemMountTarget,
   type StorageFilesystem,
 } from "@/api/storage/filesystems";
-import { showApiError } from "@/lib/api-error";
-import { getErrorMessage } from "@/lib/errors";
 
 type Filesystem = StorageFilesystem;
 type FilesystemProtocol = "nfs" | "cephfs";
@@ -38,11 +36,25 @@ export function CreateFilesystemModal({
   const [vpcId, setVpcId] = useState("");
   const [subnetId, setSubnetId] = useState("");
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "VPC 列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "filesystem-create"],
     queryFn: () => listNetworkVpcs({ limit: 100 }),
     enabled: visible,
   });
   const subnets = useQuery({
+    meta: {
+      errorNotification: {
+        id: "subnets",
+        action: "子网列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-subnets", "filesystem-create", vpcId],
     queryFn: () => listNetworkSubnets({ limit: 100, vpc_id: vpcId || undefined }),
     enabled: visible && !!vpcId,
@@ -63,6 +75,7 @@ export function CreateFilesystemModal({
     setSubnetId("");
   };
   const create = useMutation({
+    meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入文件存储名称");
@@ -87,7 +100,6 @@ export function CreateFilesystemModal({
       onCreated?.(filesystem);
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal
@@ -161,13 +173,6 @@ export function CreateFilesystemModal({
             ))}
           </Select>
         </Form.Item>
-        {vpcs.error || subnets.error ? (
-          <Alert
-            type="error"
-            showIcon
-            content={getErrorMessage(vpcs.error ?? subnets.error, "网络选项加载失败")}
-          />
-        ) : null}
         <Typography.Text type="secondary">
           创建完成后可在详情页查看挂载目标和挂载命令。
         </Typography.Text>

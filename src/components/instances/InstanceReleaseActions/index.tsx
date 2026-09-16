@@ -1,9 +1,10 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Button, Form, Message, Modal, Space } from "@arco-design/web-react";
+import { Button, Form, Modal, Space } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
 import { InstanceRegistryImageSelect } from "@/components/instances/InstanceRegistryImageSelect";
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 type Values = { image_id?: string };
@@ -20,6 +21,15 @@ export function InstanceReleaseActions({
     instance.state,
   );
   const updateImage = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "instance-image-update",
+        action: "操作",
+        successText: "镜像更新已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async (values: Values) => {
       const submitData = {
         action: "update_image" as const,
@@ -29,21 +39,26 @@ export function InstanceReleaseActions({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("镜像更新已提交");
       onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const rollback = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "instance-release-rollback",
+        action: "操作",
+        successText: "回滚操作已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = { action: "rollback" as const };
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("回滚操作已提交");
       onChanged();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
 
   return (
@@ -64,7 +79,7 @@ export function InstanceReleaseActions({
               </Form>
             ),
             confirmLoading: updateImage.isPending,
-            onOk: async () => updateImage.mutateAsync(await form.validate()),
+            onOk: async () => updateImage.mutateAsync(await validateForm(form)),
           })
         }
       >

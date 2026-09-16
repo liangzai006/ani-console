@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import type { InstanceRecord } from "@/api/instances";
 import { Button, Descriptions, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,7 +15,6 @@ import { InstanceTerminal } from "@/components/instances/InstanceTerminal";
 import { InstanceReleases } from "@/components/instances/InstanceReleases";
 import { InstanceReleaseActions } from "@/components/instances/InstanceReleaseActions";
 import { ContainerInstanceActions } from "@/components/instances/ContainerInstanceActions";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { getInstanceDisplayIp, getInstanceNetworkValue } from "@/lib/instance-network";
 import type { ContainerInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
@@ -34,15 +34,16 @@ export function ContainerInstanceDetailPage({
   const [mountKind, setMountKind] = useState<MountKind>();
 
   const query = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("container", instanceId),
+        action: "容器实例详情加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["container-instance-detail", instanceId],
     queryFn: () => containerDetailDataSource.getDetail(instanceId),
   });
-  useListErrorNotification({
-    id: `container-instance-detail:${instanceId}`,
-    title: "容器实例详情加载失败",
-    error: query.error,
-  });
-
   if (query.isLoading) {
     return <div>正在加载容器实例详情...</div>;
   }

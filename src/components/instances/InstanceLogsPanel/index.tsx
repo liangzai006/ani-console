@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Button, Empty, Select, Space, Spin, Typography } from "@arco-design/web-react";
 import { streamInstanceLogs } from "@/api/instances";
-import { ApiErrorAlert } from "@/components/common";
+import { closeNotification, showNotification } from "@/lib/feedback";
+import { withId } from "@/lib/id";
 type LogLevel = "debug" | "info" | "warn" | "error";
 type LevelFilter = LogLevel | "all";
 type StreamStatus = "idle" | "connecting" | "connected";
@@ -140,12 +141,10 @@ export function InstanceLogsPanel({
   const [level, setLevel] = useState<LevelFilter>("all");
   const [reconnectVersion, setReconnectVersion] = useState(0);
   const [logs, setLogs] = useState<InstanceLog[]>([]);
-  const [error, setError] = useState<unknown>(null);
   const [streamStatus, setStreamStatus] = useState<StreamStatus>("idle");
   const outputRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
   const knownLogsRef = useRef(new Set<string>());
-
   useEffect(() => {
     const output = outputRef.current;
     if (!output || !shouldAutoScrollRef.current) return;
@@ -172,7 +171,7 @@ export function InstanceLogsPanel({
     };
 
     async function connect() {
-      setError(null);
+      closeNotification(withId("instance-logs", instanceId));
       while (!cancelled && !controller.signal.aborted) {
         setStreamStatus("connecting");
         try {
@@ -182,7 +181,10 @@ export function InstanceLogsPanel({
             signal: controller.signal,
             appendLog,
             onConnected: () => {
-              if (!cancelled) setStreamStatus("connected");
+              if (!cancelled) {
+                closeNotification(withId("instance-logs", instanceId));
+                setStreamStatus("connected");
+              }
             },
           });
           if (result.type !== "done" || result.reason !== "timeout") {
@@ -193,7 +195,12 @@ export function InstanceLogsPanel({
         } catch (nextError) {
           if (!cancelled && !controller.signal.aborted) {
             setStreamStatus("idle");
-            setError(nextError);
+            showNotification({
+              id: withId("instance-logs", instanceId),
+              state: "error",
+              action: "日志流连接",
+              content: { error: nextError, fallback: "日志流连接失败" },
+            });
           }
           return;
         }
@@ -238,7 +245,6 @@ export function InstanceLogsPanel({
           {streamStatus === "connecting" ? "正在连接日志流…" : null}
         </Typography.Text>
       </Space>
-      {error ? <ApiErrorAlert error={error} title="日志流连接失败" /> : null}
       <div
         ref={outputRef}
         className="max-h-130 overflow-auto rounded border border-(--color-border-2)"

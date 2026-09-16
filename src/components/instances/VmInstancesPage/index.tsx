@@ -9,7 +9,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { InstanceOperationPoller } from "../InstanceOperationPoller";
@@ -39,6 +38,11 @@ export function VmInstancesPage() {
   const [searchText, setSearchText] = useState("");
   const { query, page, pageSize, setPage, setPageSize, refresh } =
     useCursorPaginatedQuery<VmInstance>({
+      errorNotification: {
+        id: "vms",
+        action: "云主机列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
       queryKey: ["vm-instances", { status, searchText }],
       cursorScope: `vm:${status}:${searchText.trim()}`,
       fetchPage: async ({ cursor, limit }) => {
@@ -52,12 +56,6 @@ export function VmInstancesPage() {
         });
       },
     });
-
-  useListErrorNotification({
-    id: "vm-instances:list",
-    title: "云主机列表加载失败",
-    error: query.error,
-  });
 
   useEffect(() => {
     setPage(1);

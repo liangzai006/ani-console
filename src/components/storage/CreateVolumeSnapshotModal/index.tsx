@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Form, Input, Modal, Typography } from "@arco-design/web-react";
 import { useState } from "react";
 import { createVolumeSnapshot } from "@/api/storage/volumes";
-import { showApiError } from "@/lib/api-error";
 
 export function CreateVolumeSnapshotModal({
   visible,
@@ -19,6 +18,7 @@ export function CreateVolumeSnapshotModal({
     setName("");
   };
   const create = useMutation({
+    meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入快照名称");
@@ -31,7 +31,6 @@ export function CreateVolumeSnapshotModal({
       reset();
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal

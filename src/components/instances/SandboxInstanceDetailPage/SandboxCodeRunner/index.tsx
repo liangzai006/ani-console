@@ -8,7 +8,6 @@ import {
   Form,
   Input,
   InputNumber,
-  Message,
   Select,
   Space,
   Tag,
@@ -17,7 +16,6 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
-import { showSandboxError } from "../utils";
 
 type Language = "python" | "javascript";
 
@@ -43,6 +41,15 @@ export function SandboxCodeRunner({
   const [runs, setRuns] = useState<SandboxCodeRun[]>([]);
 
   const execute = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "sandbox-code-run",
+        action: "代码执行",
+        successText: "代码执行任务已提交",
+        errorFallback: "代码执行失败",
+      },
+    },
     mutationFn: async () => {
       const submitData = {
         language,
@@ -58,13 +65,10 @@ export function SandboxCodeRunner({
         ?.code_run;
       if (result) {
         setRuns((current) => [result, ...current].slice(0, 10));
-        Message.success(result.status === "succeeded" ? "代码执行完成" : "代码执行已返回");
       } else {
-        Message.success("代码执行任务已提交");
       }
       onChanged();
     },
-    onError: (error) => showSandboxError(error, "代码执行失败"),
   });
 
   const lastRun = runs[0];

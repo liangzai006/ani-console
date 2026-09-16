@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, InputNumber, Modal, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { expandVolume, type StorageVolume } from "@/api/storage/volumes";
-import { showApiError } from "@/lib/api-error";
 
 type Volume = StorageVolume;
 
@@ -21,6 +20,7 @@ export function ExpandVolumeModal({
     if (visible && volume) setSizeGiB(volume.size_gib + 1);
   }, [visible, volume]);
   const expand = useMutation({
+    meta: { feedback: { channel: "message", action: "扩容", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       if (!volume) throw new Error("块存储卷不存在");
       if (!Number.isInteger(sizeGiB) || sizeGiB <= volume.size_gib)
@@ -32,7 +32,6 @@ export function ExpandVolumeModal({
       if (volume) qc.invalidateQueries({ queryKey: ["volume", volume.id] });
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal

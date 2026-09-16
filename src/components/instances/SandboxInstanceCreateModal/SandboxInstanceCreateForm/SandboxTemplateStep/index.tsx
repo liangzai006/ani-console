@@ -1,4 +1,4 @@
-import { Alert, Button, Empty, Form, Select, Spin, Typography } from "@arco-design/web-react";
+import { Empty, Form, Select, Spin, Typography } from "@arco-design/web-react";
 import { ImageNameText } from "@/components/common";
 import type { SandboxTemplate } from "../../types";
 
@@ -6,27 +6,13 @@ type Props = {
   templates: SandboxTemplate[];
   loading: boolean;
   error: boolean;
-  onRetry: () => void;
   onChange: (templateId: string) => void;
 };
 
-export function SandboxTemplateStep({ templates, loading, error, onRetry, onChange }: Props) {
+export function SandboxTemplateStep({ templates, loading, error, onChange }: Props) {
   return (
     <>
       <Typography.Paragraph type="secondary">模板决定 Sandbox 的运行镜像。</Typography.Paragraph>
-      {error ? (
-        <Alert
-          type="error"
-          showIcon
-          content="Sandbox 模板加载失败，请重试"
-          action={
-            <Button size="mini" onClick={onRetry}>
-              重试
-            </Button>
-          }
-          className="mb-4"
-        />
-      ) : null}
       {loading ? (
         <div className="py-12 text-center">
           <Spin />

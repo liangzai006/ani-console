@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
 import { useState } from "react";
 import { deleteKnowledgeBase, listKnowledgeBases, type KnowledgeBase } from "@/api/knowledge";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateKnowledgeBaseModal } from "@/components/knowledge/CreateKnowledgeBaseModal";
 import {
   DataTableNameCell,
@@ -15,7 +15,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
 type StatusFilter = "all" | "active" | "rebuilding";
@@ -30,6 +29,11 @@ export function KnowledgeBasesPage() {
   const [searchText, setSearchText] = useState("");
   const { query, page, pageSize, setPage, setPageSize, resetPagination, refresh } =
     useCursorPaginatedQuery<KnowledgeBase>({
+      errorNotification: {
+        id: "knowledge-bases",
+        action: "知识库列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
       queryKey: ["knowledge-bases", { status, searchField, searchText }],
       cursorScope: `${status}:${searchField}:${searchText.trim()}`,
       fetchPage: async ({ cursor, limit }) => {
@@ -45,20 +49,22 @@ export function KnowledgeBasesPage() {
       },
     });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "knowledge-base-delete",
+        action: "删除知识库",
+        errorFallback: "删除知识库失败",
+      },
+    },
     mutationFn: (item: KnowledgeBase) => deleteKnowledgeBase(item.id),
     onSuccess: () => {
       resetPagination();
       void qc.invalidateQueries({ queryKey: ["knowledge-bases"] });
     },
-    onError: (error) => showApiError(error, "删除知识库失败"),
   });
   const items = query.data?.items ?? [];
   const paginationTotal = query.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "knowledge-bases-list",
-    title: "知识库列表加载失败",
-    error: query.error,
-  });
   const columns: Array<ListColumn<KnowledgeBase>> = [
     {
       key: "name",

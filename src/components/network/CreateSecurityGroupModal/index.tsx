@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Form, Input, Modal, Select, Typography } from "@arco-design/web-react";
+import { Form, Input, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import {
   createNetworkSecurityGroup,
@@ -8,8 +8,6 @@ import {
   type NetworkSecurityGroupRule,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
-import { getErrorMessage } from "@/lib/errors";
 
 type SecurityGroupRule = NetworkSecurityGroupRule;
 type Vpc = NetworkVPC;
@@ -62,11 +60,17 @@ export function CreateSecurityGroupModal({
   const [vpcId, setVpcId] = useState(defaultVpcId ?? "");
   const [ruleTemplate, setRuleTemplate] = useState<RuleTemplate>("common");
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "VPC 列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "security-group-create"],
     queryFn: () => listNetworkVpcs({ limit: 100 }),
     enabled: visible,
   });
-
   useEffect(() => {
     if (visible) setVpcId(defaultVpcId ?? "");
   }, [defaultVpcId, visible]);
@@ -76,6 +80,7 @@ export function CreateSecurityGroupModal({
     setRuleTemplate("common");
   };
   const create = useMutation({
+    meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async () => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入安全组名称");
@@ -93,7 +98,6 @@ export function CreateSecurityGroupModal({
       onCreated?.(data);
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
 
   return (
@@ -136,14 +140,6 @@ export function CreateSecurityGroupModal({
             ))}
           </Select>
         </Form.Item>
-        {vpcs.error ? (
-          <Alert
-            type="error"
-            showIcon
-            content={getErrorMessage(vpcs.error, "VPC 列表加载失败")}
-            className="mb-4"
-          />
-        ) : null}
         <Form.Item label="规则模板" required>
           <Select value={ruleTemplate} onChange={setRuleTemplate}>
             <Select.Option value="common">常用远程端口（22 / 3389 / ICMP）</Select.Option>

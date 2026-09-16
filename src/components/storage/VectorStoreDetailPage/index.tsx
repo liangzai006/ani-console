@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,11 +12,10 @@ import {
   Tooltip,
 } from "@arco-design/web-react";
 import { deleteVectorStore, getVectorStore, type VectorStore } from "@/api/storage/vector-stores";
-import { showApiError } from "@/lib/api-error";
+
 import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { VectorStoreWorkbench } from "@/components/storage/VectorStoreWorkbench";
 import { formatDateTime } from "@/lib/format";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 export type VectorStoreDetailTabKey = "index" | "search" | "related" | "events";
 
@@ -29,21 +29,30 @@ export function VectorStoreDetailPage({
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("vector-store", vectorStoreId),
+        action: "向量存储加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["vector-store", vectorStoreId],
     queryFn: () => getVectorStore(vectorStoreId),
   });
-  useListErrorNotification({
-    id: `vector-store-detail:${vectorStoreId}`,
-    title: "向量存储加载失败",
-    error: detail.error,
-  });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "vector-store-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (_: undefined) => deleteVectorStore(vectorStoreId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vector-stores"] });
       navigate({ to: "/vector-stores" });
     },
-    onError: (error) => showApiError(error),
   });
   if (detail.isLoading && !detail.data)
     return (

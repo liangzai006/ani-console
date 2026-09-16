@@ -2,10 +2,10 @@ import { listNetworkSecurityGroups } from "@/api/network";
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { NetworkSecurityGroup } from "@/api/network";
 import type { InstanceRecord } from "@/api/instances";
-import { Form, Message, Modal, Select } from "@arco-design/web-react";
+import { Form, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getErrorMessage } from "@/lib/errors";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
+
+import { validateForm } from "@/lib/form";
 
 type Instance = InstanceRecord;
 type SecurityGroup = NetworkSecurityGroup;
@@ -22,6 +22,13 @@ export function GpuInstanceChangeSecurityGroupsModal({
   const [form] = Form.useForm<{ securityGroupIds?: string[] }>();
   const vpcId = instance.network?.vpc_id ?? instance.vpc_id;
   const groups = useQuery({
+    meta: {
+      errorNotification: {
+        id: "security-groups",
+        action: "安全组列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-security-groups", "gpu-instance-change-security-groups", vpcId],
     queryFn: () =>
       listNetworkSecurityGroups({
@@ -30,6 +37,14 @@ export function GpuInstanceChangeSecurityGroupsModal({
       }),
   });
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "更换安全组已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async ({ securityGroupIds }: { securityGroupIds?: string[] }) => {
       const submitData = {
         action: "change_security_groups" as const,
@@ -38,10 +53,8 @@ export function GpuInstanceChangeSecurityGroupsModal({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      Message.success("更换安全组已提交");
       onSubmitted();
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   const options = ((groups.data?.items ?? []) as SecurityGroup[]).filter(
     (group) => !vpcId || group.vpc_id === vpcId,
@@ -54,7 +67,7 @@ export function GpuInstanceChangeSecurityGroupsModal({
       onCancel={() => {
         onCancel();
       }}
-      onOk={async () => mutation.mutate(await form.validate())}
+      onOk={async () => mutation.mutate(await validateForm(form))}
       unmountOnExit
     >
       <Form
@@ -67,11 +80,7 @@ export function GpuInstanceChangeSecurityGroupsModal({
         <Form.Item
           field="securityGroupIds"
           label="安全组"
-          extra={
-            groups.error
-              ? getErrorMessage(groups.error, "安全组列表加载失败")
-              : "可多选；清空选择表示解除全部安全组。"
-          }
+          extra="可多选；清空选择表示解除全部安全组。"
         >
           <Select
             mode="multiple"

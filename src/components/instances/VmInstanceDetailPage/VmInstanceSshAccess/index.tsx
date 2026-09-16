@@ -1,13 +1,6 @@
 import type { InstanceRecord } from "@/api/instances";
-import {
-  Alert,
-  Button,
-  Descriptions,
-  Message,
-  Space,
-  Tag,
-  Typography,
-} from "@arco-design/web-react";
+import { Alert, Button, Descriptions, Space, Tag, Typography } from "@arco-design/web-react";
+import { showMessage } from "@/lib/feedback";
 
 type VmInstance = InstanceRecord;
 
@@ -26,9 +19,9 @@ export function VmInstanceSshAccess({
   const copyCommand = async () => {
     try {
       await navigator.clipboard.writeText(command);
-      Message.success("SSH 命令已复制");
+      showMessage({ type: "success", content: "SSH 命令已复制" });
     } catch {
-      Message.error("复制失败，请手动复制 SSH 命令");
+      showMessage({ type: "error", content: "复制失败，请手动复制 SSH 命令" });
     }
   };
 

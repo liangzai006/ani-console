@@ -1,20 +1,22 @@
-import {
-  Alert,
-  Button,
-  Form,
-  Input,
-  InputNumber,
-  Message,
-  Modal,
-  Select,
-} from "@arco-design/web-react";
+import { Alert, Form, Input, InputNumber, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { listModels } from "@/api/ai-services/models";
-import { showApiError } from "@/lib/api-error";
-import { createKnowledgeBase, type KnowledgeBase } from "@/api/knowledge";
-import { getErrorMessage } from "@/lib/errors";
+
+import {
+  createKnowledgeBase,
+  type CreateKnowledgeBaseInput,
+  type KnowledgeBase,
+} from "@/api/knowledge";
 import { getReadyModelOptions } from "@/lib/model-catalog";
+import { validateForm } from "@/lib/form";
+import { withId } from "@/lib/id";
+
+type CreateKnowledgeBaseFormValues = CreateKnowledgeBaseInput & {
+  embedding_model: string;
+  chunk_size: number;
+  top_k: number;
+};
 
 export function CreateKnowledgeBaseModal({
   visible,
@@ -28,11 +30,25 @@ export function CreateKnowledgeBaseModal({
   const [form] = Form.useForm();
   const qc = useQueryClient();
   const embeddingModels = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("models", "embedding"),
+        action: "Embedding 模型列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["models", "knowledge-base-create", "embedding"],
     enabled: visible,
     queryFn: () => listModels({ limit: 100, capability: "embedding", status: "ready" }),
   });
   const inferenceModels = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("models", "inference"),
+        action: "推理模型列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["models", "knowledge-base-create", "text-generation"],
     enabled: visible,
     queryFn: () => listModels({ limit: 100, capability: "text-generation", status: "ready" }),
@@ -50,6 +66,14 @@ export function CreateKnowledgeBaseModal({
     form.setFieldsValue({ embedding_model: embeddingModelOptions[0].value });
   }, [embeddingModelOptions, form, visible]);
   const create = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "创建知识库",
+        successText: "知识库已创建",
+        errorFallback: "创建知识库失败",
+      },
+    },
     mutationFn: async (values: {
       name: string;
       description?: string;
@@ -67,13 +91,11 @@ export function CreateKnowledgeBaseModal({
       return createKnowledgeBase(submitData);
     },
     onSuccess: (item) => {
-      Message.success("知识库已创建");
       qc.invalidateQueries({ queryKey: ["knowledge-bases"] });
       form.resetFields();
       onCancel();
       onCreated?.(item);
     },
-    onError: (error) => showApiError(error, "创建知识库失败"),
   });
   return (
     <Modal
@@ -84,7 +106,9 @@ export function CreateKnowledgeBaseModal({
         form.resetFields();
         onCancel();
       }}
-      onOk={() => form.validate().then((values) => create.mutate(values))}
+      onOk={() =>
+        validateForm<CreateKnowledgeBaseFormValues>(form).then((values) => create.mutate(values))
+      }
       okButtonProps={{
         disabled: embeddingModels.isLoading || embeddingModelOptions.length === 0,
       }}
@@ -140,18 +164,9 @@ export function CreateKnowledgeBaseModal({
             ))}
           </Select>
         </Form.Item>
-        {embeddingModels.error ? (
-          <div className="flex flex-col items-start gap-2">
-            <Alert
-              type="warning"
-              showIcon
-              content={getErrorMessage(embeddingModels.error, "Embedding 模型列表加载失败")}
-            />
-            <Button size="small" onClick={() => void embeddingModels.refetch()}>
-              重新加载模型
-            </Button>
-          </div>
-        ) : !embeddingModels.isLoading && embeddingModelOptions.length === 0 ? (
+        {!embeddingModels.error &&
+        !embeddingModels.isLoading &&
+        embeddingModelOptions.length === 0 ? (
           <Alert
             type="warning"
             showIcon
@@ -192,18 +207,9 @@ export function CreateKnowledgeBaseModal({
             ))}
           </Select>
         </Form.Item>
-        {inferenceModels.error ? (
-          <div className="flex flex-col items-start gap-2">
-            <Alert
-              type="warning"
-              showIcon
-              content={getErrorMessage(inferenceModels.error, "推理模型列表加载失败")}
-            />
-            <Button size="small" onClick={() => void inferenceModels.refetch()}>
-              重新加载模型
-            </Button>
-          </div>
-        ) : !inferenceModels.isLoading && inferenceModelOptions.length === 0 ? (
+        {!inferenceModels.error &&
+        !inferenceModels.isLoading &&
+        inferenceModelOptions.length === 0 ? (
           <Alert type="warning" showIcon content="暂无已就绪的文本生成模型，将使用平台默认模型" />
         ) : null}
         <div className="grid grid-cols-2 gap-4">

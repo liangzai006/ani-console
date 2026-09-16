@@ -1,11 +1,11 @@
-import { Alert, Button, Empty } from "@arco-design/web-react";
+import { withId } from "@/lib/id";
+import { Button, Empty } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import {
   listInferenceServicePolicies,
   type InferenceAccessPolicy,
 } from "@/api/ai-services/inference";
 import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
-import { getErrorMessage } from "@/lib/errors";
 import { formatDateTime } from "@/lib/format";
 
 const SCOPE_LABELS: Record<InferenceAccessPolicy["scope"]["type"], string> = {
@@ -25,6 +25,13 @@ function formatRateLimits(policy: InferenceAccessPolicy) {
 
 export function InferencePolicies({ serviceId }: { serviceId: string }) {
   const policies = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("inference-policies", serviceId),
+        action: "访问策略加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["inference-service-policies", serviceId],
     queryFn: () => listInferenceServicePolicies(serviceId),
   });
@@ -43,58 +50,50 @@ export function InferencePolicies({ serviceId }: { serviceId: string }) {
           </Button>
         }
       />
-      {policies.error ? (
-        <Alert
-          type="error"
-          showIcon
-          content={getErrorMessage(policies.error, "访问策略加载失败")}
-        />
-      ) : (
-        <DataTable<InferenceAccessPolicy>
-          data={policies.data?.policies ?? []}
-          loading={policies.isFetching}
-          pagination={false}
-          rowKey="id"
-          noDataElement={<Empty description="当前服务未绑定访问策略" />}
-          columns={[
-            { title: "策略名称", dataIndex: "name", ellipsis: true },
-            {
-              title: "状态",
-              width: 110,
-              render: (_, policy) => <StatusTag status={policy.status} />,
-            },
-            {
-              title: "作用范围",
-              width: 150,
-              render: (_, policy) => SCOPE_LABELS[policy.scope.type],
-            },
-            {
-              title: "API Key",
-              width: 160,
-              render: (_, policy) =>
-                policy.access.allow_all_tenant_keys
-                  ? "租户内全部"
-                  : `允许 ${policy.access.allow_api_key_ids?.length ?? 0} 个`,
-            },
-            {
-              title: "限流",
-              width: 150,
-              render: (_, policy) => formatRateLimits(policy),
-            },
-            {
-              title: "最大并发",
-              width: 110,
-              render: (_, policy) => policy.concurrency.max_in_flight ?? "-",
-            },
-            {
-              title: "更新时间",
-              width: 180,
-              render: (_, policy) => formatDateTime(policy.updated_at ?? policy.created_at),
-            },
-          ]}
-          tableLabel="推理服务访问策略列表"
-        />
-      )}
+      <DataTable<InferenceAccessPolicy>
+        data={policies.data?.policies ?? []}
+        loading={policies.isFetching}
+        pagination={false}
+        rowKey="id"
+        noDataElement={<Empty description="当前服务未绑定访问策略" />}
+        columns={[
+          { title: "策略名称", dataIndex: "name", ellipsis: true },
+          {
+            title: "状态",
+            width: 110,
+            render: (_, policy) => <StatusTag status={policy.status} />,
+          },
+          {
+            title: "作用范围",
+            width: 150,
+            render: (_, policy) => SCOPE_LABELS[policy.scope.type],
+          },
+          {
+            title: "API Key",
+            width: 160,
+            render: (_, policy) =>
+              policy.access.allow_all_tenant_keys
+                ? "租户内全部"
+                : `允许 ${policy.access.allow_api_key_ids?.length ?? 0} 个`,
+          },
+          {
+            title: "限流",
+            width: 150,
+            render: (_, policy) => formatRateLimits(policy),
+          },
+          {
+            title: "最大并发",
+            width: 110,
+            render: (_, policy) => policy.concurrency.max_in_flight ?? "-",
+          },
+          {
+            title: "更新时间",
+            width: 180,
+            render: (_, policy) => formatDateTime(policy.updated_at ?? policy.created_at),
+          },
+        ]}
+        tableLabel="推理服务访问策略列表"
+      />
     </div>
   );
 }

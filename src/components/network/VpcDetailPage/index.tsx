@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import {
   DataTable,
   DetailPageFrame,
@@ -24,10 +25,9 @@ import {
   type NetworkSubnet,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import { formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type Vpc = NetworkVPC;
 type Subnet = NetworkSubnet;
@@ -54,66 +54,85 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("vpc", vpcId),
+        action: `VPC 加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpc", vpcId],
     queryFn: () => getNetworkVpc(vpcId),
   });
   const subnets = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("vpc-subnets", vpcId),
+        action: `子网加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-subnets", vpcId],
     queryFn: () => listNetworkSubnets({ vpc_id: vpcId, limit: 100 }),
   });
   const routes = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("vpc-routes", vpcId),
+        action: `路由加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-routes", vpcId],
     queryFn: () => listNetworkRoutes({ vpc_id: vpcId, limit: 100 }),
   });
   const securityGroups = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("vpc-security-groups", vpcId),
+        action: `安全组加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-security-groups", "vpc-related"],
     queryFn: () => listNetworkSecurityGroups({ limit: 100, vpc_id: vpcId }),
   });
   const loadBalancers = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("vpc-load-balancers", vpcId),
+        action: `负载均衡加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-load-balancers", "vpc", vpcId],
     queryFn: () => listNetworkLoadBalancers({ limit: 100, vpc_id: vpcId }),
   });
   const instances = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("vpc-instances", vpcId),
+        action: `关联实例加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["instances", "vpc", vpcId],
     queryFn: () => listInstances({ limit: 100, vpc_id: vpcId }),
   });
-  useListErrorNotification({
-    id: `vpc-detail:${vpcId}`,
-    title: `VPC 加载失败`,
-    error: detail.error,
-  });
-  useListErrorNotification({
-    id: `vpc-subnets:${vpcId}`,
-    title: `子网加载失败`,
-    error: subnets.error,
-  });
-  useListErrorNotification({
-    id: `vpc-routes:${vpcId}`,
-    title: `路由加载失败`,
-    error: routes.error,
-  });
-  useListErrorNotification({
-    id: `vpc-security-groups:${vpcId}`,
-    title: `安全组加载失败`,
-    error: securityGroups.error,
-  });
-  useListErrorNotification({
-    id: `vpc-load-balancers:${vpcId}`,
-    title: `负载均衡加载失败`,
-    error: loadBalancers.error,
-  });
-  useListErrorNotification({
-    id: `vpc-instances:${vpcId}`,
-    title: `关联实例加载失败`,
-    error: instances.error,
-  });
   const deleteVpc = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "vpc-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: () => deleteNetworkVpc(vpcId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["network-vpcs"] });
       navigate({ to: "/vpcs" });
     },
-    onError: (error) => showApiError(error),
   });
 
   if (detail.isLoading && !detail.data) {
@@ -190,7 +209,6 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
     routes.isLoading ||
     loadBalancers.isLoading ||
     instances.isLoading;
-
   const openRelatedResource = (resource: RelatedResource) => {
     if (resource.route === "instance") {
       if (resource.instance) {

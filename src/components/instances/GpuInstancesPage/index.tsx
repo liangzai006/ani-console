@@ -12,7 +12,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 
@@ -28,6 +27,11 @@ export function GpuInstancesPage() {
   const keyword = searchText.trim();
   const { query, page, pageSize, setPage, setPageSize, refresh } =
     useCursorPaginatedQuery<Instance>({
+      errorNotification: {
+        id: "gpu-containers",
+        action: "GPU 容器实例列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
       queryKey: ["instances", "gpu_container", { status, searchField, keyword }],
       cursorScope: `gpu:${status}:${searchField}:${keyword}`,
       fetchPage: async ({ cursor, limit }) => {
@@ -42,11 +46,6 @@ export function GpuInstancesPage() {
         return listInstances(listQuery);
       },
     });
-  useListErrorNotification({
-    id: "gpu-container-list",
-    title: "GPU 容器实例列表加载失败",
-    error: query.error,
-  });
   useEffect(() => {
     setPage(1);
   }, [keyword, searchField, status, setPage]);

@@ -9,7 +9,7 @@ import {
   type NetworkLoadBalancer,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import { CreateLoadBalancerModal } from "@/components/network/CreateLoadBalancerModal";
 import {
   DataTableNameCell,
@@ -21,7 +21,6 @@ import {
   ListDataTable,
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { formatDateTime } from "@/lib/format";
 
 type LoadBalancer = NetworkLoadBalancer;
@@ -46,6 +45,11 @@ export function LoadBalancersPage() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<LoadBalancer>({
+    errorNotification: {
+      id: "load-balancers",
+      action: "负载均衡列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["network-load-balancers", { status, searchField, searchText, vpcId }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}:${vpcId}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -61,27 +65,36 @@ export function LoadBalancersPage() {
     },
   });
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "VPC 列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "load-balancer-list"],
     queryFn: () => listNetworkVpcs({ limit: 100 }),
   });
   const deleteLoadBalancer = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "load-balancer-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (item: LoadBalancer) => deleteNetworkLoadBalancer(item.id),
     onSuccess: () => {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-load-balancers"] });
     },
-    onError: (error) => showApiError(error),
   });
   const items = useMemo(
     () => (loadBalancers.data?.items ?? []) as LoadBalancer[],
     [loadBalancers.data?.items],
   );
   const paginationTotal = loadBalancers.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "load-balancers-list",
-    title: "负载均衡列表加载失败",
-    error: loadBalancers.error,
-  });
   const columns: Array<ListColumn<LoadBalancer>> = [
     {
       key: "name",

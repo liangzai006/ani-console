@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import {
   DataTable,
   DetailPageFrame,
@@ -31,14 +32,13 @@ import {
   type NetworkSecurityGroupBinding,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import {
   SecurityGroupRuleModal,
   type SecurityGroupRuleResource,
 } from "@/components/network/SecurityGroupRuleModal";
 import { formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type SecurityGroup = NetworkSecurityGroup;
 type SecurityGroupBinding = NetworkSecurityGroupBinding;
@@ -63,15 +63,36 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
     rule?: SecurityGroupRuleResource;
   } | null>(null);
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("security-group", securityGroupId),
+        action: `安全组加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-security-group", securityGroupId],
     queryFn: () => getNetworkSecurityGroup(securityGroupId),
   });
   const vpc = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("security-group-vpc", securityGroupId),
+        action: `VPC 加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpc", detail.data?.vpc_id],
     queryFn: () => getNetworkVpc(detail.data!.vpc_id!),
     enabled: Boolean(detail.data?.vpc_id),
   });
   const bindings = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("security-group-bindings", securityGroupId),
+        action: `安全组绑定加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-security-group-bindings", securityGroupId],
     queryFn: () =>
       listNetworkSecurityGroupBindings(securityGroupId, {
@@ -80,39 +101,36 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
       }),
   });
   const rules = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("security-group-rules", securityGroupId),
+        action: `安全组规则加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-security-group-rules", securityGroupId],
     queryFn: () => listNetworkSecurityGroupRules(securityGroupId, { limit: 100 }),
   });
   const instances = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("security-group-instances", securityGroupId),
+        action: `关联实例加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["instances", "security-group-related"],
     queryFn: () => listInstances({ limit: 100 }),
   });
-  useListErrorNotification({
-    id: `security-group-detail:${securityGroupId}`,
-    title: `安全组加载失败`,
-    error: detail.error,
-  });
-  useListErrorNotification({
-    id: `security-group-vpc:${securityGroupId}`,
-    title: `VPC 加载失败`,
-    error: vpc.error,
-  });
-  useListErrorNotification({
-    id: `security-group-bindings:${securityGroupId}`,
-    title: `安全组绑定加载失败`,
-    error: bindings.error,
-  });
-  useListErrorNotification({
-    id: `security-group-rules:${securityGroupId}`,
-    title: `安全组规则加载失败`,
-    error: rules.error,
-  });
-  useListErrorNotification({
-    id: `security-group-instances:${securityGroupId}`,
-    title: `关联实例加载失败`,
-    error: instances.error,
-  });
   const deleteRule = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "security-group-rule-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (rule: SecurityGroupRuleResource) =>
       deleteNetworkSecurityGroupRule(securityGroupId, rule.id),
     onSuccess: () => {
@@ -124,15 +142,21 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
       });
       qc.invalidateQueries({ queryKey: ["network-security-groups"] });
     },
-    onError: (error) => showApiError(error),
   });
   const deleteSecurityGroup = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "security-group-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: () => deleteNetworkSecurityGroup(securityGroupId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["network-security-groups"] });
       navigate({ to: "/security-groups" });
     },
-    onError: (error) => showApiError(error),
   });
 
   if (detail.isLoading && !detail.data)

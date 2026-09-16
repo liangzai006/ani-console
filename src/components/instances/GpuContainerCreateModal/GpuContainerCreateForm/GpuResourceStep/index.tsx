@@ -52,15 +52,8 @@ export function GpuResourceStep({
   usingTemporarySpecs: boolean;
 }) {
   const selectedSpec = specs.find((item) => item.spec_id === values.spec_id);
-
   return (
     <>
-      {specsError ? (
-        <Alert type="error" showIcon content="GPU 规格加载失败，请稍后重试" className="mb-4" />
-      ) : null}
-      {queuesError ? (
-        <Alert type="error" showIcon content="GPU 调度队列加载失败，请稍后重试" className="mb-4" />
-      ) : null}
       {usingTemporarySpecs ? (
         <Alert
           type="info"

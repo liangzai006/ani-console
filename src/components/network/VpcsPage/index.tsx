@@ -12,7 +12,7 @@ import {
   type NetworkSubnet,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import {
   Ipv4CidrInput,
   DataTableNameCell,
@@ -25,7 +25,6 @@ import {
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 import { ipv4CidrError, requireIpv4Cidr } from "@/lib/validators";
 
 type Vpc = NetworkVPC;
@@ -56,6 +55,11 @@ function VpcList() {
     resetPagination,
     refresh,
   } = useCursorPaginatedQuery<Vpc>({
+    errorNotification: {
+      id: "vpcs",
+      action: "VPC 列表加载",
+      fallback: "请求失败，请稍后重试",
+    },
     queryKey: ["network-vpcs", { status, searchField, searchText }],
     cursorScope: `${status}:${searchField}:${searchText.trim()}`,
     fetchPage: async ({ cursor, limit }) => {
@@ -70,15 +74,37 @@ function VpcList() {
     },
   });
   const subnets = useQuery({
+    meta: {
+      errorNotification: {
+        id: "subnets",
+        action: "数据加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-subnets", "vpc-counts"],
     queryFn: () => listNetworkSubnets({ limit: 100 }),
   });
   const routes = useQuery({
+    meta: {
+      errorNotification: {
+        id: "routes",
+        action: "数据加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-routes", "vpc-counts"],
     queryFn: () => listNetworkRoutes({ limit: 100 }),
   });
 
   const createVpc = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "vpc-create",
+        action: "创建",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async () => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入 VPC 名称");
@@ -95,10 +121,17 @@ function VpcList() {
       resetPagination();
       qc.invalidateQueries({ queryKey: ["network-vpcs"] });
     },
-    onError: (error) => showApiError(error),
   });
 
   const deleteVpc = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "vpc-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (vpc: Vpc) => deleteNetworkVpc(vpc.id),
     onSuccess: () => {
       resetPagination();
@@ -106,7 +139,6 @@ function VpcList() {
       qc.invalidateQueries({ queryKey: ["network-subnets"] });
       qc.invalidateQueries({ queryKey: ["network-routes"] });
     },
-    onError: (error) => showApiError(error),
   });
 
   const items = useMemo(() => (vpcs.data?.items ?? []) as Vpc[], [vpcs.data?.items]);
@@ -127,12 +159,6 @@ function VpcList() {
     return names;
   }, [routes.data?.items]);
   const paginationTotal = vpcs.data?.total ?? items.length;
-  useListErrorNotification({
-    id: "vpcs-list",
-    title: "VPC 列表加载失败",
-    error: vpcs.error,
-  });
-
   const columns: Array<ListColumn<Vpc>> = [
     {
       key: "name",

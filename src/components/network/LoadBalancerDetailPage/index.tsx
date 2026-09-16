@@ -1,3 +1,4 @@
+import { withId } from "@/lib/id";
 import {
   DataTable,
   DetailPageFrame,
@@ -18,9 +19,8 @@ import {
   type NetworkSubnet,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import { formatDateTime } from "@/lib/format";
-import { useListErrorNotification } from "@/hooks/useListErrorNotification";
 
 type LoadBalancer = NetworkLoadBalancer;
 type Listener = NetworkLoadBalancerListener;
@@ -31,41 +31,54 @@ export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: str
   const navigate = useNavigate();
   const qc = useQueryClient();
   const detail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("load-balancer", loadBalancerId),
+        action: `负载均衡加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-load-balancer", loadBalancerId],
     queryFn: () => getNetworkLoadBalancer(loadBalancerId),
   });
   const vpc = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("load-balancer-vpc", loadBalancerId),
+        action: `VPC 加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpc", detail.data?.vpc_id],
     queryFn: () => getNetworkVpc(detail.data!.vpc_id),
     enabled: Boolean(detail.data?.vpc_id),
   });
   const subnet = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("load-balancer-subnet", loadBalancerId),
+        action: `子网加载`,
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-subnet", detail.data?.subnet_id],
     queryFn: () => getNetworkSubnet(detail.data!.subnet_id!),
     enabled: Boolean(detail.data?.subnet_id),
   });
-  useListErrorNotification({
-    id: `load-balancer-detail:${loadBalancerId}`,
-    title: `负载均衡加载失败`,
-    error: detail.error,
-  });
-  useListErrorNotification({
-    id: `load-balancer-vpc:${loadBalancerId}`,
-    title: `VPC 加载失败`,
-    error: vpc.error,
-  });
-  useListErrorNotification({
-    id: `load-balancer-subnet:${loadBalancerId}`,
-    title: `子网加载失败`,
-    error: subnet.error,
-  });
   const remove = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "load-balancer-delete",
+        action: "删除",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: (_: undefined) => deleteNetworkLoadBalancer(loadBalancerId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["network-load-balancers"] });
       navigate({ to: "/load-balancers" });
     },
-    onError: (error) => showApiError(error),
   });
   if (detail.isLoading && !detail.data)
     return (

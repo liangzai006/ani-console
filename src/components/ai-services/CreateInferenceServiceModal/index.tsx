@@ -1,13 +1,5 @@
-import {
-  Alert,
-  Form,
-  Input,
-  InputNumber,
-  Message,
-  Modal,
-  Radio,
-  Select,
-} from "@arco-design/web-react";
+import { withId } from "@/lib/id";
+import { Alert, Form, Input, InputNumber, Modal, Radio, Select } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { createInferenceService } from "@/api/ai-services/inference";
@@ -18,8 +10,7 @@ import {
   listRegistryProjects,
   listRegistryRepositories,
 } from "@/api/registry";
-import { showApiError } from "@/lib/api-error";
-import { getErrorMessage } from "@/lib/errors";
+
 import {
   DEFAULT_GPU_INSTANCE_COMPUTE_SPEC,
   GPU_INSTANCE_COMPUTE_SPECS,
@@ -110,6 +101,13 @@ export function CreateInferenceServiceModal({
   const [runtimeImageId, setRuntimeImageId] = useState("");
   const [runtimeImageRef, setRuntimeImageRef] = useState("");
   const models = useQuery({
+    meta: {
+      errorNotification: {
+        id: "models",
+        action: "模型列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["models", "inference-service-create"],
     enabled: visible,
     queryFn: () => listModels({ status: "ready", limit: 100 }),
@@ -119,6 +117,13 @@ export function CreateInferenceServiceModal({
     [modelId, models.data?.items],
   );
   const modelDetail = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("model", modelId),
+        action: "模型版本加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["model", modelId],
     enabled: visible && Boolean(modelId),
     queryFn: () => getModel(modelId),
@@ -134,6 +139,13 @@ export function CreateInferenceServiceModal({
   );
 
   const gpuSpecs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "gpu-specs",
+        action: "GPU 规格加载",
+        fallback: "可改用 CPU 规格后重试",
+      },
+    },
     queryKey: ["gpu-specs", "inference-service-create"],
     enabled: visible,
     queryFn: async () =>
@@ -141,6 +153,13 @@ export function CreateInferenceServiceModal({
   });
 
   const gpuSpecAvailability = useQuery({
+    meta: {
+      errorNotification: {
+        id: "gpu-specs",
+        action: "GPU 规格加载",
+        fallback: "可改用 CPU 规格后重试",
+      },
+    },
     queryKey: ["gpu-specs", "availability", "inference-service-create"],
     enabled: visible,
     queryFn: async () => (await getGpuSpecAvailability()) as GpuSpecAvailabilityListResponse,
@@ -158,6 +177,13 @@ export function CreateInferenceServiceModal({
     : undefined;
 
   const runtimeImages = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("runtime-images", modelVersionId),
+        action: "运行镜像加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["inference-runtime-images"],
     enabled: visible && runtimeImageMode === "registry" && Boolean(selectedModelVersion),
     queryFn: async () => {
@@ -186,7 +212,6 @@ export function CreateInferenceServiceModal({
       return Array.from(new Map(images.map((image) => [image.id, image])).values());
     },
   });
-
   const runtimeImage = (runtimeImages.data ?? []).find((image) => image.id === runtimeImageId);
 
   useEffect(() => {
@@ -248,6 +273,14 @@ export function CreateInferenceServiceModal({
   }, [availabilityBySpecId, gpuSpecAvailability.data, gpuSpecs.data, visible]);
 
   const create = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "创建",
+        successText: "推理服务部署请求已提交",
+        errorFallback: "请求失败",
+      },
+    },
     mutationFn: async () => {
       if (!name.trim() || !modelVersionId) throw new Error("请完整填写服务名称并选择模型版本");
       if (!selectedModelVersion) throw new Error("请选择有效的模型版本");
@@ -303,11 +336,9 @@ export function CreateInferenceServiceModal({
       return createInferenceService(submitData);
     },
     onSuccess: () => {
-      Message.success("推理服务部署请求已提交");
       void qc.invalidateQueries({ queryKey: ["inference-services"] });
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
 
   return (
@@ -355,22 +386,12 @@ export function CreateInferenceServiceModal({
             }))}
           />
         </Form.Item>
-        {models.error ? (
-          <Alert
-            type="warning"
-            showIcon
-            content={getErrorMessage(models.error, "模型列表加载失败")}
-          />
-        ) : modelDetail.error ? (
-          <Alert
-            type="warning"
-            showIcon
-            content={getErrorMessage(modelDetail.error, "模型版本加载失败")}
-          />
-        ) : !models.isLoading &&
-          !modelDetail.isLoading &&
-          selectedModel &&
-          modelVersions.length === 0 ? (
+        {!models.error &&
+        !modelDetail.error &&
+        !models.isLoading &&
+        !modelDetail.isLoading &&
+        selectedModel &&
+        modelVersions.length === 0 ? (
           <Alert type="warning" showIcon content="所选模型暂无可部署版本" />
         ) : null}
         <Form.Item label="镜像来源" required>
@@ -407,16 +428,11 @@ export function CreateInferenceServiceModal({
             />
           </Form.Item>
         )}
-        {runtimeImageMode === "registry" && runtimeImages.error ? (
-          <Alert
-            type="warning"
-            showIcon
-            content={getErrorMessage(runtimeImages.error, "运行镜像加载失败")}
-          />
-        ) : runtimeImageMode === "registry" &&
-          !runtimeImages.isLoading &&
-          selectedModelVersion &&
-          (runtimeImages.data?.length ?? 0) === 0 ? (
+        {runtimeImageMode === "registry" &&
+        !runtimeImages.error &&
+        !runtimeImages.isLoading &&
+        selectedModelVersion &&
+        (runtimeImages.data?.length ?? 0) === 0 ? (
           <Alert type="warning" showIcon content="Registry 中暂无可选运行镜像" />
         ) : null}
         <Form.Item label="推理引擎">
@@ -454,17 +470,7 @@ export function CreateInferenceServiceModal({
             />
           </Form.Item>
         </div>
-        {gpuSpecs.error || gpuSpecAvailability.error ? (
-          <Alert
-            type="warning"
-            showIcon
-            content={getErrorMessage(
-              gpuSpecs.error ?? gpuSpecAvailability.error,
-              "GPU 规格加载失败，可改用 CPU 规格后重试",
-            )}
-            className="mb-4"
-          />
-        ) : selectedGpuSpec ? (
+        {selectedGpuSpec ? (
           <Alert
             type="info"
             showIcon

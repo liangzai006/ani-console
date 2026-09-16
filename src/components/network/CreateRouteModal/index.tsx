@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Form, Input, Modal, Select, Typography } from "@arco-design/web-react";
+import { Form, Input, Modal, Select, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import {
   createNetworkRoute,
@@ -7,9 +7,8 @@ import {
   type NetworkRoute,
   type NetworkVPC,
 } from "@/api/network";
-import { showApiError } from "@/lib/api-error";
+
 import { Ipv4CidrInput } from "@/components/common";
-import { getErrorMessage } from "@/lib/errors";
 import { ipv4CidrError, requireIpv4Cidr } from "@/lib/validators";
 
 type Vpc = NetworkVPC;
@@ -32,6 +31,13 @@ export function CreateRouteModal({
   const [nextHopId, setNextHopId] = useState("");
   const [name, setName] = useState("");
   const vpcs = useQuery({
+    meta: {
+      errorNotification: {
+        id: "vpcs",
+        action: "VPC 列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["network-vpcs", "route-create"],
     queryFn: () => listNetworkVpcs({ limit: 100 }),
     enabled: visible,
@@ -48,6 +54,7 @@ export function CreateRouteModal({
     setName("");
   };
   const create = useMutation({
+    meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       if (!vpcId) throw new Error("请选择 VPC");
       if (!name.trim()) throw new Error("请输入路由名称");
@@ -68,7 +75,6 @@ export function CreateRouteModal({
       onCreated?.(data);
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal
@@ -110,14 +116,6 @@ export function CreateRouteModal({
             ))}
           </Select>
         </Form.Item>
-        {vpcs.error ? (
-          <Alert
-            type="error"
-            showIcon
-            content={getErrorMessage(vpcs.error, "VPC 列表加载失败")}
-            className="mb-4"
-          />
-        ) : null}
         <Form.Item
           label="目标网段"
           required

@@ -35,6 +35,47 @@ body {
   color: var(--color-text-1);
 }
 
+/* 全局反馈：业务代码只声明语义，位置与视觉在此统一。 */
+.arco-message-wrapper-top {
+  top: 60px;
+}
+
+.ani-feedback-message.arco-message {
+  min-height: 46px;
+  max-width: min(480px, calc(100vw - 32px));
+  padding: 12px 16px;
+  border: 1px solid var(--color-border-1);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  color: var(--color-text-1);
+  font-weight: 500;
+}
+
+.arco-notification-wrapper-top-right {
+  top: 60px;
+  right: 24px;
+}
+
+.ani-feedback-notification.arco-notification {
+  box-sizing: border-box;
+  width: min(320px, calc(100vw - 32px));
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border-1);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+.ani-feedback-notification .arco-notification-title {
+  color: var(--color-text-1);
+  font-weight: 600;
+}
+
+.ani-feedback-notification .arco-notification-content {
+  margin-top: 4px;
+  color: var(--color-text-2);
+}
+
 /* 全局文本链接：统一路由链接与普通锚点，组件级样式可按需覆盖。 */
 a:where(:link, :visited) {
   color: rgb(var(--primary-6));

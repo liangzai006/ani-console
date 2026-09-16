@@ -1,8 +1,7 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Alert, Message, Modal } from "@arco-design/web-react";
+import { Alert, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import { getInstanceActionErrorMessage } from "@/lib/sandbox-instance";
 
 type Instance = InstanceRecord;
 type Snapshot = NonNullable<Instance["snapshots"]>[number];
@@ -19,6 +18,14 @@ export function VmInstanceRollbackModal({
   onSubmitted: (operationId: string) => void;
 }) {
   const mutation = useMutation({
+    meta: {
+      feedback: {
+        channel: "message",
+        action: "操作",
+        successText: "回滚快照已提交",
+        errorFallback: "操作失败，请稍后重试",
+      },
+    },
     mutationFn: async () => {
       const submitData = {
         action: "rollback" as const,
@@ -28,10 +35,8 @@ export function VmInstanceRollbackModal({
       return data.operation_id;
     },
     onSuccess: (operationId) => {
-      Message.success("回滚快照已提交");
       onSubmitted(operationId);
     },
-    onError: (error) => Message.error(getInstanceActionErrorMessage(error, "lifecycle")),
   });
   return (
     <Modal

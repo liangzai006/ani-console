@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert,
   Form,
   Input,
   InputNumber,
@@ -12,8 +11,6 @@ import {
 import { useEffect, useState } from "react";
 import { listInstances, type InstanceRecord } from "@/api/instances";
 import { createVolume, type StorageVolume } from "@/api/storage/volumes";
-import { showApiError } from "@/lib/api-error";
-import { getErrorMessage } from "@/lib/errors";
 
 type Volume = StorageVolume;
 type Instance = InstanceRecord;
@@ -42,6 +39,13 @@ export function CreateVolumeModal({
   const [encrypted, setEncrypted] = useState(false);
   const [mountInstanceId, setMountInstanceId] = useState("");
   const instances = useQuery({
+    meta: {
+      errorNotification: {
+        id: "instances",
+        action: "实例列表加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
     queryKey: ["instances", "volume-create"],
     queryFn: () => listInstances({ limit: 100, mountable: true }),
     enabled: visible,
@@ -62,6 +66,7 @@ export function CreateVolumeModal({
     setMountInstanceId("");
   };
   const create = useMutation({
+    meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入卷名称");
@@ -85,7 +90,6 @@ export function CreateVolumeModal({
       onCreated?.(data);
       onCancel();
     },
-    onError: (error) => showApiError(error),
   });
   return (
     <Modal
@@ -149,14 +153,6 @@ export function CreateVolumeModal({
             ))}
           </Select>
         </Form.Item>
-        {instances.error ? (
-          <Alert
-            type="error"
-            showIcon
-            content={getErrorMessage(instances.error, "实例列表加载失败")}
-            className="mb-4"
-          />
-        ) : null}
         <Typography.Text type="secondary">
           创建后可在详情页创建快照；卷被实例挂载时无法删除。
         </Typography.Text>
