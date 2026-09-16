@@ -12,7 +12,7 @@ import { InstanceReleases } from "@/components/instances/InstanceReleases";
 import { GpuInstanceActions } from "@/components/instances/GpuInstanceActions";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
-import type { GpuInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
+import type { GpuInstanceDetailTabKey } from "@/lib/instances";
 import { InstanceConfiguration } from "@/components/instances/InstanceConfiguration";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";

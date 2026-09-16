@@ -1,9 +1,6 @@
 import { Form, Select } from "@arco-design/web-react";
 import type { ReactNode } from "react";
-import {
-  CPU_INSTANCE_COMPUTE_SPECS,
-  GPU_INSTANCE_COMPUTE_SPECS,
-} from "@/lib/instance-compute-specs";
+import { CPU_INSTANCE_COMPUTE_SPECS, GPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instances";
 
 type ComputeSpecOption = {
   value: string;

@@ -3,7 +3,7 @@ import type { InstanceRecord } from "@/api/instances";
 import { Alert, Form, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
-import { CPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instance-compute-specs";
+import { CPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instances";
 
 import { validateForm } from "@/lib/form";
 

@@ -15,7 +15,7 @@ import {
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { MODEL_SOURCE_LABELS, type Model } from "@/lib/model-catalog";
+import { MODEL_SOURCE_LABELS, type Model } from "@/lib/ai-models";
 
 type StatusFilter = "all" | "available" | "importing" | "failed";
 type SearchField = "name";

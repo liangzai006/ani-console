@@ -16,8 +16,8 @@ import {
   GPU_INSTANCE_COMPUTE_SPECS,
   INSTANCE_COMPUTE_SPEC_BY_VALUE,
   type GpuInstanceComputeSpec,
-} from "@/lib/instance-compute-specs";
-import { getLatestModelVersion } from "@/lib/model-catalog";
+} from "@/lib/instances";
+import { getLatestModelVersion } from "@/lib/ai-models";
 import { getImageSelectionLabel } from "@/lib/render";
 
 type RuntimeImage = {

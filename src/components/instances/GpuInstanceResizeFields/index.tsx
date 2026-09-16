@@ -4,7 +4,7 @@ import { Form, Select, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { StatusTag } from "@/components/common";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
-import { GPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instance-compute-specs";
+import { GPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instances";
 import { currentCpuMemorySpec, currentGpuSpecValue } from "./helpers";
 
 type Instance = InstanceRecord;

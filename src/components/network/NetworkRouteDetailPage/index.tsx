@@ -13,7 +13,7 @@ import {
 
 import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
-import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
+import { navigateToInstanceDetail } from "@/lib/instances";
 
 type Vpc = NetworkVPC;
 type Instance = InstanceRecord;

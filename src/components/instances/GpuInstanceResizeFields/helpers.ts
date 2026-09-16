@@ -1,5 +1,5 @@
 import type { InstanceRecord } from "@/api/instances";
-import { GPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instance-compute-specs";
+import { GPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instances";
 
 type Instance = InstanceRecord;
 

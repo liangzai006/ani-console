@@ -16,8 +16,11 @@ import { InstanceReleases } from "@/components/instances/InstanceReleases";
 import { InstanceReleaseActions } from "@/components/instances/InstanceReleaseActions";
 import { ContainerInstanceActions } from "@/components/instances/ContainerInstanceActions";
 import { formatDateTime } from "@/lib/format";
-import { getInstanceDisplayIp, getInstanceNetworkValue } from "@/lib/instance-network";
-import type { ContainerInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
+import {
+  getInstanceDisplayIp,
+  getInstanceNetworkValue,
+  type ContainerInstanceDetailTabKey,
+} from "@/lib/instances";
 import { containerDetailDataSource } from "./data-source";
 
 export function ContainerInstanceDetailPage({

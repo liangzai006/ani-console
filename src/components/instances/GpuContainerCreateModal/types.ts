@@ -2,7 +2,7 @@ import {
   DEFAULT_GPU_INSTANCE_COMPUTE_SPEC,
   GPU_INSTANCE_COMPUTE_SPECS,
   type GpuInstanceComputeSpec,
-} from "@/lib/instance-compute-specs";
+} from "@/lib/instances";
 
 export type FormValues = {
   name: string;

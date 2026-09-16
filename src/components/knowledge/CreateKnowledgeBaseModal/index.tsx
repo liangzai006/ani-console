@@ -8,7 +8,7 @@ import {
   type CreateKnowledgeBaseInput,
   type KnowledgeBase,
 } from "@/api/knowledge";
-import { getReadyModelOptions } from "@/lib/model-catalog";
+import { getReadyModelOptions } from "@/lib/ai-models";
 import { validateForm } from "@/lib/form";
 import { withId } from "@/lib/id";
 

@@ -15,7 +15,7 @@ import { VmInstanceActions } from "@/components/instances/VmInstanceActions";
 import { VmInstanceSnapshotModal } from "@/components/instances/VmInstanceActions/VmInstanceSnapshotModal";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
-import type { ComputeInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
+import type { ComputeInstanceDetailTabKey } from "@/lib/instances";
 import { VmInstanceSshAccess } from "./VmInstanceSshAccess";
 import { VmInstanceStorage } from "./VmInstanceStorage";
 

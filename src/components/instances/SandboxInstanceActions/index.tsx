@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
 
-import type { SandboxInstanceDetailTabKey } from "@/lib/instance-detail-tabs";
+import type { SandboxInstanceDetailTabKey } from "@/lib/instances";
 import { formatDurationSeconds } from "../SandboxInstanceDetailPage/utils";
 
 type SandboxInstance = InstanceRecord;

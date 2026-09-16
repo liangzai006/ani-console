@@ -22,10 +22,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ImageNameText, Ipv4CidrInput, WizardSteps } from "@/components/common";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
-import {
-  CPU_INSTANCE_COMPUTE_SPECS,
-  type CpuInstanceComputeSpec,
-} from "@/lib/instance-compute-specs";
+import { CPU_INSTANCE_COMPUTE_SPECS, type CpuInstanceComputeSpec } from "@/lib/instances";
 
 import { optionalIpv4WithinCidrError, subnetFixedOctets, suggestGatewayIp } from "@/lib/validators";
 import styles from "./index.module.css";

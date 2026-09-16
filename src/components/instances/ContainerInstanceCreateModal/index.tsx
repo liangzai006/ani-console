@@ -24,7 +24,7 @@ import {
   CPU_INSTANCE_COMPUTE_SPECS,
   DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
   type CpuInstanceComputeSpec,
-} from "@/lib/instance-compute-specs";
+} from "@/lib/instances";
 
 import { ContainerStorageFields } from "./ContainerStorageFields";
 import {

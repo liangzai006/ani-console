@@ -3,7 +3,7 @@ import { ContainerInstanceDetailPage } from "@/components/instances/ContainerIns
 import {
   containerInstanceDetailTabKeys,
   type ContainerInstanceDetailTabKey,
-} from "@/lib/instance-detail-tabs";
+} from "@/lib/instances";
 
 export const Route = createFileRoute("/_authenticated/container-instances/$instanceId")({
   validateSearch: (search: Record<string, unknown>): { tab?: ContainerInstanceDetailTabKey } => ({

@@ -13,7 +13,7 @@ import {
   formatModelCapabilities,
   getLatestModelVersion,
   MODEL_SOURCE_LABELS,
-} from "@/lib/model-catalog";
+} from "@/lib/ai-models";
 import { ModelRelatedResources } from "./ModelRelatedResources";
 
 export function ModelDetailPage({ modelId }: { modelId: string }) {

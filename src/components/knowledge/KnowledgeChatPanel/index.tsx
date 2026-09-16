@@ -13,7 +13,7 @@ import {
   type KBSessionMessage as SessionMessage,
 } from "@/api/knowledge";
 
-import { getReadyModelOptions } from "@/lib/model-catalog";
+import { getReadyModelOptions } from "@/lib/ai-models";
 import { KnowledgeCitationsDrawer } from "./KnowledgeCitationsDrawer";
 import { KnowledgeConversation } from "./KnowledgeConversation";
 import { KnowledgeSessionsSidebar } from "./KnowledgeSessionsSidebar";

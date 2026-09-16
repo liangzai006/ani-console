@@ -1,5 +1,5 @@
 import { listInstances } from "@/api/instances";
-import { getInstanceDisplayIp, getInstanceNetworkValue } from "@/lib/instance-network";
+import { getInstanceDisplayIp, getInstanceNetworkValue } from "@/lib/instances";
 import { getImageDisplayName } from "@/lib/render";
 import type {
   ContainerInstance,
