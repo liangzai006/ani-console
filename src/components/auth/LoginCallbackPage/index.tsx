@@ -39,7 +39,7 @@ function readCallbackParams(): { code: string | null; state: string | null } {
 
 export function LoginCallbackPage() {
   const navigate = useNavigate();
-  const setTokens = useAuthStore((s) => s.setTokens);
+  const setAuthSession = useAuthStore((s) => s.setAuthSession);
   const [phase, setPhase] = useState<CallbackPhase>("loading");
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export function LoginCallbackPage() {
     exchangeOidcCode(code, state, redirectUri)
       .then((tokens) => {
         closeNotification("oidc-login");
-        setTokens(tokens);
+        setAuthSession({ tokens, username: null });
         sessionStorage.setItem(exchangeDoneKey(code, state), "1");
         sessionStorage.removeItem(PENDING_KEY);
         stripCallbackQuery();
@@ -80,7 +80,7 @@ export function LoginCallbackPage() {
         showNotification({ id: "oidc-login", state: "error", action: "登录", content });
         setPhase("error");
       });
-  }, [navigate, setTokens]);
+  }, [navigate, setAuthSession]);
 
   if (phase === "missing") {
     return (

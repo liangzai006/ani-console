@@ -13,7 +13,7 @@ import { showMessage } from "@/lib/feedback";
 
 export function LoginPage({ redirect = "/" }: { redirect?: string }) {
   const navigate = useNavigate();
-  const setTokens = useAuthStore((state) => state.setTokens);
+  const setAuthSession = useAuthStore((state) => state.setAuthSession);
   const setDevelopmentBypass = useAuthStore((state) => state.setDevelopmentBypass);
 
   useEffect(() => {
@@ -43,8 +43,8 @@ export function LoginPage({ redirect = "/" }: { redirect?: string }) {
         throw new Error(getPasswordLoginErrorMessage(error));
       }
     },
-    onSuccess: (tokens) => {
-      setTokens(tokens);
+    onSuccess: (tokens, values) => {
+      setAuthSession({ tokens, username: values.username.trim() });
       navigate({ to: redirect, replace: true });
     },
   });

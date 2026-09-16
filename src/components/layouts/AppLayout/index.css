@@ -1,0 +1,1259 @@
+:root {
+  --topbar-height: 48px;
+  --sidebar-width: 200px;
+  --sidebar-collapsed-width: 56px;
+  --sidebar-active-bg: rgba(255, 255, 255, 0.72);
+}
+
+.sidebar-shell {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  padding: 8px 8px 0;
+  overflow: hidden;
+  transition: width 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+}
+
+.sidebar-menu-region {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+[data-component="page-scroll-region"] {
+  overscroll-behavior: contain;
+}
+
+/* 顶栏一级菜单：去除 Arco 默认底部边框，激活项下划线紧贴顶栏底部 */
+.topnav-menu.arco-menu-horizontal {
+  border-bottom: none;
+  background: transparent;
+  line-height: calc(var(--topbar-height) - 1px);
+}
+.topnav-menu.arco-menu-horizontal .arco-menu-item {
+  font-weight: 700;
+  line-height: calc(var(--topbar-height) - 1px);
+  padding: 0 12px;
+  position: relative;
+}
+.topnav-menu.arco-menu-horizontal .arco-menu-item-selected {
+  color: rgb(var(--primary-6));
+  background: transparent;
+}
+/* 覆盖 Arco 默认 selected-label 的 bottom: -14px，改为紧贴 MenuItem 底部（即顶栏底部）；
+   宽度自适应菜单文本长度（左右各留 12px padding） */
+.topnav-menu.arco-menu-horizontal .arco-menu-selected-label {
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  width: auto;
+  height: 3px;
+  border-radius: 2px;
+  background-color: rgb(var(--primary-6));
+}
+
+/* 侧栏二级菜单：按 mockup page-detail-v2.html 一对一还原 */
+.sidebar-menu.arco-menu {
+  width: 100%;
+  min-height: 100%;
+  background: transparent;
+  padding: 0;
+  line-height: 20px;
+}
+
+/* 去除 Arco 默认给 .arco-icon 的 margin-right: 16px */
+.sidebar-menu.arco-menu .arco-icon {
+  margin-right: 0;
+}
+
+/* 禁用 Arco 默认 level indent（用 padding-left 按层级手动控制） */
+.sidebar-menu.arco-menu .arco-menu-indent {
+  display: none;
+}
+
+/* 所有层级使用相同的 44px 行高；层级差异只由递归计算的左侧缩进体现。 */
+.sidebar-menu.arco-menu .sidebar-menu-leaf,
+.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 44px;
+  line-height: 20px;
+  padding: 0 12px 0 var(--sidebar-row-padding-left);
+  margin: 0 0 4px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-1, rgba(0, 0, 0, 0.85));
+  background-color: transparent;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-leaf > a,
+.sidebar-menu.arco-menu .sidebar-menu-leaf > .arco-menu-item-inner > a {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  line-height: 20px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header > span:first-child {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  line-height: 20px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-label-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 0;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-label-icon .arco-icon {
+  display: block;
+}
+
+/* 分组只保留 hover/展开能力，即使后代被选中也不显示激活态。 */
+.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header,
+.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header.arco-menu-selected {
+  color: var(--color-text-1, rgba(0, 0, 0, 0.85));
+  font-weight: 400;
+  background-color: transparent;
+}
+.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header .ali-icon {
+  color: var(--color-text-3, rgba(0, 0, 0, 0.4));
+}
+.sidebar-menu.arco-menu
+  .sidebar-menu-group
+  > .arco-menu-inline-header.arco-menu-selected
+  .arco-icon,
+.sidebar-menu.arco-menu
+  .sidebar-menu-group
+  > .arco-menu-inline-header.arco-menu-selected
+  .arco-menu-icon-suffix {
+  color: var(--color-text-3, rgba(0, 0, 0, 0.4));
+}
+.sidebar-menu.arco-menu .sidebar-menu-leaf:hover:not(.arco-menu-selected),
+.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header:hover,
+.sidebar-menu.arco-menu .sidebar-menu-group > .arco-menu-inline-header.arco-menu-selected:hover {
+  background-color: var(--sidebar-active-bg);
+  color: var(--color-text-1, rgba(0, 0, 0, 0.85));
+}
+.sidebar-menu.arco-menu
+  .sidebar-menu-group
+  > .arco-menu-inline-header.arco-menu-selected:hover
+  .arco-icon,
+.sidebar-menu.arco-menu
+  .sidebar-menu-group
+  > .arco-menu-inline-header.arco-menu-selected:hover
+  .arco-menu-icon-suffix {
+  color: var(--color-text-3, rgba(0, 0, 0, 0.4));
+}
+
+/* 嵌套叶子保持次级文字色，选中时由下方规则覆盖。 */
+.sidebar-menu.arco-menu .arco-menu-inline-content .sidebar-menu-leaf {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* 激活态只属于叶子项，所有深度使用同一套视觉样式。 */
+.sidebar-menu.arco-menu .sidebar-menu-leaf.arco-menu-selected {
+  background-color: var(--sidebar-active-bg);
+  color: rgb(var(--primary-6));
+  font-weight: 700;
+}
+.sidebar-menu.arco-menu .sidebar-menu-leaf.arco-menu-selected a,
+.sidebar-menu.arco-menu .sidebar-menu-leaf.arco-menu-selected .arco-icon {
+  color: inherit;
+}
+
+/* Collapsed sidebar: 56px shell with a 40px menu content column. */
+.sidebar-menu.sidebar-menu--collapsed.arco-menu {
+  width: 100%;
+}
+
+.sidebar-menu.sidebar-menu--collapsed.arco-menu > .arco-menu-inner {
+  padding: 0;
+}
+
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-leaf,
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-group.arco-menu-pop-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  margin: 0 0 4px;
+  padding: 0;
+  border-radius: 4px;
+  line-height: 20px;
+  background-color: transparent;
+}
+
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-label {
+  width: 100%;
+  justify-content: center;
+  gap: 0;
+}
+
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-label-text,
+.sidebar-menu.sidebar-menu--collapsed .arco-menu-icon-suffix {
+  display: none;
+}
+
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-label-icon .arco-icon {
+  margin: 0;
+}
+
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-group.arco-menu-pop-header,
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-group.arco-menu-pop-header.arco-menu-selected {
+  color: var(--color-text-1, rgba(0, 0, 0, 0.85));
+  font-weight: 400;
+  background-color: transparent;
+}
+
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-group.arco-menu-pop-header .ali-icon {
+  color: var(--color-text-3, rgba(0, 0, 0, 0.4));
+}
+
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-group.arco-menu-pop-header:hover,
+.sidebar-menu.sidebar-menu--collapsed
+  .sidebar-menu-group.arco-menu-pop-header.arco-menu-selected:hover {
+  color: var(--color-text-1, rgba(0, 0, 0, 0.85));
+  background-color: var(--sidebar-active-bg);
+}
+
+.sidebar-collapse-button {
+  display: flex;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: calc(100% + 16px);
+  height: 44px;
+  margin: 0 -8px;
+  padding: 0;
+  border: 0;
+  color: var(--color-text-2);
+  background: var(--color-bg-2);
+  cursor: pointer;
+}
+
+.sidebar-collapse-button:hover {
+  color: var(--color-text-1);
+  background: var(--sidebar-active-bg);
+}
+
+.sidebar-collapse-button:focus-visible {
+  outline: 2px solid rgb(var(--primary-6));
+  outline-offset: -2px;
+}
+
+/* Popup groups use the same theme-tinted hover/selected states as inline leaves. */
+.sidebar-menu-popup-trigger .arco-dropdown-menu {
+  min-width: 160px;
+  border-radius: 4px;
+}
+
+.sidebar-menu-popup-trigger .arco-dropdown-menu-item:hover,
+.sidebar-menu-popup-trigger .arco-dropdown-menu-pop-header:hover {
+  background-color: var(--sidebar-active-bg);
+}
+
+.sidebar-menu-popup-trigger .sidebar-menu-leaf.arco-dropdown-menu-selected {
+  color: rgb(var(--primary-6));
+  font-weight: 700;
+  background-color: var(--sidebar-active-bg);
+}
+
+.sidebar-menu-popup-trigger
+  .sidebar-menu-group.arco-dropdown-menu-pop-header.arco-dropdown-menu-selected {
+  color: var(--color-text-1);
+  font-weight: 400;
+  background-color: transparent;
+}
+
+.sidebar-menu-popup-trigger
+  .sidebar-menu-group.arco-dropdown-menu-pop-header.arco-dropdown-menu-selected:hover {
+  background-color: var(--sidebar-active-bg);
+}
+
+.sidebar-menu-leaf-tooltip .arco-tooltip-content {
+  padding: 8px 12px;
+  border: 1px solid var(--color-fill-3);
+  border-radius: 4px;
+  color: var(--color-text-1);
+  background-color: var(--color-bg-popup);
+}
+
+/* 统一应用框架：尺寸与层级以通用页面截图为准。 */
+.topnav-shell {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--color-border-1);
+  background: var(--color-bg-2);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+}
+
+.topnav-left,
+.topnav-right,
+.topnav-brand,
+.topnav-primary,
+.topnav-primary-item,
+.topnav-region,
+.topnav-mode,
+.topnav-user,
+.topnav-user-avatar {
+  display: flex;
+  align-items: center;
+}
+
+.topnav-left {
+  min-width: 0;
+}
+
+.topnav-brand {
+  flex: 0 0 auto;
+  gap: 14px;
+}
+
+.topnav-brand-mark {
+  display: inline-flex;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, rgb(var(--primary-5)), rgb(var(--primary-7)));
+  color: var(--color-white);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.topnav-brand-name {
+  max-width: 180px;
+  overflow: hidden;
+  color: var(--color-text-1);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topnav-primary {
+  gap: 10px;
+  margin-left: 34px;
+}
+
+.topnav-primary-item,
+.topnav-region {
+  box-sizing: border-box;
+  height: 40px;
+  gap: 10px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--color-text-1);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.topnav-primary-item {
+  cursor: pointer;
+}
+
+.topnav-primary-item:hover,
+.topnav-primary-item:focus-visible {
+  background: var(--color-fill-1);
+}
+
+.topnav-primary-item:focus-visible,
+.topnav-user:focus-visible {
+  outline: 2px solid rgb(var(--primary-3));
+  outline-offset: 1px;
+}
+
+.topnav-primary-item.is-active {
+  font-weight: 500;
+}
+
+.topnav-primary-item .arco-icon,
+.topnav-region .arco-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+}
+
+.topnav-region {
+  cursor: default;
+}
+
+.topnav-region-arrow.arco-icon {
+  margin-left: 2px;
+  color: var(--color-text-3);
+  font-size: 12px;
+}
+
+.topnav-right {
+  flex: 0 0 auto;
+  gap: 28px;
+  margin-left: 28px;
+}
+
+.topnav-search.arco-input-group-wrapper {
+  width: clamp(180px, 16vw, 320px);
+}
+
+.topnav-search .arco-input-inner-wrapper {
+  height: 42px;
+  padding: 0 14px;
+  border-color: var(--color-border-1);
+  border-radius: 22px;
+  background: var(--color-bg-2);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.02);
+}
+
+.topnav-search .arco-input-inner-wrapper:hover,
+.topnav-search .arco-input-inner-wrapper:focus-within {
+  border-color: rgb(var(--primary-4));
+  background: var(--color-bg-2);
+}
+
+.topnav-search .arco-input-prefix {
+  margin-right: 10px;
+  color: var(--color-text-3);
+  font-size: 18px;
+}
+
+.topnav-search .arco-input {
+  font-size: 14px;
+}
+
+.topnav-mode {
+  box-sizing: border-box;
+  height: 48px;
+  gap: 12px;
+  padding: 0 24px;
+  border-radius: 24px;
+  background: var(--color-fill-1);
+  color: var(--color-text-1);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.topnav-mode-switch {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgb(var(--primary-4)), rgb(var(--warning-5)));
+}
+
+.topnav-mode-knob {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-bg-2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+}
+
+.topnav-user {
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  color: var(--color-text-1);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.topnav-user-avatar {
+  justify-content: center;
+  box-sizing: border-box;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(var(--primary-6), 0.14);
+  border-radius: 50%;
+  background: var(--color-bg-2);
+  color: rgb(var(--primary-6));
+}
+
+.topnav-user-avatar .arco-icon {
+  font-size: 21px;
+}
+
+.topnav-user-name {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sidebar-shell {
+  padding: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.9);
+  background: linear-gradient(180deg, #edf2f9 0%, #f4f6fb 100%) !important;
+  box-shadow: 1px 0 8px rgba(33, 69, 120, 0.04);
+}
+
+.sidebar-domain {
+  display: flex;
+  flex: 0 0 64px;
+  align-items: center;
+  box-sizing: border-box;
+  height: 64px;
+  padding: 20px 28px 10px;
+  color: var(--color-text-1);
+  white-space: nowrap;
+}
+
+.sidebar-domain-icon {
+  display: none;
+  color: rgb(var(--primary-6));
+}
+
+.sidebar-domain-label {
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+  text-overflow: ellipsis;
+}
+
+.sidebar-menu-region {
+  padding: 0 16px 12px;
+}
+
+.sidebar-menu.arco-menu {
+  min-height: auto;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-group--root {
+  margin-bottom: 8px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-group--root > .arco-menu-inline-header,
+.sidebar-menu.arco-menu .sidebar-menu-group--root > .arco-menu-inline-header.arco-menu-selected {
+  height: 36px;
+  margin: 0;
+  padding: 0 10px;
+  border-radius: 4px;
+  color: var(--color-text-3);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-group--root > .arco-menu-inline-header:hover,
+.sidebar-menu.arco-menu
+  .sidebar-menu-group--root
+  > .arco-menu-inline-header.arco-menu-selected:hover {
+  color: var(--color-text-2);
+  background: transparent;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-group--root > .arco-menu-inline-header .arco-icon {
+  color: var(--color-text-3);
+  font-size: 12px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-leaf,
+.sidebar-menu.arco-menu .sidebar-menu-group--nested > .arco-menu-inline-header {
+  height: 52px;
+  margin: 0 0 2px;
+  padding: 0 12px 0 var(--sidebar-row-padding-left);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--color-text-1);
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-label {
+  gap: 14px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-label-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-2);
+  font-size: 20px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-label-icon .arco-icon {
+  font-size: 20px;
+}
+
+.sidebar-menu.arco-menu .arco-menu-inline-content .sidebar-menu-leaf {
+  color: var(--color-text-1);
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-leaf:hover:not(.arco-menu-selected),
+.sidebar-menu.arco-menu .sidebar-menu-group--nested > .arco-menu-inline-header:hover,
+.sidebar-menu.arco-menu
+  .sidebar-menu-group--nested
+  > .arco-menu-inline-header.arco-menu-selected:hover {
+  color: rgb(var(--primary-6));
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-leaf.arco-menu-selected {
+  border-color: rgba(255, 255, 255, 0.9);
+  background: var(--sidebar-active-bg);
+  box-shadow: 0 2px 6px rgba(31, 75, 134, 0.03);
+  color: rgb(var(--primary-6));
+  font-weight: 600;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-leaf.arco-menu-selected .sidebar-menu-label-icon {
+  color: inherit;
+}
+
+.sidebar-collapse-button {
+  flex-basis: 60px;
+  justify-content: flex-start;
+  width: 100%;
+  height: 60px;
+  margin: 0;
+  padding: 0 28px;
+  gap: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--color-text-1);
+  font-size: 16px;
+}
+
+.sidebar-collapse-button::after {
+  content: "收起";
+}
+
+.sidebar-shell[style*="width: 56px"] .sidebar-domain {
+  justify-content: center;
+  padding: 18px 0 10px;
+}
+
+.sidebar-shell[style*="width: 56px"] .sidebar-domain-icon {
+  display: inline-flex;
+}
+
+.sidebar-shell[style*="width: 56px"] .sidebar-domain-label,
+.sidebar-shell[style*="width: 56px"] .sidebar-collapse-button::after {
+  display: none;
+}
+
+.sidebar-shell[style*="width: 56px"] .sidebar-menu-region {
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+.sidebar-shell[style*="width: 56px"] .sidebar-collapse-button {
+  justify-content: center;
+  padding: 0;
+}
+
+@media (max-width: 1440px) {
+  .topnav-shell {
+    padding: 0 24px;
+  }
+
+  .topnav-primary {
+    margin-left: 20px;
+  }
+
+  .topnav-right {
+    gap: 16px;
+    margin-left: 16px;
+  }
+
+  .topnav-mode {
+    padding: 0 18px;
+  }
+}
+
+/* 通用页面框架：按参考稿收敛尺寸，并让收起侧栏的 hover 展开覆盖内容而非推挤内容。 */
+.app-layout-body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-layout-sidebar-slot {
+  position: relative;
+  z-index: 10;
+  flex: 0 0 auto;
+  height: 100%;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-layout-sidebar-slot .sidebar-shell {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 2;
+  height: 100%;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-layout-sidebar-slot .sidebar-shell.is-hover-expanded {
+  box-shadow: 4px 0 14px rgba(42, 89, 161, 0.12);
+}
+
+.topnav-shell {
+  z-index: 160;
+  padding: 0 24px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.topnav-brand {
+  gap: 12px;
+}
+
+.topnav-brand-mark {
+  flex-basis: 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.topnav-brand-name {
+  max-width: 150px;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.topnav-primary {
+  gap: 12px;
+  margin-left: 24px;
+}
+
+.topnav-primary-item,
+.topnav-region {
+  height: 32px;
+  gap: 8px;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.topnav-primary-item[aria-expanded="true"] {
+  background: var(--color-fill-1);
+}
+
+.topnav-primary-item .arco-icon,
+.topnav-region .arco-icon {
+  font-size: 14px;
+}
+
+.topnav-right {
+  gap: 16px;
+  margin-left: 16px;
+}
+
+.topnav-search.arco-input-group-wrapper {
+  width: 240px;
+  transition: width 0.2s ease;
+}
+
+.topnav-search.arco-input-group-wrapper:hover,
+.topnav-search.arco-input-group-wrapper:focus-within {
+  width: min(400px, 30vw);
+}
+
+.topnav-search .arco-input-inner-wrapper {
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 16px;
+}
+
+.topnav-search .arco-input-prefix {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.topnav-search .arco-input {
+  font-size: 12px;
+}
+
+.topnav-kaiwu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 32px;
+  gap: 8px;
+  padding: 0 16px;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  color: var(--color-text-1);
+  background: rgba(246, 245, 255, 0.82);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.topnav-kaiwu:hover,
+.topnav-kaiwu:focus-visible {
+  background:
+    linear-gradient(var(--color-bg-2), var(--color-bg-2)) padding-box,
+    linear-gradient(135deg, #6fc5a7 4%, #6388ed 42%, #a76cba 70%, #ef8667 96%) border-box;
+  box-shadow: 0 3px 10px rgba(87, 116, 186, 0.1);
+}
+
+.topnav-kaiwu:focus-visible {
+  outline: none;
+}
+
+.topnav-kaiwu-switch {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: linear-gradient(90deg, #69bfe7 0%, #94d293 52%, #efc85c 100%);
+}
+
+.topnav-kaiwu-knob {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.topnav-user {
+  gap: 8px;
+}
+
+.topnav-user-avatar {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-1);
+}
+
+.topnav-user-avatar .arco-icon {
+  font-size: 18px;
+}
+
+.topnav-user-name {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.topnav-user-chevron {
+  margin-left: 2px;
+  color: var(--color-text-1);
+  font-size: 12px;
+}
+
+.sidebar-domain {
+  flex-basis: 48px;
+  height: 48px;
+  padding: 16px 8px 8px 20px;
+}
+
+.sidebar-domain-label {
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.sidebar-menu-region {
+  padding: 0 12px 8px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-group--root {
+  margin-bottom: 4px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-group--root > .arco-menu-inline-header,
+.sidebar-menu.arco-menu .sidebar-menu-group--root > .arco-menu-inline-header.arco-menu-selected {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-leaf,
+.sidebar-menu.arco-menu .sidebar-menu-group--nested > .arco-menu-inline-header {
+  height: 40px;
+  margin-bottom: 0;
+  padding-right: 4px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-label {
+  gap: 8px;
+}
+
+.sidebar-menu.arco-menu .sidebar-menu-label-icon,
+.sidebar-menu.arco-menu .sidebar-menu-label-icon .arco-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+
+.sidebar-collapse-button {
+  flex-basis: 48px;
+  height: 48px;
+  padding: 0 20px;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.sidebar-shell.is-collapsed.is-hover-expanded .sidebar-collapse-button::after {
+  content: "展开";
+}
+
+.sidebar-shell[style*="width: 56px"] .sidebar-domain {
+  padding: 16px 0 4px;
+}
+
+.sidebar-shell[style*="width: 56px"] .sidebar-menu-region {
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-leaf,
+.sidebar-menu.sidebar-menu--collapsed .sidebar-menu-group.arco-menu-pop-header {
+  height: 40px;
+  margin-bottom: 0;
+}
+
+/* 产品与服务：左侧模块筛选 + 右侧总览卡片。 */
+.product-services-panel {
+  position: fixed;
+  inset: var(--topbar-height) 0 0;
+  z-index: 150;
+}
+
+.product-services-mask {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: default;
+}
+
+.product-services-body {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  width: 1048px;
+  max-width: calc(100vw - 48px);
+  background: linear-gradient(180deg, #e4ebf7, #f2f5fc);
+  box-shadow: 4px 0 14px rgba(42, 89, 161, 0.12);
+}
+
+.product-services-tabs {
+  display: flex;
+  flex: 0 0 200px;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 200px;
+  padding: 16px 12px;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.product-services-domain {
+  display: flex;
+  flex-direction: column;
+}
+
+.product-services-domain-title {
+  padding: 6px 4px 2px 8px;
+  overflow: hidden;
+  color: var(--color-text-3);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-services-tab {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  gap: 8px;
+  padding: 8px 4px 8px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--color-text-1);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  cursor: pointer;
+}
+
+.product-services-tab .arco-icon,
+.product-services-tab .ali-icon {
+  flex: 0 0 16px;
+  font-size: 16px;
+}
+
+.product-services-tab:hover,
+.product-services-tab.is-active {
+  border-color: rgba(255, 255, 255, 0.8);
+  background: linear-gradient(90deg, rgba(var(--primary-6), 0.12), rgba(var(--primary-6), 0));
+  color: rgb(var(--primary-6));
+  font-weight: 600;
+}
+
+.product-services-tab.is-active {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.product-services-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 848px;
+  min-width: 0;
+  height: 100%;
+  gap: 16px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.product-services-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.product-services-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+}
+
+.product-services-title-row h2 {
+  margin: 0;
+  color: var(--color-text-1);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.product-services-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: var(--color-text-1);
+  background: transparent;
+  cursor: pointer;
+}
+
+.product-services-close:hover,
+.product-services-close:focus-visible {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.product-services-search .arco-input-inner-wrapper {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(250, 252, 255, 0.4);
+}
+
+.product-services-search .arco-input-inner-wrapper:hover,
+.product-services-search .arco-input-inner-wrapper:focus-within {
+  background: #fafcff;
+}
+
+.product-services-search .arco-input,
+.product-services-search .arco-input-prefix {
+  font-size: 12px;
+}
+
+.product-services-cards {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.product-services-card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 8px 24px 24px;
+  border-radius: 8px;
+  background: var(--color-bg-2);
+}
+
+.product-services-card-title {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 40px;
+  gap: 12px;
+  margin: 0;
+  padding: 8px;
+  color: rgb(var(--primary-6));
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.product-services-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+
+.product-services-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 24px;
+  width: 100%;
+}
+
+.product-services-card-column,
+.product-services-sub-links {
+  display: flex;
+  flex-direction: column;
+}
+
+.product-services-sub-links {
+  gap: 4px;
+}
+
+.product-services-parent-label,
+.product-services-link {
+  box-sizing: border-box;
+  min-height: 32px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.product-services-parent-label {
+  color: var(--color-text-3);
+}
+
+.product-services-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  color: var(--color-text-1);
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.product-services-link .arco-icon {
+  display: none;
+  margin-left: auto;
+  font-size: 14px;
+}
+
+.product-services-link:hover:not(.is-unavailable) {
+  background: var(--color-fill-1);
+  font-weight: 600;
+}
+
+.product-services-link:hover:not(.is-unavailable) .arco-icon {
+  display: inline-flex;
+  color: rgb(var(--primary-6));
+}
+
+.product-services-link.is-unavailable {
+  cursor: default;
+}
+
+.product-services-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+@media (max-width: 960px) {
+  .topnav-user-name,
+  .topnav-region {
+    display: none;
+  }
+
+  .product-services-body {
+    max-width: 100vw;
+  }
+
+  .product-services-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

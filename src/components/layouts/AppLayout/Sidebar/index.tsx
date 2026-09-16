@@ -3,10 +3,9 @@ import { Empty, Menu, Tooltip } from "@arco-design/web-react";
 import clsx from "clsx";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { AliIcon } from "@/components/common";
-import { matchSideMenuKey } from "@/lib/side-menu-match";
-import { isGroupItem, type MenuItem } from "@/lib/menu-items";
+import { isGroupItem, matchSideMenuKey, type MenuItem } from "../navigation";
 
-export const SIDEBAR_WIDTH = 184;
+export const SIDEBAR_WIDTH = 200;
 export const SIDEBAR_COLLAPSED_WIDTH = 56;
 
 interface SidebarProps {
@@ -44,14 +43,14 @@ type SidebarRowStyle = CSSProperties & { "--sidebar-row-padding-left": string };
 
 function rowStyle(depth: number): SidebarRowStyle {
   return {
-    "--sidebar-row-padding-left": `${depth === 0 ? 12 : 20 + depth * 20}px`,
+    "--sidebar-row-padding-left": `${depth <= 1 ? 12 : 28 + (depth - 2) * 20}px`,
   };
 }
 
 function renderItems(items: MenuItem[], collapsed: boolean, depth = 0) {
   return items.map((item) => {
     const label =
-      depth === 0 && item.icon ? (
+      (depth > 0 || collapsed) && item.icon ? (
         <span className="sidebar-menu-label">
           <span className="sidebar-menu-label-icon">{item.icon}</span>
           <span className="sidebar-menu-label-text">{item.label}</span>
@@ -66,7 +65,10 @@ function renderItems(items: MenuItem[], collapsed: boolean, depth = 0) {
           key={item.key}
           title={label}
           selectable={false}
-          className="sidebar-menu-group"
+          className={clsx(
+            "sidebar-menu-group",
+            depth === 0 ? "sidebar-menu-group--root" : "sidebar-menu-group--nested",
+          )}
           style={rowStyle(depth)}
         >
           {collapsed && depth === 0 ? (
@@ -85,7 +87,7 @@ function renderItems(items: MenuItem[], collapsed: boolean, depth = 0) {
     return (
       <Menu.Item
         key={item.key}
-        className="sidebar-menu-leaf"
+        className={clsx("sidebar-menu-leaf", `sidebar-menu-leaf--depth-${depth}`)}
         style={rowStyle(depth)}
         renderItemInTooltip={() => item.label}
       >
@@ -104,6 +106,13 @@ export function Sidebar({ items, activePathname, collapsed, onCollapsedChange }:
     [activePathname, allLeafKeys],
   );
   const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [hoverExpanded, setHoverExpanded] = useState(false);
+  const menuCollapsed = collapsed && !hoverExpanded;
+
+  useEffect(() => {
+    if (!items) return;
+    setOpenKeys(items.filter(isGroupItem).map((item) => item.key));
+  }, [items]);
 
   useEffect(() => {
     if (!items) return;
@@ -117,18 +126,32 @@ export function Sidebar({ items, activePathname, collapsed, onCollapsedChange }:
 
   return (
     <aside
-      className="sidebar-shell"
+      className={clsx(
+        "sidebar-shell",
+        collapsed && "is-collapsed",
+        hoverExpanded && "is-hover-expanded",
+      )}
       style={{
-        width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
+        width: menuCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
         background: "var(--color-bg-2)",
         borderColor: "var(--color-border-2)",
       }}
+      onMouseEnter={() => {
+        if (collapsed) setHoverExpanded(true);
+      }}
+      onMouseLeave={() => setHoverExpanded(false)}
     >
+      <div className="sidebar-domain">
+        <span className="sidebar-domain-icon">
+          <AliIcon name="navigation" size={24} />
+        </span>
+        <span className="sidebar-domain-label">计算产品与服务</span>
+      </div>
       <div className="sidebar-menu-region">
         {items && items.length > 0 ? (
           <Menu
             id="sidebar-navigation-menu"
-            collapse={collapsed}
+            collapse={menuCollapsed}
             selectedKeys={selectedKeys}
             openKeys={openKeys}
             onClickSubMenu={(_key, keys) => setOpenKeys(keys)}
@@ -142,10 +165,14 @@ export function Sidebar({ items, activePathname, collapsed, onCollapsedChange }:
               position: "right",
               triggerProps: { showArrow: false },
             }}
-            className={clsx("sidebar-menu", "border-none", collapsed && "sidebar-menu--collapsed")}
+            className={clsx(
+              "sidebar-menu",
+              "border-none",
+              menuCollapsed && "sidebar-menu--collapsed",
+            )}
             style={{ background: "transparent" }}
           >
-            {renderItems(items, collapsed)}
+            {renderItems(items, menuCollapsed)}
           </Menu>
         ) : (
           <div className="px-3 py-6">
@@ -160,7 +187,10 @@ export function Sidebar({ items, activePathname, collapsed, onCollapsedChange }:
           aria-label={collapseLabel}
           aria-controls="sidebar-navigation-menu"
           aria-expanded={!collapsed}
-          onClick={() => onCollapsedChange(!collapsed)}
+          onClick={() => {
+            setHoverExpanded(false);
+            onCollapsedChange(!collapsed);
+          }}
         >
           <AliIcon name={collapsed ? "spread" : "collapse"} size={16} />
         </button>

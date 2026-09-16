@@ -8,11 +8,18 @@ export interface AuthTokens {
   token_type?: string;
 }
 
+export interface AuthSession {
+  tokens: AuthTokens;
+  username: string | null;
+}
+
 interface AuthState {
   tokens: AuthTokens | null;
+  username: string | null;
+  hasKnownUsername: boolean;
   developmentBypass: boolean;
   hydrated: boolean;
-  setTokens: (tokens: AuthTokens | null) => void;
+  setAuthSession: (session: AuthSession | null) => void;
   setDevelopmentBypass: (enabled: boolean) => void;
   clear: () => void;
   getAccessToken: () => string | null;
@@ -41,11 +48,35 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       tokens: null,
+      username: null,
+      hasKnownUsername: false,
       developmentBypass: false,
       hydrated: false,
-      setTokens: (tokens) => set({ tokens, developmentBypass: false }),
-      setDevelopmentBypass: (enabled) => set({ developmentBypass: import.meta.env.DEV && enabled }),
-      clear: () => set({ tokens: null, developmentBypass: false }),
+      setAuthSession: (session) => {
+        const username = session?.username?.trim() || null;
+        set({
+          tokens: session?.tokens ?? null,
+          username,
+          hasKnownUsername: username !== null,
+          developmentBypass: false,
+        });
+      },
+      setDevelopmentBypass: (enabled) =>
+        set(() => {
+          const active = import.meta.env.DEV && enabled;
+          return {
+            developmentBypass: active,
+            username: active ? "admin" : null,
+            hasKnownUsername: active,
+          };
+        }),
+      clear: () =>
+        set({
+          tokens: null,
+          username: null,
+          hasKnownUsername: false,
+          developmentBypass: false,
+        }),
       getAccessToken: () => get().tokens?.access_token ?? null,
       getAccessTokenJti: () => {
         const token = get().tokens?.access_token;
@@ -55,7 +86,12 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "ani-console-auth",
-      partialize: (state) => ({ tokens: state.tokens, developmentBypass: state.developmentBypass }),
+      partialize: (state) => ({
+        tokens: state.tokens,
+        username: state.username,
+        hasKnownUsername: state.hasKnownUsername,
+        developmentBypass: state.developmentBypass,
+      }),
       skipHydration: true,
       onRehydrateStorage: () => () => {
         useAuthStore.setState({ hydrated: true });

@@ -209,10 +209,14 @@ function installAuthInterceptors(instance: AxiosInstance): void {
       config.aniRetried = true;
       try {
         const refreshed = await refreshAccessToken(refreshToken);
-        useAuthStore.getState().setTokens({
-          access_token: refreshed.access_token,
-          refresh_token: refreshToken,
-          expires_in: refreshed.expires_in,
+        const authState = useAuthStore.getState();
+        authState.setAuthSession({
+          tokens: {
+            access_token: refreshed.access_token,
+            refresh_token: refreshToken,
+            expires_in: refreshed.expires_in,
+          },
+          username: authState.hasKnownUsername ? authState.username : null,
         });
         config.headers.set("Authorization", `Bearer ${refreshed.access_token}`);
         return await instance.request(config);

@@ -1,14 +1,16 @@
 import { Layout, Space, Typography } from "@arco-design/web-react";
 import { useRouterState } from "@tanstack/react-router";
 import { useState, type CSSProperties } from "react";
-import { TopNav, TOPNAV_HEIGHT } from "../TopNav";
-import { Sidebar, SIDEBAR_WIDTH } from "../Sidebar";
-import { activeTopNavKeyForPath, sidebarItemsForTopNavKey } from "@/lib/side-menu-match";
+import "./index.css";
+import { ProductServicesPanel } from "./ProductServicesPanel";
+import { TopNav, TOPNAV_HEIGHT } from "./TopNav";
+import { Sidebar, SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_WIDTH } from "./Sidebar";
+import { activeTopNavKeyForPath, sidebarItemsForTopNavKey } from "./navigation";
 
 const { Content } = Layout;
 
 const APP_CONTENT_STYLE = {
-  background: "#F7F8FA",
+  background: "linear-gradient(135deg, #f2f5fb 0%, #f7f9fc 100%)",
   boxSizing: "border-box",
   minWidth: 0,
   paddingInline: "var(--app-content-padding-inline)",
@@ -22,7 +24,7 @@ const APP_CONTENT_STYLE = {
 
 const SIDEBAR_CONTENT_STYLE = {
   ...APP_CONTENT_STYLE,
-  "--app-content-padding-top": "24px",
+  "--app-content-padding-top": "16px",
 } as CSSProperties;
 
 const HOME_CONTENT_STYLE = {
@@ -30,12 +32,13 @@ const HOME_CONTENT_STYLE = {
   "--app-content-padding-top": "16px",
 } as CSSProperties;
 
-interface AppShellProps {
+interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-export function AppShell({ children }: AppShellProps) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+export function AppLayout({ children }: AppLayoutProps) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [productPanelVisible, setProductPanelVisible] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const topNavKey = activeTopNavKeyForPath(pathname);
   const sidebarItems = sidebarItemsForTopNavKey(topNavKey);
@@ -43,16 +46,27 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <Layout className="h-screen overflow-hidden" style={{ background: "var(--color-bg-1)" }}>
-      <TopNav activeKey={topNavKey} />
+      <TopNav
+        activeKey={topNavKey}
+        productPanelVisible={productPanelVisible}
+        onProductPanelVisibleChange={setProductPanelVisible}
+      />
       <Layout className="min-h-0 flex-1 overflow-hidden" style={{ paddingTop: 0 }}>
         {showSidebar ? (
-          <div className="flex min-h-0 flex-1 overflow-hidden">
-            <Sidebar
-              items={sidebarItems}
-              activePathname={pathname}
-              collapsed={sidebarCollapsed}
-              onCollapsedChange={setSidebarCollapsed}
-            />
+          <div className="app-layout-body">
+            <div
+              className="app-layout-sidebar-slot"
+              style={{
+                width: sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
+              }}
+            >
+              <Sidebar
+                items={sidebarItems}
+                activePathname={pathname}
+                collapsed={sidebarCollapsed}
+                onCollapsedChange={setSidebarCollapsed}
+              />
+            </div>
             <Content
               data-component="page-scroll-region"
               className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
@@ -71,6 +85,10 @@ export function AppShell({ children }: AppShellProps) {
           </Content>
         )}
       </Layout>
+      <ProductServicesPanel
+        visible={productPanelVisible}
+        onClose={() => setProductPanelVisible(false)}
+      />
     </Layout>
   );
 }

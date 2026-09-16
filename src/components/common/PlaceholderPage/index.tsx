@@ -1,5 +1,5 @@
 import { Empty, Typography } from "@arco-design/web-react";
-import { PageHeader } from "@/components/shell/AppShell";
+import { PageHeader } from "@/components/layouts/AppLayout";
 
 export function PlaceholderPage({ title, description }: { title: string; description: string }) {
   return (
