@@ -85,7 +85,7 @@ export function InferenceRelatedResources({
       </section>
       <section>
         <TableSectionHeader title="安全关联" />
-        <div className="flex min-h-[160px] items-center justify-center">
+        <div className="flex min-h-40 items-center justify-center">
           <Empty description="暂无安全关联" />
         </div>
       </section>

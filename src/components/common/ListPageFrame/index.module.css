@@ -14,8 +14,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: calc(100vh - 88px);
-  min-height: 600px;
+  height: var(--app-content-available-height);
+  min-height: 0;
   color: var(--list-text);
   font-size: 14px;
   letter-spacing: 0;
@@ -103,7 +103,7 @@
 @media (max-width: 980px) {
   .page {
     height: auto;
-    min-height: calc(100vh - 88px);
+    min-height: var(--app-content-available-height);
   }
 
   .contentPanel {

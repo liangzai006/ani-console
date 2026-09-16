@@ -52,12 +52,12 @@ export function Ipv4CidrInput({
               emit(nextOctets, prefix);
             }}
           />
-          {index < 3 && <span className="text-[var(--color-text-3)]">.</span>}
+          {index < 3 && <span className="text-app-text-tertiary">.</span>}
         </div>
       ))}
       {withPrefix && (
         <>
-          <span className="shrink-0 px-1 text-[var(--color-text-3)]">/</span>
+          <span className="shrink-0 px-1 text-app-text-tertiary">/</span>
           <InputNumber
             value={toInputNumber(prefix)}
             min={minPrefix}

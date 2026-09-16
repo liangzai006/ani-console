@@ -8,7 +8,7 @@ export function NotFoundPage() {
   const authenticated = isAuthenticated();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-(--color-bg-1) p-6">
+    <div className="flex min-h-screen items-center justify-center bg-app-bg p-6">
       <Card className="w-full max-w-140">
         <Result
           status="404"

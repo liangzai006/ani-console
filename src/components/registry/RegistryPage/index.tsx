@@ -1,26 +1,17 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Button,
-  Form,
-  Input,
-  Message,
-  Modal,
-  Select,
-  Space,
-  Typography,
-} from "@arco-design/web-react";
-import { useEffect, useState } from "react";
+import { Button, Message, Modal, Select, Space, Typography } from "@arco-design/web-react";
+import { useState } from "react";
 import { showApiError } from "@/lib/api-error";
 import {
   deleteRegistryTag,
-  getRegistryPushInstructions,
   listRegistryImages,
   listRegistryProjects,
   type RegistryImage,
   type RegistryPurpose,
   type RegistryScanResult,
 } from "@/api/registry";
+import { RegistryPushInstructionsModal } from "../RegistryPushInstructionsModal";
 import {
   ListPageFrame,
   DataTableRowActionButton,
@@ -28,7 +19,6 @@ import {
   type ListColumn,
   ListDataTable,
 } from "@/components/common";
-import { getErrorMessage } from "@/lib/errors";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
@@ -60,8 +50,6 @@ export function RegistryPage() {
   const [purpose, setPurpose] = useState<"all" | RegistryPurpose>("all");
   const [project, setProject] = useState("all");
   const [guideVisible, setGuideVisible] = useState(false);
-  const [guideProject, setGuideProject] = useState("");
-  const [guideRepository, setGuideRepository] = useState("demo/app");
 
   const projects = useQuery({
     queryKey: ["registry-projects"],
@@ -88,16 +76,6 @@ export function RegistryPage() {
       });
     },
   });
-  const guide = useQuery({
-    queryKey: ["registry-push-instructions", guideProject, guideRepository],
-    queryFn: () => getRegistryPushInstructions(guideProject, guideRepository.trim() || "demo/app"),
-    enabled: guideVisible && !!guideProject,
-  });
-
-  useEffect(() => {
-    if (!guideProject && projects.data?.[0]) setGuideProject(projects.data[0].name);
-  }, [guideProject, projects.data]);
-
   const deleteTag = useMutation({
     mutationFn: (item: RegistryImage) => deleteRegistryTag(item.project, item.repository, item.tag),
     onSuccess: () => {
@@ -200,7 +178,7 @@ export function RegistryPage() {
               <Select
                 value={purpose}
                 onChange={setPurpose}
-                className="w-[140px]"
+                className="w-35"
                 options={[
                   {
                     value: "all",
@@ -215,7 +193,7 @@ export function RegistryPage() {
               <Select
                 value={project}
                 onChange={setProject}
-                className="w-[160px]"
+                className="w-40"
                 options={[
                   {
                     value: "all",
@@ -245,6 +223,7 @@ export function RegistryPage() {
               key: "__actions",
               title: "操作",
               fixed: "right",
+              width: 200,
               render: (_value, item) => (
                 <DataTableRowActions>
                   <DataTableRowActionButton
@@ -291,68 +270,11 @@ export function RegistryPage() {
           }}
         />
       </ListPageFrame>
-      <Modal
+      <RegistryPushInstructionsModal
         visible={guideVisible}
-        title="推送镜像说明"
-        footer={null}
+        projects={projects.data}
         onCancel={() => setGuideVisible(false)}
-        style={{
-          width: 720,
-        }}
-      >
-        <Typography.Paragraph type="secondary">
-          镜像通过 docker push 入库，不支持网页上传。项目由平台按当前租户自动创建，Console
-          不展示或下发凭据明文。
-        </Typography.Paragraph>
-        <Form layout="vertical">
-          <Form.Item label="项目" required>
-            <Select
-              value={guideProject}
-              onChange={setGuideProject}
-              options={(projects.data ?? []).map((item) => ({
-                value: item.name,
-                label: item.name,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item label="仓库路径">
-            <Input
-              value={guideRepository}
-              onChange={setGuideRepository}
-              placeholder="例如 demo/app"
-            />
-          </Form.Item>
-        </Form>
-        {guide.isLoading ? (
-          <Typography.Text type="secondary">正在获取推送说明…</Typography.Text>
-        ) : guide.isError ? (
-          <Typography.Text type="error">
-            {getErrorMessage(guide.error, "推送说明加载失败")}
-          </Typography.Text>
-        ) : guide.data ? (
-          <Space direction="vertical" className="w-full">
-            {guide.data.commands.map((item) => (
-              <div key={item.label} className="rounded border border-[var(--color-border-2)] p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <Typography.Text className="font-medium">{item.label}</Typography.Text>
-                  <Button
-                    size="mini"
-                    type="text"
-                    onClick={() => copyText(item.command, "命令已复制")}
-                  >
-                    复制
-                  </Button>
-                </div>
-                <Typography.Text code className="break-all">
-                  {item.command}
-                </Typography.Text>
-              </div>
-            ))}
-          </Space>
-        ) : (
-          <Typography.Text type="secondary">当前租户项目暂不可用，请刷新后重试。</Typography.Text>
-        )}
-      </Modal>
+      />
     </>
   );
 }

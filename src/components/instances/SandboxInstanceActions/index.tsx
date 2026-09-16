@@ -172,7 +172,7 @@ export function SandboxInstanceActions({
           type="info"
           content={`当前剩余：${formatDurationSeconds(sandbox?.remain_seconds)}。延长后仍受空闲超时约束。`}
         />
-        <div className="mb-2 text-(--color-text-2)">延长时长</div>
+        <div className="mb-2 text-app-text-secondary">延长时长</div>
         <Select
           className="w-full"
           value={extendDuration}

@@ -45,6 +45,7 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.5.2",
+    "less": "^4.9.1",
     "oxfmt": "^0.67.0",
     "oxlint": "^1.69.0",
     "tailwindcss": "^4.3.1",

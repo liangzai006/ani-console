@@ -123,6 +123,7 @@ export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action
     {
       title: "文档 / ID",
       width: 280,
+      fixed: "left",
       render: (_, item) => (
         <DataTableNameCell
           name={<Typography.Text bold>{item.file_name}</Typography.Text>}
@@ -175,7 +176,7 @@ export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action
     },
     {
       title: "操作",
-      width: 230,
+      width: 140,
       fixed: "right",
       render: (_, item) => (
         <DataTableRowActions>

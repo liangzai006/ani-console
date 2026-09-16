@@ -18,11 +18,12 @@ export function ModelRelatedResources({
         columns={[
           {
             title: "推理服务",
+            fixed: "left",
             render: (_, service) => (
               <Link
                 to="/inference/$serviceId"
                 params={{ serviceId: service.id }}
-                className="text-[rgb(var(--primary-6))] no-underline"
+                className="text-app-primary no-underline"
               >
                 {service.name}
               </Link>

@@ -3,6 +3,24 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
+@theme inline {
+  --color-app-bg: var(--color-bg-1);
+  --color-app-surface: var(--color-bg-2);
+  --color-app-popup: var(--color-bg-popup);
+  --color-app-text: var(--color-text-1);
+  --color-app-text-secondary: var(--color-text-2);
+  --color-app-text-tertiary: var(--color-text-3);
+  --color-app-border: var(--color-border-1);
+  --color-app-border-strong: var(--color-border-2);
+  --color-app-fill: var(--color-fill-1);
+  --color-app-fill-secondary: var(--color-fill-2);
+  --color-app-fill-strong: var(--color-fill-3);
+  --color-app-primary: rgb(var(--primary-6));
+  --color-app-primary-hover: rgb(var(--primary-5));
+  --color-app-primary-active: rgb(var(--primary-7));
+  --color-app-danger: rgb(var(--danger-6));
+}
+
 /* 壳层基础：与 Arco Token 对齐，不另起色板 */
 html,
 body,

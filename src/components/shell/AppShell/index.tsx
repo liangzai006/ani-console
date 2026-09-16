@@ -1,11 +1,34 @@
 import { Layout, Space, Typography } from "@arco-design/web-react";
 import { useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { TopNav, TOPNAV_HEIGHT } from "../TopNav";
 import { Sidebar, SIDEBAR_WIDTH } from "../Sidebar";
 import { activeTopNavKeyForPath, sidebarItemsForTopNavKey } from "@/lib/side-menu-match";
 
 const { Content } = Layout;
+
+const APP_CONTENT_STYLE = {
+  background: "#F7F8FA",
+  boxSizing: "border-box",
+  minWidth: 0,
+  paddingInline: "var(--app-content-padding-inline)",
+  paddingTop: "var(--app-content-padding-top)",
+  paddingBottom: "var(--app-content-padding-bottom)",
+  "--app-content-padding-inline": "24px",
+  "--app-content-padding-bottom": "24px",
+  "--app-content-available-height":
+    "calc(100vh - var(--topbar-height) - var(--app-content-padding-top) - var(--app-content-padding-bottom))",
+} as CSSProperties;
+
+const SIDEBAR_CONTENT_STYLE = {
+  ...APP_CONTENT_STYLE,
+  "--app-content-padding-top": "24px",
+} as CSSProperties;
+
+const HOME_CONTENT_STYLE = {
+  ...APP_CONTENT_STYLE,
+  "--app-content-padding-top": "16px",
+} as CSSProperties;
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -32,8 +55,8 @@ export function AppShell({ children }: AppShellProps) {
             />
             <Content
               data-component="page-scroll-region"
-              className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-6"
-              style={{ background: "#F7F8FA", minWidth: 0 }}
+              className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+              style={SIDEBAR_CONTENT_STYLE}
             >
               {children}
             </Content>
@@ -41,8 +64,8 @@ export function AppShell({ children }: AppShellProps) {
         ) : (
           <Content
             data-component="page-scroll-region"
-            className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-6 pb-6 pt-4"
-            style={{ background: "#F7F8FA", minWidth: 0 }}
+            className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+            style={HOME_CONTENT_STYLE}
           >
             {children}
           </Content>

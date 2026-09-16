@@ -30,7 +30,6 @@ import { Route as AuthenticatedLoadBalancersIndexRouteImport } from './routes/_a
 import { Route as AuthenticatedKbIndexRouteImport } from './routes/_authenticated/kb/index'
 import { Route as AuthenticatedK8sClustersIndexRouteImport } from './routes/_authenticated/k8s-clusters/index'
 import { Route as AuthenticatedInferenceIndexRouteImport } from './routes/_authenticated/inference/index'
-import { Route as AuthenticatedImagesIndexRouteImport } from './routes/_authenticated/images/index'
 import { Route as AuthenticatedGpuInventoryIndexRouteImport } from './routes/_authenticated/gpu-inventory/index'
 import { Route as AuthenticatedGpuInstancesIndexRouteImport } from './routes/_authenticated/gpu-instances/index'
 import { Route as AuthenticatedFilesystemsIndexRouteImport } from './routes/_authenticated/filesystems/index'
@@ -171,12 +170,6 @@ const AuthenticatedInferenceIndexRoute =
   AuthenticatedInferenceIndexRouteImport.update({
     id: '/inference/',
     path: '/inference/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedImagesIndexRoute =
-  AuthenticatedImagesIndexRouteImport.update({
-    id: '/images/',
-    path: '/images/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedGpuInventoryIndexRoute =
@@ -342,7 +335,6 @@ export interface FileRoutesByFullPath {
   '/filesystems': typeof AuthenticatedFilesystemsIndexRoute
   '/gpu-instances': typeof AuthenticatedGpuInstancesIndexRoute
   '/gpu-inventory': typeof AuthenticatedGpuInventoryIndexRoute
-  '/images': typeof AuthenticatedImagesIndexRoute
   '/inference': typeof AuthenticatedInferenceIndexRoute
   '/k8s-clusters': typeof AuthenticatedK8sClustersIndexRoute
   '/kb': typeof AuthenticatedKbIndexRoute
@@ -386,7 +378,6 @@ export interface FileRoutesByTo {
   '/filesystems': typeof AuthenticatedFilesystemsIndexRoute
   '/gpu-instances': typeof AuthenticatedGpuInstancesIndexRoute
   '/gpu-inventory': typeof AuthenticatedGpuInventoryIndexRoute
-  '/images': typeof AuthenticatedImagesIndexRoute
   '/inference': typeof AuthenticatedInferenceIndexRoute
   '/k8s-clusters': typeof AuthenticatedK8sClustersIndexRoute
   '/kb': typeof AuthenticatedKbIndexRoute
@@ -434,7 +425,6 @@ export interface FileRoutesById {
   '/_authenticated/filesystems/': typeof AuthenticatedFilesystemsIndexRoute
   '/_authenticated/gpu-instances/': typeof AuthenticatedGpuInstancesIndexRoute
   '/_authenticated/gpu-inventory/': typeof AuthenticatedGpuInventoryIndexRoute
-  '/_authenticated/images/': typeof AuthenticatedImagesIndexRoute
   '/_authenticated/inference/': typeof AuthenticatedInferenceIndexRoute
   '/_authenticated/k8s-clusters/': typeof AuthenticatedK8sClustersIndexRoute
   '/_authenticated/kb/': typeof AuthenticatedKbIndexRoute
@@ -482,7 +472,6 @@ export interface FileRouteTypes {
     | '/filesystems'
     | '/gpu-instances'
     | '/gpu-inventory'
-    | '/images'
     | '/inference'
     | '/k8s-clusters'
     | '/kb'
@@ -526,7 +515,6 @@ export interface FileRouteTypes {
     | '/filesystems'
     | '/gpu-instances'
     | '/gpu-inventory'
-    | '/images'
     | '/inference'
     | '/k8s-clusters'
     | '/kb'
@@ -573,7 +561,6 @@ export interface FileRouteTypes {
     | '/_authenticated/filesystems/'
     | '/_authenticated/gpu-instances/'
     | '/_authenticated/gpu-inventory/'
-    | '/_authenticated/images/'
     | '/_authenticated/inference/'
     | '/_authenticated/k8s-clusters/'
     | '/_authenticated/kb/'
@@ -746,13 +733,6 @@ declare module '@tanstack/react-router' {
       path: '/inference'
       fullPath: '/inference'
       preLoaderRoute: typeof AuthenticatedInferenceIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/images/': {
-      id: '/_authenticated/images/'
-      path: '/images'
-      fullPath: '/images'
-      preLoaderRoute: typeof AuthenticatedImagesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/gpu-inventory/': {
@@ -960,7 +940,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFilesystemsIndexRoute: typeof AuthenticatedFilesystemsIndexRoute
   AuthenticatedGpuInstancesIndexRoute: typeof AuthenticatedGpuInstancesIndexRoute
   AuthenticatedGpuInventoryIndexRoute: typeof AuthenticatedGpuInventoryIndexRoute
-  AuthenticatedImagesIndexRoute: typeof AuthenticatedImagesIndexRoute
   AuthenticatedInferenceIndexRoute: typeof AuthenticatedInferenceIndexRoute
   AuthenticatedK8sClustersIndexRoute: typeof AuthenticatedK8sClustersIndexRoute
   AuthenticatedKbIndexRoute: typeof AuthenticatedKbIndexRoute
@@ -1013,7 +992,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFilesystemsIndexRoute: AuthenticatedFilesystemsIndexRoute,
   AuthenticatedGpuInstancesIndexRoute: AuthenticatedGpuInstancesIndexRoute,
   AuthenticatedGpuInventoryIndexRoute: AuthenticatedGpuInventoryIndexRoute,
-  AuthenticatedImagesIndexRoute: AuthenticatedImagesIndexRoute,
   AuthenticatedInferenceIndexRoute: AuthenticatedInferenceIndexRoute,
   AuthenticatedK8sClustersIndexRoute: AuthenticatedK8sClustersIndexRoute,
   AuthenticatedKbIndexRoute: AuthenticatedKbIndexRoute,

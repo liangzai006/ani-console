@@ -1,0 +1,330 @@
+.page {
+  position: relative;
+  min-width: 320px;
+  min-height: 100dvh;
+  overflow: hidden;
+  color: var(--color-text-1);
+  background: var(--color-bg-1);
+}
+
+.background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+}
+
+.header {
+  position: absolute;
+  z-index: 2;
+  top: 36px;
+  right: 52px;
+  left: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.brandLogo {
+  width: 32px;
+  height: auto;
+}
+
+.loginCard {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 77.35%;
+  box-sizing: border-box;
+  width: 420px;
+  min-height: 620px;
+  padding: 58px 49px 42px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 60px rgba(31, 64, 100, 0.04);
+  backdrop-filter: blur(16px);
+}
+
+.cardLogo {
+  display: block;
+  width: 48px;
+  height: auto;
+}
+
+.title {
+  margin: 29px 0 34px;
+  color: var(--color-text-1);
+  font-size: 25px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.form :global(.arco-form-item) {
+  margin-bottom: 24px;
+}
+
+.form :global(.arco-form-label-item) {
+  width: 100%;
+  padding-bottom: 8px;
+}
+
+.form :global(.arco-form-label-item > label) {
+  display: flex;
+  width: 100%;
+  color: var(--color-text-2);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.form :global(.arco-input-inner-wrapper) {
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 10px;
+  border-color: var(--color-border-1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.form :global(.arco-input-inner-wrapper:hover) {
+  border-color: rgb(var(--primary-5));
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.form :global(.arco-input-inner-wrapper:focus-within) {
+  border-color: rgb(var(--primary-6));
+  box-shadow: 0 0 0 2px rgb(var(--primary-1));
+}
+
+.form :global(.arco-input) {
+  font-size: 14px;
+}
+
+.form :global(.arco-input::placeholder) {
+  color: var(--color-text-4);
+}
+
+.form .passwordItem {
+  margin-bottom: 22px;
+}
+
+.passwordLabel {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.forgotPassword {
+  color: var(--color-text-3);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.submitButton:global(.arco-btn-primary) {
+  height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgb(var(--cyan-6)), rgb(var(--primary-6)));
+  box-shadow: 0 8px 20px rgba(22, 161, 211, 0.12);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.submitButton:global(.arco-btn-primary):not(:global(.arco-btn-disabled)):hover {
+  background: linear-gradient(90deg, rgb(var(--cyan-5)), rgb(var(--primary-5)));
+}
+
+.submitButton:global(.arco-btn-primary):not(:global(.arco-btn-disabled)):active {
+  background: linear-gradient(90deg, rgb(var(--cyan-7)), rgb(var(--primary-7)));
+}
+
+.divider:global(.arco-divider-horizontal) {
+  height: 16px;
+  margin: 68px 0 20px;
+  color: var(--color-text-4);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.alternativeMethods {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  color: var(--color-text-2);
+  font-size: 12px;
+}
+
+.alternativeMethod {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.alternativeMethod :global(.arco-icon) {
+  color: var(--color-text-1);
+  font-size: 15px;
+}
+
+.developmentButton:global(.arco-btn-text) {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--color-text-3);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.developmentButton:global(.arco-btn-text):focus-visible,
+.loginCard:hover .developmentButton:global(.arco-btn-text) {
+  opacity: 0.72;
+}
+
+.footer {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 22px;
+  left: 0;
+  color: rgba(49, 116, 164, 0.58);
+  font-size: 11px;
+  text-align: center;
+}
+
+@media (max-width: 1200px) {
+  .loginCard {
+    right: 5vw;
+    left: auto;
+    transform: translateY(-50%);
+  }
+}
+
+@media (min-width: 801px) and (max-width: 1440px) {
+  .header {
+    top: 28px;
+    right: 40px;
+    left: 36px;
+  }
+
+  .brand {
+    gap: 10px;
+    font-size: 14px;
+  }
+
+  .brandLogo {
+    width: 28px;
+  }
+
+  .loginCard {
+    width: 360px;
+    padding-right: 40px;
+    padding-left: 40px;
+  }
+
+  .footer {
+    bottom: 18px;
+    font-size: 10px;
+  }
+}
+
+@media (min-width: 801px) and (max-height: 900px) {
+  .loginCard {
+    min-height: 560px;
+    padding-top: 48px;
+    padding-bottom: 32px;
+  }
+
+  .cardLogo {
+    width: 42px;
+  }
+
+  .title {
+    margin: 24px 0 28px;
+    font-size: 22px;
+  }
+
+  .divider:global(.arco-divider-horizontal) {
+    margin: 48px 0 18px;
+  }
+}
+
+@media (max-width: 800px) {
+  .page {
+    display: flex;
+    min-height: 720px;
+    align-items: center;
+    justify-content: center;
+    padding: 96px 16px 72px;
+    overflow: auto;
+  }
+
+  .background {
+    object-position: 35% center;
+  }
+
+  .page::after {
+    position: absolute;
+    inset: 0;
+    background: rgba(241, 247, 253, 0.38);
+    content: "";
+  }
+
+  .header {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    left: 24px;
+  }
+
+  .loginCard {
+    position: relative;
+    z-index: 1;
+    top: auto;
+    right: auto;
+    left: auto;
+    width: min(420px, 100%);
+    min-height: 590px;
+    padding: 48px 36px 38px;
+    transform: none;
+  }
+
+  .footer {
+    z-index: 2;
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand span {
+    display: none;
+  }
+
+  .loginCard {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  .alternativeMethods {
+    gap: 16px;
+  }
+}

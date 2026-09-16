@@ -188,7 +188,7 @@ export function ModelsPage() {
               <Select
                 value={source}
                 onChange={setSource}
-                className="w-[140px]"
+                className="w-35"
                 options={[
                   {
                     value: "all",
@@ -215,7 +215,7 @@ export function ModelsPage() {
               <Select
                 value={capability}
                 onChange={setCapability}
-                className="w-[140px]"
+                className="w-35"
                 options={[
                   {
                     value: "all",
