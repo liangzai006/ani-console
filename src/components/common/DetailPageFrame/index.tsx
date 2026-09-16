@@ -24,11 +24,7 @@ type DetailPageFrameProps = {
 
 function buildInitialCollapsed(cardsSignature: string) {
   const cardEntries = JSON.parse(cardsSignature) as Array<[string, boolean]>;
-  const initial = Object.fromEntries(cardEntries) as Record<string, boolean>;
-  const visibleCount = Object.values(initial).filter((value) => !value).length;
-  if (visibleCount > 0) return initial;
-  const [firstCard] = cardEntries;
-  return firstCard ? { ...initial, [firstCard[0]]: false } : initial;
+  return Object.fromEntries(cardEntries) as Record<string, boolean>;
 }
 
 export function DetailPageFrame({
@@ -41,7 +37,7 @@ export function DetailPageFrame({
   cards,
   tabs,
   onBack,
-  leftWidth = 452,
+  leftWidth = 320,
   defaultTabKey,
   activeTabKey: controlledActiveTabKey,
   onTabChange,
@@ -77,12 +73,7 @@ export function DetailPageFrame({
   );
 
   const toggleCard = (key: string) => {
-    setCollapsedCards((current) => {
-      const isCollapsed = Boolean(current[key]);
-      const visibleCount = cards.reduce((count, card) => count + (current[card.key] ? 0 : 1), 0);
-      if (!isCollapsed && visibleCount <= 1) return current;
-      return { ...current, [key]: !isCollapsed };
-    });
+    setCollapsedCards((current) => ({ ...current, [key]: !current[key] }));
   };
 
   const workspaceStyle = { ["--detail-left-width" as string]: `${leftWidth}px` } as CSSProperties;
@@ -213,7 +204,7 @@ export function DetailPageFrame({
               aria-label={leftCollapsed ? "展开详情栏" : "收起详情栏"}
               onClick={() => setLeftCollapsed((current) => !current)}
             >
-              <AliIcon name="left-chevron" size={16} />
+              <AliIcon name="left-chevron" size={16} className={styles.paneToggleIcon} />
             </Button>
           </Tooltip>
         ) : null}

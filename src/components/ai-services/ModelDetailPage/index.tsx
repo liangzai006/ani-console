@@ -198,7 +198,7 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
             key: "recommended-configuration",
             label: "推荐配置",
             content: (
-              <div className="flex min-h-[240px] items-center justify-center">
+              <div className="flex min-h-60 items-center justify-center">
                 <Empty description="推荐配置接口尚未开放" />
               </div>
             ),
@@ -207,7 +207,7 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
             key: "operation-history",
             label: "操作历史",
             content: (
-              <div className="flex min-h-[240px] items-center justify-center">
+              <div className="flex min-h-60 items-center justify-center">
                 <Empty description="暂无模型操作记录" />
               </div>
             ),
