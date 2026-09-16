@@ -4,7 +4,7 @@ import "@/styles/global.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ConfigProvider } from "@arco-design/web-react";
-import { AppRoot } from "@/components/shell/AppRoot";
+import { AppRoot } from "@/app/AppRoot";
 import { showMessage } from "@/lib/feedback";
 
 const ARCO_THEME = { primaryColor: "#0079D3" };

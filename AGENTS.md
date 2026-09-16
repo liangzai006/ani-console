@@ -17,6 +17,7 @@
 - route component 作为路由适配层，负责从当前 `Route` 读取 path/search/loader 输入并转换为普通 props 传给领域页面组件；不强制箭头函数语法，没有路由输入时也只组合页面组件，不在 route 文件内保留查询、业务状态或完整页面实现。
 - 接口契约核对、API 模块与类型落位、公共请求层、幂等、SSE、预签名上传及页面接入统一遵循 `docs/API-INTEGRATION.md`；本文件不重复维护具体对接细则。
 - 时间解析、校验与展示统一使用 `date-fns`，并先封装在 `src/lib` 公共适配层；业务组件、页面和领域 API 不得直接调用 `date-fns` 或原生日期格式化。
+- `src` 下的全局类型、环境类型和第三方模块增强声明统一维护在 `src/vite-env.d.ts`，不得新增 `src/types` 或其他分散的 `.d.ts` 文件；领域类型仍跟随所属 API、组件或功能模块维护。
 - 当前快速迭代阶段不保留自动化测试资产；页面与交互由用户手动验证。
 - 不覆盖或清理用户已有的无关工作区改动。
 
@@ -72,7 +73,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ani-console** (3010 symbols, 7784 relationships, 239 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ani-console** (2912 symbols, 7446 relationships, 231 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
