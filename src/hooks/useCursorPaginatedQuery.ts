@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { QueryErrorNotificationMeta } from "@/types/react-query";
+import type { QueryErrorNotificationMeta } from "@/vite-env";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type CursorPage<T> = {
