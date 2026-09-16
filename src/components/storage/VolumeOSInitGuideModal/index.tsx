@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Empty, Modal, Space, Spin, Typography } from "@arco-design/web-react";
 import { completeVolumeOSInit, getVolumeOSInitGuide } from "@/api/storage/volumes";
 
-import { showMessage } from "@/lib/feedback";
+import { copyToClipboard } from "@/lib/clipboard";
 import { withId } from "@/lib/id";
 
 export function VolumeOSInitGuideModal({
@@ -84,10 +84,7 @@ export function VolumeOSInitGuideModal({
                 <Button
                   type="text"
                   size="small"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(step.command);
-                    showMessage({ type: "success", content: "命令已复制" });
-                  }}
+                  onClick={() => void copyToClipboard(step.command, "命令")}
                 >
                   复制命令
                 </Button>

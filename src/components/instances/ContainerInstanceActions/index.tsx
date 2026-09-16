@@ -17,7 +17,7 @@ import { ContainerInstanceRollbackModal } from "./ContainerInstanceRollbackModal
 import { ContainerInstanceScaleModal } from "./ContainerInstanceScaleModal";
 import { ContainerInstanceStopModal } from "./ContainerInstanceStopModal";
 import { ContainerInstanceUpdateImageModal } from "./ContainerInstanceUpdateImageModal";
-import { showMessage } from "@/lib/feedback";
+import { copyToClipboard } from "@/lib/clipboard";
 
 type Instance = InstanceRecord;
 type LifecycleRequest = InstanceLifecycleRequest;
@@ -150,12 +150,7 @@ export function ContainerInstanceActions({
     }
     if (action === "copy_endpoint") {
       if (!instance.endpoint) return;
-      try {
-        await navigator.clipboard.writeText(instance.endpoint);
-        showMessage({ type: "success", content: "访问地址已复制" });
-      } catch {
-        showMessage({ type: "error", content: "访问地址复制失败" });
-      }
+      await copyToClipboard(instance.endpoint, "访问地址");
       return;
     }
     if (action === "termination_protection") {

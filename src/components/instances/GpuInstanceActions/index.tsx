@@ -19,7 +19,7 @@ import { GpuInstanceRollbackModal } from "./GpuInstanceRollbackModal";
 import { GpuInstanceScaleModal } from "./GpuInstanceScaleModal";
 import { GpuInstanceStopModal } from "./GpuInstanceStopModal";
 import { GpuInstanceUpdateImageModal } from "./GpuInstanceUpdateImageModal";
-import { showMessage } from "@/lib/feedback";
+import { copyToClipboard } from "@/lib/clipboard";
 
 type Instance = InstanceRecord;
 type ModalAction =
@@ -142,12 +142,7 @@ export function GpuInstanceActions({
     }
     if (action === "copy_endpoint") {
       if (!instance.endpoint) return;
-      try {
-        await navigator.clipboard.writeText(instance.endpoint);
-        showMessage({ type: "success", content: "访问地址已复制" });
-      } catch {
-        showMessage({ type: "error", content: "访问地址复制失败" });
-      }
+      await copyToClipboard(instance.endpoint, "访问地址");
       return;
     }
     if (action === "termination_protection") {

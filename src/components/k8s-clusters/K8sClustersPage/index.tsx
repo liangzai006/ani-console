@@ -1,18 +1,7 @@
 import { withId } from "@/lib/id";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Button,
-  Card,
-  Dropdown,
-  Empty,
-  Form,
-  Grid,
-  Input,
-  Menu,
-  Modal,
-  Spin,
-} from "@arco-design/web-react";
+import { Button, Card, Empty, Form, Grid, Input, Modal, Spin } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   createK8sCluster,
@@ -34,8 +23,6 @@ import {
   DetailPagePlaceholder,
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   type ListColumn,
   ListDataTable,
 } from "@/components/common";
@@ -268,45 +255,25 @@ function ClusterList() {
         <ListDataTable
           data={items}
           rowKey={(cluster) => cluster.id ?? cluster.name ?? ""}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, cluster) => (
-                <DataTableRowActions>
-                  <DataTableRowActionButton
-                    loading={downloadKubeconfig.isPending}
-                    onClick={() => downloadKubeconfig.mutate(cluster)}
-                  >
-                    kubeconfig
-                  </DataTableRowActionButton>
-                  <Dropdown
-                    trigger="click"
-                    position="br"
-                    droplist={
-                      <Menu
-                        onClickMenuItem={(key) => {
-                          if (key !== "delete") return;
-                          Modal.confirm({
-                            title: "删除集群",
-                            content: `确定删除「${cluster.name ?? cluster.id}」？此操作不可恢复。`,
-                            onOk: () => deleteCluster.mutateAsync(cluster),
-                          });
-                        }}
-                      >
-                        <Menu.Item key="delete">删除</Menu.Item>
-                      </Menu>
-                    }
-                  >
-                    <DataTableRowActionButton>
-                      更多
-                      <i className="iconfont icon-down-chevron-small" aria-hidden="true" />
-                    </DataTableRowActionButton>
-                  </Dropdown>
-                </DataTableRowActions>
-              ),
+              key: "kubeconfig",
+              label: "kubeconfig",
+              loading: () => downloadKubeconfig.isPending,
+              onClick: (cluster) => downloadKubeconfig.mutate(cluster),
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              onClick: (cluster) =>
+                void Modal.confirm({
+                  title: "删除集群",
+                  content: `确定删除「${cluster.name ?? cluster.id}」？此操作不可恢复。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => deleteCluster.mutateAsync(cluster),
+                }),
             },
           ]}
           rowSelection={{

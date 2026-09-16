@@ -1,5 +1,5 @@
 import { listInstances, type InstanceRecord } from "@/api/instances";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   DataTableNameCell,
@@ -8,11 +8,11 @@ import {
   type ListColumn,
   ListDataTable,
 } from "@/components/common";
-import { SandboxInstanceActions } from "@/components/instances/SandboxInstanceActions";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { SandboxInstanceCreateModal } from "@/components/instances/SandboxInstanceCreateModal";
+import { useSandboxInstanceRowActions } from "./SandboxInstanceRowActions";
 
 type SandboxInstance = InstanceRecord;
 type SandboxStatus = "all" | "running" | "paused" | "expired";
@@ -23,7 +23,6 @@ function sessionStatus(instance: SandboxInstance) {
 }
 
 export function SandboxInstancesPage() {
-  const navigate = useNavigate();
   const [status, setStatus] = useState<SandboxStatus>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
   const [searchText, setSearchText] = useState("");
@@ -50,6 +49,7 @@ export function SandboxInstancesPage() {
         });
       },
     });
+  const { dialogNode, rowActions } = useSandboxInstanceRowActions(refresh);
 
   useEffect(() => setPage(1), [searchField, searchText, setPage, status]);
 
@@ -116,27 +116,6 @@ export function SandboxInstancesPage() {
       width: 180,
       render: (_, item) => formatDateTime(item.created_at),
     },
-    {
-      key: "actions",
-      title: "操作",
-      width: 160,
-      fixed: "right",
-      render: (_, item) => (
-        <SandboxInstanceActions
-          instance={item}
-          display="row"
-          onChanged={refresh}
-          onDeleted={refresh}
-          onTabChange={(tab) =>
-            void navigate({
-              to: "/sandbox-instances/$instanceId",
-              params: { instanceId: item.id },
-              search: { tab },
-            })
-          }
-        />
-      ),
-    },
   ];
 
   return (
@@ -188,6 +167,7 @@ export function SandboxInstancesPage() {
         <ListDataTable
           data={rows}
           columns={columns}
+          rowActions={rowActions}
           loading={query.isFetching}
           emptyIconClassName="icon-Sandbox"
           emptyText="还没有 Sandbox 实例，点击右上角创建"
@@ -207,6 +187,7 @@ export function SandboxInstancesPage() {
         onCancel={() => setCreateVisible(false)}
         onCreated={() => setCreateVisible(false)}
       />
+      {dialogNode}
     </>
   );
 }

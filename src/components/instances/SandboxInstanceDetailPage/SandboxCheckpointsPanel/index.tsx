@@ -174,6 +174,23 @@ export function SandboxCheckpointsPanel({
             loading={checkpoints.isLoading || checkpoints.isFetching}
             pagination={false}
             noDataElement={<Empty description="暂无检查点" />}
+            rowActions={[
+              {
+                key: "restore",
+                label: "恢复",
+                disabled: (item) => item.status !== "available" || !canCheckpoint,
+                onClick: confirmRestore,
+              },
+              {
+                key: "clone",
+                label: "克隆",
+                disabled: (item) => item.status !== "available",
+                onClick: (item) => {
+                  setCloneTarget(item);
+                  setCloneName(`${item.name}-clone`);
+                },
+              },
+            ]}
             columns={[
               {
                 title: "名称",
@@ -205,34 +222,6 @@ export function SandboxCheckpointsPanel({
                 title: "创建时间",
                 width: 180,
                 render: (_, item) => formatDateTime(item.created_at),
-              },
-              {
-                title: "操作",
-                width: 150,
-                fixed: "right",
-                render: (_, item) => (
-                  <Space>
-                    <Button
-                      type="text"
-                      size="small"
-                      disabled={item.status !== "available" || !canCheckpoint}
-                      onClick={() => confirmRestore(item)}
-                    >
-                      恢复
-                    </Button>
-                    <Button
-                      type="text"
-                      size="small"
-                      disabled={item.status !== "available"}
-                      onClick={() => {
-                        setCloneTarget(item);
-                        setCloneName(`${item.name}-clone`);
-                      }}
-                    >
-                      克隆
-                    </Button>
-                  </Space>
-                ),
               },
             ]}
           />

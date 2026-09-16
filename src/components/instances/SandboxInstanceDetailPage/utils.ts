@@ -1,5 +1,3 @@
-import { showMessage } from "@/lib/feedback";
-
 export function formatDurationSeconds(value?: number | null): string {
   if (value == null) return "-";
   if (value <= 0) return "0 秒";
@@ -41,15 +39,6 @@ export function sandboxTimeoutLabel(value?: string | null): string {
   if (value === "pause") return "暂停并保留工作区";
   if (value === "kill") return "销毁实例";
   return value ?? "-";
-}
-
-export async function copySandboxText(value: string, success: string) {
-  try {
-    await navigator.clipboard.writeText(value);
-    showMessage({ type: "success", content: success });
-  } catch {
-    showMessage({ type: "error", content: "复制失败，请手动复制" });
-  }
 }
 
 export function encodeSandboxText(value: string): string {

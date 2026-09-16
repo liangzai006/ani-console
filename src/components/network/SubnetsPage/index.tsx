@@ -15,8 +15,6 @@ import {
   Ipv4CidrInput,
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   type ListColumn,
   StatusTag,
   ListDataTable,
@@ -312,31 +310,19 @@ export function SubnetsPage() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, subnet) => (
-                <DataTableRowActions>
-                  <DataTableRowActionButton
-                    status="danger"
-                    onClick={() =>
-                      Modal.confirm({
-                        title: "删除子网",
-                        content: `确定删除「${subnet.name}」？存在关联实例时无法删除，请先清理相关资源。`,
-                        okButtonProps: {
-                          status: "danger",
-                        },
-                        onOk: () => deleteSubnet.mutateAsync(subnet),
-                      })
-                    }
-                  >
-                    删除
-                  </DataTableRowActionButton>
-                </DataTableRowActions>
-              ),
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              onClick: (subnet) =>
+                void Modal.confirm({
+                  title: "删除子网",
+                  content: `确定删除「${subnet.name}」？存在关联实例时无法删除，请先清理相关资源。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => deleteSubnet.mutateAsync(subnet),
+                }),
             },
           ]}
           loading={subnets.isFetching || vpcs.isFetching}

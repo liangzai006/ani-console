@@ -1,4 +1,4 @@
-import { Dropdown, Menu, Modal, Select, Space } from "@arco-design/web-react";
+import { Modal, Select, Space } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
@@ -8,8 +8,6 @@ import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInfe
 import { ImportModelModal } from "@/components/ai-services/ImportModelModal";
 import {
   DataTableNameCell,
-  DataTableRowActionButton,
-  DataTableRowActions,
   ListPageFrame,
   StatusTag,
   type ListColumn,
@@ -251,67 +249,40 @@ export function ModelsPage() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, item) => (
-                <DataTableRowActions>
-                  <DataTableRowActionButton
-                    disabled={item.status !== "ready"}
-                    onClick={() => setDeployModel(item)}
-                  >
-                    部署
-                  </DataTableRowActionButton>
-                  <Dropdown
-                    trigger="click"
-                    position="br"
-                    droplist={
-                      <Menu>
-                        <Menu.Item key="favorite" disabled title="等待后端开放收藏状态与操作接口">
-                          收藏
-                        </Menu.Item>
-                        <Menu.Item
-                          key="add-version"
-                          disabled
-                          title="等待后端确认测试环境的版本文件上传接口"
-                        >
-                          新增版本
-                        </Menu.Item>
-                        <Menu.Item
-                          key="delete"
-                          disabled={item.status === "deleted" || remove.isPending}
-                          style={{
-                            color: "var(--color-danger-6)",
-                          }}
-                          onClick={() =>
-                            Modal.confirm({
-                              title: "删除模型",
-                              content:
-                                "确定删除「" +
-                                (item.display_name || item.name) +
-                                "」？有关联推理服务时后端将拒绝删除。",
-                              okButtonProps: {
-                                status: "danger",
-                              },
-                              onOk: () => remove.mutateAsync(item),
-                            })
-                          }
-                        >
-                          删除
-                        </Menu.Item>
-                      </Menu>
-                    }
-                  >
-                    <DataTableRowActionButton disabled={remove.isPending}>
-                      更多
-                      <i className="iconfont icon-down-chevron-small ml-1" aria-hidden="true" />
-                    </DataTableRowActionButton>
-                  </Dropdown>
-                </DataTableRowActions>
-              ),
+              key: "deploy",
+              label: "部署",
+              disabled: (item) => item.status !== "ready",
+              onClick: setDeployModel,
+            },
+            {
+              key: "favorite",
+              label: "收藏",
+              disabled: () => true,
+              tooltip: "等待后端开放收藏状态与操作接口",
+              onClick: () => undefined,
+            },
+            {
+              key: "add-version",
+              label: "新增版本",
+              disabled: () => true,
+              tooltip: "等待后端确认测试环境的版本文件上传接口",
+              onClick: () => undefined,
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              disabled: (item) => item.status === "deleted" || remove.isPending,
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "删除模型",
+                  content: `确定删除「${item.display_name || item.name}」？有关联推理服务时后端将拒绝删除。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => remove.mutateAsync(item),
+                }),
             },
           ]}
           loading={models.isFetching}

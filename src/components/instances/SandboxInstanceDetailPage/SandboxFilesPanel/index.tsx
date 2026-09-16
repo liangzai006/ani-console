@@ -21,7 +21,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { DataTable } from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { copySandboxText, encodeSandboxText } from "../utils";
+import { copyToClipboard } from "@/lib/clipboard";
+import { encodeSandboxText } from "../utils";
 
 export function SandboxFilesPanel({
   instanceId,
@@ -155,6 +156,22 @@ export function SandboxFilesPanel({
             loading={files.isLoading || files.isFetching}
             pagination={false}
             noDataElement={<Empty description="当前目录为空" />}
+            rowActions={[
+              {
+                key: "copy-path",
+                label: "复制路径",
+                visible: (item) => item.kind !== "directory",
+                onClick: (item) => void copyToClipboard(item.path, "文件路径"),
+              },
+              {
+                key: "delete",
+                label: "删除",
+                intent: "danger",
+                visible: (item) => item.kind !== "directory",
+                disabled: () => !running || deleteFile.isPending,
+                onClick: confirmDelete,
+              },
+            ]}
             columns={[
               {
                 title: "路径",
@@ -180,36 +197,6 @@ export function SandboxFilesPanel({
                 title: "更新时间",
                 width: 180,
                 render: (_, item) => formatDateTime(item.updated_at),
-              },
-              {
-                title: "操作",
-                width: 180,
-                fixed: "right",
-                render: (_, item) =>
-                  item.kind === "directory" ? (
-                    <Button type="text" size="small" onClick={() => openDirectory(item.path)}>
-                      打开
-                    </Button>
-                  ) : (
-                    <Space>
-                      <Button
-                        type="text"
-                        size="small"
-                        onClick={() => copySandboxText(item.path, "文件路径已复制")}
-                      >
-                        复制路径
-                      </Button>
-                      <Button
-                        type="text"
-                        size="small"
-                        status="danger"
-                        disabled={!running || deleteFile.isPending}
-                        onClick={() => confirmDelete(item)}
-                      >
-                        删除
-                      </Button>
-                    </Space>
-                  ),
               },
             ]}
           />

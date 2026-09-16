@@ -46,3 +46,19 @@
   background: var(--list-primary-soft);
   color: var(--list-primary-hover);
 }
+
+.actionTooltipTrigger {
+  display: inline-flex;
+}
+
+.semanticMenu :global(.arco-menu-item).menuItemDanger:not(:global(.arco-menu-disabled)) {
+  color: var(--color-danger-6);
+}
+
+.semanticMenu :global(.arco-menu-item).menuItemWarning:not(:global(.arco-menu-disabled)) {
+  color: var(--color-warning-6);
+}
+
+.semanticMenu :global(.arco-menu-item).menuItemSuccess:not(:global(.arco-menu-disabled)) {
+  color: var(--color-success-6);
+}

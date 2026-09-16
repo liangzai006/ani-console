@@ -11,7 +11,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
 import { useState } from "react";
-import { applyInstanceLifecycle, getInstance } from "@/api/instances";
+import { applyInstanceLifecycle } from "@/api/instances";
 import {
   deleteVolume as removeVolume,
   getVolume,
@@ -25,7 +25,6 @@ import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnap
 import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
 import { VolumeOSInitGuideModal } from "@/components/storage/VolumeOSInitGuideModal";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
 
 type Volume = StorageVolume;
 type VolumeSnapshot = VolumeSnapshotRecord;
@@ -116,26 +115,6 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const volume = detail.data as Volume;
   const snapshotItems = (snapshots.data?.items ?? []) as VolumeSnapshot[];
   const mounted = Boolean(volume.mount_instance_id);
-  const openMountedInstance = async () => {
-    if (!volume.mount_instance_id) return;
-    try {
-      const instanceId = volume.mount_instance_id;
-      const instance = await qc.fetchQuery({
-        meta: {
-          errorNotification: {
-            id: withId("instance", instanceId),
-            action: "挂载实例加载",
-            fallback: "请求失败，请稍后重试",
-          },
-        },
-        queryKey: ["instance", instanceId],
-        queryFn: () => getInstance(instanceId),
-      });
-      navigateToInstanceDetail(navigate, instance);
-    } catch {
-      return;
-    }
-  };
   const unavailable = (description: string) => <Empty description={description} />;
   const volumeStatus = volume.reason ? (
     <Tooltip content={volume.reason}>
@@ -257,31 +236,6 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                       dataIndex: "route",
                       placeholder: "-",
                     },
-                    {
-                      title: "操作",
-                      render: () => (
-                        <Space>
-                          <Button type="text" size="mini" onClick={openMountedInstance}>
-                            打开
-                          </Button>
-                          <Button
-                            type="text"
-                            size="mini"
-                            status="danger"
-                            loading={detachVolume.isPending}
-                            onClick={() =>
-                              Modal.confirm({
-                                title: "卸载块存储卷",
-                                content: `确定从实例「${volume.mount_name ?? volume.mount_instance_id}」卸载该卷？`,
-                                onOk: () => detachVolume.mutateAsync(volume.mount_instance_id!),
-                              })
-                            }
-                          >
-                            卸载
-                          </Button>
-                        </Space>
-                      ),
-                    },
                   ]}
                   data={
                     mounted
@@ -295,6 +249,22 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                       : []
                   }
                   pagination={false}
+                  rowActions={[
+                    {
+                      key: "detach",
+                      label: "卸载",
+                      intent: "danger",
+                      loading: () => detachVolume.isPending,
+                      onClick: () => {
+                        Modal.confirm({
+                          title: "卸载块存储卷",
+                          content: `确定从实例「${volume.mount_name ?? volume.mount_instance_id}」卸载该卷？`,
+                          okButtonProps: { status: "danger" },
+                          onOk: () => detachVolume.mutateAsync(volume.mount_instance_id!),
+                        });
+                      },
+                    },
+                  ]}
                   noDataElement={<Empty description="该卷当前未挂载实例，点击右上角「挂载」开始" />}
                 />
               </div>

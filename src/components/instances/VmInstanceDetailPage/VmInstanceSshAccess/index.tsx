@@ -1,6 +1,6 @@
 import type { InstanceRecord } from "@/api/instances";
 import { Alert, Button, Descriptions, Space, Tag, Typography } from "@arco-design/web-react";
-import { showMessage } from "@/lib/feedback";
+import { copyToClipboard } from "@/lib/clipboard";
 
 type VmInstance = InstanceRecord;
 
@@ -15,15 +15,6 @@ export function VmInstanceSshAccess({
   const privateIp = instance.network?.private_ip ?? instance.private_ip;
   const available = instance.access?.ssh_available !== false && ssh?.ready === true;
   const command = privateIp && ssh ? `ssh -p ${ssh.port} ${ssh.username}@${privateIp}` : "";
-
-  const copyCommand = async () => {
-    try {
-      await navigator.clipboard.writeText(command);
-      showMessage({ type: "success", content: "SSH 命令已复制" });
-    } catch {
-      showMessage({ type: "error", content: "复制失败，请手动复制 SSH 命令" });
-    }
-  };
 
   return (
     <Space direction="vertical" size={20} className="w-full">
@@ -58,7 +49,11 @@ export function VmInstanceSshAccess({
         </div>
       ) : null}
       <Space>
-        <Button type="primary" disabled={!available || !command} onClick={() => void copyCommand()}>
+        <Button
+          type="primary"
+          disabled={!available || !command}
+          onClick={() => void copyToClipboard(command, "SSH 命令")}
+        >
           复制 SSH 命令
         </Button>
         <Button onClick={onOpenRemote}>改用远程连接</Button>

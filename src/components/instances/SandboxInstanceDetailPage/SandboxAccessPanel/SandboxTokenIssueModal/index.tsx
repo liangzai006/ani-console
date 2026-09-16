@@ -17,7 +17,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
-import { copySandboxText } from "../../utils";
+import { copyToClipboard } from "@/lib/clipboard";
 
 type SandboxInstance = InstanceRecord;
 type SandboxToken = SandboxTokenResponse;
@@ -78,7 +78,7 @@ export function SandboxTokenIssueModal({
       footer={
         token ? (
           <Space>
-            <Button onClick={() => copySandboxText(token.token, "令牌已复制")}>复制令牌</Button>
+            <Button onClick={() => void copyToClipboard(token.token, "令牌")}>复制令牌</Button>
             <Button type="primary" onClick={closeModal}>
               我已复制，关闭
             </Button>

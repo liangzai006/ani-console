@@ -12,17 +12,11 @@ import {
   type RegistryScanResult,
 } from "@/api/registry";
 import { RegistryPushInstructionsModal } from "../RegistryPushInstructionsModal";
-import {
-  ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
-  type ListColumn,
-  ListDataTable,
-} from "@/components/common";
+import { ListPageFrame, type ListColumn, ListDataTable } from "@/components/common";
+import { copyToClipboard } from "@/lib/clipboard";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
-import { showMessage } from "@/lib/feedback";
 
 const PURPOSE_LABELS: Record<RegistryPurpose, string> = {
   container: "容器镜像",
@@ -30,12 +24,6 @@ const PURPOSE_LABELS: Record<RegistryPurpose, string> = {
   sandbox: "沙箱镜像",
   system: "系统镜像",
 };
-
-function copyText(value: string, success: string) {
-  void navigator.clipboard
-    .writeText(value)
-    .then(() => showMessage({ type: "success", content: success }));
-}
 
 function scanSummary(scan: RegistryScanResult) {
   if (scan.status === "not_scanned") return "未扫描";
@@ -190,7 +178,7 @@ export function RegistryPage() {
             placeholder: "搜索镜像名 / Tag / 项目",
           },
           filters: (
-            <Space wrap>
+            <Space>
               <Select
                 value={purpose}
                 onChange={setPurpose}
@@ -233,39 +221,35 @@ export function RegistryPage() {
         <ListDataTable
           data={items}
           rowKey={(item) => `${item.project}/${item.repository}:${item.tag}`}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              width: 200,
-              render: (_value, item) => (
-                <DataTableRowActions>
-                  <DataTableRowActionButton
-                    onClick={() =>
-                      copyText(item.pull_command || `docker pull ${item.image}`, "拉取命令已复制")
-                    }
-                  >
-                    拉取命令
-                  </DataTableRowActionButton>
-                  <DataTableRowActionButton onClick={() => goCreate(item)}>
-                    去创建
-                  </DataTableRowActionButton>
-                  <DataTableRowActionButton
-                    status="danger"
-                    onClick={() =>
-                      Modal.confirm({
-                        title: "删除镜像 Tag",
-                        content: `确定删除 ${item.repository}:${item.tag}？被实例引用时平台会拒绝删除。`,
-                        onOk: () => deleteTag.mutateAsync(item),
-                      })
-                    }
-                  >
-                    删除
-                  </DataTableRowActionButton>
-                </DataTableRowActions>
-              ),
+              key: "copy-pull-command",
+              label: "拉取命令",
+              onClick: (item) =>
+                void copyToClipboard(item.pull_command || `docker pull ${item.image}`, "拉取命令"),
+            },
+            {
+              key: "create",
+              label: "去创建",
+              onClick: goCreate,
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              loading: (item) =>
+                deleteTag.isPending &&
+                deleteTag.variables?.project === item.project &&
+                deleteTag.variables.repository === item.repository &&
+                deleteTag.variables.tag === item.tag,
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "删除镜像 Tag",
+                  content: `确定删除 ${item.repository}:${item.tag}？被实例引用时平台会拒绝删除。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => deleteTag.mutateAsync(item),
+                }),
             },
           ]}
           loading={images.isFetching}

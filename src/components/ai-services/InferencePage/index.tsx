@@ -1,13 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  Dropdown,
-  InputNumber,
-  Menu,
-  Modal,
-  Select,
-  Space,
-  Typography,
-} from "@arco-design/web-react";
+import { InputNumber, Modal, Select, Space, Typography } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -22,8 +14,6 @@ import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInfe
 import {
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   StatusTag,
   type ListColumn,
   ListDataTable,
@@ -281,78 +271,46 @@ export function InferencePage() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, item) => (
-                <DataTableRowActions>
-                  {item.status === "running" ? (
-                    <DataTableRowActionButton
-                      disabled={lifecycle.isPending}
-                      onClick={() =>
-                        lifecycle.mutate({
-                          item,
-                          action: "stop",
-                        })
-                      }
-                    >
-                      停止
-                    </DataTableRowActionButton>
-                  ) : (
-                    <DataTableRowActionButton
-                      disabled={item.status !== "stopped" || lifecycle.isPending}
-                      onClick={() =>
-                        lifecycle.mutate({
-                          item,
-                          action: "start",
-                        })
-                      }
-                    >
-                      启动
-                    </DataTableRowActionButton>
-                  )}
-                  <Dropdown
-                    trigger="click"
-                    position="br"
-                    droplist={
-                      <Menu
-                        onClickMenuItem={(key) => {
-                          if (key === "resize") {
-                            setReplicas(item.replicas);
-                            setResizeTarget(item);
-                            return;
-                          }
-                          if (key !== "delete") return;
-                          Modal.confirm({
-                            title: "删除推理服务",
-                            content: `确定删除「${item.name}」？删除请求提交后将异步停止并清理该服务。`,
-                            okButtonProps: {
-                              status: "danger",
-                            },
-                            onOk: () => remove.mutateAsync(item),
-                          });
-                        }}
-                      >
-                        <Menu.Item key="resize" disabled={item.status !== "running"}>
-                          变配
-                        </Menu.Item>
-                        <Menu.Item key="update-model-binding-policy" disabled>
-                          更新模型绑定策略
-                        </Menu.Item>
-                        <Menu.Item key="delete">删除</Menu.Item>
-                      </Menu>
-                    }
-                  >
-                    <DataTableRowActionButton disabled={lifecycle.isPending}>
-                      更多
-                      <i className="iconfont icon-down-chevron-small ml-1" aria-hidden="true" />
-                    </DataTableRowActionButton>
-                  </Dropdown>
-                </DataTableRowActions>
-              ),
+              key: "lifecycle",
+              label: (item) => (item.status === "running" ? "停止" : "启动"),
+              widthLabel: "启动",
+              disabled: (item) =>
+                (item.status !== "running" && item.status !== "stopped") || lifecycle.isPending,
+              onClick: (item) =>
+                lifecycle.mutate({
+                  item,
+                  action: item.status === "running" ? "stop" : "start",
+                }),
+            },
+            {
+              key: "resize",
+              label: "变配",
+              disabled: (item) => item.status !== "running",
+              onClick: (item) => {
+                setReplicas(item.replicas);
+                setResizeTarget(item);
+              },
+            },
+            {
+              key: "update-model-binding-policy",
+              label: "更新模型绑定策略",
+              disabled: () => true,
+              onClick: () => undefined,
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "删除推理服务",
+                  content: `确定删除「${item.name}」？删除请求提交后将异步停止并清理该服务。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => remove.mutateAsync(item),
+                }),
             },
           ]}
           loading={services.isFetching}

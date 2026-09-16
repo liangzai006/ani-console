@@ -1,6 +1,6 @@
 import { Progress, Typography } from "@arco-design/web-react";
 import type { GpuOccupancyStats } from "@/api/gpu-inventory";
-import { DataTableRowActionButton, ListDataTable, TableSectionHeader } from "@/components/common";
+import { ListDataTable, TableSectionHeader } from "@/components/common";
 
 type ModelInventoryRow = {
   id: string;
@@ -82,14 +82,8 @@ export function GpuModelInventory({
               />
             ),
           },
-          {
-            key: "__actions",
-            title: "操作",
-            render: () => (
-              <DataTableRowActionButton onClick={onCreate}>创建容器</DataTableRowActionButton>
-            ),
-          },
         ]}
+        rowActions={[{ key: "create", label: "创建容器", onClick: onCreate }]}
       />
     </section>
   );

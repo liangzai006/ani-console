@@ -2,7 +2,6 @@ import {
   Breadcrumb,
   Button,
   Empty,
-  Link,
   Space,
   Tag,
   Typography,
@@ -128,42 +127,6 @@ export function ObjectBrowser({
             : "标准"
           : "-",
     },
-    {
-      title: "操作",
-      width: 260,
-      fixed: "right",
-      render: (_, entry) =>
-        entry.parentTarget ? null : (
-          <Space className={styles.actions}>
-            {entry.kind === "object" ? (
-              <>
-                <Link type="text" className="text-nowrap" onClick={() => onCopyPath(entry)}>
-                  复制路径
-                </Link>
-                <Link
-                  type="text"
-                  className="text-nowrap"
-                  disabled={actionLoading}
-                  onClick={() => onDownload(entry)}
-                >
-                  下载
-                </Link>
-                <Link
-                  type="text"
-                  className="text-nowrap"
-                  disabled={actionLoading}
-                  onClick={() => onCopyLink(entry)}
-                >
-                  临时链接
-                </Link>
-              </>
-            ) : null}
-            <Link type="text" status="error" onClick={() => onDelete(entry)}>
-              删除
-            </Link>
-          </Space>
-        ),
-    },
   ];
 
   return (
@@ -203,6 +166,35 @@ export function ObjectBrowser({
         loading={loading}
         pagination={false}
         scroll={{ x: "max-content" }}
+        rowActions={[
+          {
+            key: "copy-path",
+            label: "复制路径",
+            visible: (entry) => !entry.parentTarget && entry.kind === "object",
+            onClick: onCopyPath,
+          },
+          {
+            key: "download",
+            label: "下载",
+            visible: (entry) => !entry.parentTarget && entry.kind === "object",
+            disabled: () => Boolean(actionLoading),
+            onClick: onDownload,
+          },
+          {
+            key: "copy-link",
+            label: "临时链接",
+            visible: (entry) => !entry.parentTarget && entry.kind === "object",
+            disabled: () => Boolean(actionLoading),
+            onClick: onCopyLink,
+          },
+          {
+            key: "delete",
+            label: "删除",
+            intent: "danger",
+            visible: (entry) => !entry.parentTarget,
+            onClick: onDelete,
+          },
+        ]}
         noDataElement={<Empty description="当前文件夹暂无对象，可上传对象或新建文件夹" />}
       />
     </div>

@@ -17,8 +17,6 @@ import {
   Ipv4CidrInput,
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   type ListColumn,
   StatusTag,
   ListDataTable,
@@ -266,31 +264,19 @@ function VpcList() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, vpc) => (
-                <DataTableRowActions>
-                  <DataTableRowActionButton
-                    status="danger"
-                    onClick={() =>
-                      Modal.confirm({
-                        title: "删除 VPC",
-                        content: `确定删除「${vpc.name}」？存在子网或关联资源时无法删除，请先清理相关资源。`,
-                        okButtonProps: {
-                          status: "danger",
-                        },
-                        onOk: () => deleteVpc.mutateAsync(vpc),
-                      })
-                    }
-                  >
-                    删除
-                  </DataTableRowActionButton>
-                </DataTableRowActions>
-              ),
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              onClick: (vpc) =>
+                void Modal.confirm({
+                  title: "删除 VPC",
+                  content: `确定删除「${vpc.name}」？存在子网或关联资源时无法删除，请先清理相关资源。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => deleteVpc.mutateAsync(vpc),
+                }),
             },
           ]}
           loading={vpcs.isFetching}

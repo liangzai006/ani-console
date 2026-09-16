@@ -23,7 +23,6 @@ import {
 } from "@/api/network";
 
 import { formatDateTime } from "@/lib/format";
-import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
 
 type Subnet = NetworkSubnet;
 type Vpc = NetworkVPC;
@@ -173,14 +172,6 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
     })),
   ];
   const relatedResources = summaryItems.filter((item) => item.type === "instance");
-  const openRelated = (item: (typeof summaryItems)[number]) => {
-    if (item.type === "vpc") navigate({ to: "/vpcs/$vpcId", params: { vpcId: item.id } });
-    else if (item.type === "route") navigate({ to: "/routes" });
-    else {
-      const instance = associatedInstances.find((candidate) => candidate.id === item.id);
-      if (instance) navigateToInstanceDetail(navigate, instance);
-    }
-  };
   const relatedResourceColumns: Array<ListColumn<(typeof relatedResources)[number]>> = [
     {
       title: "类型",
@@ -193,15 +184,6 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
       title: "状态",
       width: 120,
       render: (_, item) => <StatusTag status={item.status} />,
-    },
-    {
-      title: "操作",
-      width: 80,
-      render: (_, item) => (
-        <Button type="text" size="mini" onClick={() => openRelated(item)}>
-          打开
-        </Button>
-      ),
     },
   ];
 
@@ -305,17 +287,6 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
                   { title: "下一跳", dataIndex: "nextHop" },
                   { title: "优先级", dataIndex: "priority" },
                   { title: "来源", dataIndex: "source" },
-                  {
-                    title: "操作",
-                    render: (_, item) =>
-                      item.protected ? (
-                        <Typography.Text type="secondary">受保护</Typography.Text>
-                      ) : (
-                        <Button type="text" size="mini" onClick={() => navigate({ to: "/routes" })}>
-                          打开
-                        </Button>
-                      ),
-                  },
                 ]}
                 data={routeRows}
                 loading={routes.isLoading}

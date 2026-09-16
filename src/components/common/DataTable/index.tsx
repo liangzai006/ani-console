@@ -1,12 +1,16 @@
-import { forwardRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { Table, type TableColumnProps, type TableProps } from "@arco-design/web-react";
 import {
-  Button,
-  Table,
-  type ButtonProps,
-  type TableColumnProps,
-  type TableProps,
-} from "@arco-design/web-react";
+  getRowActionsColumnWidth,
+  normalizeDataTableColumns,
+  resolveDataTableScroll,
+} from "./layout";
+import { ConfiguredDataTableRowActions } from "./RowActions";
+import type { RowAction } from "./types";
 import styles from "./index.module.css";
+
+export { DataTableRowActionButton, DataTableRowActions } from "./RowActions";
+export type { RowAction, RowActionIntent } from "./types";
 
 export type ListColumn<T> = TableColumnProps<T>;
 
@@ -30,6 +34,7 @@ export type DataTableProps<T> = {
   noDataElement?: ReactNode;
   tableLabel?: string;
   scroll?: TableProps<T>["scroll"];
+  rowActions?: Array<RowAction<T>>;
 };
 
 export function DataTable<T>({
@@ -43,7 +48,37 @@ export function DataTable<T>({
   noDataElement,
   tableLabel = "数据列表",
   scroll,
+  rowActions,
 }: DataTableProps<T>) {
+  const hasRowActions = Boolean(rowActions?.length);
+  if (
+    hasRowActions &&
+    columns.some((column) => column.key === "__actions" || column.key === "actions")
+  ) {
+    throw new Error("DataTable cannot combine rowActions with a manual actions column");
+  }
+
+  const columnsWithActions: Array<TableColumnProps<T>> =
+    hasRowActions && rowActions
+      ? [
+          ...columns,
+          {
+            key: "__actions",
+            title: "操作",
+            fixed: scroll?.x === false ? undefined : "right",
+            width: getRowActionsColumnWidth(rowActions),
+            render: (_value, record) => (
+              <ConfiguredDataTableRowActions actions={rowActions} record={record} />
+            ),
+          },
+        ]
+      : columns;
+  const resolvedColumns = hasRowActions
+    ? normalizeDataTableColumns(columnsWithActions)
+    : columnsWithActions;
+  const resolvedScroll = hasRowActions
+    ? resolveDataTableScroll(resolvedColumns, scroll)
+    : { x: "max-content" as const, ...scroll };
   const tablePagination =
     pagination === false
       ? false
@@ -64,7 +99,7 @@ export function DataTable<T>({
       className={className}
       aria-label={tableLabel}
       rowKey={rowKey}
-      columns={columns}
+      columns={resolvedColumns}
       data={data}
       loading={loading}
       noDataElement={noDataElement}
@@ -86,14 +121,10 @@ export function DataTable<T>({
       }
       border={false}
       hover
-      scroll={{ x: "max-content", ...scroll }}
+      scroll={resolvedScroll}
       rowSelection={rowSelection}
     />
   );
-}
-
-export function DataTableRowActions({ children }: { children: ReactNode }) {
-  return <div className={styles.rowActions}>{children}</div>;
 }
 
 export function DataTableNameCell({ name, id }: { name: ReactNode; id: ReactNode }) {
@@ -104,14 +135,3 @@ export function DataTableNameCell({ name, id }: { name: ReactNode; id: ReactNode
     </div>
   );
 }
-
-export const DataTableRowActionButton = forwardRef<
-  HTMLButtonElement,
-  ButtonProps & { children: ReactNode }
->(function DataTableRowActionButton({ children, ...buttonProps }, ref) {
-  return (
-    <Button ref={ref} type="text" size="small" {...buttonProps} className={styles.rowActionButton}>
-      {children}
-    </Button>
-  );
-});

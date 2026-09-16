@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Dropdown, Menu, Modal, Select } from "@arco-design/web-react";
+import { Modal, Select } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
 import {
   deleteNetworkLoadBalancer,
@@ -14,8 +14,6 @@ import { CreateLoadBalancerModal } from "@/components/network/CreateLoadBalancer
 import {
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   type ListColumn,
   StatusTag,
   ListDataTable,
@@ -219,66 +217,37 @@ export function LoadBalancersPage() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, item) => (
-                <DataTableRowActions>
-                  <Dropdown
-                    droplist={
-                      <Menu>
-                        <Menu.Item
-                          key="listeners"
-                          onClick={() =>
-                            navigate({
-                              to: "/load-balancers/$loadBalancerId",
-                              params: {
-                                loadBalancerId: item.id,
-                              },
-                            })
-                          }
-                        >
-                          配置监听
-                        </Menu.Item>
-                        <Menu.Item
-                          key="backends"
-                          onClick={() =>
-                            navigate({
-                              to: "/load-balancers/$loadBalancerId",
-                              params: {
-                                loadBalancerId: item.id,
-                              },
-                            })
-                          }
-                        >
-                          绑定后端
-                        </Menu.Item>
-                        <Menu.Item
-                          key="delete"
-                          onClick={() =>
-                            Modal.confirm({
-                              title: "删除负载均衡",
-                              content: `确定删除「${item.name}」？`,
-                              okButtonProps: {
-                                status: "danger",
-                              },
-                              onOk: () => deleteLoadBalancer.mutateAsync(item),
-                            })
-                          }
-                        >
-                          删除
-                        </Menu.Item>
-                      </Menu>
-                    }
-                    trigger="click"
-                  >
-                    <DataTableRowActionButton>更多</DataTableRowActionButton>
-                  </Dropdown>
-                </DataTableRowActions>
-              ),
+              key: "listeners",
+              label: "配置监听",
+              onClick: (item) =>
+                navigate({
+                  to: "/load-balancers/$loadBalancerId",
+                  params: { loadBalancerId: item.id },
+                }),
+            },
+            {
+              key: "backends",
+              label: "绑定后端",
+              onClick: (item) =>
+                navigate({
+                  to: "/load-balancers/$loadBalancerId",
+                  params: { loadBalancerId: item.id },
+                }),
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "删除负载均衡",
+                  content: `确定删除「${item.name}」？`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => deleteLoadBalancer.mutateAsync(item),
+                }),
             },
           ]}
           loading={loadBalancers.isFetching || vpcs.isFetching}

@@ -16,8 +16,6 @@ import { AttachVolumeModal } from "@/components/storage/AttachVolumeModal";
 import {
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   type ListColumn,
   StatusTag,
   ListDataTable,
@@ -224,58 +222,49 @@ export function VolumesPage() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, item) => (
-                <DataTableRowActions>
-                  {isMounted(item) ? (
-                    <DataTableRowActionButton
-                      loading={detachVolume.isPending && detachVolume.variables?.id === item.id}
-                      onClick={() =>
-                        Modal.confirm({
-                          title: "卸载块存储卷",
-                          content: `确定从「${item.mount_name ?? item.mount_instance_id}」卸载「${item.name}」？请先确保实例内没有进程正在读写该卷。`,
-                          okButtonProps: {
-                            status: "danger",
-                          },
-                          onOk: () => detachVolume.mutateAsync(item),
-                        })
-                      }
-                    >
-                      卸载
-                    </DataTableRowActionButton>
-                  ) : (
-                    <DataTableRowActionButton onClick={() => setAttachTarget(item)}>
-                      挂载
-                    </DataTableRowActionButton>
-                  )}
-                  <DataTableRowActionButton onClick={() => setExpandTarget(item)}>
-                    扩容
-                  </DataTableRowActionButton>
-                  <DataTableRowActionButton onClick={() => setSnapshotTarget(item)}>
-                    创建快照
-                  </DataTableRowActionButton>
-                  <DataTableRowActionButton
-                    status="danger"
-                    onClick={() =>
-                      Modal.confirm({
-                        title: "删除块存储卷",
-                        content: `确定删除「${item.name}」？卷被实例挂载时无法删除。`,
-                        okButtonProps: {
-                          status: "danger",
-                        },
-                        onOk: () => deleteVolume.mutateAsync(item),
-                      })
-                    }
-                  >
-                    删除
-                  </DataTableRowActionButton>
-                </DataTableRowActions>
-              ),
+              key: "expand",
+              label: "扩容",
+              onClick: setExpandTarget,
+            },
+            {
+              key: "mount",
+              label: "挂载",
+              visible: (item) => !isMounted(item),
+              onClick: setAttachTarget,
+            },
+            {
+              key: "unmount",
+              label: "卸载",
+              intent: "danger",
+              visible: isMounted,
+              loading: (item) => detachVolume.isPending && detachVolume.variables?.id === item.id,
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "卸载块存储卷",
+                  content: `确定从「${item.mount_name ?? item.mount_instance_id}」卸载「${item.name}」？请先确保实例内没有进程正在读写该卷。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => detachVolume.mutateAsync(item),
+                }),
+            },
+            {
+              key: "snapshot",
+              label: "创建快照",
+              onClick: setSnapshotTarget,
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "删除块存储卷",
+                  content: `确定删除「${item.name}」？卷被实例挂载时无法删除。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => deleteVolume.mutateAsync(item),
+                }),
             },
           ]}
           loading={volumes.isFetching}

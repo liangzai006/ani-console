@@ -21,12 +21,12 @@ import {
 } from "@/api/ai-services/inference";
 
 import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
+import { copyToClipboard } from "@/lib/clipboard";
 import { formatDateTime } from "@/lib/format";
 import { InferenceInvocationTest } from "./InferenceInvocationTest";
 import { InferenceLogs } from "./InferenceLogs";
 import { InferencePolicies } from "./InferencePolicies";
 import { InferenceRelatedResources } from "./InferenceRelatedResources";
-import { showMessage } from "@/lib/feedback";
 import { withId } from "@/lib/id";
 
 type LifecycleAction = "start" | "stop" | "restart";
@@ -317,14 +317,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
                     <Button
                       type="text"
                       size="mini"
-                      onClick={() => {
-                        void navigator.clipboard
-                          .writeText(invocationUrl)
-                          .then(() => showMessage({ type: "success", content: "调用地址已复制" }))
-                          .catch(() =>
-                            showMessage({ type: "error", content: "复制失败，请手动复制调用地址" }),
-                          );
-                      }}
+                      onClick={() => void copyToClipboard(invocationUrl, "调用地址")}
                     >
                       复制
                     </Button>
@@ -399,7 +392,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
             key: "monitoring",
             label: "监控",
             content: (
-              <div className="flex min-h-[240px] items-center justify-center">
+              <div className="flex min-h-60 items-center justify-center">
                 <Empty description="暂无监控数据，监控能力尚未开放" />
               </div>
             ),
@@ -413,7 +406,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
             key: "events",
             label: "事件",
             content: (
-              <div className="flex min-h-[240px] items-center justify-center">
+              <div className="flex min-h-60 items-center justify-center">
                 <Empty description="暂无服务事件，事件查询能力尚未开放" />
               </div>
             ),

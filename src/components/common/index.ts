@@ -9,7 +9,13 @@ export {
   DataTableRowActionButton,
   DataTableRowActions,
 } from "./DataTable";
-export type { DataTableProps, ListColumn, ListPagination } from "./DataTable";
+export type {
+  DataTableProps,
+  ListColumn,
+  ListPagination,
+  RowAction,
+  RowActionIntent,
+} from "./DataTable";
 export { ListDataTable } from "./ListDataTable";
 export type { ListDataTableProps } from "./ListDataTable";
 export { ListPageFrame } from "./ListPageFrame";

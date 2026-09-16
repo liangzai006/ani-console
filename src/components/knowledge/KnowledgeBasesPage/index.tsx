@@ -8,8 +8,6 @@ import { CreateKnowledgeBaseModal } from "@/components/knowledge/CreateKnowledge
 import {
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   type ListColumn,
   StatusTag,
   ListDataTable,
@@ -190,46 +188,29 @@ export function KnowledgeBasesPage() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, item) => (
-                <DataTableRowActions>
-                  <DataTableRowActionButton
-                    onClick={() =>
-                      navigate({
-                        to: "/kb/$kbId",
-                        params: {
-                          kbId: item.id,
-                        },
-                        search: {
-                          tab: "chat",
-                        },
-                      })
-                    }
-                  >
-                    问答
-                  </DataTableRowActionButton>
-                  <DataTableRowActionButton
-                    status="danger"
-                    onClick={() =>
-                      Modal.confirm({
-                        title: "删除知识库",
-                        content: `确定删除「${item.name}」？知识库及其文档将不可恢复。`,
-                        okButtonProps: {
-                          status: "danger",
-                        },
-                        onOk: () => remove.mutateAsync(item),
-                      })
-                    }
-                  >
-                    删除
-                  </DataTableRowActionButton>
-                </DataTableRowActions>
-              ),
+              key: "chat",
+              label: "问答",
+              onClick: (item) =>
+                navigate({
+                  to: "/kb/$kbId",
+                  params: { kbId: item.id },
+                  search: { tab: "chat" },
+                }),
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "删除知识库",
+                  content: `确定删除「${item.name}」？知识库及其文档将不可恢复。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => remove.mutateAsync(item),
+                }),
             },
           ]}
           loading={query.isFetching}

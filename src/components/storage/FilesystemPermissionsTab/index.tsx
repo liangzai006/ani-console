@@ -49,7 +49,6 @@ export function FilesystemPermissionsTab() {
             { title: "读写权限", dataIndex: "access" },
             { title: "用户权限", dataIndex: "squash" },
             { title: "描述", dataIndex: "description" },
-            { title: "操作", render: () => "-" },
           ]}
           data={rules}
           pagination={false}

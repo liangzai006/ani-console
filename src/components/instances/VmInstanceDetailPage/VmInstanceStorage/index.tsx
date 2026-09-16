@@ -1,13 +1,7 @@
 import type { InstanceRecord } from "@/api/instances";
 import { Empty, Space } from "@arco-design/web-react";
 import { useState, type ReactNode } from "react";
-import {
-  DataTable,
-  DataTableRowActionButton,
-  DataTableRowActions,
-  StatusTag,
-  TableSectionHeader,
-} from "@/components/common";
+import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
 import { InstanceStorage, type MountKind } from "@/components/instances/InstanceStorage";
 import { VmInstanceRollbackModal } from "@/components/instances/VmInstanceActions/VmInstanceRollbackModal";
 import { formatDateTime } from "@/lib/format";
@@ -54,6 +48,14 @@ export function VmInstanceStorage({
             rowKey="id"
             pagination={false}
             noDataElement={<Empty description="暂无快照" />}
+            rowActions={[
+              {
+                key: "rollback",
+                label: "回滚",
+                disabled: (snapshot) => !canRollback || snapshot.state !== "ready",
+                onClick: setRollbackSnapshot,
+              },
+            ]}
             columns={[
               { title: "快照名称", dataIndex: "name" },
               { title: "快照 ID", dataIndex: "id" },
@@ -71,22 +73,6 @@ export function VmInstanceStorage({
                 title: "状态说明",
                 dataIndex: "reason",
                 placeholder: "-",
-              },
-              {
-                key: "__actions",
-                title: "操作",
-                fixed: "right",
-                width: 100,
-                render: (_, snapshot) => (
-                  <DataTableRowActions>
-                    <DataTableRowActionButton
-                      disabled={!canRollback || snapshot.state !== "ready"}
-                      onClick={() => setRollbackSnapshot(snapshot)}
-                    >
-                      回滚
-                    </DataTableRowActionButton>
-                  </DataTableRowActions>
-                ),
               },
             ]}
           />

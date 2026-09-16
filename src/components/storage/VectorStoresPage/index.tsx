@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dropdown, Menu, Modal, Tooltip } from "@arco-design/web-react";
+import { Modal } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
 import {
   deleteVectorStore,
@@ -13,8 +13,6 @@ import { CreateVectorStoreModal } from "@/components/storage/CreateVectorStoreMo
 import {
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   type ListColumn,
   StatusTag,
   ListDataTable,
@@ -225,88 +223,52 @@ export function VectorStoresPage() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, item) => (
-                <DataTableRowActions>
-                  <Tooltip content={item.state === "ready" ? undefined : "仅可用状态支持检索测试"}>
-                    <span>
-                      <DataTableRowActionButton
-                        disabled={item.state !== "ready"}
-                        onClick={() =>
-                          navigate({
-                            to: "/vector-stores/$vectorStoreId",
-                            params: {
-                              vectorStoreId: item.id,
-                            },
-                            search: {
-                              tab: "search",
-                            },
-                          })
-                        }
-                      >
-                        检索测试
-                      </DataTableRowActionButton>
-                    </span>
-                  </Tooltip>
-                  <Dropdown
-                    trigger="click"
-                    position="br"
-                    droplist={
-                      <Menu>
-                        <Menu.Item
-                          key="rebuild-index"
-                          disabled={
-                            item.state !== "ready" ||
-                            (rebuildIndex.isPending && rebuildIndex.variables?.id === item.id)
-                          }
-                          title={item.state === "ready" ? undefined : "仅可用状态支持重建索引"}
-                          onClick={() =>
-                            Modal.confirm({
-                              title: "重建索引",
-                              content: `确定重建「${item.name}」的索引？重建期间检索能力可能暂时受影响。`,
-                              onOk: () => rebuildIndex.mutateAsync(item),
-                            })
-                          }
-                        >
-                          {rebuildIndex.isPending && rebuildIndex.variables?.id === item.id
-                            ? "重建中..."
-                            : "重建索引"}
-                        </Menu.Item>
-                        <Menu.Item
-                          key="delete"
-                          style={{
-                            color: "var(--color-danger-6)",
-                          }}
-                          disabled={Boolean(item.knowledge_base_ref)}
-                          title={item.knowledge_base_ref ? "请先解除知识库关联后再删除" : undefined}
-                          onClick={() =>
-                            Modal.confirm({
-                              title: "删除向量存储",
-                              content: `确定删除「${item.name}」？其中的向量数据将不可恢复。`,
-                              okButtonProps: {
-                                status: "danger",
-                              },
-                              onOk: () => remove.mutateAsync(item),
-                            })
-                          }
-                        >
-                          删除
-                        </Menu.Item>
-                      </Menu>
-                    }
-                  >
-                    <DataTableRowActionButton>
-                      更多
-                      <i className="iconfont icon-down-chevron-small" aria-hidden="true" />
-                    </DataTableRowActionButton>
-                  </Dropdown>
-                </DataTableRowActions>
-              ),
+              key: "search",
+              label: "检索测试",
+              disabled: (item) => item.state !== "ready",
+              tooltip: (item) => (item.state === "ready" ? undefined : "仅可用状态支持检索测试"),
+              onClick: (item) =>
+                navigate({
+                  to: "/vector-stores/$vectorStoreId",
+                  params: { vectorStoreId: item.id },
+                  search: { tab: "search" },
+                }),
+            },
+            {
+              key: "rebuild-index",
+              label: (item) =>
+                rebuildIndex.isPending && rebuildIndex.variables?.id === item.id
+                  ? "重建中..."
+                  : "重建索引",
+              widthLabel: "重建索引",
+              disabled: (item) =>
+                item.state !== "ready" ||
+                (rebuildIndex.isPending && rebuildIndex.variables?.id === item.id),
+              tooltip: (item) => (item.state === "ready" ? undefined : "仅可用状态支持重建索引"),
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "重建索引",
+                  content: `确定重建「${item.name}」的索引？重建期间检索能力可能暂时受影响。`,
+                  onOk: () => rebuildIndex.mutateAsync(item),
+                }),
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              disabled: (item) => Boolean(item.knowledge_base_ref),
+              tooltip: (item) =>
+                item.knowledge_base_ref ? "请先解除知识库关联后再删除" : undefined,
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "删除向量存储",
+                  content: `确定删除「${item.name}」？其中的向量数据将不可恢复。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => remove.mutateAsync(item),
+                }),
             },
           ]}
           loading={stores.isFetching}

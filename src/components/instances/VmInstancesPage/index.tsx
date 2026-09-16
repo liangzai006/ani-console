@@ -12,8 +12,8 @@ import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { InstanceOperationPoller } from "../InstanceOperationPoller";
-import { VmInstanceActions } from "../VmInstanceActions";
 import { VmInstanceCreateModal } from "../VmInstanceCreateModal";
+import { useVmInstanceRowActions } from "./VmInstanceRowActions";
 
 type VmInstance = InstanceRecord;
 type StatusFilter = "all" | VmInstance["state"];
@@ -60,6 +60,10 @@ export function VmInstancesPage() {
   useEffect(() => {
     setPage(1);
   }, [searchText, setPage, status]);
+
+  const { dialogNode, rowActions } = useVmInstanceRowActions({
+    onOperationSubmitted: setOperationId,
+  });
 
   const items = query.data?.items ?? [];
   const statusTabs = [
@@ -119,14 +123,6 @@ export function VmInstancesPage() {
       title: "创建时间",
       render: (_, row) => formatDateTime(row.created_at),
     },
-    {
-      key: "__actions",
-      title: "操作",
-      fixed: "right",
-      render: (_, row) => (
-        <VmInstanceActions instance={row} onOperationSubmitted={setOperationId} />
-      ),
-    },
   ];
 
   return (
@@ -185,6 +181,7 @@ export function VmInstancesPage() {
         <ListDataTable
           data={items}
           columns={columns}
+          rowActions={rowActions}
           loading={query.isFetching}
           emptyIconClassName="icon-yunzhuji"
           emptyText={
@@ -211,6 +208,7 @@ export function VmInstancesPage() {
           refresh();
         }}
       />
+      {dialogNode}
     </>
   );
 }

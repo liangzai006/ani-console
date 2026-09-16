@@ -2,19 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Button, Form, Input, Modal, Select, Space, Typography } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { getRegistryPushInstructions, type RegistryProject } from "@/api/registry";
-import { showMessage } from "@/lib/feedback";
+import { copyToClipboard } from "@/lib/clipboard";
 import { withId } from "@/lib/id";
 
 interface RegistryPushInstructionsModalProps {
   visible: boolean;
   projects?: RegistryProject[];
   onCancel: () => void;
-}
-
-function copyCommand(command: string) {
-  void navigator.clipboard
-    .writeText(command)
-    .then(() => showMessage({ type: "success", content: "命令已复制" }));
 }
 
 export function RegistryPushInstructionsModal({
@@ -75,7 +69,11 @@ export function RegistryPushInstructionsModal({
             <div key={item.label} className="rounded border border-app-border-strong p-3">
               <div className="mb-2 flex items-center justify-between">
                 <Typography.Text className="font-medium">{item.label}</Typography.Text>
-                <Button size="mini" type="text" onClick={() => copyCommand(item.command)}>
+                <Button
+                  size="mini"
+                  type="text"
+                  onClick={() => void copyToClipboard(item.command, "命令")}
+                >
                   复制
                 </Button>
               </div>

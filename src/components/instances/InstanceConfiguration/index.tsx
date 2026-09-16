@@ -1,6 +1,6 @@
 import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { Button, Descriptions, Empty, Modal, Space, Typography } from "@arco-design/web-react";
+import { Descriptions, Empty, Modal, Space, Typography } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { DataTable, TableSectionHeader } from "@/components/common";
@@ -80,29 +80,26 @@ export function InstanceConfiguration({
           rowKey="reference"
           pagination={false}
           noDataElement={<Empty description="暂无绑定密钥" />}
+          rowActions={[
+            {
+              key: "unbind",
+              label: "解绑",
+              intent: "danger",
+              loading: (secret) =>
+                unbindSecret.isPending && unbindSecret.variables === secret.reference,
+              onClick: (secret) => {
+                Modal.confirm({
+                  title: "解绑密钥",
+                  content: `确定解绑「${secret.id}」？`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => unbindSecret.mutateAsync(secret.reference),
+                });
+              },
+            },
+          ]}
           columns={[
             { title: "密钥", dataIndex: "id" },
             { title: "用途", dataIndex: "purpose" },
-            {
-              title: "操作",
-              width: 100,
-              render: (_, secret) => (
-                <Button
-                  type="text"
-                  status="danger"
-                  loading={unbindSecret.isPending && unbindSecret.variables === secret.reference}
-                  onClick={() =>
-                    Modal.confirm({
-                      title: "解绑密钥",
-                      content: `确定解绑「${secret.id}」？`,
-                      onOk: () => unbindSecret.mutateAsync(secret.reference),
-                    })
-                  }
-                >
-                  解绑
-                </Button>
-              ),
-            },
           ]}
         />
       </section>

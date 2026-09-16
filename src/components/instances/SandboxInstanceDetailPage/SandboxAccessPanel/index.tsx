@@ -22,7 +22,7 @@ import { useState } from "react";
 import { DataTable } from "@/components/common";
 import { getImageDisplayName } from "@/lib/render";
 import { SandboxTokenIssueModal } from "./SandboxTokenIssueModal";
-import { copySandboxText } from "../utils";
+import { copyToClipboard } from "@/lib/clipboard";
 
 type SandboxInstance = InstanceRecord;
 type SandboxStatus = NonNullable<SandboxInstanceStatus>;
@@ -152,6 +152,23 @@ export function SandboxAccessPanel({
             rowKey={(item) => String(item.port)}
             pagination={false}
             noDataElement={<Empty description="暂无预览端口" />}
+            rowActions={[
+              {
+                key: "copy",
+                label: "复制",
+                disabled: (item) => !item.preview_url,
+                onClick: (item) => {
+                  if (item.preview_url) void copyToClipboard(item.preview_url, "预览地址");
+                },
+              },
+              {
+                key: "close",
+                label: "关闭",
+                intent: "danger",
+                disabled: () => closePort.isPending,
+                onClick: (item) => confirmClosePort(item.port),
+              },
+            ]}
             columns={[
               {
                 title: "端口",
@@ -188,34 +205,6 @@ export function SandboxAccessPanel({
                   ) : (
                     "-"
                   ),
-              },
-              {
-                title: "操作",
-                width: 150,
-                fixed: "right",
-                render: (_, item) => (
-                  <Space>
-                    <Button
-                      type="text"
-                      size="small"
-                      disabled={!item.preview_url}
-                      onClick={() =>
-                        item.preview_url && copySandboxText(item.preview_url, "预览地址已复制")
-                      }
-                    >
-                      复制
-                    </Button>
-                    <Button
-                      type="text"
-                      size="small"
-                      status="danger"
-                      disabled={closePort.isPending}
-                      onClick={() => confirmClosePort(item.port)}
-                    >
-                      关闭
-                    </Button>
-                  </Space>
-                ),
               },
             ]}
           />

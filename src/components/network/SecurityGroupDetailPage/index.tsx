@@ -38,7 +38,6 @@ import {
   type SecurityGroupRuleResource,
 } from "@/components/network/SecurityGroupRuleModal";
 import { formatDateTime } from "@/lib/format";
-import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
 
 type SecurityGroup = NetworkSecurityGroup;
 type SecurityGroupBinding = NetworkSecurityGroupBinding;
@@ -51,8 +50,6 @@ type RelatedResource = {
   kind: "VPC" | "实例";
   name: string;
   status: string;
-  route: "/vpcs/$vpcId" | "instance";
-  instance?: Instance;
 };
 
 export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: string }) {
@@ -193,7 +190,6 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
           kind: "VPC",
           name: parentVpc.name,
           status: parentVpc.state,
-          route: "/vpcs/$vpcId",
         },
       ]
     : [];
@@ -205,17 +201,8 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
       kind: "实例",
       name: instance?.name ?? binding.target_id,
       status: instance?.state ?? "-",
-      route: "instance",
-      instance,
     };
   });
-  const openRelatedResource = (resource: RelatedResource) => {
-    if (resource.route === "instance") {
-      if (resource.instance) navigateToInstanceDetail(navigate, resource.instance);
-      return;
-    }
-    navigate({ to: resource.route, params: { vpcId: resource.id } });
-  };
   const renderRelatedList = (items: RelatedResource[], emptyText: string) => (
     <List<RelatedResource>
       loading={bindings.isLoading || instances.isLoading || vpc.isLoading}
@@ -229,14 +216,6 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
             {resource.id}
           </Typography.Text>
           <StatusTag status={resource.status} />
-          <Button
-            className="shrink-0"
-            type="text"
-            size="mini"
-            onClick={() => openRelatedResource(resource)}
-          >
-            打开
-          </Button>
         </div>
       )}
     />
@@ -257,6 +236,27 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
         </div>
         <DataTable<SecurityGroupRuleResource>
           loading={rules.isLoading}
+          rowActions={[
+            {
+              key: "edit",
+              label: "编辑",
+              onClick: (rule) => setRuleEditor({ direction, rule }),
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              loading: (rule) => deleteRule.isPending && deleteRule.variables?.id === rule.id,
+              onClick: (rule) => {
+                Modal.confirm({
+                  title: "删除规则",
+                  content: "确定删除这条安全组规则？",
+                  okButtonProps: { status: "danger" },
+                  onOk: () => deleteRule.mutateAsync(rule),
+                });
+              },
+            },
+          ]}
           columns={[
             { title: "优先级", dataIndex: "priority" },
             {
@@ -280,35 +280,6 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
               title: "描述",
               dataIndex: "description",
               placeholder: "-",
-            },
-            {
-              title: "操作",
-              render: (_, rule) => (
-                <Space>
-                  <Button
-                    type="text"
-                    size="mini"
-                    onClick={() => setRuleEditor({ direction, rule })}
-                  >
-                    编辑
-                  </Button>
-                  <Button
-                    type="text"
-                    size="mini"
-                    status="danger"
-                    onClick={() =>
-                      Modal.confirm({
-                        title: "删除规则",
-                        content: "确定删除这条安全组规则？",
-                        okButtonProps: { status: "danger" },
-                        onOk: () => deleteRule.mutateAsync(rule),
-                      })
-                    }
-                  >
-                    删除
-                  </Button>
-                </Space>
-              ),
             },
           ]}
           data={directionRules}

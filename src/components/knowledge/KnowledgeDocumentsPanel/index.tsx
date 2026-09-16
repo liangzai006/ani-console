@@ -12,8 +12,6 @@ import {
 import {
   DataTable,
   DataTableNameCell,
-  DataTableRowActionButton,
-  DataTableRowActions,
   TableSectionHeader,
   type ListColumn,
 } from "@/components/common";
@@ -184,48 +182,6 @@ export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action
       width: 180,
       render: (_, item) => formatDateTime(item.created_at),
     },
-    {
-      title: "操作",
-      width: 140,
-      fixed: "right",
-      render: (_, item) => (
-        <DataTableRowActions>
-          {(item.chunk_count ?? 0) > 0 ? (
-            <DataTableRowActionButton onClick={() => setPreviewDocument(item)}>
-              查看分块
-            </DataTableRowActionButton>
-          ) : null}
-          {item.parse_status === "failed" ? (
-            <DataTableRowActionButton
-              loading={reparse.isPending && reparse.variables?.id === item.id}
-              onClick={() =>
-                Modal.confirm({
-                  title: "重新解析文档",
-                  content: `重新解析将覆盖「${item.file_name}」现有分块，确定继续？`,
-                  onOk: () => reparse.mutateAsync(item),
-                })
-              }
-            >
-              重新解析
-            </DataTableRowActionButton>
-          ) : null}
-          <DataTableRowActionButton
-            status="danger"
-            loading={remove.isPending && remove.variables?.id === item.id}
-            onClick={() =>
-              Modal.confirm({
-                title: "删除文档",
-                content: `确定删除「${item.file_name}」？`,
-                okButtonProps: { status: "danger" },
-                onOk: () => remove.mutateAsync(item),
-              })
-            }
-          >
-            删除
-          </DataTableRowActionButton>
-        </DataTableRowActions>
-      ),
-    },
   ];
 
   return (
@@ -238,6 +194,41 @@ export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action
         noDataElement={<Empty description="还没有文档，上传后可进行解析和问答" />}
         tableLabel="知识库文档与解析列表"
         scroll={{ x: 1370 }}
+        rowActions={[
+          {
+            key: "view-chunks",
+            label: "查看分块",
+            visible: (item) => (item.chunk_count ?? 0) > 0,
+            onClick: setPreviewDocument,
+          },
+          {
+            key: "reparse",
+            label: "重新解析",
+            visible: (item) => item.parse_status === "failed",
+            loading: (item) => reparse.isPending && reparse.variables?.id === item.id,
+            onClick: (item) => {
+              Modal.confirm({
+                title: "重新解析文档",
+                content: `重新解析将覆盖「${item.file_name}」现有分块，确定继续？`,
+                onOk: () => reparse.mutateAsync(item),
+              });
+            },
+          },
+          {
+            key: "delete",
+            label: "删除",
+            intent: "danger",
+            loading: (item) => remove.isPending && remove.variables?.id === item.id,
+            onClick: (item) => {
+              Modal.confirm({
+                title: "删除文档",
+                content: `确定删除「${item.file_name}」？`,
+                okButtonProps: { status: "danger" },
+                onOk: () => remove.mutateAsync(item),
+              });
+            },
+          },
+        ]}
         pagination={{
           page,
           pageSize,

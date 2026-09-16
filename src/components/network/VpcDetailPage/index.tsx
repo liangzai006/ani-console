@@ -27,7 +27,6 @@ import {
 } from "@/api/network";
 
 import { formatDateTime } from "@/lib/format";
-import { navigateToInstanceDetail } from "@/lib/instance-detail-route";
 
 type Vpc = NetworkVPC;
 type Subnet = NetworkSubnet;
@@ -41,13 +40,6 @@ type RelatedResource = {
   name: string;
   status: string;
   group: "网络" | "算力";
-  route:
-    | "/subnets"
-    | "/security-groups"
-    | "/routes"
-    | "/load-balancers/$loadBalancerId"
-    | "instance";
-  instance?: Instance;
 };
 
 export function VpcDetailPage({ vpcId }: { vpcId: string }) {
@@ -165,7 +157,6 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
       name: item.name,
       status: item.state,
       group: "网络" as const,
-      route: "/subnets" as const,
     })),
     ...associatedSecurityGroups.map((item) => ({
       id: item.id,
@@ -173,7 +164,6 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
       name: item.name,
       status: item.state,
       group: "网络" as const,
-      route: "/security-groups" as const,
     })),
     ...vpcRoutes.map((item) => ({
       id: item.id,
@@ -181,7 +171,6 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
       name: item.description || item.destination_cidr,
       status: "-",
       group: "网络" as const,
-      route: "/routes" as const,
     })),
     ...associatedLoadBalancers.map((item) => ({
       id: item.id,
@@ -189,7 +178,6 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
       name: item.name,
       status: item.state,
       group: "网络" as const,
-      route: "/load-balancers/$loadBalancerId" as const,
     })),
     ...associatedInstances.map((item) => ({
       id: item.id,
@@ -197,8 +185,6 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
       name: item.name,
       status: item.state,
       group: "算力" as const,
-      route: "instance" as const,
-      instance: item,
     })),
   ];
   const networkRelatedResources = relatedResources.filter((resource) => resource.group === "网络");
@@ -209,19 +195,6 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
     routes.isLoading ||
     loadBalancers.isLoading ||
     instances.isLoading;
-  const openRelatedResource = (resource: RelatedResource) => {
-    if (resource.route === "instance") {
-      if (resource.instance) {
-        navigateToInstanceDetail(navigate, resource.instance);
-      }
-      return;
-    }
-    if (resource.route === "/load-balancers/$loadBalancerId") {
-      navigate({ to: resource.route, params: { loadBalancerId: resource.id } });
-      return;
-    }
-    navigate({ to: resource.route });
-  };
   const relatedResourceColumns: Array<ListColumn<RelatedResource>> = [
     {
       title: "类型",
@@ -234,15 +207,6 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
       title: "状态",
       width: 120,
       render: (_, resource) => <StatusTag status={resource.status} />,
-    },
-    {
-      title: "操作",
-      width: 80,
-      render: (_, resource) => (
-        <Button type="text" size="mini" onClick={() => openRelatedResource(resource)}>
-          打开
-        </Button>
-      ),
     },
   ];
 

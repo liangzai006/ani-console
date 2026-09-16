@@ -2,7 +2,6 @@ import { listInstances, type InstanceRecord } from "@/api/instances";
 import { Link } from "@tanstack/react-router";
 import { Tooltip } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
-import { GpuInstanceActions } from "@/components/instances/GpuInstanceActions";
 import { GpuContainerCreateModal } from "@/components/instances/GpuContainerCreateModal";
 import {
   DataTableNameCell,
@@ -14,6 +13,7 @@ import {
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
+import { useGpuInstanceRowActions } from "./GpuInstanceRowActions";
 
 type Instance = InstanceRecord;
 type StatusFilter = "all" | "running" | "stopped" | "queued" | "failed";
@@ -49,6 +49,7 @@ export function GpuInstancesPage() {
   useEffect(() => {
     setPage(1);
   }, [keyword, searchField, status, setPage]);
+  const { dialogNode, rowActions } = useGpuInstanceRowActions(refresh);
 
   const allItems = (query.data?.items ?? []) as Instance[];
   const items = allItems;
@@ -127,12 +128,6 @@ export function GpuInstancesPage() {
       title: "创建时间",
       render: (_, row) => formatDateTime(row.created_at),
     },
-    {
-      key: "actions",
-      title: "操作",
-      fixed: "right",
-      render: (_, row) => <GpuInstanceActions instance={row} onChanged={refresh} />,
-    },
   ];
 
   return (
@@ -184,6 +179,7 @@ export function GpuInstancesPage() {
         <ListDataTable
           data={items}
           columns={columns}
+          rowActions={rowActions}
           loading={query.isFetching}
           emptyIconClassName="icon-GPU"
           emptyText={
@@ -210,6 +206,7 @@ export function GpuInstancesPage() {
           refresh();
         }}
       />
+      {dialogNode}
     </>
   );
 }

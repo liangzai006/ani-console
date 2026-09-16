@@ -14,8 +14,6 @@ import { CreateRouteModal } from "@/components/network/CreateRouteModal";
 import {
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   type ListColumn,
   ListDataTable,
 } from "@/components/common";
@@ -217,31 +215,20 @@ export function NetworkRoutesPage() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, item) => (
-                <DataTableRowActions>
-                  <DataTableRowActionButton
-                    status="danger"
-                    onClick={() =>
-                      Modal.confirm({
-                        title: "删除路由",
-                        content: `确定删除「${item.description?.trim() || item.destination_cidr}」？删除后该转发规则将立即失效。`,
-                        okButtonProps: {
-                          status: "danger",
-                        },
-                        onOk: () => deleteRoute.mutateAsync(item),
-                      })
-                    }
-                  >
-                    删除
-                  </DataTableRowActionButton>
-                </DataTableRowActions>
-              ),
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              loading: (item) => deleteRoute.isPending && deleteRoute.variables?.id === item.id,
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "删除路由",
+                  content: `确定删除「${item.description?.trim() || item.destination_cidr}」？删除后该转发规则将立即失效。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => deleteRoute.mutateAsync(item),
+                }),
             },
           ]}
           loading={routes.isFetching || vpcs.isFetching}

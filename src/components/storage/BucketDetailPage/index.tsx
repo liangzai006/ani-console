@@ -33,8 +33,8 @@ import { uploadStorageObjectFile } from "@/api/storage/objects";
 
 import { CreateLifecycleRuleModal } from "@/components/storage/CreateLifecycleRuleModal";
 import { ObjectBrowser } from "@/components/storage/ObjectBrowser";
+import { copyToClipboard } from "@/lib/clipboard";
 import { formatBytes, formatDateTime } from "@/lib/format";
-import { showMessage } from "@/lib/feedback";
 import { withId } from "@/lib/id";
 
 type Bucket = StorageBucketRecord;
@@ -180,7 +180,7 @@ export function BucketDetailPage({
         channel: "notification",
         id: "object-link",
         action: "操作",
-        successText: "临时链接已复制",
+        successText: "临时链接已生成",
         errorFallback: "请求失败",
       },
     },
@@ -198,7 +198,7 @@ export function BucketDetailPage({
         window.open(data.download_url, "_blank", "noopener,noreferrer");
         return;
       }
-      await navigator.clipboard.writeText(data.download_url);
+      await copyToClipboard(data.download_url, "临时链接");
     },
   });
   const updateAcl = useMutation({
@@ -275,11 +275,6 @@ export function BucketDetailPage({
   };
   const aclLabel = bucketInfo.acl === "tenant_read" ? "租户内读" : "私有";
   const storageClassLabel = bucketInfo.storage_class === "infrequent_access" ? "低频" : "标准";
-  const copyText = async (text: string, successMessage: string) => {
-    await navigator.clipboard.writeText(text);
-    showMessage({ type: "success", content: successMessage });
-  };
-
   return (
     <>
       <DetailPageFrame
@@ -351,7 +346,7 @@ export function BucketDetailPage({
                 }
                 onNavigate={navigatePrefix}
                 onCreateFolder={() => setFolderVisible(true)}
-                onCopyPath={(entry) => copyText(entry.key, "对象路径已复制")}
+                onCopyPath={(entry) => copyToClipboard(entry.key, "对象路径")}
                 onDownload={(entry) => generateLink.mutateAsync({ entry, action: "download" })}
                 onCopyLink={(entry) => generateLink.mutateAsync({ entry, action: "copy" })}
                 onDelete={(entry) =>
@@ -439,42 +434,34 @@ export function BucketDetailPage({
                         </Tag>
                       ),
                     },
-                    {
-                      title: "操作",
-                      render: (_, row) => (
-                        <Space>
-                          <Button
-                            type="text"
-                            size="mini"
-                            onClick={() => {
-                              setEditingRule(row);
-                              setRuleVisible(true);
-                            }}
-                          >
-                            编辑
-                          </Button>
-                          <Button
-                            type="text"
-                            size="mini"
-                            status="danger"
-                            onClick={() =>
-                              Modal.confirm({
-                                title: "删除生命周期规则",
-                                content: `确定删除规则「${row.name}」？`,
-                                okButtonProps: { status: "danger" },
-                                onOk: () => deleteRule.mutateAsync(row),
-                              })
-                            }
-                          >
-                            删除
-                          </Button>
-                        </Space>
-                      ),
-                    },
                   ]}
                   data={ruleItems}
                   loading={lifecycleRules.isLoading}
                   pagination={false}
+                  rowActions={[
+                    {
+                      key: "edit",
+                      label: "编辑",
+                      onClick: (row) => {
+                        setEditingRule(row);
+                        setRuleVisible(true);
+                      },
+                    },
+                    {
+                      key: "delete",
+                      label: "删除",
+                      intent: "danger",
+                      loading: (row) => deleteRule.isPending && deleteRule.variables?.id === row.id,
+                      onClick: (row) => {
+                        Modal.confirm({
+                          title: "删除生命周期规则",
+                          content: `确定删除规则「${row.name}」？`,
+                          okButtonProps: { status: "danger" },
+                          onOk: () => deleteRule.mutateAsync(row),
+                        });
+                      },
+                    },
+                  ]}
                   noDataElement={<Empty description="暂无生命周期规则，点击「添加规则」开始" />}
                 />
               </Space>
@@ -502,7 +489,7 @@ export function BucketDetailPage({
                             <Button
                               type="text"
                               size="mini"
-                              onClick={() => copyText(bucketInfo.endpoint!, "Endpoint 已复制")}
+                              onClick={() => void copyToClipboard(bucketInfo.endpoint!, "Endpoint")}
                             >
                               复制
                             </Button>

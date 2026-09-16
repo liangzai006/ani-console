@@ -1,13 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Tooltip } from "@arco-design/web-react";
 import { useState } from "react";
 import { listBuckets, type StorageBucketRecord } from "@/api/storage/buckets";
 import { CreateBucketModal } from "@/components/storage/CreateBucketModal";
 import {
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   type ListColumn,
   ListDataTable,
 } from "@/components/common";
@@ -141,69 +138,45 @@ export function ObjectsPage() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, item) => (
-                <DataTableRowActions>
-                  <DataTableRowActionButton
-                    onClick={() =>
-                      navigate({
-                        to: "/objects/$bucketId",
-                        params: {
-                          bucketId: item.id,
-                        },
-                        search: {
-                          tab: "objects",
-                        },
-                      })
-                    }
-                  >
-                    浏览器
-                  </DataTableRowActionButton>
-                  <DataTableRowActionButton
-                    onClick={() =>
-                      navigate({
-                        to: "/objects/$bucketId",
-                        params: {
-                          bucketId: item.id,
-                        },
-                        search: {
-                          tab: "objects",
-                          action: "upload",
-                        },
-                      })
-                    }
-                  >
-                    上传
-                  </DataTableRowActionButton>
-                  <DataTableRowActionButton
-                    onClick={() =>
-                      navigate({
-                        to: "/objects/$bucketId",
-                        params: {
-                          bucketId: item.id,
-                        },
-                        search: {
-                          tab: "permissions",
-                        },
-                      })
-                    }
-                  >
-                    改权限
-                  </DataTableRowActionButton>
-                  <Tooltip content="ANI 当前未提供删除存储桶接口">
-                    <span>
-                      <DataTableRowActionButton status="danger" disabled>
-                        删除
-                      </DataTableRowActionButton>
-                    </span>
-                  </Tooltip>
-                </DataTableRowActions>
-              ),
+              key: "browse",
+              label: "浏览器",
+              onClick: (item) =>
+                navigate({
+                  to: "/objects/$bucketId",
+                  params: { bucketId: item.id },
+                  search: { tab: "objects" },
+                }),
+            },
+            {
+              key: "upload",
+              label: "上传",
+              onClick: (item) =>
+                navigate({
+                  to: "/objects/$bucketId",
+                  params: { bucketId: item.id },
+                  search: { tab: "objects", action: "upload" },
+                }),
+            },
+            {
+              key: "permissions",
+              label: "改权限",
+              onClick: (item) =>
+                navigate({
+                  to: "/objects/$bucketId",
+                  params: { bucketId: item.id },
+                  search: { tab: "permissions" },
+                }),
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              disabled: () => true,
+              tooltip: "ANI 当前未提供删除存储桶接口",
+              onClick: () => undefined,
             },
           ]}
           loading={buckets.isFetching}

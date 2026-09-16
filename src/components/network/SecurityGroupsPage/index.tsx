@@ -15,8 +15,6 @@ import { CreateSecurityGroupModal } from "@/components/network/CreateSecurityGro
 import {
   DataTableNameCell,
   ListPageFrame,
-  DataTableRowActionButton,
-  DataTableRowActions,
   type ListColumn,
   ListDataTable,
 } from "@/components/common";
@@ -241,37 +239,25 @@ export function SecurityGroupsPage() {
       >
         <ListDataTable
           data={items}
-          columns={[
-            ...columns,
+          columns={columns}
+          rowActions={[
             {
-              key: "__actions",
-              title: "操作",
-              fixed: "right",
-              render: (_value, item) => (
-                <DataTableRowActions>
-                  <DataTableRowActionButton
-                    loading={copySecurityGroup.isPending}
-                    onClick={() => copySecurityGroup.mutate(item)}
-                  >
-                    复制
-                  </DataTableRowActionButton>
-                  <DataTableRowActionButton
-                    status="danger"
-                    onClick={() =>
-                      Modal.confirm({
-                        title: "删除安全组",
-                        content: `确定删除「${item.name}」？安全组被实例使用时无法删除，请先解除关联。`,
-                        okButtonProps: {
-                          status: "danger",
-                        },
-                        onOk: () => deleteSecurityGroup.mutateAsync(item),
-                      })
-                    }
-                  >
-                    删除
-                  </DataTableRowActionButton>
-                </DataTableRowActions>
-              ),
+              key: "copy",
+              label: "复制",
+              loading: () => copySecurityGroup.isPending,
+              onClick: (item) => copySecurityGroup.mutate(item),
+            },
+            {
+              key: "delete",
+              label: "删除",
+              intent: "danger",
+              onClick: (item) =>
+                void Modal.confirm({
+                  title: "删除安全组",
+                  content: `确定删除「${item.name}」？安全组被实例使用时无法删除，请先解除关联。`,
+                  okButtonProps: { status: "danger" },
+                  onOk: () => deleteSecurityGroup.mutateAsync(item),
+                }),
             },
           ]}
           loading={securityGroups.isFetching || vpcs.isFetching}

@@ -64,7 +64,3 @@
   color: var(--color-text-3);
   font-size: 20px;
 }
-
-.actions {
-  justify-content: flex-end;
-}
