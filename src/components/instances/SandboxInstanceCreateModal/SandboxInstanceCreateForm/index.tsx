@@ -13,10 +13,9 @@ import { SandboxConfirmStep } from "./SandboxConfirmStep";
 import { SandboxResourceStep } from "./SandboxResourceStep";
 import { SandboxRuntimeStep } from "./SandboxRuntimeStep";
 import { SandboxTemplateStep } from "./SandboxTemplateStep";
-import { showMessage } from "@/lib/feedback";
 import { validateForm } from "@/lib/form";
 
-const STEP_TITLES = ["名称", "模板", "规格", "会话与网络", "确认"];
+const STEP_TITLES = ["基础配置", "资源配置", "摘要信息"];
 
 type Props = {
   visible: boolean;
@@ -77,10 +76,10 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
   const next = async () => {
     try {
       await validateForm(form);
-      setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
     } catch {
-      showMessage({ type: "warning", content: "请先完成当前步骤的必填项" });
+      return;
     }
+    setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
   };
 
   return (
@@ -88,7 +87,6 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
       title="创建 Sandbox"
       visible={visible}
       onCancel={onCancel}
-      maskClosable={!submitting}
       unmountOnExit
       footer={
         <Space>
@@ -109,7 +107,7 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
             }
             loading={submitting}
             disabled={
-              (step === 1 && (templates.isLoading || templates.isError || !items.length)) ||
+              (step === 0 && (templates.isLoading || templates.isError || !items.length)) ||
               (step === STEP_TITLES.length - 1 && !selectedTemplate)
             }
           >
@@ -117,11 +115,16 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
           </Button>
         </Space>
       }
-      style={{ width: 780 }}
+      style={{ width: 820 }}
     >
-      <div className="flex h-[508px] min-h-0 flex-col">
-        <WizardSteps current={step + 1} items={STEP_TITLES} style={{ marginBottom: 24 }} />
-        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+      <div className="flex h-116.75 max-h-[calc(100vh-192px)] min-h-0 flex-col overflow-hidden">
+        <WizardSteps
+          current={step + 1}
+          items={STEP_TITLES}
+          size="small"
+          className="mx-auto w-full max-w-160 shrink-0"
+        />
+        <div className="min-h-0 flex-1 overflow-y-auto pt-7 pr-1 overscroll-contain scrollbar-gutter-stable">
           <Form<FormValues>
             form={form}
             layout="vertical"
@@ -143,19 +146,17 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
                 >
                   <Input allowClear placeholder="例如：agent-dev-sandbox" />
                 </Form.Item>
+                <SandboxTemplateStep
+                  templates={items}
+                  loading={templates.isLoading}
+                  error={templates.isError}
+                  onChange={selectTemplate}
+                />
+                <SandboxResourceStep />
               </>
             ) : null}
-            {step === 1 ? (
-              <SandboxTemplateStep
-                templates={items}
-                loading={templates.isLoading}
-                error={templates.isError}
-                onChange={selectTemplate}
-              />
-            ) : null}
-            {step === 2 ? <SandboxResourceStep /> : null}
-            {step === 3 ? <SandboxRuntimeStep values={values} /> : null}
-            {step === 4 && selectedTemplate ? (
+            {step === 1 ? <SandboxRuntimeStep values={values} /> : null}
+            {step === 2 && selectedTemplate ? (
               <SandboxConfirmStep values={values} template={selectedTemplate} />
             ) : null}
           </Form>

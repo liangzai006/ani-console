@@ -216,6 +216,7 @@ export interface InstanceListResponse {
 
 export interface CreateInstanceInput {
   name: string;
+  description?: string | null;
   kind: "vm" | "container" | "gpu_container" | "sandbox";
   instance_type?: "vm" | "container" | "gpu_container" | "sandbox";
   image?: string | null;

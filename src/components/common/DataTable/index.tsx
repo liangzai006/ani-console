@@ -50,9 +50,12 @@ export function DataTable<T>({
   scroll,
   rowActions,
 }: DataTableProps<T>) {
-  const hasRowActions = Boolean(rowActions?.length);
+  const hasConfiguredRowActions = Boolean(rowActions?.length);
+  const hasRowActions = Boolean(
+    rowActions?.some((action) => data.some((record) => action.visible?.(record) !== false)),
+  );
   if (
-    hasRowActions &&
+    hasConfiguredRowActions &&
     columns.some((column) => column.key === "__actions" || column.key === "actions")
   ) {
     throw new Error("DataTable cannot combine rowActions with a manual actions column");
@@ -64,9 +67,9 @@ export function DataTable<T>({
           ...columns,
           {
             key: "__actions",
-            title: "操作",
+            title: null,
             fixed: scroll?.x === false ? undefined : "right",
-            width: getRowActionsColumnWidth(rowActions),
+            width: getRowActionsColumnWidth(),
             render: (_value, record) => (
               <ConfiguredDataTableRowActions actions={rowActions} record={record} />
             ),

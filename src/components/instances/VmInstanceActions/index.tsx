@@ -1,11 +1,11 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceLifecycleRequest, InstanceRecord } from "@/api/instances";
 import { Button, Dropdown, Menu, Space, Tooltip } from "@arco-design/web-react";
-import { IconDown } from "@arco-design/web-react/icon";
+import { IconDown, IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
+import { openVmInstanceRemoteWindow } from "@/lib/instances";
 
 import { VmInstanceAttachFilesystemModal } from "./VmInstanceAttachFilesystemModal";
 import { VmInstanceAttachVolumeModal } from "./VmInstanceAttachVolumeModal";
@@ -47,7 +47,6 @@ export function VmInstanceActions({
   onOperationSubmitted: (operationId: string) => void;
   display?: "row" | "detail";
 }) {
-  const navigate = useNavigate();
   const [modalAction, setModalAction] = useState<ModalAction>();
   const [stopVisible, setStopVisible] = useState(false);
   const [rebuildVisible, setRebuildVisible] = useState(false);
@@ -127,14 +126,19 @@ export function VmInstanceActions({
   const detachableVolumes = (instance.volumes ?? []).filter(
     (volume) => volume.kind !== "root_disk" && Boolean(volume.source_ref?.trim()),
   );
+  const lifecycleDisabled = canStart ? busy : !running || busy || protectedInstance;
+  const lifecycleAction = () => {
+    if (canStart) start.mutate();
+    else setStopVisible(true);
+  };
 
   const handleMoreAction = (action: string) => {
+    if (action === "lifecycle") {
+      lifecycleAction();
+      return;
+    }
     if (action === "console") {
-      void navigate({
-        to: "/vm-instances/$instanceId",
-        params: { instanceId: instance.id },
-        search: { tab: "terminal" },
-      });
+      openVmInstanceRemoteWindow(instance.id);
       return;
     }
     if (action === "restart") {
@@ -156,11 +160,6 @@ export function VmInstanceActions({
     setModalAction(action as ModalAction);
   };
 
-  const lifecycleDisabled = canStart ? busy : !running || busy || protectedInstance;
-  const lifecycleAction = () => {
-    if (canStart) start.mutate();
-    else setStopVisible(true);
-  };
   const lifecycleButton =
     display === "row" ? (
       <DataTableRowActionButton
@@ -190,6 +189,11 @@ export function VmInstanceActions({
     );
   const moreMenu = (
     <Menu onClickMenuItem={handleMoreAction}>
+      {display === "detail" ? (
+        <Menu.Item key="lifecycle" disabled={lifecycleDisabled}>
+          {canStart ? "启动" : "关机"}
+        </Menu.Item>
+      ) : null}
       <Menu.Item key="restart" disabled={!running || busy}>
         重启
       </Menu.Item>
@@ -218,7 +222,7 @@ export function VmInstanceActions({
         {protectedInstance ? "关闭终止保护" : "开启终止保护"}
       </Menu.Item>
       <Menu.Item key="console" disabled={!consoleAvailable}>
-        远程连接
+        打开控制台
       </Menu.Item>
       <Menu.Item
         key="delete"
@@ -244,11 +248,16 @@ export function VmInstanceActions({
         </DataTableRowActions>
       ) : (
         <Space>
-          {lifecycleControl}
+          <Button
+            type="primary"
+            disabled={!consoleAvailable}
+            onClick={() => openVmInstanceRemoteWindow(instance.id)}
+          >
+            打开控制台
+          </Button>
           <Dropdown trigger="click" position="br" droplist={moreMenu}>
-            <Button disabled={busy}>
-              更多操作
-              <IconDown className="ml-1 text-xs" />
+            <Button disabled={busy} aria-label="更多操作" title="更多操作">
+              <IconMoreVertical />
             </Button>
           </Dropdown>
         </Space>

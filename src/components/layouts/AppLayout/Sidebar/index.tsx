@@ -10,6 +10,7 @@ export const SIDEBAR_COLLAPSED_WIDTH = 56;
 
 interface SidebarProps {
   items: MenuItem[] | null;
+  label: string;
   activePathname: string;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
@@ -99,7 +100,13 @@ function renderItems(items: MenuItem[], collapsed: boolean, depth = 0) {
   });
 }
 
-export function Sidebar({ items, activePathname, collapsed, onCollapsedChange }: SidebarProps) {
+export function Sidebar({
+  items,
+  label,
+  activePathname,
+  collapsed,
+  onCollapsedChange,
+}: SidebarProps) {
   const allLeafKeys = useMemo(() => (items ? collectLeafPaths(items) : []), [items]);
   const selectedKeys = useMemo(
     () => matchSideMenuKey(activePathname, allLeafKeys),
@@ -126,11 +133,7 @@ export function Sidebar({ items, activePathname, collapsed, onCollapsedChange }:
 
   return (
     <aside
-      className={clsx(
-        "sidebar-shell",
-        collapsed && "is-collapsed",
-        hoverExpanded && "is-hover-expanded",
-      )}
+      className={clsx("sidebar", collapsed && "is-collapsed", hoverExpanded && "is-hover-expanded")}
       style={{
         width: menuCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
         background: "var(--color-bg-2)",
@@ -145,7 +148,7 @@ export function Sidebar({ items, activePathname, collapsed, onCollapsedChange }:
         <span className="sidebar-domain-icon">
           <AliIcon name="navigation" size={24} />
         </span>
-        <span className="sidebar-domain-label">计算产品与服务</span>
+        <span className="sidebar-domain-label">{label}</span>
       </div>
       <div className="sidebar-menu-region">
         {items && items.length > 0 ? (

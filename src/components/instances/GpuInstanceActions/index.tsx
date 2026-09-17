@@ -1,7 +1,7 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
 import { Button, Dropdown, Menu, Space, Tooltip } from "@arco-design/web-react";
-import { IconDown } from "@arco-design/web-react/icon";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -120,6 +120,11 @@ export function GpuInstanceActions({
   const canStart = instance.state === "stopped";
 
   const handleMenuAction = async (action: string) => {
+    if (action === "lifecycle") {
+      if (canStart) start.mutate();
+      else if (!stopBlockedByTerminationProtection) setStopVisible(true);
+      return;
+    }
     if (action === "stop") {
       if (!stopBlockedByTerminationProtection) setStopVisible(true);
       return;
@@ -158,6 +163,11 @@ export function GpuInstanceActions({
 
   const moreMenu = (
     <Menu onClickMenuItem={handleMenuAction}>
+      {display === "detail" ? (
+        <Menu.Item key="lifecycle" disabled={canStart ? actionPending : stopDisabled}>
+          {canStart ? "启动" : "停止"}
+        </Menu.Item>
+      ) : null}
       <Menu.Item key="restart" disabled={instance.state !== "running" || actionPending}>
         重启
       </Menu.Item>
@@ -254,15 +264,16 @@ export function GpuInstanceActions({
           </Dropdown>
         </DataTableRowActions>
       ) : display === "detail" ? (
-        <Space>
-          {lifecycleControl}
-          <Dropdown trigger="click" position="br" droplist={moreMenu}>
-            <Button disabled={actionPending} loading={actionPending}>
-              更多操作
-              <IconDown className="ml-1 text-xs" />
-            </Button>
-          </Dropdown>
-        </Space>
+        <Dropdown trigger="click" position="br" droplist={moreMenu}>
+          <Button
+            disabled={actionPending}
+            loading={actionPending}
+            aria-label="更多操作"
+            title="更多操作"
+          >
+            <IconMoreVertical />
+          </Button>
+        </Dropdown>
       ) : display === "release" ? (
         <Space>
           <Button size="small" disabled={busy} onClick={() => setModalAction("update_image")}>

@@ -1,5 +1,6 @@
 import {
   Button,
+  Collapse,
   Descriptions,
   Form,
   Input,
@@ -8,10 +9,9 @@ import {
   Select,
   Space,
   Switch,
-  Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { applyInstanceLifecycle, createInstance } from "@/api/instances";
 import { listNetworkSecurityGroups, listNetworkSubnets, listNetworkVpcs } from "@/api/network";
 import { listRegistryImages } from "@/api/registry";
@@ -19,24 +19,29 @@ import { listSecrets } from "@/api/secrets";
 import { listFilesystems } from "@/api/storage/filesystems";
 import { listVolumes } from "@/api/storage/volumes";
 import { ImageNameText, WizardSteps } from "@/components/common";
+import {
+  ContainerSubnetField,
+  ContainerVpcField,
+} from "@/components/instances/ContainerNetworkFields";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
+import { ContainerStorageFields } from "@/components/instances/ContainerStorageFields";
+import {
+  type ContainerStorageFormValues,
+  hasDuplicateContainerMountPath,
+} from "@/components/instances/ContainerStorageFields/storage";
 import {
   CPU_INSTANCE_COMPUTE_SPECS,
   DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
   type CpuInstanceComputeSpec,
 } from "@/lib/instances";
 
-import { ContainerStorageFields } from "./ContainerStorageFields";
-import {
-  type ContainerStorageFormValues,
-  hasDuplicateContainerMountPath,
-} from "./ContainerStorageFields/storage";
 import styles from "./index.module.css";
 import { showMessage } from "@/lib/feedback";
 import { withId } from "@/lib/id";
 import { validateForm } from "@/lib/form";
 
-const STEP_TITLES = ["基本信息", "资源规格", "网络", "存储与挂载", "配置与密钥", "确认"];
+const STEP_TITLES = ["基础配置", "资源配置", "摘要信息"];
+const CollapseItem = Collapse.Item;
 
 type Item = {
   id: string;
@@ -46,6 +51,7 @@ type Item = {
 };
 type FormValues = ContainerStorageFormValues & {
   name: string;
+  description: string;
   image: string;
   compute_spec: CpuInstanceComputeSpec;
   replicas: number;
@@ -60,6 +66,7 @@ type FormValues = ContainerStorageFormValues & {
 
 const INITIAL_VALUES: FormValues = {
   name: "",
+  description: "",
   image: "",
   compute_spec: DEFAULT_CPU_INSTANCE_COMPUTE_SPEC,
   replicas: 1,
@@ -99,6 +106,7 @@ function buildCreateBody(values: FormValues) {
 
   return {
     name: values.name.trim(),
+    description: values.description.trim() || null,
     kind: "container" as const,
     instance_type: "container" as const,
     image: values.image,
@@ -199,11 +207,6 @@ export function ContainerInstanceCreateModal({
     enabled: visible,
     queryFn: async () => (await listRegistryImages({ limit: 100, purpose: "container" })).items,
   });
-  const availableSubnets = useMemo(
-    () => subnets.data?.filter((item) => !values.vpc_id || item.vpc_id === values.vpc_id) ?? [],
-    [subnets.data, values.vpc_id],
-  );
-
   useEffect(() => {
     if (!visible) return;
     form.setFieldsValue(INITIAL_VALUES);
@@ -244,22 +247,22 @@ export function ContainerInstanceCreateModal({
     onCancel();
   };
   const next = async () => {
-    if (step === 3 && hasDuplicateContainerMountPath(values)) {
+    if (step === 1 && hasDuplicateContainerMountPath(values)) {
       showMessage({ type: "warning", content: "请为块存储卷和文件存储设置不同的挂载路径" });
       return;
     }
     try {
       await validateForm(form);
-      setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
     } catch {
-      showMessage({ type: "warning", content: "请先完成当前步骤的必填项" });
+      return;
     }
+    setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
   };
   const itemName = (items: Item[] | undefined, id: string) =>
     (items?.find((item) => item.id === id)?.name ?? id) || "未选择";
   const submit = () => {
     if (hasDuplicateContainerMountPath(values)) {
-      setStep(3);
+      setStep(1);
       showMessage({ type: "warning", content: "请为块存储卷和文件存储设置不同的挂载路径" });
       return;
     }
@@ -271,7 +274,6 @@ export function ContainerInstanceCreateModal({
       title="创建容器实例"
       visible={visible}
       onCancel={close}
-      maskClosable={!create.isPending}
       unmountOnExit
       footer={
         <Space>
@@ -295,7 +297,7 @@ export function ContainerInstanceCreateModal({
       style={{ width: 820 }}
     >
       <div className={styles.form}>
-        <WizardSteps current={step + 1} items={STEP_TITLES} style={{ marginBottom: 24 }} />
+        <WizardSteps current={step + 1} items={STEP_TITLES} size="small" className={styles.steps} />
         <div className={styles.content}>
           <Form<FormValues>
             form={form}
@@ -306,9 +308,6 @@ export function ContainerInstanceCreateModal({
           >
             {step === 0 ? (
               <>
-                <Typography.Paragraph type="secondary">
-                  设置实例名称并选择运行镜像。
-                </Typography.Paragraph>
                 <Form.Item
                   field="name"
                   label="名称"
@@ -329,42 +328,38 @@ export function ContainerInstanceCreateModal({
                     ))}
                   </Select>
                 </Form.Item>
+                <Space className={styles.row} size={16} align="start">
+                  <InstanceComputeSpecSelect field="compute_spec" profile="cpu" />
+                  <Form.Item field="replicas" label="副本数" rules={[{ required: true }]}>
+                    <InputNumber min={1} precision={0} />
+                  </Form.Item>
+                </Space>
+                <Form.Item field="description" label="描述">
+                  <Input.TextArea
+                    autoSize={{ minRows: 3, maxRows: 6 }}
+                    placeholder="请输入容器实例描述（可选）"
+                    allowClear
+                  />
+                </Form.Item>
               </>
             ) : null}
             {step === 1 ? (
               <>
-                <InstanceComputeSpecSelect field="compute_spec" profile="cpu" />
-                <Form.Item field="replicas" label="副本数" rules={[{ required: true }]}>
-                  <InputNumber min={1} precision={0} />
-                </Form.Item>
-              </>
-            ) : null}
-            {step === 2 ? (
-              <>
-                <Form.Item field="vpc_id" label="VPC">
-                  <Select
-                    allowClear
+                <Space className={styles.row} size={16} align="start">
+                  <ContainerVpcField
+                    items={vpcs.data ?? []}
                     loading={vpcs.isLoading}
-                    onChange={() => form.setFieldValue("subnet_id", "")}
+                    allowClear
                     placeholder="使用默认网络"
-                  >
-                    {vpcs.data?.map((item) => (
-                      <Select.Option key={item.id} value={item.id}>
-                        {item.name ?? item.id}
-                        {item.cidr ? ` · ${item.cidr}` : ""}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-                <Form.Item field="subnet_id" label="子网">
-                  <Select allowClear disabled={!values.vpc_id} loading={subnets.isLoading}>
-                    {availableSubnets.map((item) => (
-                      <Select.Option key={item.id} value={item.id}>
-                        {item.name ?? item.id}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
+                    onChange={() => form.setFieldValue("subnet_id", "")}
+                  />
+                  <ContainerSubnetField
+                    items={subnets.data ?? []}
+                    vpcId={values.vpc_id}
+                    loading={subnets.isLoading}
+                    allowClear
+                  />
+                </Space>
                 <Form.Item field="security_group_id" label="安全组">
                   <Select allowClear loading={securityGroups.isLoading}>
                     {securityGroups.data?.map((item) => (
@@ -374,51 +369,52 @@ export function ContainerInstanceCreateModal({
                     ))}
                   </Select>
                 </Form.Item>
+
+                <ContainerStorageFields
+                  values={values}
+                  volumes={volumes.data}
+                  filesystems={filesystems.data}
+                />
+
+                <Collapse className={styles.advancedOptions}>
+                  <CollapseItem header="运行配置" name="runtime-options">
+                    <Form.Item field="env_text" label="环境变量">
+                      <Input.TextArea
+                        placeholder={"KEY=VALUE\nAPP_ENV=production"}
+                        autoSize={{ minRows: 4, maxRows: 8 }}
+                      />
+                    </Form.Item>
+                    <Form.Item field="secret_id" label="密钥">
+                      <Select allowClear placeholder="不绑定密钥">
+                        {secrets.data?.map((item) => (
+                          <Select.Option key={item.id} value={item.id}>
+                            {item.name ?? item.id}
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                    {values.secret_id ? (
+                      <Form.Item field="secret_binding_type" label="密钥注入方式">
+                        <Select>
+                          <Select.Option value="env">环境变量</Select.Option>
+                          <Select.Option value="file">文件</Select.Option>
+                        </Select>
+                      </Form.Item>
+                    ) : null}
+                    <Form.Item field="auto_start" label="自动启动" triggerPropName="checked">
+                      <Switch />
+                    </Form.Item>
+                  </CollapseItem>
+                </Collapse>
               </>
             ) : null}
-            {step === 3 ? (
-              <ContainerStorageFields
-                values={values}
-                volumes={volumes.data}
-                filesystems={filesystems.data}
-              />
-            ) : null}
-            {step === 4 ? (
-              <>
-                <Form.Item field="env_text" label="环境变量">
-                  <Input.TextArea
-                    placeholder={"KEY=VALUE\nAPP_ENV=production"}
-                    autoSize={{ minRows: 4, maxRows: 8 }}
-                  />
-                </Form.Item>
-                <Form.Item field="secret_id" label="密钥">
-                  <Select allowClear placeholder="不绑定密钥">
-                    {secrets.data?.map((item) => (
-                      <Select.Option key={item.id} value={item.id}>
-                        {item.name ?? item.id}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-                {values.secret_id ? (
-                  <Form.Item field="secret_binding_type" label="密钥注入方式">
-                    <Select>
-                      <Select.Option value="env">环境变量</Select.Option>
-                      <Select.Option value="file">文件</Select.Option>
-                    </Select>
-                  </Form.Item>
-                ) : null}
-                <Form.Item field="auto_start" label="自动启动" triggerPropName="checked">
-                  <Switch />
-                </Form.Item>
-              </>
-            ) : null}
-            {step === 5 ? (
+            {step === 2 ? (
               <Descriptions
                 column={1}
                 border
                 data={[
                   { label: "名称", value: values.name },
+                  { label: "描述", value: values.description.trim() || "-" },
                   {
                     label: "镜像",
                     value: (

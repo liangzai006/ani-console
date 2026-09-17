@@ -12,6 +12,9 @@ const COMPONENT_CONFIG = {
   Form: {
     onSubmitFailed: () => showMessage({ type: "error", content: "请检查并修正表单中的错误项" }),
   },
+  Modal: {
+    maskClosable: false,
+  },
 };
 
 createRoot(document.getElementById("root")!).render(

@@ -2,7 +2,7 @@
   --form-surface: #fff;
   display: grid;
   grid-template-rows: 24px minmax(0, 1fr);
-  height: calc(100vh - var(--topbar-height, 56px) - 32px);
+  height: calc(100vh - var(--topnav-height, 64px) - 32px);
   min-height: 560px;
   gap: 12px;
   color: var(--color-text-1);

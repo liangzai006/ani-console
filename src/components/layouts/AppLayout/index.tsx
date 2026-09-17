@@ -3,9 +3,9 @@ import { useRouterState } from "@tanstack/react-router";
 import { useState, type CSSProperties } from "react";
 import "./index.css";
 import { ProductServicesPanel } from "./ProductServicesPanel";
-import { TopNav, TOPNAV_HEIGHT } from "./TopNav";
+import { TopNav } from "./TopNav";
 import { Sidebar, SIDEBAR_COLLAPSED_WIDTH, SIDEBAR_WIDTH } from "./Sidebar";
-import { activeTopNavKeyForPath, sidebarItemsForTopNavKey } from "./navigation";
+import { activeTopNavKeyForPath, sidebarNavigationForPath } from "./navigation";
 
 const { Content } = Layout;
 
@@ -19,7 +19,7 @@ const APP_CONTENT_STYLE = {
   "--app-content-padding-inline": "24px",
   "--app-content-padding-bottom": "24px",
   "--app-content-available-height":
-    "calc(100vh - var(--topbar-height) - var(--app-content-padding-top) - var(--app-content-padding-bottom))",
+    "calc(100vh - var(--topnav-height) - var(--app-content-padding-top) - var(--app-content-padding-bottom))",
 } as CSSProperties;
 
 const SIDEBAR_CONTENT_STYLE = {
@@ -41,7 +41,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [productPanelVisible, setProductPanelVisible] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const topNavKey = activeTopNavKeyForPath(pathname);
-  const sidebarItems = sidebarItemsForTopNavKey(topNavKey);
+  const sidebarNavigation = sidebarNavigationForPath(pathname);
   const showSidebar = pathname !== "/";
 
   return (
@@ -61,7 +61,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               }}
             >
               <Sidebar
-                items={sidebarItems}
+                items={sidebarNavigation?.items ?? null}
+                label={sidebarNavigation?.label ?? "计算产品与服务"}
                 activePathname={pathname}
                 collapsed={sidebarCollapsed}
                 onCollapsedChange={setSidebarCollapsed}
@@ -121,4 +122,4 @@ export function PageHeader({
   );
 }
 
-export { TOPNAV_HEIGHT, SIDEBAR_WIDTH };
+export { SIDEBAR_WIDTH };

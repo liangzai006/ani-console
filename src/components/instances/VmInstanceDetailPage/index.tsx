@@ -8,14 +8,13 @@ import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
-import { InstanceNetwork } from "@/components/instances/InstanceNetwork";
+import { InstanceResourceAssociations } from "@/components/instances/InstanceResourceAssociations";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
-import { InstanceVncConsole } from "@/components/instances/InstanceVncConsole";
 import { VmInstanceActions } from "@/components/instances/VmInstanceActions";
-import { VmInstanceSnapshotModal } from "@/components/instances/VmInstanceActions/VmInstanceSnapshotModal";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
-import type { ComputeInstanceDetailTabKey } from "@/lib/instances";
+import { openVmInstanceRemoteWindow, type ComputeInstanceDetailTabKey } from "@/lib/instances";
+import { VmInstanceSnapshots } from "./VmInstanceSnapshots";
 import { VmInstanceSshAccess } from "./VmInstanceSshAccess";
 import { VmInstanceStorage } from "./VmInstanceStorage";
 
@@ -62,7 +61,6 @@ export function VmInstanceDetailPage({
 }) {
   const navigate = useNavigate();
   const [mountKind, setMountKind] = useState<"volume" | "filesystem">();
-  const [snapshotVisible, setSnapshotVisible] = useState(false);
   const detail = useQuery({
     meta: {
       errorNotification: {
@@ -109,7 +107,6 @@ export function VmInstanceDetailPage({
   const autoStart = (instance as VmInstance & { auto_start?: boolean | null }).auto_start;
   const busy = BUSY_STATES.has(instance.state);
   const stable = instance.state === "running" || instance.state === "stopped";
-  const running = instance.state === "running";
   const securityGroups = instance.network?.security_groups ?? [];
   const loadBalancerRefs = instance.network?.load_balancer_refs ?? [];
   const relatedItems: Array<{
@@ -240,7 +237,6 @@ export function VmInstanceDetailPage({
                 label: "镜像",
                 value: <ImageNameText image={instance.image} />,
               },
-              { label: "Provider", value: instance.provider || "-" },
               {
                 label: "节点",
                 value: instance.compute?.node_name ?? instance.node_name ?? "-",
@@ -290,20 +286,19 @@ export function VmInstanceDetailPage({
             content: (
               <VmInstanceSshAccess
                 instance={instance}
-                onOpenRemote={() => onTabChange("terminal")}
+                onOpenConsole={() => openVmInstanceRemoteWindow(instance.id)}
               />
             ),
           },
           {
             key: "storage",
-            label: "卷与快照",
+            label: "存储挂载",
             content: (
               <VmInstanceStorage
                 instance={instance}
                 mountKind={mountKind}
                 onMountKindChange={setMountKind}
                 onChanged={refreshDetail}
-                canRollback={stable && !busy}
                 volumeAction={
                   <Button disabled={!stable || busy} onClick={() => setMountKind("volume")}>
                     挂载云盘
@@ -314,18 +309,25 @@ export function VmInstanceDetailPage({
                     挂载 NFS
                   </Button>
                 }
-                snapshotAction={
-                  <Button disabled={!stable || busy} onClick={() => setSnapshotVisible(true)}>
-                    创建快照
-                  </Button>
-                }
               />
             ),
           },
           {
-            key: "network",
-            label: "网络",
-            content: <InstanceNetwork instance={instance} />,
+            key: "snapshots",
+            label: "快照",
+            content: (
+              <VmInstanceSnapshots
+                instance={instance}
+                canCreate={stable && !busy}
+                canRollback={stable && !busy}
+                onChanged={refreshDetail}
+              />
+            ),
+          },
+          {
+            key: "resources",
+            label: "资源关联",
+            content: <InstanceResourceAssociations instance={instance} />,
           },
           {
             key: "monitoring",
@@ -347,39 +349,12 @@ export function VmInstanceDetailPage({
             label: "操作历史",
             content: <InstanceOperations instanceId={instance.id} />,
           },
-          {
-            key: "terminal",
-            label: "远程连接",
-            content:
-              running && instance.access?.console_available !== false ? (
-                <InstanceVncConsole instanceId={instance.id} />
-              ) : (
-                <Empty
-                  description={
-                    running
-                      ? (instance.access?.reason ?? "远程连接当前不可用")
-                      : "远程连接仅运行中的云主机可用"
-                  }
-                />
-              ),
-          },
         ]}
         defaultTabKey="ssh"
         activeTabKey={tab}
         onTabChange={(key) => onTabChange(key as ComputeInstanceDetailTabKey)}
         onBack={() => navigate({ to: "/vm-instances" })}
       />
-
-      {snapshotVisible ? (
-        <VmInstanceSnapshotModal
-          instance={instance}
-          onCancel={() => setSnapshotVisible(false)}
-          onSubmitted={() => {
-            setSnapshotVisible(false);
-            refreshDetail();
-          }}
-        />
-      ) : null}
     </>
   );
 }

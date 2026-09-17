@@ -14,8 +14,12 @@ export type FormValues = {
   vpc_id: string;
   subnet_id: string;
   env_text: string;
-  mount_path: string;
+  volume_id: string;
+  volume_mount_path: string;
+  volume_read_only: boolean;
   filesystem_id: string;
+  filesystem_mount_path: string;
+  filesystem_read_only: boolean;
   auto_start: boolean;
 };
 
@@ -34,6 +38,11 @@ export type Filesystem = {
   name?: string;
   size_gib?: number;
   protocol?: string;
+};
+
+export type Volume = {
+  id: string;
+  name?: string | null;
 };
 
 export type GpuSpecAvailability = {
@@ -129,6 +138,11 @@ export type ExtendedCreateRequest = {
       queue_name: string;
     };
     env: Array<{ name: string; value: string }>;
+    volume_mounts: Array<{
+      volume_id: string;
+      mount_path: string;
+      read_only: boolean;
+    }>;
     filesystem_mounts: Array<{
       filesystem_id: string;
       mount_path: string;
@@ -147,8 +161,12 @@ export const INITIAL_VALUES: FormValues = {
   vpc_id: "",
   subnet_id: "",
   env_text: "",
-  mount_path: "",
+  volume_id: "",
+  volume_mount_path: "/data",
+  volume_read_only: false,
   filesystem_id: "",
+  filesystem_mount_path: "/data",
+  filesystem_read_only: false,
   auto_start: true,
 };
 
@@ -195,13 +213,22 @@ export function buildCreateRequest(
         queue_name: values.queue_name,
       },
       env: parseEnv(values.env_text),
+      volume_mounts: values.volume_id
+        ? [
+            {
+              volume_id: values.volume_id,
+              mount_path: values.volume_mount_path.trim(),
+              read_only: values.volume_read_only,
+            },
+          ]
+        : [],
       filesystem_mounts:
-        values.filesystem_id && values.mount_path
+        values.filesystem_id && values.filesystem_mount_path
           ? [
               {
                 filesystem_id: values.filesystem_id,
-                mount_path: values.mount_path,
-                read_only: false,
+                mount_path: values.filesystem_mount_path,
+                read_only: values.filesystem_read_only,
               },
             ]
           : [],

@@ -104,7 +104,7 @@ export function SandboxCodeRunner({
                 onChange={(value) => setTimeoutSeconds(Number(value) || 1)}
               />
             </Form.Item>
-            <Form.Item label="标准输入（可选）">
+            <Form.Item label="标准输入">
               <Input value={stdin} onChange={setStdin} placeholder="传给程序的 stdin" />
             </Form.Item>
           </div>

@@ -3,7 +3,13 @@ import { Empty, Input } from "@arco-design/web-react";
 import { IconApps, IconClose, IconRight, IconSearch } from "@arco-design/web-react/icon";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
-import { isGroupItem, sidebarItemsForTopNavKey, type MenuItem } from "../navigation";
+import {
+  isGroupItem,
+  productGroupSections,
+  sidebarItemsForTopNavKey,
+  visibleMenuItems,
+  type MenuItem,
+} from "../navigation";
 
 interface ProductServicesPanelProps {
   visible: boolean;
@@ -12,7 +18,9 @@ interface ProductServicesPanelProps {
 
 type ProductGroup = MenuItem & { children: MenuItem[] };
 
-const productGroups = (sidebarItemsForTopNavKey("products") ?? []).filter(isGroupItem);
+const productGroups = visibleMenuItems(sidebarItemsForTopNavKey("products") ?? []).filter(
+  isGroupItem,
+);
 
 function includesKeyword(item: MenuItem, keyword: string): boolean {
   return (
@@ -91,21 +99,28 @@ export function ProductServicesPanel({ visible, onClose }: ProductServicesPanelP
             <IconApps />
             <span>全部总览</span>
           </button>
-          <div className="product-services-domain">
-            <div className="product-services-domain-title">产品与服务</div>
-            {productGroups.map((group) => (
-              <button
-                key={group.key}
-                type="button"
-                className={clsx("product-services-tab", activeGroupId === group.key && "is-active")}
-                aria-pressed={activeGroupId === group.key}
-                onClick={() => setActiveGroupId(group.key)}
-              >
-                {group.icon}
-                <span>{group.label}</span>
-              </button>
-            ))}
-          </div>
+          {productGroupSections.map((section) => (
+            <div key={section.label} className="product-services-domain">
+              <div className="product-services-domain-title">{section.label}</div>
+              {productGroups
+                .filter((group) => section.groupKeys.some((key) => key === group.key))
+                .map((group) => (
+                  <button
+                    key={group.key}
+                    type="button"
+                    className={clsx(
+                      "product-services-tab",
+                      activeGroupId === group.key && "is-active",
+                    )}
+                    aria-pressed={activeGroupId === group.key}
+                    onClick={() => setActiveGroupId(group.key)}
+                  >
+                    {group.icon}
+                    <span>{group.label}</span>
+                  </button>
+                ))}
+            </div>
+          ))}
         </nav>
 
         <section className="product-services-content">

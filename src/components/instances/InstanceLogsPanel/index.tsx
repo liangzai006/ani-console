@@ -247,7 +247,7 @@ export function InstanceLogsPanel({
       </Space>
       <div
         ref={outputRef}
-        className="max-h-130 overflow-auto rounded border border-(--color-border-2)"
+        className="max-h-130 overflow-auto rounded border border-(--color-border-2) bg-[#282e3f] text-[#f7f8fa] [&_.arco-empty-description]:text-[#f7f8fa] [&_.arco-empty-icon]:text-[#f7f8fa]"
         onScroll={handleScroll}
       >
         {streamStatus === "connecting" && logs.length === 0 ? (
@@ -259,7 +259,7 @@ export function InstanceLogsPanel({
             <Empty description={streamStatus === "connected" ? "等待新日志" : "暂无日志"} />
           </div>
         ) : (
-          <pre className="m-0 whitespace-pre-wrap wrap-break-word bg-(--color-fill-1) p-3 font-mono text-xs leading-5 text-(--color-text-1)">
+          <pre className="m-0 whitespace-pre-wrap wrap-break-word p-3 font-mono text-xs leading-5 text-[#f7f8fa]">
             {logs.map(formatLog).join("\n")}
           </pre>
         )}

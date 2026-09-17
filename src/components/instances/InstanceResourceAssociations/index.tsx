@@ -42,7 +42,7 @@ function attachmentTypeLabel(type: string) {
   return type;
 }
 
-export function InstanceNetwork({ instance }: { instance: Instance }) {
+export function InstanceResourceAssociations({ instance }: { instance: Instance }) {
   const network = instance.network;
   const vpcId = network?.vpc_id ?? instance.vpc_id;
   const subnetId = network?.subnet_id ?? instance.subnet_id;

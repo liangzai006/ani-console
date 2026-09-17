@@ -14,8 +14,6 @@ import { logout as logoutRequest } from "@/api/auth";
 import { useAuthStore } from "@/stores/auth";
 import { useBrandingStore } from "@/stores/branding";
 
-export const TOPNAV_HEIGHT = 48;
-
 interface TopNavProps {
   activeKey: string;
   productPanelVisible: boolean;
@@ -72,7 +70,7 @@ export function TopNav({
   );
 
   return (
-    <header className="topnav-shell" style={{ height: TOPNAV_HEIGHT, flexBasis: TOPNAV_HEIGHT }}>
+    <header className="top-nav h-(--topnav-height) basis-(--topnav-height)">
       <div className="topnav-left">
         <div className="topnav-brand" aria-label={name}>
           <span className="topnav-brand-mark">{name.slice(0, 1).toUpperCase()}</span>

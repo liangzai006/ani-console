@@ -1,30 +1,33 @@
-import { Button, Form, Input, Modal, Space, Typography } from "@arco-design/web-react";
+import { Button, Form, Input, Modal, Space } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { getGpuSpecAvailability, listGpuSchedulingQueues } from "@/api/gpu-inventory";
 import { listNetworkSecurityGroups, listNetworkSubnets, listNetworkVpcs } from "@/api/network";
 import { listRegistryImages } from "@/api/registry";
 import { listFilesystems } from "@/api/storage/filesystems";
+import { listVolumes } from "@/api/storage/volumes";
 import { WizardSteps } from "@/components/common";
+import type { ContainerNetworkItem } from "@/components/instances/ContainerNetworkFields";
+import { hasDuplicateContainerMountPath } from "@/components/instances/ContainerStorageFields/storage";
 import type {
   Filesystem,
   FormValues,
   GpuSchedulingQueue,
   GpuSchedulingQueueListResponse,
   GpuSpecOption,
+  Volume,
 } from "../types";
 import { INITIAL_VALUES, isGpuSpecSelectable, TEMPORARY_RTX4090_GPU_SPEC_OPTIONS } from "../types";
 import { GpuConfirmStep } from "./GpuConfirmStep";
 import { GpuImageStep } from "./GpuImageStep";
 import { GpuNetworkStorageStep } from "./GpuNetworkStorageStep";
-import type { NetworkItem } from "./GpuNetworkStorageStep";
 import { GpuResourceStep } from "./GpuResourceStep";
 import styles from "./index.module.css";
-import { showMessage } from "@/lib/feedback";
 import { validateForm } from "@/lib/form";
+import { showMessage } from "@/lib/feedback";
 import { withId } from "@/lib/id";
 
-const STEP_TITLES = ["名称", "镜像", "规格与调度", "网络与存储", "确认"];
+const STEP_TITLES = ["基本信息", "资源配置", "摘要信息"];
 
 type Props = {
   visible: boolean;
@@ -85,6 +88,18 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
     queryFn: () => listFilesystems({ limit: 50 }),
     enabled: visible,
   });
+  const volumes = useQuery({
+    meta: {
+      errorNotification: {
+        id: "volumes",
+        action: "块存储卷列表加载",
+        fallback: "加载失败，请稍后重试",
+      },
+    },
+    queryKey: ["volumes", "gpu-container-create"],
+    queryFn: () => listVolumes({ limit: 50, in_use: false }),
+    enabled: visible,
+  });
   const images = useQuery({
     meta: {
       errorNotification: {
@@ -123,13 +138,16 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
       (await listGpuSchedulingQueues()) as unknown as GpuSchedulingQueueListResponse,
   });
 
-  const defaultSecurityGroup = (securityGroups.data?.items ?? []).find(
-    (item) => !values.vpc_id || item.vpc_id === values.vpc_id,
-  );
+  const defaultSecurityGroup = values.vpc_id
+    ? (securityGroups.data?.items ?? []).find((item) => item.vpc_id === values.vpc_id)
+    : undefined;
   const selectedImage = images.data?.find((item) => item.image === values.image);
   const selectedFilesystem = (filesystems.data?.items ?? []).find(
     (item) => String(item.id) === values.filesystem_id,
   ) as Filesystem | undefined;
+  const selectedVolume = (volumes.data?.items ?? []).find(
+    (item) => String(item.id) === values.volume_id,
+  ) as Volume | undefined;
   const apiGpuSpecs = gpuSpecAvailability.data?.items ?? [];
   const usingTemporaryGpuSpecs = gpuSpecAvailability.isSuccess && apiGpuSpecs.length === 0;
   const gpuSpecs: GpuSpecOption[] = usingTemporaryGpuSpecs
@@ -155,12 +173,16 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
   }, [form, visible]);
 
   const next = async () => {
+    if (step === 1 && hasDuplicateContainerMountPath(values)) {
+      showMessage({ type: "warning", content: "请为块存储卷和文件存储设置不同的挂载路径" });
+      return;
+    }
     try {
       await validateForm(form);
-      setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
     } catch {
-      showMessage({ type: "warning", content: "请先完成当前步骤的必填项" });
+      return;
     }
+    setStep((current) => Math.min(current + 1, STEP_TITLES.length - 1));
   };
 
   const setFieldValue = (field: keyof FormValues, value: string | boolean) => {
@@ -168,12 +190,20 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
     setValues((current) => ({ ...current, [field]: value }));
   };
 
+  const submit = () => {
+    if (hasDuplicateContainerMountPath(values)) {
+      setStep(1);
+      showMessage({ type: "warning", content: "请为块存储卷和文件存储设置不同的挂载路径" });
+      return;
+    }
+    onSubmit(values, String(defaultSecurityGroup?.id ?? ""));
+  };
+
   return (
     <Modal
       title="创建 GPU 容器实例"
       visible={visible}
       onCancel={onCancel}
-      maskClosable={!submitting}
       unmountOnExit
       footer={
         <Space>
@@ -187,31 +217,27 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
           ) : null}
           <Button
             type="primary"
-            onClick={
-              step === STEP_TITLES.length - 1
-                ? () => onSubmit(values, String(defaultSecurityGroup?.id ?? ""))
-                : next
-            }
+            onClick={step === STEP_TITLES.length - 1 ? submit : next}
             loading={submitting}
             disabled={
-              (step === 1 && !images.data?.length) ||
-              (step === 2 &&
-                (gpuSpecAvailability.isLoading ||
-                  gpuSchedulingQueues.isLoading ||
-                  gpuSpecAvailability.isError ||
-                  gpuSchedulingQueues.isError ||
-                  !hasAvailableGpuSpec ||
-                  !hasAvailableQueue))
+              step === 0 &&
+              (!images.data?.length ||
+                gpuSpecAvailability.isLoading ||
+                gpuSchedulingQueues.isLoading ||
+                gpuSpecAvailability.isError ||
+                gpuSchedulingQueues.isError ||
+                !hasAvailableGpuSpec ||
+                !hasAvailableQueue)
             }
           >
             {step === STEP_TITLES.length - 1 ? "提交创建" : "下一步"}
           </Button>
         </Space>
       }
-      style={{ width: 780 }}
+      style={{ width: 820 }}
     >
       <div className={styles.form}>
-        <WizardSteps current={step + 1} items={STEP_TITLES} style={{ marginBottom: 24 }} />
+        <WizardSteps current={step + 1} items={STEP_TITLES} size="small" className={styles.steps} />
         <div className={styles.content}>
           <Form<FormValues>
             form={form}
@@ -224,9 +250,6 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
           >
             {step === 0 ? (
               <>
-                <Typography.Paragraph type="secondary">
-                  为 GPU 容器实例设置易于识别的名称。
-                </Typography.Paragraph>
                 <Form.Item
                   field="name"
                   label="名称"
@@ -234,39 +257,37 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
                 >
                   <Input allowClear />
                 </Form.Item>
+                <GpuImageStep images={images.data ?? []} loading={images.isLoading} />
+                <GpuResourceStep
+                  values={values}
+                  specs={gpuSpecs}
+                  queues={schedulingQueues}
+                  quotaRemaining={gpuSpecAvailability.data?.quota_remaining ?? 0}
+                  specsLoading={gpuSpecAvailability.isLoading}
+                  queuesLoading={gpuSchedulingQueues.isLoading}
+                  specsError={gpuSpecAvailability.isError}
+                  queuesError={gpuSchedulingQueues.isError}
+                  usingTemporarySpecs={usingTemporaryGpuSpecs}
+                />
               </>
             ) : null}
             {step === 1 ? (
-              <GpuImageStep images={images.data ?? []} loading={images.isLoading} />
-            ) : null}
-            {step === 2 ? (
-              <GpuResourceStep
-                values={values}
-                specs={gpuSpecs}
-                queues={schedulingQueues}
-                quotaRemaining={gpuSpecAvailability.data?.quota_remaining ?? 0}
-                specsLoading={gpuSpecAvailability.isLoading}
-                queuesLoading={gpuSchedulingQueues.isLoading}
-                specsError={gpuSpecAvailability.isError}
-                queuesError={gpuSchedulingQueues.isError}
-                usingTemporarySpecs={usingTemporaryGpuSpecs}
-              />
-            ) : null}
-            {step === 3 ? (
               <GpuNetworkStorageStep
                 onFieldValueChange={setFieldValue}
                 values={values}
-                vpcs={(vpcs.data?.items ?? []) as NetworkItem[]}
-                subnets={(subnets.data?.items ?? []) as NetworkItem[]}
+                vpcs={(vpcs.data?.items ?? []) as ContainerNetworkItem[]}
+                subnets={(subnets.data?.items ?? []) as ContainerNetworkItem[]}
+                volumes={(volumes.data?.items ?? []) as Volume[]}
                 filesystems={(filesystems.data?.items ?? []) as Filesystem[]}
-                defaultSecurityGroup={defaultSecurityGroup as NetworkItem | undefined}
+                defaultSecurityGroup={defaultSecurityGroup as ContainerNetworkItem | undefined}
                 networkLoading={vpcs.isLoading || subnets.isLoading}
               />
             ) : null}
-            {step === 4 ? (
+            {step === 2 ? (
               <GpuConfirmStep
                 values={values}
                 image={selectedImage}
+                volume={selectedVolume}
                 filesystem={selectedFilesystem}
                 gpuSpec={selectedGpuSpec}
                 schedulingQueue={selectedSchedulingQueue}

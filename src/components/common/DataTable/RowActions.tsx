@@ -1,11 +1,11 @@
 import clsx from "clsx";
 import { forwardRef, type ReactNode } from "react";
 import { Button, Dropdown, Menu, Tooltip, type ButtonProps } from "@arco-design/web-react";
-import { IconDown } from "@arco-design/web-react/icon";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import type { RowAction, RowActionIntent } from "./types";
 import styles from "./index.module.css";
 
-const MORE_LABEL = "更多";
+const MORE_ACTIONS_LABEL = "更多操作";
 
 export function DataTableRowActions({ children }: { children: ReactNode }) {
   return <div className={styles.rowActions}>{children}</div>;
@@ -24,10 +24,6 @@ export const DataTableRowActionButton = forwardRef<
 
 function resolveActionValue<T, V>(value: V | ((record: T) => V), record: T): V {
   return typeof value === "function" ? (value as (current: T) => V)(record) : value;
-}
-
-function getActionStatus(intent: RowActionIntent | undefined): ButtonProps["status"] {
-  return intent && intent !== "default" ? intent : undefined;
 }
 
 function getMenuItemClassName(intent: RowActionIntent | undefined) {
@@ -60,18 +56,16 @@ export function ConfiguredDataTableRowActions<T>({
   actions: Array<RowAction<T>>;
   record: T;
 }) {
-  const [configuredPrimary, ...configuredSecondary] = actions;
-  const primary = configuredPrimary?.visible?.(record) === false ? undefined : configuredPrimary;
-  const secondary = configuredSecondary.filter((action) => action.visible?.(record) !== false);
-  const menu = secondary.length ? (
+  const visibleActions = actions.filter((action) => action.visible?.(record) !== false);
+  const menu = visibleActions.length ? (
     <Menu
       className={styles.semanticMenu}
       onClickMenuItem={(key) => {
-        const action = secondary.find((item) => item.key === key);
+        const action = visibleActions.find((item) => item.key === key);
         if (action) void action.onClick(record);
       }}
     >
-      {secondary.map((action) => (
+      {visibleActions.map((action) => (
         <Menu.Item
           key={action.key}
           disabled={action.disabled?.(record) || action.loading?.(record)}
@@ -83,32 +77,15 @@ export function ConfiguredDataTableRowActions<T>({
     </Menu>
   ) : null;
 
-  if (!primary && !menu) return "-";
+  if (!menu) return "-";
 
   return (
     <DataTableRowActions>
-      {primary
-        ? renderTooltip(
-            primary,
-            record,
-            <DataTableRowActionButton
-              status={getActionStatus(primary.intent)}
-              disabled={primary.disabled?.(record)}
-              loading={primary.loading?.(record)}
-              onClick={() => void primary.onClick(record)}
-            >
-              {renderActionLabel(primary, record)}
-            </DataTableRowActionButton>,
-          )
-        : null}
-      {menu ? (
-        <Dropdown droplist={menu} trigger="click" position="br">
-          <DataTableRowActionButton>
-            {MORE_LABEL}
-            <IconDown />
-          </DataTableRowActionButton>
-        </Dropdown>
-      ) : null}
+      <Dropdown droplist={menu} trigger="click" position="br">
+        <DataTableRowActionButton aria-label={MORE_ACTIONS_LABEL} title={MORE_ACTIONS_LABEL}>
+          <IconMoreVertical />
+        </DataTableRowActionButton>
+      </Dropdown>
     </DataTableRowActions>
   );
 }

@@ -1,11 +1,37 @@
 .form {
   display: flex;
-  min-height: 521px;
+  height: 467px;
+  max-height: calc(100vh - 192px);
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.steps {
+  width: min(100%, 640px);
+  flex: 0 0 auto;
+  margin-inline: auto;
 }
 
 .content {
-  min-height: 410px;
   flex: 1;
-  overflow: auto;
+  min-height: 0;
+  padding-top: 28px;
+  padding-inline-end: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.row {
+  display: flex;
+  width: 100%;
+}
+
+.row > * {
+  flex: 1;
+}
+
+.advancedOptions {
+  margin-top: 8px;
 }

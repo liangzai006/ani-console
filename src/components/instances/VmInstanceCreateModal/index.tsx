@@ -9,6 +9,7 @@ import { listFilesystems } from "@/api/storage/filesystems";
 import {
   Alert,
   Button,
+  Collapse,
   Descriptions,
   Form,
   Input,
@@ -69,6 +70,7 @@ type VmConfig = {
 };
 type Values = {
   name: string;
+  description: string;
   imageRef: string;
   userData: string;
   cloudInitSecret: string;
@@ -89,8 +91,11 @@ type Values = {
   terminationProtection: boolean;
 };
 
+const SSH_KEY_LOGIN_VISIBLE = false;
+
 const INITIAL: Values = {
   name: "",
+  description: "",
   imageRef: "",
   userData: "",
   cloudInitSecret: "",
@@ -100,7 +105,7 @@ const INITIAL: Values = {
   securityGroupIds: [],
   ipMode: "auto",
   privateIp: "",
-  loginMode: "ssh-key",
+  loginMode: "password",
   sshUsername: "ubuntu",
   sshKeyRef: "",
   password: "",
@@ -110,7 +115,8 @@ const INITIAL: Values = {
   autoStart: true,
   terminationProtection: false,
 };
-const STEPS = ["基础信息", "镜像配置", "规格", "网络与 SSH", "磁盘与高级选项", "确认"];
+const STEPS = ["基本信息", "资源配置", "摘要信息"];
+const CollapseItem = Collapse.Item;
 const SYSTEM_DISKS: Record<DiskOption, { label: string; size: number; type: string }> = {
   "40-ssd": { label: "40Gi · SSD", size: 40, type: "ssd" },
   "80-ssd": { label: "80Gi · SSD", size: 80, type: "ssd" },
@@ -123,9 +129,10 @@ const DATA_DISKS: Record<
   "100-ssd": { label: "100Gi · SSD", size: 100, type: "ssd" },
   "200-ssd": { label: "200Gi · SSD", size: 200, type: "ssd" },
 };
+const CLOUD_INIT_MIME_BOUNDARY = "===============ani-vm-cloud-init==";
 const optional = (value: string) => value.trim() || undefined;
-const buildPasswordCloudInit = (username: string, password: string) =>
-  [
+const buildPasswordCloudInit = (username: string, password: string, customUserData?: string) => {
+  const passwordCloudConfig = [
     "#cloud-config",
     "users:",
     `  - name: ${JSON.stringify(username)}`,
@@ -137,6 +144,32 @@ const buildPasswordCloudInit = (username: string, password: string) =>
     "ssh_pwauth: true",
     "",
   ].join("\n");
+  const extraCloudConfig = optional(customUserData ?? "");
+  if (!extraCloudConfig) return passwordCloudConfig;
+
+  return [
+    `Content-Type: multipart/mixed; boundary="${CLOUD_INIT_MIME_BOUNDARY}"`,
+    "MIME-Version: 1.0",
+    "Number-Attachments: 2",
+    "",
+    `--${CLOUD_INIT_MIME_BOUNDARY}`,
+    'Content-Type: text/cloud-config; charset="utf-8"',
+    "MIME-Version: 1.0",
+    "Content-Transfer-Encoding: 8bit",
+    'Content-Disposition: attachment; filename="password-cloud-config.yaml"',
+    "",
+    passwordCloudConfig,
+    `--${CLOUD_INIT_MIME_BOUNDARY}`,
+    'Content-Type: text/cloud-config; charset="utf-8"',
+    "MIME-Version: 1.0",
+    "Content-Transfer-Encoding: 8bit",
+    'Content-Disposition: attachment; filename="custom-cloud-config.yaml"',
+    "",
+    extraCloudConfig,
+    `--${CLOUD_INIT_MIME_BOUNDARY}--`,
+    "",
+  ].join("\r\n");
+};
 
 export function VmInstanceCreateModal({
   visible,
@@ -237,6 +270,7 @@ export function VmInstanceCreateModal({
   const availableSecurityGroups = ((securityGroups.data?.items ?? []) as SecurityGroup[]).filter(
     (item) => !item.vpc_id || item.vpc_id === values.vpcId,
   );
+  const selectedVpc = (vpcs.data?.items ?? []).find((item) => String(item.id) === values.vpcId);
   const selectedSubnet = availableSubnets.find((item) => String(item.id) === values.subnetId);
   const subnetCidr = selectedSubnet?.cidr ? String(selectedSubnet.cidr) : "";
   const privateIpError =
@@ -269,7 +303,11 @@ export function VmInstanceCreateModal({
       const dataDisk = values.dataDisk === "none" ? undefined : DATA_DISKS[values.dataDisk];
       const userData =
         values.loginMode === "password"
-          ? buildPasswordCloudInit(values.sshUsername.trim(), values.password)
+          ? buildPasswordCloudInit(
+              values.sshUsername.trim(),
+              values.password,
+              optional(values.userData),
+            )
           : optional(values.userData);
       const vmConfig: VmConfig = {
         boot_image: values.imageRef,
@@ -314,6 +352,7 @@ export function VmInstanceCreateModal({
       };
       const submitData = {
         name: instanceName,
+        description: optional(values.description),
         kind: "vm" as const,
         instance_type: "vm" as const,
         replicas: 1,
@@ -341,16 +380,22 @@ export function VmInstanceCreateModal({
   const next = async () => {
     try {
       await validateForm(form);
-      if (step === 1 && !values.imageRef) throw new Error();
-      if (step === 3 && (!values.vpcId || !values.subnetId)) throw new Error();
-      if (step === 3 && values.ipMode === "manual" && (!values.privateIp || privateIpError))
-        throw new Error();
-      if (step === 3 && values.loginMode === "ssh-key" && !values.sshKeyRef) throw new Error();
-      if (step === 3 && values.loginMode === "password" && !values.password) throw new Error();
-      setStep((current) => Math.min(STEPS.length - 1, current + 1));
     } catch {
-      showMessage({ type: "warning", content: "请先完成当前步骤的必填项" });
+      return;
     }
+    const hasIncompleteStep =
+      step === 1 &&
+      (!values.imageRef ||
+        !values.vpcId ||
+        !values.subnetId ||
+        (values.ipMode === "manual" && (!values.privateIp || privateIpError)) ||
+        (values.loginMode === "ssh-key" && !values.sshKeyRef) ||
+        (values.loginMode === "password" && !values.password));
+    if (hasIncompleteStep) {
+      showMessage({ type: "warning", content: "请完善必填项" });
+      return;
+    }
+    setStep((current) => Math.min(STEPS.length - 1, current + 1));
   };
   const setValue = <K extends keyof Values>(key: K, value: Values[K]) => {
     form.setFieldValue(key, value);
@@ -382,11 +427,10 @@ export function VmInstanceCreateModal({
         </Space>
       }
       unmountOnExit
-      maskClosable={!create.isPending}
       style={{ width: 820 }}
     >
       <div className={styles.form}>
-        <WizardSteps current={step + 1} items={STEPS} />
+        <WizardSteps current={step + 1} items={STEPS} size="small" className={styles.steps} />
         <div className={styles.content}>
           <Form
             form={form}
@@ -403,8 +447,18 @@ export function VmInstanceCreateModal({
                 >
                   <Input placeholder="例如 production-web-01" allowClear />
                 </Form.Item>
-                <Form.Item label="台数">
-                  <Input value="1" disabled />
+                <InstanceComputeSpecSelect
+                  field="spec"
+                  profile="cpu"
+                  label="规格档位"
+                  placeholder="请选择规格档位"
+                />
+                <Form.Item field="description" label="描述">
+                  <Input.TextArea
+                    autoSize={{ minRows: 3, maxRows: 6 }}
+                    placeholder="请输入云主机描述（可选）"
+                    allowClear
+                  />
                 </Form.Item>
               </>
             ) : null}
@@ -424,96 +478,45 @@ export function VmInstanceCreateModal({
                     ))}
                   </Select>
                 </Form.Item>
-                <Form.Item field="userData" label="cloud-init / user-data">
-                  <Input.TextArea
-                    disabled={values.loginMode === "password"}
-                    autoSize={{ minRows: 5, maxRows: 10 }}
-                    placeholder={
-                      values.loginMode === "password"
-                        ? "密码登录时根据用户名和密码自动生成"
-                        : "#cloud-config（可选）"
-                    }
-                  />
-                </Form.Item>
-                <Form.Item field="cloudInitSecret" label="cloud-init Secret（可选）">
-                  <Select
-                    allowClear
-                    loading={secrets.isLoading}
-                    placeholder="选择包含 userdata 键的 Secret"
-                    options={userDataSecrets.map((secret) => ({
-                      value: String(secret.name),
-                      label: `${secret.name} · ${secret.type ?? "secret"}`,
-                    }))}
-                    onChange={(cloudInitSecret) => {
-                      setValue("cloudInitSecret", cloudInitSecret ?? "");
-                    }}
-                  />
-                </Form.Item>
-                <Alert
-                  type="info"
-                  content="仅显示包含 userdata 键的 Secret；可与内联 user-data 共存。密码登录时，前端会根据用户名和密码生成内联 user-data。"
-                />
-              </>
-            ) : null}
-            {step === 2 ? (
-              <InstanceComputeSpecSelect
-                field="spec"
-                profile="cpu"
-                label="规格档位"
-                placeholder="请选择规格档位"
-              />
-            ) : null}
-            {step === 3 ? (
-              <>
-                <Form.Item field="vpcId" label="VPC" required>
-                  <Select
-                    allowClear
-                    loading={vpcs.isLoading}
-                    placeholder="选择 VPC"
-                    onChange={(vpcId) => {
-                      setValue("vpcId", vpcId ?? "");
-                      setValue("subnetId", "");
-                      setValue("securityGroupIds", []);
-                      setValue("privateIp", "");
-                    }}
-                  >
-                    {(vpcs.data?.items ?? []).map((vpc) => (
-                      <Select.Option key={String(vpc.id)} value={String(vpc.id)}>
-                        {String(vpc.name ?? vpc.id)}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-                <Form.Item field="subnetId" label="子网" required>
-                  <Select
-                    allowClear
-                    disabled={!values.vpcId}
-                    loading={subnets.isLoading}
-                    placeholder="选择子网"
-                    onChange={(subnetId) => {
-                      setValue("subnetId", subnetId ?? "");
-                      setValue("privateIp", "");
-                    }}
-                  >
-                    {availableSubnets.map((subnet) => (
-                      <Select.Option key={String(subnet.id)} value={String(subnet.id)}>
-                        {String(subnet.name ?? subnet.id)} · {String(subnet.cidr ?? "-")}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-                <Form.Item field="securityGroupIds" label="安全组（可选，可多选）">
-                  <Select
-                    mode="multiple"
-                    disabled={!values.vpcId}
-                    loading={securityGroups.isLoading}
-                    placeholder="可不选择安全组"
-                    options={availableSecurityGroups.map((group) => ({
-                      value: group.id,
-                      label: `${group.name} · 规则 ${group.rule_count ?? group.rules.length}`,
-                    }))}
-                  />
-                </Form.Item>
+                <Space className={styles.row} size={16} align="start">
+                  <Form.Item field="vpcId" label="VPC" required>
+                    <Select
+                      allowClear
+                      loading={vpcs.isLoading}
+                      placeholder="选择 VPC"
+                      onChange={(vpcId) => {
+                        setValue("vpcId", vpcId ?? "");
+                        setValue("subnetId", "");
+                        setValue("securityGroupIds", []);
+                        setValue("privateIp", "");
+                      }}
+                    >
+                      {(vpcs.data?.items ?? []).map((vpc) => (
+                        <Select.Option key={String(vpc.id)} value={String(vpc.id)}>
+                          {String(vpc.name ?? vpc.id)}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                  <Form.Item field="subnetId" label="子网" required>
+                    <Select
+                      allowClear
+                      disabled={!values.vpcId}
+                      loading={subnets.isLoading}
+                      placeholder="选择子网"
+                      onChange={(subnetId) => {
+                        setValue("subnetId", subnetId ?? "");
+                        setValue("privateIp", "");
+                      }}
+                    >
+                      {availableSubnets.map((subnet) => (
+                        <Select.Option key={String(subnet.id)} value={String(subnet.id)}>
+                          {String(subnet.name ?? subnet.id)} · {String(subnet.cidr ?? "-")}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Space>
                 <Space className={styles.row} size={16}>
                   <Form.Item field="ipMode" label="私网 IP">
                     <Radio.Group
@@ -545,26 +548,33 @@ export function VmInstanceCreateModal({
                     </Form.Item>
                   ) : null}
                 </Space>
-                <Form.Item field="loginMode" label="登录方式">
-                  <Radio.Group
-                    type="button"
-                    onChange={(mode) => {
-                      if (mode === "password" && values.userData.trim()) {
-                        setValue("userData", "");
-                        showMessage({
-                          type: "info",
-                          content: "密码登录会自动生成内联 user-data，已清除自定义内容",
-                        });
-                      }
-                      setValue("loginMode", mode);
-                      setValue("sshKeyRef", "");
-                      setValue("password", "");
-                    }}
-                  >
-                    <Radio value="ssh-key">SSH 密钥</Radio>
-                    <Radio value="password">密码</Radio>
-                  </Radio.Group>
+                <Form.Item field="securityGroupIds" label="安全组">
+                  <Select
+                    mode="multiple"
+                    disabled={!values.vpcId}
+                    loading={securityGroups.isLoading}
+                    placeholder="可不选择安全组"
+                    options={availableSecurityGroups.map((group) => ({
+                      value: group.id,
+                      label: `${group.name} · 规则 ${group.rule_count ?? group.rules.length}`,
+                    }))}
+                  />
                 </Form.Item>
+                {SSH_KEY_LOGIN_VISIBLE ? (
+                  <Form.Item field="loginMode" label="登录方式">
+                    <Radio.Group
+                      type="button"
+                      onChange={(mode) => {
+                        setValue("loginMode", mode);
+                        setValue("sshKeyRef", "");
+                        setValue("password", "");
+                      }}
+                    >
+                      <Radio value="ssh-key">SSH 密钥</Radio>
+                      <Radio value="password">密码</Radio>
+                    </Radio.Group>
+                  </Form.Item>
+                ) : null}
                 <Form.Item field="sshUsername" label="用户名" rules={[{ required: true }]}>
                   <Input placeholder="请输入 VM 登录用户名" />
                 </Form.Item>
@@ -590,10 +600,6 @@ export function VmInstanceCreateModal({
                     </Form.Item>
                   </>
                 )}
-              </>
-            ) : null}
-            {step === 4 ? (
-              <>
                 <Form.Item field="systemDisk" label="系统盘">
                   <Select
                     options={Object.entries(SYSTEM_DISKS).map(([value, disk]) => ({
@@ -613,7 +619,7 @@ export function VmInstanceCreateModal({
                     ]}
                   />
                 </Form.Item>
-                <Form.Item field="filesystemId" label="文件存储 NFS（可选）">
+                <Form.Item field="filesystemId" label="文件存储 NFS">
                   <Select
                     allowClear
                     loading={filesystems.isLoading}
@@ -629,27 +635,51 @@ export function VmInstanceCreateModal({
                 {values.filesystemId ? (
                   <Alert type="info" content="文件存储将以读写方式挂载到 /mnt/nfs。" />
                 ) : null}
-                <Space size={32}>
-                  <Form.Item field="autoStart" label="自动启动" triggerPropName="checked">
-                    <Switch />
-                  </Form.Item>
-                  <Form.Item
-                    field="terminationProtection"
-                    label="终止保护"
-                    triggerPropName="checked"
-                  >
-                    <Switch />
-                  </Form.Item>
-                </Space>
+                <Collapse>
+                  <CollapseItem header="高级选项" name="advanced-options">
+                    <Form.Item field="userData" label="cloud-init / user-data">
+                      <Input.TextArea
+                        autoSize={{ minRows: 5, maxRows: 10 }}
+                        placeholder="#cloud-config"
+                      />
+                    </Form.Item>
+                    <Form.Item field="cloudInitSecret" label="cloud-init Secret">
+                      <Select
+                        allowClear
+                        loading={secrets.isLoading}
+                        placeholder="选择包含 userdata 键的 Secret"
+                        options={userDataSecrets.map((secret) => ({
+                          value: String(secret.name),
+                          label: `${secret.name} · ${secret.type ?? "secret"}`,
+                        }))}
+                        onChange={(cloudInitSecret) => {
+                          setValue("cloudInitSecret", cloudInitSecret ?? "");
+                        }}
+                      />
+                    </Form.Item>
+                    <Space size={32}>
+                      <Form.Item field="autoStart" label="自动启动" triggerPropName="checked">
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item
+                        field="terminationProtection"
+                        label="终止保护"
+                        triggerPropName="checked"
+                      >
+                        <Switch />
+                      </Form.Item>
+                    </Space>
+                  </CollapseItem>
+                </Collapse>
               </>
             ) : null}
-            {step === 5 ? (
+            {step === 2 ? (
               <Descriptions
                 column={1}
                 border
                 data={[
                   { label: "名称", value: values.name },
-                  { label: "台数", value: "1" },
+                  { label: "描述", value: optional(values.description) ?? "-" },
                   {
                     label: "启动镜像",
                     value: (
@@ -665,7 +695,7 @@ export function VmInstanceCreateModal({
                   { label: "规格", value: values.spec },
                   {
                     label: "网络",
-                    value: `${values.vpcId || "-"} / ${values.subnetId || "-"}`,
+                    value: `${String(selectedVpc?.name ?? values.vpcId) || "-"} / ${String(selectedSubnet?.name ?? values.subnetId) || "-"}`,
                   },
                   {
                     label: "安全组",
@@ -689,6 +719,9 @@ export function VmInstanceCreateModal({
                           : values.userData.trim()
                             ? "内联 user-data"
                             : "",
+                        values.loginMode === "password" && values.userData.trim()
+                          ? "内联 user-data"
+                          : "",
                         values.cloudInitSecret ? `Secret ${values.cloudInitSecret}` : "",
                       ]
                         .filter(Boolean)

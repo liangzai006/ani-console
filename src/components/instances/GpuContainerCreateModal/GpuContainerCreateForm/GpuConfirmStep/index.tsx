@@ -6,11 +6,13 @@ import {
   type GpuSchedulingQueue,
   type GpuSpecOption,
   type RegistryImage,
+  type Volume,
 } from "../../types";
 
 export function GpuConfirmStep({
   values,
   image,
+  volume,
   filesystem,
   gpuSpec,
   schedulingQueue,
@@ -18,6 +20,7 @@ export function GpuConfirmStep({
 }: {
   values: FormValues;
   image?: RegistryImage;
+  volume?: Volume;
   filesystem?: Filesystem;
   gpuSpec?: GpuSpecOption;
   schedulingQueue?: GpuSchedulingQueue;
@@ -54,10 +57,20 @@ export function GpuConfirmStep({
           },
           { label: "环境变量", value: values.env_text || "-" },
           {
-            label: "存储",
+            label: "块存储",
+            value: volume
+              ? `${volume.name ?? volume.id} → ${values.volume_mount_path} · ${
+                  values.volume_read_only ? "只读" : "读写"
+                }`
+              : "不挂载块存储",
+          },
+          {
+            label: "文件存储",
             value: filesystem
-              ? `${filesystem.name ?? filesystem.id} → ${values.mount_path || "/data"}`
-              : "不挂载 NFS",
+              ? `${filesystem.name ?? filesystem.id} → ${values.filesystem_mount_path} · ${
+                  values.filesystem_read_only ? "只读" : "读写"
+                }`
+              : "不挂载文件存储",
           },
           { label: "自动启动", value: values.auto_start ? "开" : "关" },
         ]}

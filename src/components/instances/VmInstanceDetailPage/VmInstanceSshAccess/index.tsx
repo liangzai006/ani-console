@@ -6,10 +6,10 @@ type VmInstance = InstanceRecord;
 
 export function VmInstanceSshAccess({
   instance,
-  onOpenRemote,
+  onOpenConsole,
 }: {
   instance: VmInstance;
-  onOpenRemote: () => void;
+  onOpenConsole: () => void;
 }) {
   const ssh = instance.ssh;
   const privateIp = instance.network?.private_ip ?? instance.private_ip;
@@ -32,7 +32,7 @@ export function VmInstanceSshAccess({
             label: "地址",
             value: privateIp && ssh ? `${privateIp}:${ssh.port}` : "-",
           },
-          { label: "密钥引用", value: ssh?.key_ref ?? "-" },
+          { label: "登录密钥", value: ssh?.key_ref ?? "-" },
         ]}
       />
       {!available ? (
@@ -45,7 +45,7 @@ export function VmInstanceSshAccess({
       {command ? (
         <div>
           <Typography.Title heading={6}>连接命令</Typography.Title>
-          <pre className="overflow-auto rounded bg-(--color-fill-2) p-4 text-sm">{command}</pre>
+          <pre className="overflow-auto rounded bg-app--fillsecondary) p-4 text-sm">{command}</pre>
         </div>
       ) : null}
       <Space>
@@ -56,7 +56,7 @@ export function VmInstanceSshAccess({
         >
           复制 SSH 命令
         </Button>
-        <Button onClick={onOpenRemote}>改用远程连接</Button>
+        <Button onClick={onOpenConsole}>打开控制台</Button>
       </Space>
     </Space>
   );

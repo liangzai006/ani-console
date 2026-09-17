@@ -1,7 +1,7 @@
 import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { Alert, Button, Dropdown, Menu, Modal, Select, Space } from "@arco-design/web-react";
-import { IconDown } from "@arco-design/web-react/icon";
+import { Alert, Button, Dropdown, Menu, Modal, Select } from "@arco-design/web-react";
+import { IconDown, IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
@@ -65,8 +65,14 @@ export function SandboxInstanceActions({
 
   const busy = lifecycle.isPending || BUSY_INSTANCE_STATES.has(instance.state ?? "");
   const lifecycleUnavailable = TERMINAL_STATES.has(sessionState);
+  const lifecycleDisabled = busy || (!running && !resumable);
+  const lifecycleAction = () => lifecycle.mutate({ action: running ? "pause" : "resume" });
 
   const handleMenuAction = (action: string) => {
+    if (action === "lifecycle") {
+      lifecycleAction();
+      return;
+    }
     if (action === "terminal") {
       onTabChange("terminal");
       return;
@@ -89,6 +95,11 @@ export function SandboxInstanceActions({
 
   const menu = (
     <Menu onClickMenuItem={handleMenuAction}>
+      {display === "detail" ? (
+        <Menu.Item key="lifecycle" disabled={lifecycleDisabled}>
+          {running ? "暂停" : "恢复"}
+        </Menu.Item>
+      ) : null}
       <Menu.Item key="extend" disabled={busy || lifecycleUnavailable}>
         延长会话
       </Menu.Item>
@@ -107,8 +118,6 @@ export function SandboxInstanceActions({
       </Menu.Item>
     </Menu>
   );
-  const lifecycleDisabled = busy || (!running && !resumable);
-  const lifecycleAction = () => lifecycle.mutate({ action: running ? "pause" : "resume" });
 
   return (
     <>
@@ -125,21 +134,16 @@ export function SandboxInstanceActions({
           </Dropdown>
         </DataTableRowActions>
       ) : (
-        <Space>
+        <Dropdown trigger="click" position="br" droplist={menu}>
           <Button
-            disabled={lifecycleDisabled}
+            disabled={busy}
             loading={lifecycle.isPending}
-            onClick={lifecycleAction}
+            aria-label="更多操作"
+            title="更多操作"
           >
-            {running ? "暂停" : "恢复"}
+            <IconMoreVertical />
           </Button>
-          <Dropdown trigger="click" position="br" droplist={menu}>
-            <Button disabled={busy} loading={lifecycle.isPending}>
-              更多操作
-              <IconDown className="ml-1 text-xs" />
-            </Button>
-          </Dropdown>
-        </Space>
+        </Dropdown>
       )}
 
       <Modal

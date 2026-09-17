@@ -1,12 +1,10 @@
 import type { TableColumnProps, TableProps } from "@arco-design/web-react";
-import type { RowAction } from "./types";
 
 const DEFAULT_COLUMN_WIDTH = 160;
 const DEFAULT_NAME_COLUMN_WIDTH = 280;
 const DEFAULT_ACTION_COLUMN_WIDTH = 180;
 const CELL_HORIZONTAL_PADDING = 32;
 const ACTION_BUTTON_HORIZONTAL_PADDING = 8;
-const ACTION_GAP = 8;
 const MORE_ICON_WIDTH = 16;
 
 function getTextWidth(text: string) {
@@ -23,22 +21,8 @@ function getColumnWidth<T>(column: TableColumnProps<T>) {
   return DEFAULT_COLUMN_WIDTH;
 }
 
-export function getRowActionsColumnWidth<T>(actions: Array<RowAction<T>>) {
-  const primary = actions[0];
-  const primaryLabel = primary
-    ? (primary.widthLabel ?? (typeof primary.label === "string" ? primary.label : ""))
-    : "";
-  const primaryWidth = primaryLabel
-    ? getTextWidth(primaryLabel) + ACTION_BUTTON_HORIZONTAL_PADDING
-    : 0;
-  const moreWidth =
-    actions.length > 1
-      ? getTextWidth("更多") + ACTION_BUTTON_HORIZONTAL_PADDING + MORE_ICON_WIDTH
-      : 0;
-  const contentWidth =
-    primaryWidth + moreWidth + (primaryWidth > 0 && moreWidth > 0 ? ACTION_GAP : 0);
-  const headerWidth = getTextWidth("操作") + CELL_HORIZONTAL_PADDING;
-  return Math.max(headerWidth, contentWidth + CELL_HORIZONTAL_PADDING);
+export function getRowActionsColumnWidth() {
+  return MORE_ICON_WIDTH + ACTION_BUTTON_HORIZONTAL_PADDING + CELL_HORIZONTAL_PADDING;
 }
 
 export function normalizeDataTableColumns<T>(columns: Array<TableColumnProps<T>>) {

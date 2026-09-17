@@ -3,8 +3,8 @@ import type { InstanceLifecycleRequest, InstanceRecord } from "@/api/instances";
 import type { RowAction } from "@/components/common";
 import { Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { openVmInstanceRemoteWindow } from "@/lib/instances";
 
 import { VmInstanceAttachFilesystemModal } from "../../VmInstanceActions/VmInstanceAttachFilesystemModal";
 import { VmInstanceAttachVolumeModal } from "../../VmInstanceActions/VmInstanceAttachVolumeModal";
@@ -42,7 +42,6 @@ export function useVmInstanceRowActions({
 }: {
   onOperationSubmitted: (operationId: string) => void;
 }) {
-  const navigate = useNavigate();
   const [dialog, setDialog] = useState<DialogState>();
   const start = useMutation({
     meta: {
@@ -212,14 +211,9 @@ export function useVmInstanceRowActions({
     },
     {
       key: "console",
-      label: "远程连接",
+      label: "打开控制台",
       disabled: (instance) => !isRunning(instance) || instance.access?.console_available === false,
-      onClick: (instance) =>
-        navigate({
-          to: "/vm-instances/$instanceId",
-          params: { instanceId: instance.id },
-          search: { tab: "terminal" },
-        }),
+      onClick: (instance) => openVmInstanceRemoteWindow(instance.id),
     },
     {
       key: "delete",

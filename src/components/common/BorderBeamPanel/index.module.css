@@ -1,0 +1,42 @@
+.panel {
+  position: relative;
+  isolation: isolate;
+}
+
+.ring,
+.glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--border-beam-radius);
+  background: var(--border-beam-gradient);
+  pointer-events: none;
+}
+
+.ring {
+  padding: var(--border-beam-thickness);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.glow {
+  z-index: -1;
+  opacity: 0.35;
+  filter: blur(14px);
+}
+
+@media (forced-colors: active) {
+  .ring,
+  .glow {
+    display: none;
+  }
+
+  .panel {
+    border-color: CanvasText;
+  }
+}

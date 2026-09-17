@@ -7,7 +7,7 @@ import { useState } from "react";
 import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceTerminal } from "@/components/instances/InstanceTerminal";
-import { InstanceNetwork } from "@/components/instances/InstanceNetwork";
+import { InstanceResourceAssociations } from "@/components/instances/InstanceResourceAssociations";
 import { InstanceReleases } from "@/components/instances/InstanceReleases";
 import { GpuInstanceActions } from "@/components/instances/GpuInstanceActions";
 import { formatDateTime } from "@/lib/format";
@@ -423,9 +423,9 @@ export function GpuInstanceDetailPage({
           ),
         },
         {
-          key: "network",
-          label: "网络",
-          content: <InstanceNetwork instance={instance} />,
+          key: "resources",
+          label: "资源关联",
+          content: <InstanceResourceAssociations instance={instance} />,
         },
         {
           key: "monitoring",
@@ -448,7 +448,7 @@ export function GpuInstanceDetailPage({
           content: terminalAvailable ? (
             <InstanceTerminal className="h-full" instanceId={instance.id} />
           ) : (
-            <div className="py-12 text-center text-(--color-text-3)">终端仅运行中的实例可用</div>
+            <div className="py-12 text-center text-app-text-tertiary">终端仅运行中的实例可用</div>
           ),
         },
         {

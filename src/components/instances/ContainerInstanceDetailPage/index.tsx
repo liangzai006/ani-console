@@ -254,7 +254,7 @@ export function ContainerInstanceDetailPage({
           content: isRunning ? (
             <InstanceTerminal className="h-full" instanceId={instanceId} />
           ) : (
-            <div className="py-12 text-center text-(--color-text-3)">终端仅运行中的实例可用</div>
+            <div className="py-12 text-center text-app-text-tertiary">终端仅运行中的实例可用</div>
           ),
         },
         {

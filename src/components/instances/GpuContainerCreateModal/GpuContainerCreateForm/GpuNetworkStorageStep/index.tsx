@@ -1,20 +1,22 @@
-import { Form, Input, Select, Switch, Typography } from "@arco-design/web-react";
-import type { Filesystem, FormValues } from "../../types";
+import { Collapse, Form, Input, Switch, Typography } from "@arco-design/web-react";
+import {
+  ContainerSubnetField,
+  ContainerVpcField,
+  type ContainerNetworkItem,
+} from "@/components/instances/ContainerNetworkFields";
+import { ContainerStorageFields } from "@/components/instances/ContainerStorageFields";
+import type { Filesystem, FormValues, Volume } from "../../types";
 
-export type NetworkItem = {
-  id: string;
-  name?: string | null;
-  cidr?: string | null;
-  vpc_id?: string | null;
-};
+const CollapseItem = Collapse.Item;
 
 type Props = {
   onFieldValueChange: (field: keyof FormValues, value: string | boolean) => void;
   values: FormValues;
-  vpcs: NetworkItem[];
-  subnets: NetworkItem[];
+  vpcs: ContainerNetworkItem[];
+  subnets: ContainerNetworkItem[];
+  volumes: Volume[];
   filesystems: Filesystem[];
-  defaultSecurityGroup?: NetworkItem;
+  defaultSecurityGroup?: ContainerNetworkItem;
   networkLoading: boolean;
 };
 
@@ -23,42 +25,29 @@ export function GpuNetworkStorageStep({
   values,
   vpcs,
   subnets,
+  volumes,
   filesystems,
   defaultSecurityGroup,
   networkLoading,
 }: Props) {
-  // TODO: 子网接口确认按 vpc_id 过滤后，移除此处创建表单的本地兜底过滤。
-  const availableSubnets = subnets.filter(
-    (item) => !values.vpc_id || item.vpc_id === values.vpc_id,
-  );
   return (
     <>
-      <Form.Item field="vpc_id" label="VPC" rules={[{ required: true, message: "请选择 VPC" }]}>
-        <Select
+      <div className="grid grid-cols-2 gap-4">
+        <ContainerVpcField
+          items={vpcs}
           loading={networkLoading}
-          placeholder="选择 VPC"
+          required
+          allowClear
           onChange={() => onFieldValueChange("subnet_id", "")}
-        >
-          {vpcs.map((item) => (
-            <Select.Option key={item.id} value={item.id}>
-              {item.name ?? item.id} · {item.cidr ?? ""}
-            </Select.Option>
-          ))}
-        </Select>
-      </Form.Item>
-      <Form.Item field="subnet_id" label="子网" rules={[{ required: true, message: "请选择子网" }]}>
-        <Select
+        />
+        <ContainerSubnetField
+          items={subnets}
+          vpcId={values.vpc_id}
           loading={networkLoading}
-          disabled={!values.vpc_id}
-          placeholder={values.vpc_id ? "选择子网" : "先选择 VPC"}
-        >
-          {availableSubnets.map((item) => (
-            <Select.Option key={item.id} value={item.id}>
-              {item.name ?? item.id} · {item.cidr ?? ""}
-            </Select.Option>
-          ))}
-        </Select>
-      </Form.Item>
+          required
+          allowClear
+        />
+      </div>
       <Form.Item label="安全组">
         <Input
           value={
@@ -69,28 +58,20 @@ export function GpuNetworkStorageStep({
           disabled
         />
       </Form.Item>
-      <Form.Item field="env_text" label="环境变量">
-        <Input.TextArea
-          placeholder={"KEY=VALUE\nMODEL_PATH=/models"}
-          autoSize={{ minRows: 2, maxRows: 4 }}
-        />
-      </Form.Item>
-      <Form.Item field="mount_path" label="卷挂载路径">
-        <Input placeholder="/data（可选）" />
-      </Form.Item>
-      <Form.Item field="filesystem_id" label="文件存储 NFS（可选）">
-        <Select allowClear placeholder="不挂载 NFS">
-          {filesystems.map((item) => (
-            <Select.Option key={item.id} value={item.id}>
-              {item.name ?? item.id}
-              {item.size_gib ? ` · ${item.size_gib}Gi` : ""}
-            </Select.Option>
-          ))}
-        </Select>
-      </Form.Item>
-      <Form.Item field="auto_start" label="自动启动" triggerPropName="checked">
-        <Switch /> <Typography.Text type="secondary">创建后自动拉起副本</Typography.Text>
-      </Form.Item>
+      <ContainerStorageFields values={values} volumes={volumes} filesystems={filesystems} />
+      <Collapse className="mt-2">
+        <CollapseItem header="运行配置" name="runtime-options">
+          <Form.Item field="env_text" label="环境变量">
+            <Input.TextArea
+              placeholder={"KEY=VALUE\nMODEL_PATH=/models"}
+              autoSize={{ minRows: 2, maxRows: 4 }}
+            />
+          </Form.Item>
+          <Form.Item field="auto_start" label="自动启动" triggerPropName="checked">
+            <Switch /> <Typography.Text type="secondary">创建后自动拉起副本</Typography.Text>
+          </Form.Item>
+        </CollapseItem>
+      </Collapse>
     </>
   );
 }

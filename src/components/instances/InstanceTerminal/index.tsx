@@ -290,7 +290,7 @@ export function InstanceTerminal({
     <div className={clsx("flex min-h-0 flex-col gap-3", className)}>
       <div className="flex shrink-0 items-center justify-between gap-4">
         <Space>
-          <span className="text-sm text-(--color-text-2)">状态</span>
+          <span className="text-sm text-app-text-secondary">状态</span>
           <Tag color={meta.color}>{meta.text}</Tag>
         </Space>
         <Button

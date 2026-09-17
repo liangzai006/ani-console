@@ -3,10 +3,11 @@ import { IconDriveFile, IconLock } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import backgroundImageUrl from "@/assets/auth/background-01-cqy.png";
+import backgroundImageUrl from "@/assets/auth/login-bg.png";
 import logoUrl from "@/assets/brand/logo.png";
 import { passwordLogin } from "@/api/auth";
 import { ApiError } from "@/api/request";
+import { BorderBeamPanel } from "@/components/common/BorderBeamPanel";
 import { isAuthenticated, useAuthStore } from "@/stores/auth";
 import styles from "./index.module.css";
 import { showMessage } from "@/lib/feedback";
@@ -57,7 +58,7 @@ export function LoginPage({ redirect = "/" }: { redirect?: string }) {
 
   return (
     <main className={styles.page}>
-      <img className={styles.background} src={backgroundImageUrl} alt="" aria-hidden="true" />
+      <img className={styles.backgroundImage} src={backgroundImageUrl} alt="" aria-hidden="true" />
 
       <header className={styles.header}>
         <div className={styles.brand}>
@@ -66,7 +67,15 @@ export function LoginPage({ redirect = "/" }: { redirect?: string }) {
         </div>
       </header>
 
-      <section className={styles.loginCard} aria-labelledby="login-page-title">
+      <BorderBeamPanel
+        as="section"
+        className={styles.loginCard}
+        aria-labelledby="login-page-title"
+        beams={2}
+        colors={["rgb(var(--primary-5))", "rgb(var(--cyan-5))"]}
+        thickness={2}
+        radius={16}
+      >
         <img className={styles.cardLogo} src={logoUrl} alt="常青云" />
         <h1 id="login-page-title" className={styles.title}>
           登录常青云平台
@@ -157,7 +166,7 @@ export function LoginPage({ redirect = "/" }: { redirect?: string }) {
             跳过登录（开发预览）
           </Button>
         ) : null}
-      </section>
+      </BorderBeamPanel>
 
       <footer className={styles.footer}>Copyright © 2021-2025 广州常青云科技有限公司</footer>
     </main>

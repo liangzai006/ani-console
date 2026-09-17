@@ -1,4 +1,4 @@
-import { Alert, Form, Input, Select, Switch, Typography } from "@arco-design/web-react";
+import { Form, Input, Select, Switch, Typography } from "@arco-design/web-react";
 import { IDLE_TIMEOUT_OPTIONS, SESSION_TIMEOUT_OPTIONS, type FormValues } from "../../types";
 
 export function SandboxRuntimeStep({ values }: { values: FormValues }) {
@@ -55,11 +55,6 @@ export function SandboxRuntimeStep({ values }: { values: FormValues }) {
       <Form.Item field="auto_start" label="自动启动" triggerPropName="checked">
         <Switch /> <Typography.Text type="secondary">创建后立即启动 Sandbox</Typography.Text>
       </Form.Item>
-      <Alert
-        type="info"
-        showIcon
-        content="Sandbox 使用隔离运行环境，不选择 VPC、安全组或挂载存储；网络访问由出口策略控制。"
-      />
     </>
   );
 }

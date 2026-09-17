@@ -1,13 +1,10 @@
-import { Empty, Form, Select, Spin, Typography } from "@arco-design/web-react";
+import { Empty, Form, Select, Spin } from "@arco-design/web-react";
 import { ImageNameText } from "@/components/common";
 import type { RegistryImage } from "../../types";
 
 export function GpuImageStep({ images, loading }: { images: RegistryImage[]; loading: boolean }) {
   return (
     <>
-      <Typography.Paragraph type="secondary">
-        镜像必须来自当前租户的 GPU / CUDA 镜像仓库。
-      </Typography.Paragraph>
       {loading ? (
         <Spin />
       ) : images.length ? (

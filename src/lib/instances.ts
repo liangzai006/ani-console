@@ -63,15 +63,24 @@ export const INSTANCE_COMPUTE_SPEC_BY_VALUE = INSTANCE_COMPUTE_SPEC_CATALOG;
 export const computeInstanceDetailTabKeys = [
   "ssh",
   "storage",
-  "network",
+  "snapshots",
+  "resources",
   "monitoring",
   "logs",
   "events",
   "operations",
-  "terminal",
 ] as const;
 
 export type ComputeInstanceDetailTabKey = (typeof computeInstanceDetailTabKeys)[number];
+
+export function openVmInstanceRemoteWindow(instanceId: string) {
+  const remoteWindow = window.open(
+    `/vm-instances/${encodeURIComponent(instanceId)}/vnc`,
+    "_blank",
+    "popup=yes,width=1280,height=800,noopener,noreferrer",
+  );
+  remoteWindow?.focus();
+}
 
 export const containerInstanceDetailTabKeys = [
   "release",
@@ -92,7 +101,7 @@ export const gpuInstanceDetailTabKeys = [
   "configuration",
   "storage",
   "gpu-metrics",
-  "network",
+  "resources",
   "monitoring",
   "logs",
   "events",

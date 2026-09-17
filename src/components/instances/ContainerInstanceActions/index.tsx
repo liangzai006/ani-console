@@ -1,6 +1,7 @@
 import type { InstanceLifecycleRequest, InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { Button, Dropdown, Menu, Space, Tooltip } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Tooltip } from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -134,8 +135,17 @@ export function ContainerInstanceActions({
   const rollbackAvailable = (instance.container?.history ?? []).some(
     (entry) => entry.revision !== instance.container?.revision,
   );
+  const lifecycleDisabled = canStart ? busy : !running || busy || protectedInstance;
+  const lifecycleAction = () => {
+    if (canStart) start.mutate();
+    else setStopVisible(true);
+  };
 
   const handleMoreAction = async (action: string) => {
+    if (action === "lifecycle") {
+      lifecycleAction();
+      return;
+    }
     if (action === "restart") {
       restart.mutate();
       return;
@@ -164,11 +174,6 @@ export function ContainerInstanceActions({
     setModalAction(action as ModalAction);
   };
 
-  const lifecycleDisabled = canStart ? busy : !running || busy || protectedInstance;
-  const lifecycleAction = () => {
-    if (canStart) start.mutate();
-    else setStopVisible(true);
-  };
   const lifecycleButton =
     display === "row" ? (
       <DataTableRowActionButton
@@ -198,6 +203,11 @@ export function ContainerInstanceActions({
     );
   const moreMenu = (
     <Menu onClickMenuItem={handleMoreAction}>
+      {display === "detail" ? (
+        <Menu.Item key="lifecycle" disabled={lifecycleDisabled}>
+          {canStart ? "启动" : "停止"}
+        </Menu.Item>
+      ) : null}
       <Menu.Item key="restart" disabled={!running || busy}>
         重启
       </Menu.Item>
@@ -268,15 +278,11 @@ export function ContainerInstanceActions({
           </Dropdown>
         </DataTableRowActions>
       ) : (
-        <Space>
-          {lifecycleControl}
-          <Dropdown trigger="click" position="br" droplist={moreMenu}>
-            <Button disabled={busy}>
-              更多操作
-              <i className="iconfont icon-down-chevron-small ml-1" aria-hidden="true" />
-            </Button>
-          </Dropdown>
-        </Space>
+        <Dropdown trigger="click" position="br" droplist={moreMenu}>
+          <Button disabled={busy} aria-label="更多操作" title="更多操作">
+            <IconMoreVertical />
+          </Button>
+        </Dropdown>
       )}
 
       {stopVisible && (
