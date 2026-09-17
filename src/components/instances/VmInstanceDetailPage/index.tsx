@@ -8,7 +8,6 @@ import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
-import { InstanceResourceAssociations } from "@/components/instances/InstanceResourceAssociations";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { VmInstanceActions } from "@/components/instances/VmInstanceActions";
 import { formatDateTime } from "@/lib/format";
@@ -282,7 +281,7 @@ export function VmInstanceDetailPage({
         tabs={[
           {
             key: "ssh",
-            label: "SSH 与访问",
+            label: "远程连接",
             content: (
               <VmInstanceSshAccess
                 instance={instance}
@@ -325,13 +324,8 @@ export function VmInstanceDetailPage({
             ),
           },
           {
-            key: "resources",
-            label: "资源关联",
-            content: <InstanceResourceAssociations instance={instance} />,
-          },
-          {
             key: "monitoring",
-            label: "监控",
+            label: "资源监控",
             content: <InstanceMetrics instanceId={instance.id} instanceKind="vm" />,
           },
           {

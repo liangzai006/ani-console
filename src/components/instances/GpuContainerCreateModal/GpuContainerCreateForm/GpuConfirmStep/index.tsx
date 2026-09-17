@@ -3,7 +3,6 @@ import { ImageNameText } from "@/components/common";
 import {
   type Filesystem,
   type FormValues,
-  type GpuSchedulingQueue,
   type GpuSpecOption,
   type RegistryImage,
   type Volume,
@@ -15,7 +14,6 @@ export function GpuConfirmStep({
   volume,
   filesystem,
   gpuSpec,
-  schedulingQueue,
   securityGroupName,
 }: {
   values: FormValues;
@@ -23,7 +21,6 @@ export function GpuConfirmStep({
   volume?: Volume;
   filesystem?: Filesystem;
   gpuSpec?: GpuSpecOption;
-  schedulingQueue?: GpuSchedulingQueue;
   securityGroupName: string;
 }) {
   return (
@@ -46,10 +43,6 @@ export function GpuConfirmStep({
           {
             label: "资源",
             value: `${values.compute_spec} · GPU ${gpuSpec?.display_name ?? values.spec_id} · 副本 ${values.replicas}`,
-          },
-          {
-            label: "调度队列",
-            value: schedulingQueue?.name || values.queue_name || "-",
           },
           {
             label: "网络",

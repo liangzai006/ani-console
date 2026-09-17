@@ -936,30 +936,270 @@
 }
 
 .topnav-user {
+  height: 36px;
   gap: 8px;
+  padding: 2px;
+  border-radius: 4px;
 }
 
 .topnav-user-avatar {
-  width: 28px;
-  height: 28px;
-  border: 0;
-  background: transparent;
-  color: var(--color-text-1);
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(var(--primary-6), 0.1);
+  background: var(--color-bg-2);
+  color: rgb(var(--primary-6));
 }
 
 .topnav-user-avatar .arco-icon {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .topnav-user-name {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.topnav-user-chevron {
-  margin-left: 2px;
+.topnav-user:hover .topnav-user-name,
+.topnav-user:focus-visible .topnav-user-name,
+.topnav-user[aria-expanded="true"] .topnav-user-name {
+  color: rgb(var(--primary-6));
+}
+
+.topnav-user-divider {
+  width: 1px;
+  height: 32px;
+  margin: 0 4px;
+  background: var(--color-border-2);
+}
+
+.topnav-user-card {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  gap: 8px;
+  overflow: hidden;
+  padding-bottom: 24px;
+  border-radius: 8px;
+  background: var(--color-bg-popup);
+  box-shadow: 0 2px 5px rgba(42, 89, 161, 0.08);
+}
+
+.topnav-user-card-header {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 132px;
+  gap: 24px;
+  padding: 32px 24px 24px;
+  background: linear-gradient(to bottom, var(--color-primary-light-1), var(--color-bg-popup));
+}
+
+.topnav-user-card-avatar {
+  display: inline-flex;
+  flex: 0 0 64px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 64px;
+  height: 64px;
+  border: 1.5px solid rgba(var(--primary-6), 0.1);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  color: rgb(var(--primary-6));
+}
+
+.topnav-user-card-avatar .arco-icon {
+  font-size: 24px;
+}
+
+.topnav-user-card-profile {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.topnav-user-card-profile strong {
+  overflow: hidden;
+  color: var(--color-text-1);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topnav-user-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--color-text-1);
   font-size: 12px;
+  line-height: 20px;
+}
+
+.topnav-user-card-meta .arco-icon {
+  flex: 0 0 auto;
+  color: rgb(var(--primary-4));
+  font-size: 12px;
+}
+
+.topnav-user-card-menu {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  padding: 0 20px;
+}
+
+.topnav-user-card-divider {
+  width: 100%;
+  border-top: 1px solid var(--color-border-2);
+}
+
+.topnav-user-card-action {
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 36px;
+  gap: 12px;
+  padding: 4px 16px 4px 8px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--color-text-1);
+  background: var(--color-bg-popup);
+  font: inherit;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.topnav-user-card-action:hover,
+.topnav-user-card-action:focus-visible {
+  background: var(--color-fill-1);
+}
+
+.topnav-user-card-action:focus-visible {
+  outline: 2px solid rgb(var(--primary-3));
+  outline-offset: -2px;
+}
+
+.topnav-user-card-action:hover::before {
+  position: absolute;
+  top: 50%;
+  left: -1px;
+  width: 2px;
+  height: 20px;
+  background: rgb(var(--primary-6));
+  box-shadow: 2px 0 8px rgba(var(--primary-6), 0.29);
+  content: "";
+  transform: translateY(-50%);
+}
+
+.topnav-user-card-action .arco-icon {
+  flex: 0 0 auto;
+  font-size: 16px;
+}
+
+.topnav-user-card-action-label {
+  flex: 1;
+}
+
+.topnav-user-card-action-arrow {
+  color: rgb(var(--primary-6));
+  opacity: 0;
+}
+
+.topnav-user-card-action:hover .topnav-user-card-action-arrow,
+.topnav-user-card-action:focus-visible .topnav-user-card-action-arrow {
+  opacity: 1;
+}
+
+.topnav-user-card-footer {
+  padding: 0 16px;
+}
+
+.topnav-user-card-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 36px;
+  gap: 6px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--color-text-1);
+  background: var(--color-fill-1);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.topnav-user-card-logout:hover {
+  background: var(--color-fill-2);
+}
+
+.topnav-user-card-logout:focus-visible {
+  outline: 2px solid rgb(var(--primary-3));
+  outline-offset: 1px;
+}
+
+.topnav-user-card-logout .arco-icon {
+  color: var(--color-text-3);
+  font-size: 14px;
+}
+
+.topnav-about-overview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0 20px;
+}
+
+.topnav-about-mark {
+  display: inline-flex;
+  flex: 0 0 48px;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgb(var(--primary-5)), rgb(var(--primary-7)));
+  color: var(--color-white);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.topnav-about-overview h3,
+.topnav-about-overview p {
+  margin: 0;
+}
+
+.topnav-about-overview h3 {
+  color: var(--color-text-1);
+  font-size: 18px;
+  line-height: 26px;
+}
+
+.topnav-about-overview p {
+  margin-top: 2px;
+  color: var(--color-text-3);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.topnav-about-placeholder {
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--color-fill-1);
+  color: var(--color-text-2);
+  font-size: 14px;
+  line-height: 24px;
 }
 
 @property --kaiwu-ring-angle {

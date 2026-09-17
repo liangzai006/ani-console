@@ -9,7 +9,7 @@ export type ListDataTableProps<T> = Omit<DataTableProps<T>, "className" | "noDat
   preserveTableOnEmpty?: boolean;
 };
 
-const DEFAULT_NAME_COLUMN_WIDTH = 280;
+const DEFAULT_NAME_COLUMN_WIDTH = 200;
 
 export function ListDataTable<T>({
   className,

@@ -160,9 +160,11 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
       }));
   const schedulingQueues = (gpuSchedulingQueues.data?.items ?? []) as GpuSchedulingQueue[];
   const selectedGpuSpec = gpuSpecs.find((item) => item.spec_id === values.spec_id);
-  const selectedSchedulingQueue = schedulingQueues.find((item) => item.name === values.queue_name);
+  const defaultSchedulingQueue =
+    schedulingQueues.find((item) => item.is_platform_default && item.status?.state !== "closed") ??
+    schedulingQueues.find((item) => item.status?.state !== "closed");
   const hasAvailableGpuSpec = gpuSpecs.some(isGpuSpecSelectable);
-  const hasAvailableQueue = schedulingQueues.some((item) => item.status?.state !== "closed");
+  const hasAvailableQueue = defaultSchedulingQueue !== undefined;
 
   useEffect(() => {
     if (visible) {
@@ -196,7 +198,10 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
       showMessage({ type: "warning", content: "请为块存储卷和文件存储设置不同的挂载路径" });
       return;
     }
-    onSubmit(values, String(defaultSecurityGroup?.id ?? ""));
+    onSubmit(
+      { ...values, queue_name: defaultSchedulingQueue?.name ?? "" },
+      String(defaultSecurityGroup?.id ?? ""),
+    );
   };
 
   return (
@@ -261,12 +266,9 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
                 <GpuResourceStep
                   values={values}
                   specs={gpuSpecs}
-                  queues={schedulingQueues}
                   quotaRemaining={gpuSpecAvailability.data?.quota_remaining ?? 0}
                   specsLoading={gpuSpecAvailability.isLoading}
-                  queuesLoading={gpuSchedulingQueues.isLoading}
                   specsError={gpuSpecAvailability.isError}
-                  queuesError={gpuSchedulingQueues.isError}
                   usingTemporarySpecs={usingTemporaryGpuSpecs}
                 />
               </>
@@ -290,7 +292,6 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
                 volume={selectedVolume}
                 filesystem={selectedFilesystem}
                 gpuSpec={selectedGpuSpec}
-                schedulingQueue={selectedSchedulingQueue}
                 securityGroupName={String(defaultSecurityGroup?.name ?? "平台自动配置")}
               />
             ) : null}

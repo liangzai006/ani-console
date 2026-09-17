@@ -43,7 +43,7 @@ export function GpuAdmissionSummary({
               percent={Math.round((availableSpecs / specs.length) * 100)}
             />
             <div className="min-w-0">
-              <Typography.Title heading={5} className="!mb-1 !mt-0">
+              <Typography.Title heading={5} className="mb-1! mt-0!">
                 {availableSpecs} / {specs.length} 个规格可创建
               </Typography.Title>
               <Typography.Text type="secondary">

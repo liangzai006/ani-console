@@ -1,6 +1,6 @@
 import type { TableColumnProps, TableProps } from "@arco-design/web-react";
 
-const DEFAULT_COLUMN_WIDTH = 160;
+const DEFAULT_COLUMN_WIDTH = 200;
 const DEFAULT_NAME_COLUMN_WIDTH = 280;
 const DEFAULT_ACTION_COLUMN_WIDTH = 180;
 const CELL_HORIZONTAL_PADDING = 32;

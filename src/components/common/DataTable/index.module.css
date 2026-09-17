@@ -1,14 +1,19 @@
 .nameCell {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 2px;
 }
 
 .name {
-  width: fit-content;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
   color: var(--list-primary);
   font-size: 14px;
   line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .name :global(a) {

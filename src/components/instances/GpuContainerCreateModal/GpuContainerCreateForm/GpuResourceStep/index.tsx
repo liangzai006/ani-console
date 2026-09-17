@@ -1,17 +1,6 @@
-import { Alert, Form, Input, Select, Space, Tag } from "@arco-design/web-react";
+import { Alert, Form, Input, Select, Tag } from "@arco-design/web-react";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
-import {
-  type FormValues,
-  type GpuSchedulingQueue,
-  type GpuSpecOption,
-  isGpuSpecSelectable,
-} from "../../types";
-
-const WORKLOAD_CLASS_LABELS: Record<GpuSchedulingQueue["workload_class"], string> = {
-  inference: "推理",
-  training: "训练",
-  batch: "批任务",
-};
+import { type FormValues, type GpuSpecOption, isGpuSpecSelectable } from "../../types";
 
 function specStatusTag(spec: GpuSpecOption) {
   if (spec.source === "temporary") {
@@ -33,22 +22,16 @@ function specStatusTag(spec: GpuSpecOption) {
 export function GpuResourceStep({
   values,
   specs,
-  queues,
   quotaRemaining,
   specsLoading,
-  queuesLoading,
   specsError,
-  queuesError,
   usingTemporarySpecs,
 }: {
   values: FormValues;
   specs: GpuSpecOption[];
-  queues: GpuSchedulingQueue[];
   quotaRemaining: number;
   specsLoading: boolean;
-  queuesLoading: boolean;
   specsError: boolean;
-  queuesError: boolean;
   usingTemporarySpecs: boolean;
 }) {
   const selectedSpec = specs.find((item) => item.spec_id === values.spec_id);
@@ -64,11 +47,6 @@ export function GpuResourceStep({
       ) : null}
       {!specsLoading && !specsError && !specs.some(isGpuSpecSelectable) ? (
         <Alert type="warning" showIcon content="当前没有可创建的 GPU 规格" className="mb-4" />
-      ) : null}
-      {!queuesLoading &&
-      !queuesError &&
-      !queues.some((queue) => queue.status?.state !== "closed") ? (
-        <Alert type="warning" showIcon content="当前没有可用的 GPU 调度队列" className="mb-4" />
       ) : null}
       <Form.Item
         field="spec_id"
@@ -102,28 +80,6 @@ export function GpuResourceStep({
           className="mb-4"
         />
       ) : null}
-      <Form.Item
-        field="queue_name"
-        label="调度队列"
-        rules={[{ required: true, message: "请选择调度队列" }]}
-      >
-        <Select loading={queuesLoading} placeholder="请选择调度队列" showSearch allowClear>
-          {queues.map((queue) => (
-            <Select.Option
-              key={queue.id}
-              value={queue.name}
-              disabled={queue.status?.state === "closed"}
-            >
-              <Space size={6}>
-                <span>{queue.name}</span>
-                <Tag>{WORKLOAD_CLASS_LABELS[queue.workload_class]}</Tag>
-                {queue.is_platform_default ? <Tag color="blue">平台默认</Tag> : null}
-                {queue.status?.state === "closed" ? <Tag color="gray">已关闭</Tag> : null}
-              </Space>
-            </Select.Option>
-          ))}
-        </Select>
-      </Form.Item>
       <InstanceComputeSpecSelect field="compute_spec" profile="gpu" />
       <Form.Item
         field="replicas"
