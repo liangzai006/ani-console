@@ -79,13 +79,13 @@ export function SandboxInstancesPage() {
     {
       key: "state",
       title: "状态",
-      width: 110,
+      width: 120,
       render: (_, item) => <StatusTag status={sessionStatus(item)} />,
     },
     {
       key: "template",
       title: "模板 / 镜像",
-      width: 220,
+      width: 150,
       ellipsis: true,
       render: (_, item) => getImageDisplayName(item.image),
     },
@@ -113,7 +113,7 @@ export function SandboxInstancesPage() {
     {
       key: "created",
       title: "创建时间",
-      width: 180,
+      width: 150,
       render: (_, item) => formatDateTime(item.created_at),
     },
   ];

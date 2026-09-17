@@ -102,30 +102,35 @@ export function GpuInstancesPage() {
     {
       key: "image",
       title: "镜像",
+      width: 100,
       ellipsis: true,
       render: (_, row) => getImageDisplayName(row.image),
     },
     {
       key: "replicas",
       title: "副本",
+      width: 80,
       render: (_, row) =>
         row.container ? `${row.container.ready_replicas} / ${row.container.replicas}` : "-",
     },
     {
       key: "rollout",
       title: "发布",
+      width: 120,
       render: (_, row) =>
         row.container?.rollout_status ? <StatusTag status={row.container.rollout_status} /> : "-",
     },
     {
       key: "node",
       title: "节点",
+      width: 100,
       dataIndex: "compute.node_name",
       placeholder: "-",
     },
     {
       key: "created",
       title: "创建时间",
+      width: 150,
       render: (_, row) => formatDateTime(row.created_at),
     },
   ];

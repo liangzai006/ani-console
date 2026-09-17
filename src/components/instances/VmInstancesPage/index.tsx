@@ -124,6 +124,7 @@ export function VmInstancesPage() {
     {
       key: "createdAt",
       title: "创建时间",
+      width: 150,
       render: (_, row) => formatDateTime(row.created_at),
     },
   ];

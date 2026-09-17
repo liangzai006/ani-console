@@ -104,7 +104,7 @@ export function ContainerInstancesPage({
     {
       key: "image",
       title: COLUMN_LABELS.image,
-      width: 220,
+      width: 100,
       ellipsis: true,
       render: (_, row) => getImageDisplayName(row.record.image),
     },
@@ -112,11 +112,13 @@ export function ContainerInstancesPage({
       key: "cpuMemory",
       title: COLUMN_LABELS.cpuMemory,
       dataIndex: "cpuMemory",
+      width: 100,
     },
     {
       key: "replicas",
       title: COLUMN_LABELS.replicas,
       dataIndex: "replicas",
+      width: 80,
     },
     {
       key: "rolloutStatus",
@@ -128,15 +130,19 @@ export function ContainerInstancesPage({
       key: "node",
       title: COLUMN_LABELS.node,
       dataIndex: "node",
+      width: 120,
+      ellipsis: true,
     },
     {
       key: "endpoint",
       title: COLUMN_LABELS.endpoint,
       dataIndex: "endpoint",
+      width: 120,
     },
     {
       key: "createdAt",
       title: COLUMN_LABELS.createdAt,
+      width: 150,
       render: (_, row) => formatDateTime(row.createdAt),
     },
   ];
