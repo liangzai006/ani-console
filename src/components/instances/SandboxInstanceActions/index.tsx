@@ -1,12 +1,12 @@
 import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { Button, Dropdown, Menu, Modal } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Modal, Space } from "@arco-design/web-react";
 import { IconDown, IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
 
-import type { SandboxInstanceDetailTabKey } from "@/lib/instances";
+import { openSandboxInstanceTerminalWindow } from "@/lib/instances";
 import { SandboxInstanceExtendModal } from "./SandboxInstanceExtendModal";
 
 type SandboxInstance = InstanceRecord;
@@ -25,13 +25,11 @@ export function SandboxInstanceActions({
   instance,
   onChanged,
   onDeleted,
-  onTabChange,
   display = "detail",
 }: {
   instance: SandboxInstance;
   onChanged: () => void;
   onDeleted: () => void;
-  onTabChange: (tab: SandboxInstanceDetailTabKey) => void;
   display?: "row" | "detail";
 }) {
   const [extendVisible, setExtendVisible] = useState(false);
@@ -72,7 +70,7 @@ export function SandboxInstanceActions({
       return;
     }
     if (action === "terminal") {
-      onTabChange("terminal");
+      openSandboxInstanceTerminalWindow(instance.id);
       return;
     }
     if (action === "extend") {
@@ -105,7 +103,7 @@ export function SandboxInstanceActions({
         活跃续期
       </Menu.Item>
       <Menu.Item key="terminal" disabled={!terminalAvailable}>
-        打开终端
+        远程终端
       </Menu.Item>
       <Menu.Item
         key="delete"
@@ -132,16 +130,25 @@ export function SandboxInstanceActions({
           </Dropdown>
         </DataTableRowActions>
       ) : (
-        <Dropdown trigger="click" position="br" droplist={menu}>
+        <Space>
           <Button
-            disabled={busy}
-            loading={lifecycle.isPending}
-            aria-label="更多操作"
-            title="更多操作"
+            type="primary"
+            disabled={!terminalAvailable}
+            onClick={() => openSandboxInstanceTerminalWindow(instance.id)}
           >
-            <IconMoreVertical />
+            远程终端
           </Button>
-        </Dropdown>
+          <Dropdown trigger="click" position="br" droplist={menu}>
+            <Button
+              disabled={busy}
+              loading={lifecycle.isPending}
+              aria-label="更多操作"
+              title="更多操作"
+            >
+              <IconMoreVertical />
+            </Button>
+          </Dropdown>
+        </Space>
       )}
 
       <SandboxInstanceExtendModal

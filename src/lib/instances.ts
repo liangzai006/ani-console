@@ -100,6 +100,15 @@ export function openGpuInstanceTerminalWindow(instanceId: string) {
   remoteWindow?.focus();
 }
 
+export function openSandboxInstanceTerminalWindow(instanceId: string) {
+  const remoteWindow = window.open(
+    `/sandbox-instances/${encodeURIComponent(instanceId)}/terminal`,
+    "_blank",
+    "popup=yes,width=1280,height=800,noopener,noreferrer",
+  );
+  remoteWindow?.focus();
+}
+
 export const containerInstanceDetailTabKeys = [
   "release",
   "configuration",
@@ -130,7 +139,6 @@ export type GpuInstanceDetailTabKey = (typeof gpuInstanceDetailTabKeys)[number];
 export const sandboxInstanceDetailTabKeys = [
   "access",
   "env",
-  "terminal",
   "code",
   "files",
   "checkpoints",

@@ -17,6 +17,7 @@ const STATUS_COLOR: Record<string, "green" | "orange" | "red" | "blue" | "gray" 
   failed: "red",
   error: "red",
   deleted: "gray",
+  expired: "gray",
   deleting: "red",
   stopped: "gray",
   accepted: "arcoblue",

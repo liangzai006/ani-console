@@ -53,6 +53,7 @@ import { Route as AuthenticatedVpcsIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedVpcsVpcIdRouteImport } from './routes/_authenticated/vpcs/$vpcId'
 import { Route as ContainerInstancesInstanceIdTerminalRouteImport } from './routes/container-instances.$instanceId.terminal'
 import { Route as GpuInstancesInstanceIdTerminalRouteImport } from './routes/gpu-instances.$instanceId.terminal'
+import { Route as SandboxInstancesInstanceIdTerminalRouteImport } from './routes/sandbox-instances.$instanceId.terminal'
 import { Route as VmInstancesInstanceIdVncRouteImport } from './routes/vm-instances.$instanceId.vnc'
 import { Route as AuthenticatedObjectsBucketIdIndexRouteImport } from './routes/_authenticated/objects/$bucketId/index'
 import { Route as AuthenticatedObjectsBucketIdObjectIdRouteImport } from './routes/_authenticated/objects/$bucketId/$objectId'
@@ -311,6 +312,12 @@ const GpuInstancesInstanceIdTerminalRoute =
     path: '/gpu-instances/$instanceId/terminal',
     getParentRoute: () => rootRouteImport,
   } as any)
+const SandboxInstancesInstanceIdTerminalRoute =
+  SandboxInstancesInstanceIdTerminalRouteImport.update({
+    id: '/sandbox-instances/$instanceId/terminal',
+    path: '/sandbox-instances/$instanceId/terminal',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const VmInstancesInstanceIdVncRoute =
   VmInstancesInstanceIdVncRouteImport.update({
     id: '/vm-instances/$instanceId/vnc',
@@ -354,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/vpcs/$vpcId': typeof AuthenticatedVpcsVpcIdRoute
   '/container-instances/$instanceId/terminal': typeof ContainerInstancesInstanceIdTerminalRoute
   '/gpu-instances/$instanceId/terminal': typeof GpuInstancesInstanceIdTerminalRoute
+  '/sandbox-instances/$instanceId/terminal': typeof SandboxInstancesInstanceIdTerminalRoute
   '/vm-instances/$instanceId/vnc': typeof VmInstancesInstanceIdVncRoute
   '/container-instances/': typeof AuthenticatedContainerInstancesIndexRoute
   '/filesystems/': typeof AuthenticatedFilesystemsIndexRoute
@@ -400,6 +408,7 @@ export interface FileRoutesByTo {
   '/vpcs/$vpcId': typeof AuthenticatedVpcsVpcIdRoute
   '/container-instances/$instanceId/terminal': typeof ContainerInstancesInstanceIdTerminalRoute
   '/gpu-instances/$instanceId/terminal': typeof GpuInstancesInstanceIdTerminalRoute
+  '/sandbox-instances/$instanceId/terminal': typeof SandboxInstancesInstanceIdTerminalRoute
   '/vm-instances/$instanceId/vnc': typeof VmInstancesInstanceIdVncRoute
   '/container-instances': typeof AuthenticatedContainerInstancesIndexRoute
   '/filesystems': typeof AuthenticatedFilesystemsIndexRoute
@@ -450,6 +459,7 @@ export interface FileRoutesById {
   '/_authenticated/vpcs/$vpcId': typeof AuthenticatedVpcsVpcIdRoute
   '/container-instances/$instanceId/terminal': typeof ContainerInstancesInstanceIdTerminalRoute
   '/gpu-instances/$instanceId/terminal': typeof GpuInstancesInstanceIdTerminalRoute
+  '/sandbox-instances/$instanceId/terminal': typeof SandboxInstancesInstanceIdTerminalRoute
   '/vm-instances/$instanceId/vnc': typeof VmInstancesInstanceIdVncRoute
   '/_authenticated/container-instances/': typeof AuthenticatedContainerInstancesIndexRoute
   '/_authenticated/filesystems/': typeof AuthenticatedFilesystemsIndexRoute
@@ -500,6 +510,7 @@ export interface FileRouteTypes {
     | '/vpcs/$vpcId'
     | '/container-instances/$instanceId/terminal'
     | '/gpu-instances/$instanceId/terminal'
+    | '/sandbox-instances/$instanceId/terminal'
     | '/vm-instances/$instanceId/vnc'
     | '/container-instances/'
     | '/filesystems/'
@@ -546,6 +557,7 @@ export interface FileRouteTypes {
     | '/vpcs/$vpcId'
     | '/container-instances/$instanceId/terminal'
     | '/gpu-instances/$instanceId/terminal'
+    | '/sandbox-instances/$instanceId/terminal'
     | '/vm-instances/$instanceId/vnc'
     | '/container-instances'
     | '/filesystems'
@@ -595,6 +607,7 @@ export interface FileRouteTypes {
     | '/_authenticated/vpcs/$vpcId'
     | '/container-instances/$instanceId/terminal'
     | '/gpu-instances/$instanceId/terminal'
+    | '/sandbox-instances/$instanceId/terminal'
     | '/vm-instances/$instanceId/vnc'
     | '/_authenticated/container-instances/'
     | '/_authenticated/filesystems/'
@@ -625,6 +638,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRouteWithChildren
   ContainerInstancesInstanceIdTerminalRoute: typeof ContainerInstancesInstanceIdTerminalRoute
   GpuInstancesInstanceIdTerminalRoute: typeof GpuInstancesInstanceIdTerminalRoute
+  SandboxInstancesInstanceIdTerminalRoute: typeof SandboxInstancesInstanceIdTerminalRoute
   VmInstancesInstanceIdVncRoute: typeof VmInstancesInstanceIdVncRoute
 }
 
@@ -938,6 +952,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GpuInstancesInstanceIdTerminalRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sandbox-instances/$instanceId/terminal': {
+      id: '/sandbox-instances/$instanceId/terminal'
+      path: '/sandbox-instances/$instanceId/terminal'
+      fullPath: '/sandbox-instances/$instanceId/terminal'
+      preLoaderRoute: typeof SandboxInstancesInstanceIdTerminalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vm-instances/$instanceId/vnc': {
       id: '/vm-instances/$instanceId/vnc'
       path: '/vm-instances/$instanceId/vnc'
@@ -1097,6 +1118,8 @@ const rootRouteChildren: RootRouteChildren = {
   ContainerInstancesInstanceIdTerminalRoute:
     ContainerInstancesInstanceIdTerminalRoute,
   GpuInstancesInstanceIdTerminalRoute: GpuInstancesInstanceIdTerminalRoute,
+  SandboxInstancesInstanceIdTerminalRoute:
+    SandboxInstancesInstanceIdTerminalRoute,
   VmInstancesInstanceIdVncRoute: VmInstancesInstanceIdVncRoute,
 }
 export const routeTree = rootRouteImport

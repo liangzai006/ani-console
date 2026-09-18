@@ -16,7 +16,6 @@ import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { SandboxInstanceActions } from "@/components/instances/SandboxInstanceActions";
-import { InstanceTerminal } from "@/components/instances/InstanceTerminal";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { getSandboxProviderLabel, type SandboxInstanceDetailTabKey } from "@/lib/instances";
 import { SandboxAccessPanel } from "./SandboxAccessPanel";
@@ -25,12 +24,7 @@ import { SandboxCodeRunner } from "./SandboxCodeRunner";
 import { SandboxEnvironmentPanel } from "./SandboxEnvironmentPanel";
 import { SandboxFilesPanel } from "./SandboxFilesPanel";
 import { SandboxSecurityEvents } from "./SandboxSecurityEvents";
-import {
-  formatDurationSeconds,
-  sandboxEgressLabel,
-  sandboxStateLabel,
-  sandboxTimeoutLabel,
-} from "./utils";
+import { formatDurationSeconds, sandboxEgressLabel, sandboxTimeoutLabel } from "./utils";
 
 export function SandboxInstanceDetailPage({
   instanceId,
@@ -74,7 +68,6 @@ export function SandboxInstanceDetailPage({
   const sandbox = instance.sandbox;
   const sessionState = sandbox.session_state ?? instance.state;
   const running = sessionState === "running";
-  const terminalAvailable = running && instance.access?.exec_available !== false;
 
   return (
     <DetailPageFrame
@@ -116,7 +109,6 @@ export function SandboxInstanceDetailPage({
             });
             navigate({ to: "/sandbox-instances" });
           }}
-          onTabChange={onTabChange}
         />
       }
       cards={[
@@ -207,21 +199,6 @@ export function SandboxInstanceDetailPage({
           key: "env",
           label: "环境变量",
           content: <SandboxEnvironmentPanel sandbox={sandbox} />,
-        },
-        {
-          key: "terminal",
-          label: "终端",
-          content: terminalAvailable ? (
-            <InstanceTerminal className="h-full" instanceId={instanceId} />
-          ) : (
-            <Empty
-              description={
-                running
-                  ? "当前 Sandbox Provider 未开放终端能力。"
-                  : `终端仅运行中的 Sandbox 可用，当前状态：${sandboxStateLabel(sessionState)}。`
-              }
-            />
-          ),
         },
         {
           key: "code",

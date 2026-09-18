@@ -1,9 +1,9 @@
 import { applyInstanceLifecycle, type InstanceRecord } from "@/api/instances";
 import type { RowAction } from "@/components/common";
 import { formatDurationSeconds } from "@/components/instances/SandboxInstanceDetailPage/utils";
+import { openSandboxInstanceTerminalWindow } from "@/lib/instances";
 import { Alert, Modal, Select } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 type Instance = InstanceRecord;
@@ -23,7 +23,6 @@ function sessionState(instance: Instance) {
 }
 
 export function useSandboxInstanceRowActions(onChanged: () => void) {
-  const navigate = useNavigate();
   const [extendTarget, setExtendTarget] = useState<Instance>();
   const [extendDuration, setExtendDuration] = useState("1h");
   const lifecycle = useMutation({
@@ -83,14 +82,9 @@ export function useSandboxInstanceRowActions(onChanged: () => void) {
     },
     {
       key: "terminal",
-      label: "打开终端",
+      label: "远程终端",
       disabled: (instance) => !running(instance) || instance.access?.exec_available === false,
-      onClick: (instance) =>
-        navigate({
-          to: "/sandbox-instances/$instanceId",
-          params: { instanceId: instance.id },
-          search: { tab: "terminal" },
-        }),
+      onClick: (instance) => openSandboxInstanceTerminalWindow(instance.id),
     },
     {
       key: "delete",
