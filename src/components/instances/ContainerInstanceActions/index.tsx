@@ -1,9 +1,8 @@
 import type { InstanceLifecycleRequest, InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { Button, Dropdown, Menu, Tooltip } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Space, Tooltip } from "@arco-design/web-react";
 import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
 
@@ -19,6 +18,7 @@ import { ContainerInstanceScaleModal } from "./ContainerInstanceScaleModal";
 import { ContainerInstanceStopModal } from "./ContainerInstanceStopModal";
 import { ContainerInstanceUpdateImageModal } from "./ContainerInstanceUpdateImageModal";
 import { copyToClipboard } from "@/lib/clipboard";
+import { openContainerInstanceTerminalWindow } from "@/lib/instances";
 
 type Instance = InstanceRecord;
 type LifecycleRequest = InstanceLifecycleRequest;
@@ -55,7 +55,6 @@ export function ContainerInstanceActions({
   onDeleted?: () => void;
   display?: "row" | "detail";
 }) {
-  const navigate = useNavigate();
   const [modalAction, setModalAction] = useState<ModalAction>();
   const [stopVisible, setStopVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
@@ -151,11 +150,7 @@ export function ContainerInstanceActions({
       return;
     }
     if (action === "terminal") {
-      void navigate({
-        to: "/container-instances/$instanceId",
-        params: { instanceId: instance.id },
-        search: { tab: "terminal" },
-      });
+      openContainerInstanceTerminalWindow(instance.id);
       return;
     }
     if (action === "copy_endpoint") {
@@ -253,7 +248,7 @@ export function ContainerInstanceActions({
         {protectedInstance ? "关闭终止保护" : "开启终止保护"}
       </Menu.Item>
       <Menu.Item key="terminal" disabled={!terminalAvailable}>
-        打开终端
+        远程终端
       </Menu.Item>
       <Menu.Item
         key="delete"
@@ -278,11 +273,20 @@ export function ContainerInstanceActions({
           </Dropdown>
         </DataTableRowActions>
       ) : (
-        <Dropdown trigger="click" position="br" droplist={moreMenu}>
-          <Button disabled={busy} aria-label="更多操作" title="更多操作">
-            <IconMoreVertical />
+        <Space>
+          <Button
+            type="primary"
+            disabled={!terminalAvailable}
+            onClick={() => openContainerInstanceTerminalWindow(instance.id)}
+          >
+            远程终端
           </Button>
-        </Dropdown>
+          <Dropdown trigger="click" position="br" droplist={moreMenu}>
+            <Button disabled={busy} aria-label="更多操作" title="更多操作">
+              <IconMoreVertical />
+            </Button>
+          </Dropdown>
+        </Space>
       )}
 
       {stopVisible && (

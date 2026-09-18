@@ -82,6 +82,24 @@ export function openVmInstanceRemoteWindow(instanceId: string) {
   remoteWindow?.focus();
 }
 
+export function openContainerInstanceTerminalWindow(instanceId: string) {
+  const remoteWindow = window.open(
+    `/container-instances/${encodeURIComponent(instanceId)}/terminal`,
+    "_blank",
+    "popup=yes,width=1280,height=800,noopener,noreferrer",
+  );
+  remoteWindow?.focus();
+}
+
+export function openGpuInstanceTerminalWindow(instanceId: string) {
+  const remoteWindow = window.open(
+    `/gpu-instances/${encodeURIComponent(instanceId)}/terminal`,
+    "_blank",
+    "popup=yes,width=1280,height=800,noopener,noreferrer",
+  );
+  remoteWindow?.focus();
+}
+
 export const containerInstanceDetailTabKeys = [
   "release",
   "configuration",
@@ -90,22 +108,20 @@ export const containerInstanceDetailTabKeys = [
   "monitoring",
   "logs",
   "events",
-  "terminal",
   "operations",
 ] as const;
 
 export type ContainerInstanceDetailTabKey = (typeof containerInstanceDetailTabKeys)[number];
 
 export const gpuInstanceDetailTabKeys = [
-  "releases",
+  "release",
   "configuration",
   "storage",
-  "gpu-metrics",
-  "resources",
+  "network",
   "monitoring",
+  "gpu-metrics",
   "logs",
   "events",
-  "terminal",
   "operations",
 ] as const;
 

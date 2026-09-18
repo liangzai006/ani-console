@@ -1,8 +1,8 @@
 import { applyInstanceLifecycle, type InstanceRecord } from "@/api/instances";
 import type { RowAction } from "@/components/common";
 import { copyToClipboard } from "@/lib/clipboard";
+import { openGpuInstanceTerminalWindow } from "@/lib/instances";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { GpuInstanceAttachFilesystemModal } from "../../GpuInstanceActions/GpuInstanceAttachFilesystemModal";
@@ -41,7 +41,6 @@ const BUSY_STATES = new Set<Instance["state"]>([
 ]);
 
 export function useGpuInstanceRowActions(onChanged: () => void) {
-  const navigate = useNavigate();
   const [dialog, setDialog] = useState<DialogState>();
   const start = useMutation({
     meta: {
@@ -154,14 +153,9 @@ export function useGpuInstanceRowActions(onChanged: () => void) {
     },
     {
       key: "terminal",
-      label: "打开终端",
+      label: "远程终端",
       disabled: (instance) => !running(instance) || instance.access?.exec_available === false,
-      onClick: (instance) =>
-        navigate({
-          to: "/gpu-instances/$instanceId",
-          params: { instanceId: instance.id },
-          search: { tab: "terminal" },
-        }),
+      onClick: (instance) => openGpuInstanceTerminalWindow(instance.id),
     },
     {
       key: "delete",

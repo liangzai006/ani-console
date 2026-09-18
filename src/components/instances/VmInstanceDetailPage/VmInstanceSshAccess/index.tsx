@@ -17,7 +17,7 @@ export function VmInstanceSshAccess({
   const command = privateIp && ssh ? `ssh -p ${ssh.port} ${ssh.username}@${privateIp}` : "";
 
   return (
-    <Space direction="vertical" size={20} className="w-full">
+    <Space direction="vertical" className="w-full">
       <Descriptions
         title="SSH 连接信息"
         column={1}
@@ -45,7 +45,7 @@ export function VmInstanceSshAccess({
       {command ? (
         <div>
           <Typography.Title heading={6}>连接命令</Typography.Title>
-          <pre className="overflow-auto rounded bg-app--fillsecondary) p-4 text-sm">{command}</pre>
+          <pre className="overflow-auto rounded bg-app--fillsecondary text-sm">{command}</pre>
         </div>
       ) : null}
       <Space>

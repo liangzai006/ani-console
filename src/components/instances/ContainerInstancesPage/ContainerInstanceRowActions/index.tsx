@@ -1,8 +1,8 @@
 import { applyInstanceLifecycle, type InstanceRecord } from "@/api/instances";
 import type { RowAction } from "@/components/common";
 import { copyToClipboard } from "@/lib/clipboard";
+import { openContainerInstanceTerminalWindow } from "@/lib/instances";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { ContainerInstanceAttachFilesystemModal } from "../../ContainerInstanceActions/ContainerInstanceAttachFilesystemModal";
@@ -42,7 +42,6 @@ const BUSY_STATES = new Set<Instance["state"]>([
 ]);
 
 export function useContainerInstanceRowActions(onChanged: () => void) {
-  const navigate = useNavigate();
   const [dialog, setDialog] = useState<DialogState>();
   const start = useMutation({
     meta: {
@@ -200,14 +199,9 @@ export function useContainerInstanceRowActions(onChanged: () => void) {
     },
     {
       key: "terminal",
-      label: "打开终端",
+      label: "远程终端",
       disabled: (row) => !running(record(row)) || record(row).access?.exec_available === false,
-      onClick: (row) =>
-        navigate({
-          to: "/container-instances/$instanceId",
-          params: { instanceId: record(row).id },
-          search: { tab: "terminal" },
-        }),
+      onClick: (row) => openContainerInstanceTerminalWindow(record(row).id),
     },
     {
       key: "delete",

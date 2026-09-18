@@ -10,14 +10,19 @@ export const Route = createFileRoute("/_authenticated/gpu-instances/$instanceId"
   }),
   component: function GpuInstanceDetailRoute() {
     const { instanceId } = Route.useParams();
-    const { tab = "releases" } = Route.useSearch();
+    const { tab = "release" } = Route.useSearch();
     const navigate = useNavigate({ from: Route.fullPath });
 
     return (
       <GpuInstanceDetailPage
         instanceId={instanceId}
         tab={tab}
-        onTabChange={(nextTab) => navigate({ search: { tab: nextTab }, replace: true })}
+        onTabChange={(nextTab) =>
+          navigate({
+            search: (current) => ({ ...current, tab: nextTab }),
+            replace: true,
+          })
+        }
       />
     );
   },

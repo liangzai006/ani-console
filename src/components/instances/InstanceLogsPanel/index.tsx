@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Alert, Button, Empty, Select, Space, Spin, Typography } from "@arco-design/web-react";
+import { Button, Empty, Select, Space, Spin, Typography } from "@arco-design/web-react";
 import { streamInstanceLogs } from "@/api/instances";
 import { closeNotification, showNotification } from "@/lib/feedback";
 import { withId } from "@/lib/id";
@@ -224,8 +224,8 @@ export function InstanceLogsPanel({
   if (!active) return <Empty description="打开日志 Tab 后连接日志流" />;
 
   return (
-    <div className="flex flex-col gap-3">
-      <Space wrap>
+    <div className="flex flex-col gap-3 h-full">
+      <Space>
         <Typography.Text type="secondary">级别过滤</Typography.Text>
         <Select value={level} onChange={setLevel} style={{ width: 140 }}>
           {LEVEL_OPTIONS.map((item) => (
@@ -247,7 +247,7 @@ export function InstanceLogsPanel({
       </Space>
       <div
         ref={outputRef}
-        className="max-h-130 overflow-auto rounded border border-(--color-border-2) bg-[#282e3f] text-[#f7f8fa] [&_.arco-empty-description]:text-[#f7f8fa] [&_.arco-empty-icon]:text-[#f7f8fa]"
+        className="flex-1 basis-50 overflow-auto rounded border border-app-border-strong bg-[#282e3f] text-[#f7f8fa] [&_.arco-empty-description]:text-[#f7f8fa] [&_.arco-empty-icon]:text-[#f7f8fa]"
         onScroll={handleScroll}
       >
         {streamStatus === "connecting" && logs.length === 0 ? (
@@ -255,7 +255,7 @@ export function InstanceLogsPanel({
             <Spin />
           </div>
         ) : logs.length === 0 ? (
-          <div className="py-8">
+          <div className="h-full flex items-center">
             <Empty description={streamStatus === "connected" ? "等待新日志" : "暂无日志"} />
           </div>
         ) : (
@@ -264,9 +264,6 @@ export function InstanceLogsPanel({
           </pre>
         )}
       </div>
-      {streamStatus === "connected" && logs.length === 0 ? (
-        <Alert type="info" content="连接正常，正在等待实例产生新日志。" />
-      ) : null}
     </div>
   );
 }

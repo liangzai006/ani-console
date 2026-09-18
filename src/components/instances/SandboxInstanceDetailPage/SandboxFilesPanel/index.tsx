@@ -117,10 +117,6 @@ export function SandboxFilesPanel({
   return (
     <>
       <Space direction="vertical" size={24} className="w-full">
-        <Alert
-          type="info"
-          content="文件列表和写入操作直接作用于实例的 /workspace。Core 当前未开放文件内容读取接口，因此这里只展示目录项，不伪造文件预览。"
-        />
         {!running ? (
           <Alert type="warning" content="当前实例不是运行状态，写入和删除文件不可用。" />
         ) : null}
@@ -222,7 +218,7 @@ export function SandboxFilesPanel({
               prefix={directory === "." ? undefined : `${directory}/`}
             />
           </Form.Item>
-          <Form.Item label="文本内容">
+          <Form.Item label="文本内容" required>
             <Input.TextArea
               value={content}
               onChange={setContent}

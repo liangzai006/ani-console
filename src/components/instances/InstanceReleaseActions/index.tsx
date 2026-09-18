@@ -1,6 +1,6 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Button, Form, Modal, Space } from "@arco-design/web-react";
+import { Button, Form, Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 
 import { InstanceRegistryImageSelect } from "@/components/instances/InstanceRegistryImageSelect";
@@ -42,62 +42,27 @@ export function InstanceReleaseActions({
       onChanged();
     },
   });
-  const rollback = useMutation({
-    meta: {
-      feedback: {
-        channel: "notification",
-        id: "instance-release-rollback",
-        action: "操作",
-        successText: "回滚操作已提交",
-        errorFallback: "操作失败，请稍后重试",
-      },
-    },
-    mutationFn: async () => {
-      const submitData = { action: "rollback" as const };
-      await applyInstanceLifecycle(instance.id, submitData);
-    },
-    onSuccess: () => {
-      onChanged();
-    },
-  });
-
   return (
-    <Space>
-      <Button
-        size="small"
-        disabled={busy}
-        onClick={() =>
-          Modal.confirm({
-            title: `更新镜像 · ${instance.name}`,
-            content: (
-              <Form form={form} layout="vertical">
-                <InstanceRegistryImageSelect
-                  field="image_id"
-                  enabled
-                  instanceKind={instance.kind === "gpu_container" ? "gpu_container" : "container"}
-                />
-              </Form>
-            ),
-            confirmLoading: updateImage.isPending,
-            onOk: async () => updateImage.mutateAsync(await validateForm(form)),
-          })
-        }
-      >
-        更新镜像
-      </Button>
-      <Button
-        size="small"
-        disabled={instance.state !== "stopped" || rollback.isPending}
-        onClick={() =>
-          Modal.confirm({
-            title: "回滚上一版",
-            content: `确定将「${instance.name}」回滚到上一修订版本？`,
-            onOk: () => rollback.mutateAsync(),
-          })
-        }
-      >
-        回滚上一版
-      </Button>
-    </Space>
+    <Button
+      disabled={busy}
+      onClick={() =>
+        Modal.confirm({
+          title: `更新镜像 · ${instance.name}`,
+          content: (
+            <Form form={form} layout="vertical">
+              <InstanceRegistryImageSelect
+                field="image_id"
+                enabled
+                instanceKind={instance.kind === "gpu_container" ? "gpu_container" : "container"}
+              />
+            </Form>
+          ),
+          confirmLoading: updateImage.isPending,
+          onOk: async () => updateImage.mutateAsync(await validateForm(form)),
+        })
+      }
+    >
+      更新镜像
+    </Button>
   );
 }

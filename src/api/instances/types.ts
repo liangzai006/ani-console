@@ -25,6 +25,12 @@ export type InstanceState =
   | "deleted";
 export type SandboxNetworkEgressPolicy = "deny_all" | "allowlist" | "internet";
 
+export interface InstanceEnvVar {
+  name: string;
+  value?: string;
+  secret_ref?: string;
+}
+
 export interface SandboxConfig {
   runtime_class: string;
   template_id?: string;
@@ -164,6 +170,7 @@ export interface InstanceRecord {
     ready_replicas: number;
     revision?: string | null;
     rollout_status?: "pending" | "progressing" | "healthy" | "degraded" | "rolled_back" | null;
+    env?: InstanceEnvVar[];
     history?: Array<{ revision: string; image?: string | null; created_at: string }>;
   } | null;
   gpu?: {

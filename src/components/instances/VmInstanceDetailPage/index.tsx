@@ -1,21 +1,20 @@
 import { withId } from "@/lib/id";
 import { getInstance, type InstanceRecord } from "@/api/instances";
-import { Button, Empty, Spin, Tooltip } from "@arco-design/web-react";
+import { Empty, Spin, Tooltip } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
+import { InstanceStorage } from "@/components/instances/InstanceStorage";
 import { VmInstanceActions } from "@/components/instances/VmInstanceActions";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { openVmInstanceRemoteWindow, type ComputeInstanceDetailTabKey } from "@/lib/instances";
 import { VmInstanceSnapshots } from "./VmInstanceSnapshots";
 import { VmInstanceSshAccess } from "./VmInstanceSshAccess";
-import { VmInstanceStorage } from "./VmInstanceStorage";
 
 type VmInstance = InstanceRecord;
 
@@ -59,7 +58,6 @@ export function VmInstanceDetailPage({
   onTabChange: (tab: ComputeInstanceDetailTabKey) => void;
 }) {
   const navigate = useNavigate();
-  const [mountKind, setMountKind] = useState<"volume" | "filesystem">();
   const detail = useQuery({
     meta: {
       errorNotification: {
@@ -292,24 +290,7 @@ export function VmInstanceDetailPage({
           {
             key: "storage",
             label: "存储挂载",
-            content: (
-              <VmInstanceStorage
-                instance={instance}
-                mountKind={mountKind}
-                onMountKindChange={setMountKind}
-                onChanged={refreshDetail}
-                volumeAction={
-                  <Button disabled={!stable || busy} onClick={() => setMountKind("volume")}>
-                    挂载云盘
-                  </Button>
-                }
-                filesystemAction={
-                  <Button disabled={!stable || busy} onClick={() => setMountKind("filesystem")}>
-                    挂载 NFS
-                  </Button>
-                }
-              />
-            ),
+            content: <InstanceStorage instance={instance} onChanged={refreshDetail} />,
           },
           {
             key: "snapshots",

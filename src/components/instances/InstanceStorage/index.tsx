@@ -5,9 +5,19 @@ import type { StorageFilesystem } from "@/api/storage/filesystems";
 import type { StorageVolume } from "@/api/storage/volumes";
 import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { Alert, Checkbox, Empty, Form, Input, Modal, Select, Space } from "@arco-design/web-react";
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Empty,
+  Form,
+  Input,
+  Modal,
+  Select,
+  Space,
+} from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
 
 import { validateForm } from "@/lib/form";
@@ -15,7 +25,22 @@ import { validateForm } from "@/lib/form";
 type Instance = InstanceRecord;
 type Volume = NonNullable<Instance["volumes"]>[number];
 type FilesystemAttachment = NonNullable<Instance["storage_attachments"]>[number];
-export type MountKind = "volume" | "filesystem";
+type MountKind = "volume" | "filesystem";
+
+const MOUNT_BUSY_STATES = new Set<Instance["state"]>([
+  "pending",
+  "provisioning",
+  "starting",
+  "stopping",
+  "deleting",
+]);
+
+function isMountDisabled(instance: Instance) {
+  if (instance.kind === "vm") {
+    return instance.state !== "running" && instance.state !== "stopped";
+  }
+  return MOUNT_BUSY_STATES.has(instance.state);
+}
 
 type MountFormValues = {
   resourceId?: string;
@@ -25,21 +50,15 @@ type MountFormValues = {
 
 export function InstanceStorage({
   instance,
-  mountKind,
-  onMountKindChange,
   onChanged,
-  volumeAction,
-  filesystemAction,
 }: {
   instance: Instance;
-  mountKind?: MountKind;
-  onMountKindChange: (kind?: MountKind) => void;
   onChanged: () => void;
-  volumeAction?: ReactNode;
-  filesystemAction?: ReactNode;
 }) {
   const [form] = Form.useForm<MountFormValues>();
+  const [mountKind, setMountKind] = useState<MountKind>();
   const [selectedResourceId, setSelectedResourceId] = useState("");
+  const mountDisabled = isMountDisabled(instance);
   const volumes = instance.volumes ?? [];
   const filesystems = (instance.storage_attachments ?? []).filter(
     (attachment) => attachment.resource_type === "filesystem",
@@ -148,7 +167,7 @@ export function InstanceStorage({
       await applyInstanceLifecycle(instance.id, submitData);
     },
     onSuccess: () => {
-      onMountKindChange(undefined);
+      setMountKind(undefined);
       setSelectedResourceId("");
       form.resetFields();
       onChanged();
@@ -159,7 +178,14 @@ export function InstanceStorage({
     <>
       <Space direction="vertical" size={24} className="w-full">
         <section>
-          <TableSectionHeader title="挂载点" extra={volumeAction} />
+          <TableSectionHeader
+            title="挂载点"
+            extra={
+              <Button disabled={mountDisabled} onClick={() => setMountKind("volume")}>
+                挂载云盘
+              </Button>
+            }
+          />
           <DataTable<Volume>
             data={volumes}
             rowKey={(volume) =>
@@ -185,7 +211,14 @@ export function InstanceStorage({
         </section>
 
         <section>
-          <TableSectionHeader title="文件存储 NFS" extra={filesystemAction} />
+          <TableSectionHeader
+            title="文件存储 NFS"
+            extra={
+              <Button disabled={mountDisabled} onClick={() => setMountKind("filesystem")}>
+                挂载 NFS
+              </Button>
+            }
+          />
           <DataTable<FilesystemAttachment>
             data={filesystems}
             rowKey={(filesystem) => `${filesystem.resource_id}:${filesystem.mount_path ?? ""}`}
@@ -228,7 +261,7 @@ export function InstanceStorage({
             (mountKind === "filesystem" && (mountTargets.isLoading || !hasAvailableMountTarget)),
         }}
         onCancel={() => {
-          onMountKindChange(undefined);
+          setMountKind(undefined);
           setSelectedResourceId("");
           form.resetFields();
         }}

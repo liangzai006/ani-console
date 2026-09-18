@@ -3,7 +3,6 @@ import type { InstanceRecord } from "@/api/instances";
 import { Button, Dropdown, Menu, Space, Tooltip } from "@arco-design/web-react";
 import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
 
@@ -20,6 +19,7 @@ import { GpuInstanceScaleModal } from "./GpuInstanceScaleModal";
 import { GpuInstanceStopModal } from "./GpuInstanceStopModal";
 import { GpuInstanceUpdateImageModal } from "./GpuInstanceUpdateImageModal";
 import { copyToClipboard } from "@/lib/clipboard";
+import { openGpuInstanceTerminalWindow } from "@/lib/instances";
 
 type Instance = InstanceRecord;
 type ModalAction =
@@ -48,7 +48,6 @@ export function GpuInstanceActions({
   onDeleted?: () => void;
   display?: "row" | "detail" | "release" | "configuration";
 }) {
-  const navigate = useNavigate();
   const [modalAction, setModalAction] = useState<ModalAction>();
   const [stopVisible, setStopVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
@@ -138,11 +137,7 @@ export function GpuInstanceActions({
       return;
     }
     if (action === "terminal") {
-      navigate({
-        to: "/gpu-instances/$instanceId",
-        params: { instanceId: instance.id },
-        search: { tab: "terminal" },
-      });
+      openGpuInstanceTerminalWindow(instance.id);
       return;
     }
     if (action === "copy_endpoint") {
@@ -175,7 +170,7 @@ export function GpuInstanceActions({
         扩缩容
       </Menu.Item>
       <Menu.Item key="terminal" disabled={!terminalAvailable}>
-        打开终端
+        远程终端
       </Menu.Item>
       <Menu.Item key="update_image" disabled={busy}>
         更新镜像
@@ -264,16 +259,25 @@ export function GpuInstanceActions({
           </Dropdown>
         </DataTableRowActions>
       ) : display === "detail" ? (
-        <Dropdown trigger="click" position="br" droplist={moreMenu}>
+        <Space>
           <Button
-            disabled={actionPending}
-            loading={actionPending}
-            aria-label="更多操作"
-            title="更多操作"
+            type="primary"
+            disabled={!terminalAvailable}
+            onClick={() => openGpuInstanceTerminalWindow(instance.id)}
           >
-            <IconMoreVertical />
+            远程终端
           </Button>
-        </Dropdown>
+          <Dropdown trigger="click" position="br" droplist={moreMenu}>
+            <Button
+              disabled={actionPending}
+              loading={actionPending}
+              aria-label="更多操作"
+              title="更多操作"
+            >
+              <IconMoreVertical />
+            </Button>
+          </Dropdown>
+        </Space>
       ) : display === "release" ? (
         <Space>
           <Button size="small" disabled={busy} onClick={() => setModalAction("update_image")}>

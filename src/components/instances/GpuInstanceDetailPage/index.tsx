@@ -1,14 +1,11 @@
 import { withId } from "@/lib/id";
 import { getInstance, type InstanceRecord } from "@/api/instances";
-import { Button, Empty, Space, Spin, Tag, Tooltip } from "@arco-design/web-react";
+import { Empty, Space, Spin, Tag, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
-import { InstanceTerminal } from "@/components/instances/InstanceTerminal";
-import { InstanceResourceAssociations } from "@/components/instances/InstanceResourceAssociations";
-import { InstanceReleases } from "@/components/instances/InstanceReleases";
+import { InstanceVersions } from "@/components/instances/InstanceVersions";
 import { GpuInstanceActions } from "@/components/instances/GpuInstanceActions";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
@@ -16,12 +13,11 @@ import type { GpuInstanceDetailTabKey } from "@/lib/instances";
 import { InstanceConfiguration } from "@/components/instances/InstanceConfiguration";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
+import { InstanceNetwork } from "@/components/instances/InstanceNetwork";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
-import { InstanceStorage, type MountKind } from "@/components/instances/InstanceStorage";
+import { InstanceStorage } from "@/components/instances/InstanceStorage";
 
 type Instance = InstanceRecord;
-
-const BUSY_STATES = new Set(["pending", "provisioning", "starting", "stopping", "deleting"]);
 
 function imageLabel(instance: Instance) {
   return getImageDisplayName(instance.image);
@@ -43,7 +39,6 @@ export function GpuInstanceDetailPage({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [mountKind, setMountKind] = useState<MountKind>();
   const detail = useQuery({
     meta: {
       errorNotification: {
@@ -90,9 +85,6 @@ export function GpuInstanceDetailPage({
   }
 
   const instance = detail.data;
-  const busy = BUSY_STATES.has(instance.state);
-  const terminalAvailable =
-    instance.state === "running" && instance.access?.exec_available !== false;
   if (instance.kind !== "gpu_container") {
     return <Empty description="当前资源不是 GPU 容器实例" />;
   }
@@ -355,59 +347,29 @@ export function GpuInstanceDetailPage({
       ]}
       tabs={[
         {
-          key: "releases",
-          label: "发布与回滚",
-          content: (
-            <InstanceReleases
-              instance={instance}
-              actions={
-                <GpuInstanceActions
-                  instance={instance}
-                  display="release"
-                  onChanged={refreshInstance}
-                />
-              }
-            />
-          ),
-        },
-        {
-          key: "storage",
-          label: "存储与挂载",
-          content: (
-            <InstanceStorage
-              instance={instance}
-              mountKind={mountKind}
-              onMountKindChange={setMountKind}
-              onChanged={() => detail.refetch()}
-              volumeAction={
-                <Button disabled={busy} onClick={() => setMountKind("volume")}>
-                  挂载云盘
-                </Button>
-              }
-              filesystemAction={
-                <Button disabled={busy} onClick={() => setMountKind("filesystem")}>
-                  挂载 NFS
-                </Button>
-              }
-            />
-          ),
+          key: "release",
+          label: "版本",
+          content: <InstanceVersions instance={instance} onChanged={refreshInstance} />,
         },
         {
           key: "configuration",
-          label: "配置与密钥",
-          content: (
-            <InstanceConfiguration
-              instance={instance}
-              onChanged={() => detail.refetch()}
-              secretAction={
-                <GpuInstanceActions
-                  instance={instance}
-                  display="configuration"
-                  onChanged={refreshInstance}
-                />
-              }
-            />
-          ),
+          label: "配置",
+          content: <InstanceConfiguration instance={instance} onChanged={() => detail.refetch()} />,
+        },
+        {
+          key: "storage",
+          label: "数据卷",
+          content: <InstanceStorage instance={instance} onChanged={() => detail.refetch()} />,
+        },
+        {
+          key: "network",
+          label: "网络",
+          content: <InstanceNetwork instance={instance} />,
+        },
+        {
+          key: "monitoring",
+          label: "资源监控",
+          content: <InstanceMetrics instanceId={instance.id} instanceKind="gpu_container" />,
         },
         {
           key: "gpu-metrics",
@@ -423,16 +385,6 @@ export function GpuInstanceDetailPage({
           ),
         },
         {
-          key: "resources",
-          label: "资源关联",
-          content: <InstanceResourceAssociations instance={instance} />,
-        },
-        {
-          key: "monitoring",
-          label: "监控",
-          content: <InstanceMetrics instanceId={instance.id} instanceKind="gpu_container" />,
-        },
-        {
           key: "logs",
           label: "日志",
           content: <InstanceLogsPanel instanceId={instance.id} active />,
@@ -443,21 +395,12 @@ export function GpuInstanceDetailPage({
           content: <InstanceEvents instanceId={instance.id} />,
         },
         {
-          key: "terminal",
-          label: "终端",
-          content: terminalAvailable ? (
-            <InstanceTerminal className="h-full" instanceId={instance.id} />
-          ) : (
-            <div className="py-12 text-center text-app-text-tertiary">终端仅运行中的实例可用</div>
-          ),
-        },
-        {
           key: "operations",
-          label: "操作历史",
+          label: "操作记录",
           content: <InstanceOperations instanceId={instance.id} />,
         },
       ]}
-      defaultTabKey="releases"
+      defaultTabKey="release"
       activeTabKey={tab}
       onTabChange={(key) => onTabChange(key as GpuInstanceDetailTabKey)}
       onBack={() => navigate({ to: "/gpu-instances" })}

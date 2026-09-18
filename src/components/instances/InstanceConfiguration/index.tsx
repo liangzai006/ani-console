@@ -1,9 +1,9 @@
-import type { InstanceRecord } from "@/api/instances";
+import type { InstanceEnvVar, InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { Descriptions, Empty, Modal, Space, Typography } from "@arco-design/web-react";
+import { DataTable, TableSectionHeader } from "@/components/common";
+import { Empty, Modal, Space, Tooltip, Typography } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { DataTable, TableSectionHeader } from "@/components/common";
 
 type Instance = InstanceRecord;
 
@@ -37,13 +37,13 @@ export function InstanceConfiguration({
   onChanged: () => void;
   secretAction?: ReactNode;
 }) {
+  const environmentVariables = instance.container?.env ?? [];
   const secretRefs = secretReferences(instance);
   const secretRows: SecretRow[] = secretRefs.map((reference) => ({
     reference,
     id: secretId(reference),
     purpose: secretPurpose(reference),
   }));
-  const scopes = instance.workload_identity?.scopes ?? [];
   const unbindSecret = useMutation({
     meta: {
       feedback: {
@@ -70,7 +70,48 @@ export function InstanceConfiguration({
     <Space direction="vertical" size={24} className="w-full">
       <section>
         <Typography.Title heading={6}>环境变量</Typography.Title>
-        <Empty description="暂无环境变量" />
+        <DataTable<InstanceEnvVar>
+          data={environmentVariables}
+          rowKey="name"
+          pagination={false}
+          noDataElement={<Empty description="暂无环境变量" />}
+          columns={[
+            { title: "名称", dataIndex: "name", ellipsis: true },
+            // {
+            //   title: "类型",
+            //   width: 120,
+            //   render: (_, environmentVariable) =>
+            //     environmentVariable.secret_ref ? (
+            //       <Tag color="purple">密钥引用</Tag>
+            //     ) : (
+            //       <Tag color="gray">普通值</Tag>
+            //     ),
+            // },
+            {
+              title: "值",
+              render: (_, environmentVariable) =>
+                environmentVariable.secret_ref ? (
+                  <Tooltip content="该变量引用密钥，不显示明文">
+                    <span className="font-mono">******</span>
+                  </Tooltip>
+                ) : environmentVariable.value === "" ? (
+                  <span className="font-mono">&quot;&quot;</span>
+                ) : (
+                  <Tooltip content={environmentVariable.value ?? "-"}>
+                    <span className="block min-w-0 truncate font-mono">
+                      {environmentVariable.value ?? "-"}
+                    </span>
+                  </Tooltip>
+                ),
+            },
+            // {
+            //   title: "密钥引用",
+            //   dataIndex: "secret_ref",
+            //   placeholder: "-",
+            //   ellipsis: true,
+            // },
+          ]}
+        />
       </section>
 
       <section>
@@ -98,30 +139,8 @@ export function InstanceConfiguration({
             },
           ]}
           columns={[
-            { title: "密钥", dataIndex: "id" },
+            { title: "密钥", dataIndex: "id", ellipsis: true },
             { title: "用途", dataIndex: "purpose" },
-          ]}
-        />
-      </section>
-
-      <section>
-        <Typography.Title heading={6}>Workload Identity</Typography.Title>
-        <Descriptions
-          column={1}
-          labelStyle={{ width: "120px" }}
-          data={[
-            {
-              label: "状态",
-              value: instance.workload_identity?.active ? "已绑定" : "未绑定",
-            },
-            {
-              label: "Key 前缀",
-              value: instance.workload_identity?.key_prefix ?? "-",
-            },
-            {
-              label: "Scopes",
-              value: scopes.length ? scopes.join("、") : "-",
-            },
           ]}
         />
       </section>

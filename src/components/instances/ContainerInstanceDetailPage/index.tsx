@@ -1,19 +1,17 @@
 import { withId } from "@/lib/id";
 import type { InstanceRecord } from "@/api/instances";
-import { Button, Descriptions, Tooltip } from "@arco-design/web-react";
+import { Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { InstanceConfiguration } from "@/components/instances/InstanceConfiguration";
-import { InstanceStorage, type MountKind } from "@/components/instances/InstanceStorage";
-import { InstanceTerminal } from "@/components/instances/InstanceTerminal";
-import { InstanceReleases } from "@/components/instances/InstanceReleases";
-import { InstanceReleaseActions } from "@/components/instances/InstanceReleaseActions";
+import { InstanceNetwork } from "@/components/instances/InstanceNetwork";
+import { InstanceStorage } from "@/components/instances/InstanceStorage";
+import { InstanceVersions } from "@/components/instances/InstanceVersions";
 import { ContainerInstanceActions } from "@/components/instances/ContainerInstanceActions";
 import { formatDateTime } from "@/lib/format";
 import {
@@ -34,7 +32,6 @@ export function ContainerInstanceDetailPage({
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [mountKind, setMountKind] = useState<MountKind>();
 
   const query = useQuery({
     meta: {
@@ -73,11 +70,6 @@ export function ContainerInstanceDetailPage({
     );
 
   const detail = query.data;
-
-  const isRunning = detail.state === "running";
-  const busy = ["pending", "provisioning", "starting", "stopping", "deleting"].includes(
-    detail.state ?? "",
-  );
 
   const nameValue =
     detail.compute?.cpu || detail.compute?.memory
@@ -164,68 +156,17 @@ export function ContainerInstanceDetailPage({
       tabs={[
         {
           key: "release",
-          label: "发布与回滚",
+          label: "版本",
           content: (
-            <InstanceReleases
+            <InstanceVersions
               instance={detail as InstanceRecord}
-              actions={
-                <InstanceReleaseActions
-                  instance={detail as InstanceRecord}
-                  onChanged={() => void query.refetch()}
-                />
-              }
-            />
-          ),
-        },
-        {
-          key: "network",
-          label: "网络",
-          content: (
-            <Descriptions
-              column={1}
-              data={[
-                {
-                  label: "VPC",
-                  value: getInstanceNetworkValue(detail, "vpc_id"),
-                },
-                {
-                  label: "子网",
-                  value: getInstanceNetworkValue(detail, "subnet_id"),
-                },
-                {
-                  label: "私网 IP",
-                  value: getInstanceDisplayIp(detail) || "-",
-                },
-                { label: "访问地址", value: detail.endpoint ?? "-" },
-              ]}
-            />
-          ),
-        },
-        {
-          key: "storage",
-          label: "存储与挂载",
-          content: (
-            <InstanceStorage
-              instance={detail as InstanceRecord}
-              mountKind={mountKind}
-              onMountKindChange={setMountKind}
               onChanged={() => void query.refetch()}
-              volumeAction={
-                <Button disabled={busy} onClick={() => setMountKind("volume")}>
-                  挂载云盘
-                </Button>
-              }
-              filesystemAction={
-                <Button disabled={busy} onClick={() => setMountKind("filesystem")}>
-                  挂载 NFS
-                </Button>
-              }
             />
           ),
         },
         {
           key: "configuration",
-          label: "配置与密钥",
+          label: "配置",
           content: (
             <InstanceConfiguration
               instance={detail as InstanceRecord}
@@ -234,8 +175,23 @@ export function ContainerInstanceDetailPage({
           ),
         },
         {
+          key: "storage",
+          label: "数据卷",
+          content: (
+            <InstanceStorage
+              instance={detail as InstanceRecord}
+              onChanged={() => void query.refetch()}
+            />
+          ),
+        },
+        {
+          key: "network",
+          label: "网络",
+          content: <InstanceNetwork instance={detail as InstanceRecord} />,
+        },
+        {
           key: "monitoring",
-          label: "监控",
+          label: "资源监控",
           content: <InstanceMetrics instanceId={instanceId} instanceKind="container" />,
         },
         {
@@ -249,17 +205,8 @@ export function ContainerInstanceDetailPage({
           content: <InstanceEvents instanceId={instanceId} />,
         },
         {
-          key: "terminal",
-          label: "终端",
-          content: isRunning ? (
-            <InstanceTerminal className="h-full" instanceId={instanceId} />
-          ) : (
-            <div className="py-12 text-center text-app-text-tertiary">终端仅运行中的实例可用</div>
-          ),
-        },
-        {
           key: "operations",
-          label: "操作历史",
+          label: "操作记录",
           content: <InstanceOperations instanceId={instanceId} />,
         },
       ]}

@@ -21,7 +21,12 @@ export const Route = createFileRoute("/_authenticated/container-instances/$insta
       <ContainerInstanceDetailPage
         instanceId={instanceId}
         tab={tab}
-        onTabChange={(nextTab) => navigate({ search: { tab: nextTab }, replace: true })}
+        onTabChange={(nextTab) =>
+          navigate({
+            search: (current) => ({ ...current, tab: nextTab }),
+            replace: true,
+          })
+        }
       />
     );
   },

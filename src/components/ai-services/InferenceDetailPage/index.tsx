@@ -1,8 +1,15 @@
 import {
+  applyInferenceServiceLifecycle,
+  deleteInferenceService,
+  getInferenceService,
+  listInferenceServicePolicies,
+  updateInferenceService,
+} from "@/api/ai-services/inference";
+import {
+  Link as ArcoLink,
   Button,
   Empty,
   InputNumber,
-  Link as ArcoLink,
   Modal,
   Space,
   Spin,
@@ -12,22 +19,15 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  applyInferenceServiceLifecycle,
-  deleteInferenceService,
-  getInferenceService,
-  listInferenceServicePolicies,
-  updateInferenceService,
-} from "@/api/ai-services/inference";
 
 import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
 import { copyToClipboard } from "@/lib/clipboard";
 import { formatDateTime } from "@/lib/format";
+import { withId } from "@/lib/id";
 import { InferenceInvocationTest } from "./InferenceInvocationTest";
 import { InferenceLogs } from "./InferenceLogs";
 import { InferencePolicies } from "./InferencePolicies";
 import { InferenceRelatedResources } from "./InferenceRelatedResources";
-import { withId } from "@/lib/id";
 
 type LifecycleAction = "start" | "stop" | "restart";
 
