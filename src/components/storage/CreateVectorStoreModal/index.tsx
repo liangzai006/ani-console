@@ -1,6 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
-import { useEffect, useMemo, useState } from "react";
 import { listModels } from "@/api/ai-services/models";
 import {
   createVectorStore,
@@ -8,6 +5,9 @@ import {
   type VectorStore,
 } from "@/api/storage/vector-stores";
 import { withId } from "@/lib/id";
+import { Form, Input, InputNumber, Modal, Select, Typography } from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 
 export function CreateVectorStoreModal({
   visible,
@@ -109,9 +109,6 @@ export function CreateVectorStoreModal({
             ))}
           </Select>
         </Form.Item>
-        {!models.error && !models.isLoading && modelOptions.length === 0 ? (
-          <Alert type="warning" showIcon content="暂无已就绪的 Embedding 模型" />
-        ) : null}
         <Form.Item label="向量维度" required>
           <InputNumber
             value={dimension}

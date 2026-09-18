@@ -1,9 +1,16 @@
 import { withId } from "@/lib/id";
 import { getInstance, type InstanceRecord } from "@/api/instances";
-import { Empty, Space, Spin, Tag, Tooltip } from "@arco-design/web-react";
+import { Empty, Space, Tag, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
+import {
+  AliIcon,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ImageNameText,
+  ResourceId,
+  StatusTag,
+} from "@/components/common";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceVersions } from "@/components/instances/InstanceVersions";
 import { GpuInstanceActions } from "@/components/instances/GpuInstanceActions";
@@ -50,38 +57,8 @@ export function GpuInstanceDetailPage({
     queryKey: ["gpu-instance", instanceId],
     queryFn: () => getInstance(instanceId),
   });
-  if (detail.isLoading && !detail.data) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  }
-
   if (!detail.data) {
-    return (
-      <DetailPageFrame
-        breadcrumbs={[
-          { label: "算力" },
-          { label: "GPU 容器实例", to: "/gpu-instances" },
-          { label: instanceId },
-        ]}
-        title={instanceId}
-        icon={<AliIcon name="GPUrongqishili" size={28} />}
-        headerItems={[
-          { label: "实例 ID", value: instanceId },
-          { label: "GPU", value: "-" },
-          { label: "创建时间", value: "-" },
-        ]}
-        cards={[
-          {
-            key: "basic",
-            title: "基本信息",
-            fields: [{ label: "实例 ID", value: instanceId }],
-          },
-        ]}
-      />
-    );
+    return <DetailPagePlaceholder loading={detail.isLoading} />;
   }
 
   const instance = detail.data;
@@ -222,7 +199,6 @@ export function GpuInstanceDetailPage({
       }
       icon={<AliIcon name="GPUrongqishili" size={28} />}
       headerItems={[
-        { label: "实例 ID", value: instance.id },
         { label: "GPU", value: gpuLabel(instance) },
         { label: "创建时间", value: formatDateTime(instance.created_at) },
       ]}
@@ -246,7 +222,7 @@ export function GpuInstanceDetailPage({
           key: "basic",
           title: "基本信息",
           fields: [
-            { label: "ID", value: instance.id },
+            { label: "ID", value: <ResourceId value={instance.id} /> },
             {
               label: "状态",
               value: (

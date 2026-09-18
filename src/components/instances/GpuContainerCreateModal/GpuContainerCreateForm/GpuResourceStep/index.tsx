@@ -1,5 +1,5 @@
-import { Alert, Form, Input, Select, Tag } from "@arco-design/web-react";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
+import { Form, Input, Select, Tag } from "@arco-design/web-react";
 import { type FormValues, type GpuSpecOption, isGpuSpecSelectable } from "../../types";
 
 function specStatusTag(spec: GpuSpecOption) {
@@ -20,34 +20,16 @@ function specStatusTag(spec: GpuSpecOption) {
 }
 
 export function GpuResourceStep({
-  values,
   specs,
-  quotaRemaining,
   specsLoading,
-  specsError,
-  usingTemporarySpecs,
 }: {
   values: FormValues;
   specs: GpuSpecOption[];
   quotaRemaining: number;
   specsLoading: boolean;
-  specsError: boolean;
-  usingTemporarySpecs: boolean;
 }) {
-  const selectedSpec = specs.find((item) => item.spec_id === values.spec_id);
   return (
     <>
-      {usingTemporarySpecs ? (
-        <Alert
-          type="info"
-          showIcon
-          content="GPU 规格接口当前暂无数据，暂提供 RTX 4090 整卡与 vGPU 选项；接口返回规格后将自动切换。"
-          className="mb-4"
-        />
-      ) : null}
-      {!specsLoading && !specsError && !specs.some(isGpuSpecSelectable) ? (
-        <Alert type="warning" showIcon content="当前没有可创建的 GPU 规格" className="mb-4" />
-      ) : null}
       <Form.Item
         field="spec_id"
         label="GPU 规格"
@@ -68,18 +50,6 @@ export function GpuResourceStep({
           ))}
         </Select>
       </Form.Item>
-      {selectedSpec ? (
-        <Alert
-          type="info"
-          showIcon
-          content={
-            selectedSpec.source === "temporary"
-              ? `已选 ${selectedSpec.display_name}，提交规格 ${selectedSpec.spec_id}`
-              : `已选规格 ${selectedSpec.spec_id}，单副本占用 ${selectedSpec.availability?.gpu_count ?? 1} 卡，当前剩余配额 ${quotaRemaining} 卡`
-          }
-          className="mb-4"
-        />
-      ) : null}
       <InstanceComputeSpecSelect field="compute_spec" profile="gpu" />
       <Form.Item
         field="replicas"

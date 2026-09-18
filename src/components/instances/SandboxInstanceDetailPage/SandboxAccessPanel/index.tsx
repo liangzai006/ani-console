@@ -1,28 +1,15 @@
 import {
-  createSandboxPort,
   deleteSandboxPort,
   type InstanceRecord,
   type SandboxInstanceStatus,
 } from "@/api/instances";
-import {
-  Alert,
-  Button,
-  Empty,
-  Form,
-  Input,
-  InputNumber,
-  Modal,
-  Select,
-  Space,
-  Tag,
-  Typography,
-} from "@arco-design/web-react";
+import { DataTable } from "@/components/common";
+import { copyToClipboard } from "@/lib/clipboard";
+import { Button, Empty, Modal, Space, Tag, Typography } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { DataTable } from "@/components/common";
-import { getImageDisplayName } from "@/lib/render";
+import { SandboxPortOpenModal } from "./SandboxPortOpenModal";
 import { SandboxTokenIssueModal } from "./SandboxTokenIssueModal";
-import { copyToClipboard } from "@/lib/clipboard";
 
 type SandboxInstance = InstanceRecord;
 type SandboxStatus = NonNullable<SandboxInstanceStatus>;
@@ -38,38 +25,9 @@ export function SandboxAccessPanel({
   const sandbox = instance.sandbox!;
   const [tokenVisible, setTokenVisible] = useState(false);
   const [portVisible, setPortVisible] = useState(false);
-  const [port, setPort] = useState(8080);
-  const [portName, setPortName] = useState("");
-  const [protocol, setProtocol] = useState<"tcp" | "http">("http");
   const running = sandbox.session_state === "running";
   const tokenAvailable = sandbox.connectivity?.token_available !== false;
   const portsAvailable = sandbox.connectivity?.ports_available !== false;
-  const browserTemplate = getImageDisplayName(instance.image).toLowerCase().includes("browser");
-
-  const createPort = useMutation({
-    meta: {
-      feedback: {
-        channel: "notification",
-        id: "sandbox-port-open",
-        action: "预览端口开放",
-        successText: "预览端口已开放",
-        errorFallback: "预览端口开放失败",
-      },
-    },
-    mutationFn: async () => {
-      const submitData = {
-        port,
-        name: portName.trim() || undefined,
-        protocol,
-      };
-      return createSandboxPort(instance.id, submitData);
-    },
-    onSuccess: () => {
-      setPortVisible(false);
-      setPortName("");
-      onChanged();
-    },
-  });
 
   const closePort = useMutation({
     meta: {
@@ -102,11 +60,6 @@ export function SandboxAccessPanel({
   return (
     <>
       <Space direction="vertical" size={24} className="w-full">
-        <Alert
-          type="info"
-          content="预览地址由 Sandbox Runtime 临时签发，不创建或暴露 Kubernetes Ingress。连接令牌仅在签发响应中显示一次。"
-        />
-
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
             <Typography.Title heading={6}>短期连接令牌</Typography.Title>
@@ -123,13 +76,6 @@ export function SandboxAccessPanel({
             在弹窗中配置有效期与授权范围；签发结果仅显示一次。
           </Typography.Text>
         </section>
-
-        {browserTemplate ? (
-          <Alert
-            type="info"
-            content="检测到浏览器类模板，可开放 9222 端口用于 CDP 或受控浏览器预览。"
-          />
-        ) : null}
 
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -217,41 +163,12 @@ export function SandboxAccessPanel({
         onCancel={() => setTokenVisible(false)}
       />
 
-      <Modal
-        title="开放预览端口"
+      <SandboxPortOpenModal
+        instance={instance}
         visible={portVisible}
-        confirmLoading={createPort.isPending}
-        onCancel={() => {
-          setPortVisible(false);
-        }}
-        onOk={() => createPort.mutate()}
-        okButtonProps={{ disabled: port < 1 || port > 65535 }}
-      >
-        <Form layout="vertical">
-          <Form.Item label="端口" required>
-            <InputNumber
-              value={port}
-              min={1}
-              max={65535}
-              precision={0}
-              onChange={(value) => setPort(Number(value) || 0)}
-            />
-          </Form.Item>
-          <Form.Item label="名称">
-            <Input value={portName} onChange={setPortName} placeholder="例如 web-preview" />
-          </Form.Item>
-          <Form.Item label="协议" required>
-            <Select
-              value={protocol}
-              onChange={setProtocol}
-              options={[
-                { label: "HTTP", value: "http" },
-                { label: "TCP", value: "tcp" },
-              ]}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
+        onCancel={() => setPortVisible(false)}
+        onSuccess={onChanged}
+      />
     </>
   );
 }

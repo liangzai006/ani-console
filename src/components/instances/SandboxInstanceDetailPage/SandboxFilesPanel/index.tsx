@@ -6,7 +6,6 @@ import {
   type SandboxFile,
 } from "@/api/instances";
 import {
-  Alert,
   Button,
   Checkbox,
   Empty,
@@ -15,6 +14,7 @@ import {
   Modal,
   Space,
   Tag,
+  Tooltip,
   Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -117,10 +117,6 @@ export function SandboxFilesPanel({
   return (
     <>
       <Space direction="vertical" size={24} className="w-full">
-        {!running ? (
-          <Alert type="warning" content="当前实例不是运行状态，写入和删除文件不可用。" />
-        ) : null}
-
         <section>
           <Typography.Title heading={6}>工作区文件</Typography.Title>
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -138,9 +134,13 @@ export function SandboxFilesPanel({
             >
               返回上级
             </Button>
-            <Button type="primary" disabled={!running} onClick={() => setEditorVisible(true)}>
-              新建文本文件
-            </Button>
+            <Tooltip content="仅运行中的 Sandbox 可以写入文件" disabled={running}>
+              <span className="inline-flex">
+                <Button type="primary" disabled={!running} onClick={() => setEditorVisible(true)}>
+                  新建文本文件
+                </Button>
+              </span>
+            </Tooltip>
             <Button loading={files.isFetching} onClick={() => files.refetch()}>
               刷新
             </Button>
@@ -165,6 +165,7 @@ export function SandboxFilesPanel({
                 intent: "danger",
                 visible: (item) => item.kind !== "directory",
                 disabled: () => !running || deleteFile.isPending,
+                tooltip: !running ? "仅运行中的 Sandbox 可以删除文件" : undefined,
                 onClick: confirmDelete,
               },
             ]}

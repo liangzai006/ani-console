@@ -47,11 +47,7 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
   const hits = (search.data?.items ?? []) as SearchHit[];
   return (
     <div className="space-y-4">
-      <Alert
-        type="info"
-        showIcon
-        content={`请输入 ${store.dimension} 维原始向量。当前 Core API 不支持直接输入自然语言生成查询向量。`}
-      />
+      <Alert type="info" showIcon content={`请输入 ${store.dimension} 维原始向量。`} />
       <Form layout="vertical">
         <Form.Item label="查询向量" required>
           <Input.TextArea

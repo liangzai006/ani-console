@@ -1,13 +1,5 @@
 import { DataTable } from "@/components/common";
-import {
-  Alert,
-  Button,
-  Descriptions,
-  Empty,
-  Space,
-  Tooltip,
-  Typography,
-} from "@arco-design/web-react";
+import { Button, Descriptions, Empty, Space, Tooltip, Typography } from "@arco-design/web-react";
 
 type FilesystemAccessRule = {
   id: string;
@@ -24,15 +16,9 @@ export function FilesystemPermissionsTab() {
 
   return (
     <Space direction="vertical" size={20} className="w-full">
-      <Alert
-        type="info"
-        showIcon
-        content="访问规则用于限制允许挂载文件系统的客户端网段，并控制挂载后的读写和用户权限。"
-      />
-
       <section>
         <div className="mb-3 flex items-center justify-between gap-4">
-          <Typography.Title heading={6} className="!m-0">
+          <Typography.Title heading={6} className="m-0!">
             访问规则
           </Typography.Title>
           <Tooltip content={unavailableReason}>
@@ -60,7 +46,7 @@ export function FilesystemPermissionsTab() {
 
       <section>
         <div className="mb-3 flex items-center justify-between gap-4">
-          <Typography.Title heading={6} className="!m-0">
+          <Typography.Title heading={6} className="m-0!">
             默认目录权限
           </Typography.Title>
           <Tooltip content={unavailableReason}>

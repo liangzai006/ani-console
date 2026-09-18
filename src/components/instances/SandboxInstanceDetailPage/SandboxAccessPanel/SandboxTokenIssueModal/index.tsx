@@ -125,26 +125,32 @@ export function SandboxTokenIssueModal({
           />
         </Space>
       ) : (
-        <Form layout="vertical" disabled={issueToken.isPending}>
-          <Form.Item label="有效期">
-            <Select
-              value={tokenExpiresIn}
-              onChange={setTokenExpiresIn}
-              options={[
-                { label: "15 分钟", value: "15m" },
-                { label: "30 分钟", value: "30m" },
-                { label: "1 小时", value: "1h" },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item label="授权范围">
-            <Checkbox.Group
-              options={TOKEN_SCOPE_OPTIONS}
-              value={tokenScopes}
-              onChange={(value) => setTokenScopes(value as TokenScope[])}
-            />
-          </Form.Item>
-        </Form>
+        <Space direction="vertical" size={16} className="w-full">
+          <Alert
+            type="info"
+            content="预览地址由 Sandbox Runtime 临时签发，不创建或暴露 Kubernetes Ingress。连接令牌仅在签发响应中显示一次。"
+          />
+          <Form layout="vertical" disabled={issueToken.isPending}>
+            <Form.Item label="有效期">
+              <Select
+                value={tokenExpiresIn}
+                onChange={setTokenExpiresIn}
+                options={[
+                  { label: "15 分钟", value: "15m" },
+                  { label: "30 分钟", value: "30m" },
+                  { label: "1 小时", value: "1h" },
+                ]}
+              />
+            </Form.Item>
+            <Form.Item label="授权范围">
+              <Checkbox.Group
+                options={TOKEN_SCOPE_OPTIONS}
+                value={tokenScopes}
+                onChange={(value) => setTokenScopes(value as TokenScope[])}
+              />
+            </Form.Item>
+          </Form>
+        </Space>
       )}
     </Modal>
   );

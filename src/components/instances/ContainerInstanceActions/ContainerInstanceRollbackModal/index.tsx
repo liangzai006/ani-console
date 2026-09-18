@@ -1,10 +1,10 @@
-import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Alert, Form, Modal, Select, Tooltip } from "@arco-design/web-react";
+import { applyInstanceLifecycle } from "@/api/instances";
+import { Form, Modal, Select, Tooltip } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 
-import { getImageDisplayName } from "@/lib/render";
 import { validateForm } from "@/lib/form";
+import { getImageDisplayName } from "@/lib/render";
 
 type Instance = InstanceRecord;
 
@@ -52,12 +52,6 @@ export function ContainerInstanceRollbackModal({
       unmountOnExit
     >
       <Form form={form} layout="vertical">
-        <Alert
-          type="warning"
-          showIcon
-          content="回滚发布要求实例处于已停止状态。"
-          className="mb-4"
-        />
         <Form.Item
           field="revision"
           label="目标修订版本"

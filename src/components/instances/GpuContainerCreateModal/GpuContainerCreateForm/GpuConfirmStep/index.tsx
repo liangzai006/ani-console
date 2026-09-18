@@ -1,5 +1,5 @@
-import { Alert, Descriptions } from "@arco-design/web-react";
 import { ImageNameText } from "@/components/common";
+import { Descriptions } from "@arco-design/web-react";
 import {
   type Filesystem,
   type FormValues,
@@ -25,12 +25,6 @@ export function GpuConfirmStep({
 }) {
   return (
     <>
-      <Alert
-        type="info"
-        showIcon
-        content="提交后写入任务中心；调度失败会保留明确的失败原因。"
-        className="mb-4"
-      />
       <Descriptions
         column={1}
         border

@@ -1,6 +1,6 @@
 import type { SandboxInstanceStatus } from "@/api/instances";
-import { Alert, Descriptions, Empty, Space, Tag, Typography } from "@arco-design/web-react";
 import { DataTable } from "@/components/common";
+import { Descriptions, Empty, Space, Tag, Typography } from "@arco-design/web-react";
 import { sandboxEgressLabel } from "../utils";
 
 type SandboxStatus = NonNullable<SandboxInstanceStatus>;
@@ -12,10 +12,6 @@ export function SandboxEnvironmentPanel({ sandbox }: { sandbox: SandboxStatus })
 
   return (
     <Space direction="vertical" size={24} className="w-full">
-      <Alert
-        type="info"
-        content="Core 当前只返回环境变量名称和密钥引用，不回显变量明文；环境变量与出口白名单的在线编辑接口尚未开放。"
-      />
       <section>
         <Typography.Title heading={6}>环境变量</Typography.Title>
         <DataTable<SandboxEnv>

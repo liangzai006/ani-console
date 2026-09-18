@@ -1,5 +1,5 @@
 import { Breadcrumb, Button, Tabs, Tooltip } from "@arco-design/web-react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import clsx from "clsx";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { AliIcon } from "../AliIcon";
@@ -42,6 +42,7 @@ export function DetailPageFrame({
   activeTabKey: controlledActiveTabKey,
   onTabChange,
 }: DetailPageFrameProps) {
+  const router = useRouter();
   const visibleBreadcrumbs = breadcrumbs.filter((item) => item.to !== "/");
   const hasTabs = Boolean(tabs?.length);
   const cardsSignature = JSON.stringify(
@@ -87,7 +88,7 @@ export function DetailPageFrame({
             shape="circle"
             className={styles.backButton}
             aria-label="返回上一级"
-            onClick={onBack ?? (() => window.history.back())}
+            onClick={onBack ?? (() => router.history.back())}
           >
             <AliIcon name="left-arrow" size={16} />
           </Button>
@@ -129,7 +130,7 @@ export function DetailPageFrame({
           {headerItems.map((item, index) => (
             <div key={`${index}-${String(item.label)}`} className={styles.headerItem}>
               <span className={styles.headerItemLabel}>{item.label}</span>
-              <span className={styles.headerItemValue}>{item.value ?? "-"}</span>
+              <span className={styles.headerItemValue}>{item.value}</span>
             </div>
           ))}
         </div>

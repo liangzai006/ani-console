@@ -1,24 +1,25 @@
-import { withId } from "@/lib/id";
-import {
-  DataTable,
-  DetailPageFrame,
-  DetailPagePlaceholder,
-  AliIcon,
-  StatusTag,
-  TableSectionHeader,
-} from "@/components/common";
-import { useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
-import { useState } from "react";
 import { applyInstanceLifecycle } from "@/api/instances";
 import {
-  deleteVolume as removeVolume,
   getVolume,
   listVolumeSnapshots,
+  deleteVolume as removeVolume,
   type StorageVolume,
   type VolumeSnapshotRecord,
 } from "@/api/storage/volumes";
+import {
+  AliIcon,
+  DataTable,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ResourceId,
+  StatusTag,
+  TableSectionHeader,
+} from "@/components/common";
+import { withId } from "@/lib/id";
+import { Button, Empty, Modal, Space, Tooltip } from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { AttachVolumeModal } from "@/components/storage/AttachVolumeModal";
 import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnapshotModal";
@@ -95,22 +96,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
     },
   });
 
-  if (detail.isLoading && !detail.data)
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[{ label: "存储" }, { label: "块存储", to: "/volumes" }, { label: volumeId }]}
-        title={volumeId}
-        idLabel="卷 ID"
-        idValue={volumeId}
-        iconName="yunpan"
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
 
   const volume = detail.data as Volume;
   const snapshotItems = (snapshots.data?.items ?? []) as VolumeSnapshot[];
@@ -144,8 +130,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
         status={volumeStatus}
         icon={<AliIcon name="kuaicunchu" size={28} />}
         headerItems={[
-          { label: "卷 ID", value: volume.id },
-          { label: "容量 (GiB)", value: volume.size_gib },
+          { label: "容量 (GiB)", value: String(volume.size_gib) },
           { label: "创建时间", value: formatDateTime(volume.created_at) },
         ]}
         actions={
@@ -173,6 +158,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
             key: "basic",
             title: "基本信息",
             fields: [
+              { label: "ID", value: <ResourceId value={volume.id} /> },
               {
                 label: "容量 / 类型",
                 value: `${volume.size_gib}Gi · ${volumeType}`,
@@ -323,7 +309,6 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
             label: "事件",
             content: (
               <Space direction="vertical" size={12} className="w-full">
-                {volume.reason ? <Alert type="warning" showIcon content={volume.reason} /> : null}
                 {unavailable("当前 Core API 暂未提供块存储事件列表")}
               </Space>
             ),

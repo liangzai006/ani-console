@@ -1,5 +1,5 @@
 import { withId } from "@/lib/id";
-import { Button, Empty, Modal, Space, Spin } from "@arco-design/web-react";
+import { Button, Empty, Modal, Space } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -7,7 +7,14 @@ import { listInferenceServices } from "@/api/ai-services/inference";
 import { deleteModel, getModel } from "@/api/ai-services/models";
 
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
-import { AliIcon, DetailPageFrame, StatusTag, type DetailCard } from "@/components/common";
+import {
+  AliIcon,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ResourceId,
+  StatusTag,
+  type DetailCard,
+} from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import {
   formatModelCapabilities,
@@ -60,39 +67,8 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
     },
   });
 
-  if (model.isLoading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spin size={32} />
-      </div>
-    );
-  }
-
   if (!model.data) {
-    return (
-      <DetailPageFrame
-        breadcrumbs={[
-          { label: "AI 服务" },
-          { label: "模型仓库", to: "/models" },
-          { label: modelId },
-        ]}
-        title={modelId}
-        icon={<AliIcon name="moxing" size={28} />}
-        headerItems={[
-          { label: "模型 ID", value: modelId },
-          { label: "状态", value: "-" },
-          { label: "更新时间", value: "-" },
-        ]}
-        cards={[
-          {
-            key: "basic",
-            title: "基本信息",
-            fields: [{ label: "模型 ID", value: modelId }],
-          },
-        ]}
-        onBack={() => navigate({ to: "/models" })}
-      />
-    );
+    return <DetailPagePlaceholder loading={model.isLoading} />;
   }
 
   const item = model.data;
@@ -108,7 +84,7 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
       key: "basic",
       title: "基本信息",
       fields: [
-        { label: "ID", value: item.id },
+        { label: "ID", value: <ResourceId value={item.id} /> },
         { label: "名称", value: item.name },
         {
           label: "状态",
@@ -150,7 +126,6 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
         status={<StatusTag status={item.status} />}
         icon={<AliIcon name="moxing" size={28} />}
         headerItems={[
-          { label: "模型 ID", value: item.id },
           { label: "最新版本", value: latestVersion?.version ?? "-" },
           { label: "更新时间", value: formatDateTime(item.updated_at) },
         ]}

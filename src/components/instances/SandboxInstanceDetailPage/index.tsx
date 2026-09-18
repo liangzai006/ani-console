@@ -1,9 +1,16 @@
 import { withId } from "@/lib/id";
 import { getInstance } from "@/api/instances";
-import { Empty, Spin, Tooltip } from "@arco-design/web-react";
+import { Empty, Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
+import {
+  AliIcon,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ImageNameText,
+  ResourceId,
+  StatusTag,
+} from "@/components/common";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
@@ -55,31 +62,8 @@ export function SandboxInstanceDetailPage({
     ]);
   };
 
-  if (detail.isLoading && !detail.data) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  }
-
   if (!detail.data) {
-    return (
-      <DetailPageFrame
-        breadcrumbs={[
-          { label: "算力" },
-          { label: "Sandbox 实例", to: "/sandbox-instances" },
-          { label: instanceId },
-        ]}
-        title={instanceId}
-        headerItems={[
-          { label: "实例 ID", value: instanceId },
-          { label: "状态", value: "-" },
-          { label: "创建时间", value: "-" },
-        ]}
-        cards={[]}
-      />
-    );
+    return <DetailPagePlaceholder loading={detail.isLoading} />;
   }
 
   const instance = detail.data;
@@ -113,7 +97,6 @@ export function SandboxInstanceDetailPage({
       }
       icon={<AliIcon name="Sandbox" size={28} />}
       headerItems={[
-        { label: "实例 ID", value: instance.id },
         {
           label: "CPU / 内存",
           value:
@@ -141,7 +124,7 @@ export function SandboxInstanceDetailPage({
           key: "basic",
           title: "基本信息",
           fields: [
-            { label: "实例 ID", value: instance.id },
+            { label: "ID", value: <ResourceId value={instance.id} /> },
             { label: "状态", value: <StatusTag status={sessionState} /> },
             {
               label: "镜像",
@@ -154,7 +137,6 @@ export function SandboxInstanceDetailPage({
                   .filter((value) => value != null)
                   .join(" / ") || "-",
             },
-            { label: "模板 ID", value: sandbox.template_id ?? "-" },
             { label: "RuntimeClass", value: sandbox.runtime_class },
             {
               label: "出口策略",

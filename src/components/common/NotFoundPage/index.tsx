@@ -1,9 +1,10 @@
 import { Button, Card, Result, Space, Typography } from "@arco-design/web-react";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { isAuthenticated } from "@/stores/auth";
 
 export function NotFoundPage() {
   const navigate = useNavigate();
+  const router = useRouter();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const authenticated = isAuthenticated();
 
@@ -21,7 +22,7 @@ export function NotFoundPage() {
           }
           extra={
             <Space wrap>
-              <Button onClick={() => history.back()}>返回上一页</Button>
+              <Button onClick={() => router.history.back()}>返回上一页</Button>
               <Button
                 type="primary"
                 onClick={() => navigate({ to: authenticated ? "/" : "/login" })}

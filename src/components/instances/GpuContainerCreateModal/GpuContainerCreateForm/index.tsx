@@ -17,7 +17,7 @@ import type {
   GpuSpecOption,
   Volume,
 } from "../types";
-import { INITIAL_VALUES, isGpuSpecSelectable, TEMPORARY_RTX4090_GPU_SPEC_OPTIONS } from "../types";
+import { INITIAL_VALUES, isGpuSpecSelectable } from "../types";
 import { GpuConfirmStep } from "./GpuConfirmStep";
 import { GpuImageStep } from "./GpuImageStep";
 import { GpuNetworkStorageStep } from "./GpuNetworkStorageStep";
@@ -149,15 +149,12 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
     (item) => String(item.id) === values.volume_id,
   ) as Volume | undefined;
   const apiGpuSpecs = gpuSpecAvailability.data?.items ?? [];
-  const usingTemporaryGpuSpecs = gpuSpecAvailability.isSuccess && apiGpuSpecs.length === 0;
-  const gpuSpecs: GpuSpecOption[] = usingTemporaryGpuSpecs
-    ? TEMPORARY_RTX4090_GPU_SPEC_OPTIONS
-    : apiGpuSpecs.map((spec) => ({
-        spec_id: spec.spec_id,
-        display_name: spec.spec_id,
-        source: "api" as const,
-        availability: spec,
-      }));
+  const gpuSpecs: GpuSpecOption[] = apiGpuSpecs.map((spec) => ({
+    spec_id: spec.spec_id,
+    display_name: spec.spec_id,
+    source: "api" as const,
+    availability: spec,
+  }));
   const schedulingQueues = (gpuSchedulingQueues.data?.items ?? []) as GpuSchedulingQueue[];
   const selectedGpuSpec = gpuSpecs.find((item) => item.spec_id === values.spec_id);
   const defaultSchedulingQueue =
@@ -268,8 +265,6 @@ export function GpuContainerCreateForm({ visible, submitting, onCancel, onSubmit
                   specs={gpuSpecs}
                   quotaRemaining={gpuSpecAvailability.data?.quota_remaining ?? 0}
                   specsLoading={gpuSpecAvailability.isLoading}
-                  specsError={gpuSpecAvailability.isError}
-                  usingTemporarySpecs={usingTemporaryGpuSpecs}
                 />
               </>
             ) : null}

@@ -1,7 +1,7 @@
-import { Alert, Form, Input, Modal, Select, Typography } from "@arco-design/web-react";
+import { importModel, type ImportModelRequest } from "@/api/ai-services/models";
+import { Form, Input, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { importModel, type ImportModelRequest } from "@/api/ai-services/models";
 
 type ImportSource = ImportModelRequest["source"];
 
@@ -87,14 +87,6 @@ export function ImportModelModal({
         <Form.Item label="版本 / Revision">
           <Input value={revision} onChange={setRevision} placeholder="main" maxLength={128} />
         </Form.Item>
-        <Alert
-          type="info"
-          showIcon
-          content="导入请求将异步执行。提交后可在模型列表中查看等待、下载和完成状态。"
-        />
-        <Typography.Text type="secondary">
-          仓库 ID 使用“组织/模型”格式；失败重试会复用同一幂等键，修改来源、仓库或版本后会生成新键。
-        </Typography.Text>
       </Form>
     </Modal>
   );

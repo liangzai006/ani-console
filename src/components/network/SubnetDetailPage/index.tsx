@@ -1,16 +1,3 @@
-import { withId } from "@/lib/id";
-import {
-  DataTable,
-  DetailPageFrame,
-  DetailPagePlaceholder,
-  AliIcon,
-  type ListColumn,
-  StatusTag,
-  TableSectionHeader,
-} from "@/components/common";
-import { useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Empty, Modal, Space, Spin, Tag, Typography } from "@arco-design/web-react";
 import { listInstances, type InstanceRecord } from "@/api/instances";
 import {
   deleteNetworkSubnet,
@@ -21,6 +8,20 @@ import {
   type NetworkSubnet,
   type NetworkVPC,
 } from "@/api/network";
+import {
+  AliIcon,
+  DataTable,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ResourceId,
+  StatusTag,
+  TableSectionHeader,
+  type ListColumn,
+} from "@/components/common";
+import { withId } from "@/lib/id";
+import { Button, Empty, Modal, Space, Tag, Typography } from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
 import { formatDateTime } from "@/lib/format";
 
@@ -102,21 +103,7 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
     },
   });
 
-  if (detail.isLoading && !detail.data)
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[{ label: "网络" }, { label: "子网", to: "/subnets" }, { label: subnetId }]}
-        title={subnetId}
-        idLabel="子网 ID"
-        idValue={subnetId}
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
 
   const subnet = detail.data as Subnet;
   const parentVpc = vpc.data as Vpc | undefined;
@@ -194,7 +181,6 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
       status={<StatusTag status={subnet.state} />}
       icon={<AliIcon name="VPCwangluo" size={28} />}
       headerItems={[
-        { label: "子网 ID", value: subnet.id },
         { label: "CIDR", value: subnet.cidr },
         { label: "创建时间", value: formatDateTime(subnet.created_at) },
       ]}
@@ -221,7 +207,7 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
           key: "basic",
           title: "基本信息",
           fields: [
-            { label: "ID", value: subnet.id },
+            { label: "ID", value: <ResourceId value={subnet.id} /> },
             { label: "名称", value: subnet.name },
             {
               label: "VPC",
@@ -275,11 +261,6 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
           label: "路由",
           content: (
             <Space direction="vertical" size={12} className="w-full">
-              <Alert
-                type="info"
-                showIcon={false}
-                content="本 VPC 路由表。系统默认路由不可删；自定义路由也可在侧栏「路由」维护。"
-              />
               <DataTable<SubnetRouteRow>
                 columns={[
                   { title: "目标网段", dataIndex: "destinationCidr" },

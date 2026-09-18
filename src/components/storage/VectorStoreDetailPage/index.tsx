@@ -1,19 +1,16 @@
-import { withId } from "@/lib/id";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Alert,
-  Button,
-  Descriptions,
-  Empty,
-  Modal,
-  Space,
-  Spin,
-  Tooltip,
-} from "@arco-design/web-react";
 import { deleteVectorStore, getVectorStore, type VectorStore } from "@/api/storage/vector-stores";
+import { withId } from "@/lib/id";
+import { Alert, Button, Descriptions, Empty, Modal, Space, Tooltip } from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
 
-import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
+import {
+  AliIcon,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ResourceId,
+  StatusTag,
+} from "@/components/common";
 import { VectorStoreWorkbench } from "@/components/storage/VectorStoreWorkbench";
 import { formatDateTime } from "@/lib/format";
 
@@ -54,25 +51,7 @@ export function VectorStoreDetailPage({
       navigate({ to: "/vector-stores" });
     },
   });
-  if (detail.isLoading && !detail.data)
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "存储" },
-          { label: "向量存储", to: "/vector-stores" },
-          { label: vectorStoreId },
-        ]}
-        title={vectorStoreId}
-        idLabel="向量存储 ID"
-        idValue={vectorStoreId}
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
   const store = detail.data as VectorStore;
   const storeStatus = store.reason ? (
     <Tooltip content={store.reason}>
@@ -94,8 +73,7 @@ export function VectorStoreDetailPage({
       status={storeStatus}
       icon={<AliIcon name="xiangliangcunchu" size={28} />}
       headerItems={[
-        { label: "向量存储 ID", value: store.id },
-        { label: "维度", value: store.dimension },
+        { label: "维度", value: String(store.dimension) },
         { label: "创建时间", value: formatDateTime(store.created_at) },
       ]}
       actions={
@@ -119,7 +97,7 @@ export function VectorStoreDetailPage({
           key: "basic",
           title: "基本信息",
           fields: [
-            { label: "ID", value: store.id },
+            { label: "ID", value: <ResourceId value={store.id} /> },
             { label: "名称", value: store.name },
             { label: "状态", value: storeStatus },
             { label: "向量维度", value: store.dimension },
@@ -205,7 +183,6 @@ export function VectorStoreDetailPage({
           label: "事件",
           content: (
             <Space direction="vertical" size={12} className="w-full">
-              {store.reason ? <Alert type="warning" showIcon content={store.reason} /> : null}
               <Empty description="当前 Core API 暂未提供向量存储事件列表" />
             </Space>
           ),

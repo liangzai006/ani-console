@@ -1,7 +1,3 @@
-import { withId } from "@/lib/id";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Spin } from "@arco-design/web-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { listModels } from "@/api/ai-services/models";
 import {
   deleteKnowledgeBaseSession,
@@ -12,13 +8,17 @@ import {
   type KBSession as Session,
   type KBSessionMessage as SessionMessage,
 } from "@/api/knowledge";
+import { withId } from "@/lib/id";
+import { Spin } from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getReadyModelOptions } from "@/lib/ai-models";
 import { KnowledgeCitationsDrawer } from "./KnowledgeCitationsDrawer";
 import { KnowledgeConversation } from "./KnowledgeConversation";
 import { KnowledgeSessionsSidebar } from "./KnowledgeSessionsSidebar";
-import { toThreadMessage, type QueryMode } from "./knowledgeQueryAdapter";
 import styles from "./index.module.css";
+import { toThreadMessage, type QueryMode } from "./knowledgeQueryAdapter";
 
 export function KnowledgeChatPanel({
   kbId,
@@ -163,15 +163,6 @@ export function KnowledgeChatPanel({
   return (
     <>
       <div className={styles.panel}>
-        {!inferenceModels.error &&
-        !inferenceModels.isLoading &&
-        inferenceModelOptions.length === 0 ? (
-          <Alert
-            type="warning"
-            showIcon
-            content="暂无已就绪的文本生成模型，将使用知识库或平台默认模型"
-          />
-        ) : null}
         <div className={styles.chatWorkspace}>
           <KnowledgeSessionsSidebar
             sessions={sessions.data}

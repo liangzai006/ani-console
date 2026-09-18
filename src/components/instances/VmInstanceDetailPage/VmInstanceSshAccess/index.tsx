@@ -1,6 +1,6 @@
 import type { InstanceRecord } from "@/api/instances";
-import { Alert, Button, Descriptions, Space, Tag, Typography } from "@arco-design/web-react";
 import { copyToClipboard } from "@/lib/clipboard";
+import { Button, Descriptions, Space, Tag, Typography } from "@arco-design/web-react";
 
 type VmInstance = InstanceRecord;
 
@@ -35,13 +35,6 @@ export function VmInstanceSshAccess({
           { label: "登录密钥", value: ssh?.key_ref ?? "-" },
         ]}
       />
-      {!available ? (
-        <Alert
-          type="warning"
-          showIcon
-          content={ssh?.reason ?? instance.access?.reason ?? "SSH 尚未就绪，请稍后重试"}
-        />
-      ) : null}
       {command ? (
         <div>
           <Typography.Title heading={6}>连接命令</Typography.Title>

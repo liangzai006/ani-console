@@ -1,6 +1,6 @@
-import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Alert, Modal } from "@arco-design/web-react";
+import { applyInstanceLifecycle } from "@/api/instances";
+import { Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 
 type Instance = InstanceRecord;
@@ -49,11 +49,7 @@ export function VmInstanceRollbackModal({
       onOk={() => mutation.mutateAsync()}
       unmountOnExit
     >
-      <Alert
-        type="warning"
-        showIcon
-        content={`确定使用快照“${snapshot.name} · ${snapshot.id}”恢复云主机吗？回滚后实例将切换为运行状态。`}
-      />
+      确定使用快照“{snapshot.name} · {snapshot.id}”恢复云主机吗？回滚后实例将切换为运行状态。
     </Modal>
   );
 }

@@ -4,13 +4,14 @@ import {
   DetailPageFrame,
   DetailPagePlaceholder,
   AliIcon,
+  ResourceId,
   type ListColumn,
   StatusTag,
   TableSectionHeader,
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Empty, Modal, Space, Spin, Tag, Typography } from "@arco-design/web-react";
+import { Button, Empty, Modal, Space, Tag, Typography } from "@arco-design/web-react";
 import { listInstances, type InstanceRecord } from "@/api/instances";
 import {
   deleteNetworkVpc,
@@ -127,22 +128,7 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
     },
   });
 
-  if (detail.isLoading && !detail.data) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  }
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[{ label: "网络" }, { label: "VPC", to: "/vpcs" }, { label: vpcId }]}
-        title={vpcId}
-        idLabel="VPC ID"
-        idValue={vpcId}
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
 
   const vpc = detail.data as Vpc;
   const vpcSubnets = (subnets.data?.items ?? []) as Subnet[];
@@ -217,7 +203,6 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
       status={<StatusTag status={vpc.state} />}
       icon={<AliIcon name="VPCwangluo" size={28} />}
       headerItems={[
-        { label: "VPC ID", value: vpc.id },
         { label: "CIDR", value: vpc.cidr },
         { label: "创建时间", value: formatDateTime(vpc.created_at) },
       ]}
@@ -244,7 +229,7 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
           key: "basic",
           title: "基本信息",
           fields: [
-            { label: "ID", value: vpc.id },
+            { label: "ID", value: <ResourceId value={vpc.id} /> },
             { label: "名称", value: vpc.name },
             { label: "CIDR", value: vpc.cidr },
             { label: "状态", value: <StatusTag status={vpc.state} /> },

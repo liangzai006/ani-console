@@ -1,7 +1,7 @@
 import { withId } from "@/lib/id";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Empty, List, Modal, Spin, Tag, Typography } from "@arco-design/web-react";
+import { Button, Card, Empty, List, Modal, Tag, Typography } from "@arco-design/web-react";
 import { getInstance, type InstanceRecord } from "@/api/instances";
 import {
   deleteNetworkRoute,
@@ -11,7 +11,13 @@ import {
   type NetworkVPC,
 } from "@/api/network";
 
-import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
+import {
+  AliIcon,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ResourceId,
+  StatusTag,
+} from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { navigateToInstanceDetail } from "@/lib/instances";
 
@@ -80,21 +86,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
     },
   });
 
-  if (detail.isLoading && !detail.data)
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[{ label: "网络" }, { label: "路由", to: "/routes" }, { label: routeId }]}
-        title={routeId}
-        idLabel="路由 ID"
-        idValue={routeId}
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
   const item = detail.data as NetworkRoute;
   const parentVpc = vpc.data as Vpc | undefined;
   const nextHopInstance = instance.data as Instance | undefined;
@@ -136,7 +128,6 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
       title={name}
       icon={<AliIcon name="VPCluyouqi" size={28} />}
       headerItems={[
-        { label: "路由 ID", value: item.id },
         { label: "目标网段", value: item.destination_cidr },
         { label: "创建时间", value: formatDateTime(item.created_at) },
       ]}
@@ -161,7 +152,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
           key: "basic",
           title: "基本信息",
           fields: [
-            { label: "ID", value: item.id },
+            { label: "ID", value: <ResourceId value={item.id} /> },
             { label: "名称", value: item.description?.trim() || "-" },
             {
               label: "VPC",

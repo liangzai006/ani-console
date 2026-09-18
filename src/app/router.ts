@@ -4,6 +4,7 @@ import { queryClient } from "./query-client";
 
 export const router = createRouter({
   routeTree,
+  trailingSlash: "never",
   context: { queryClient },
 });
 

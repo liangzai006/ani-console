@@ -1,11 +1,17 @@
 import { withId } from "@/lib/id";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Modal, Spin } from "@arco-design/web-react";
+import { Button, Modal } from "@arco-design/web-react";
 
 import { deleteKnowledgeBase, getKnowledgeBase } from "@/api/knowledge";
 import { listVectorStores, type VectorStore } from "@/api/storage/vector-stores";
-import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
+import {
+  AliIcon,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ResourceId,
+  StatusTag,
+} from "@/components/common";
 import { KnowledgeChatPanel } from "@/components/knowledge/KnowledgeChatPanel";
 import { KnowledgeDocumentsPanel } from "@/components/knowledge/KnowledgeDocumentsPanel";
 import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeDocumentUploadButton";
@@ -66,22 +72,7 @@ export function KnowledgeBaseDetailPage({
       navigate({ to: "/kb" });
     },
   });
-  if (detail.isLoading && !detail.data)
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[{ label: "知识库" }, { label: "知识库管理", to: "/kb" }, { label: kbId }]}
-        title={kbId}
-        idLabel="知识库 ID"
-        idValue={kbId}
-        iconName="zhishiku"
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
   const kb = detail.data;
   const relatedVectorStore = (vectorStores.data?.items ?? []).find(
     (item: VectorStore) => item.knowledge_base_ref?.id === kb.id,
@@ -93,8 +84,7 @@ export function KnowledgeBaseDetailPage({
       status={<StatusTag status={kb.status} />}
       icon={<AliIcon name="zhishiku" size={28} />}
       headerItems={[
-        { label: "知识库 ID", value: kb.id },
-        { label: "文档数", value: kb.doc_count ?? 0 },
+        { label: "文档数", value: String(kb.doc_count ?? 0) },
         { label: "创建时间", value: formatDateTime(kb.created_at) },
       ]}
       actions={
@@ -118,7 +108,7 @@ export function KnowledgeBaseDetailPage({
           key: "basic",
           title: "基本信息",
           fields: [
-            { label: "ID", value: kb.id },
+            { label: "ID", value: <ResourceId value={kb.id} /> },
             { label: "名称", value: kb.name },
             { label: "状态", value: <StatusTag status={kb.status} /> },
             { label: "描述", value: kb.description || "-" },

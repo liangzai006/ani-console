@@ -1,7 +1,7 @@
-import { Alert, Form, Input, InputNumber, Modal, Select } from "@arco-design/web-react";
+import { listModels } from "@/api/ai-services/models";
+import { Form, Input, InputNumber, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
-import { listModels } from "@/api/ai-services/models";
 
 import {
   createKnowledgeBase,
@@ -164,15 +164,6 @@ export function CreateKnowledgeBaseModal({
             ))}
           </Select>
         </Form.Item>
-        {!embeddingModels.error &&
-        !embeddingModels.isLoading &&
-        embeddingModelOptions.length === 0 ? (
-          <Alert
-            type="warning"
-            showIcon
-            content="暂无已就绪的 Embedding 模型，暂时无法创建知识库"
-          />
-        ) : null}
         <Form.Item
           label="默认推理模型"
           field="default_inference_service"
@@ -207,11 +198,6 @@ export function CreateKnowledgeBaseModal({
             ))}
           </Select>
         </Form.Item>
-        {!inferenceModels.error &&
-        !inferenceModels.isLoading &&
-        inferenceModelOptions.length === 0 ? (
-          <Alert type="warning" showIcon content="暂无已就绪的文本生成模型，将使用平台默认模型" />
-        ) : null}
         <div className="grid grid-cols-2 gap-4">
           <Form.Item label="分块大小" field="chunk_size" rules={[{ required: true }]}>
             <InputNumber min={1} max={8192} className="w-full" />

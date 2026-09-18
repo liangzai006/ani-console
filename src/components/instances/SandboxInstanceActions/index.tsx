@@ -1,16 +1,16 @@
 import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { Alert, Button, Dropdown, Menu, Modal, Select } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Modal } from "@arco-design/web-react";
 import { IconDown, IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { DataTableRowActionButton, DataTableRowActions } from "@/components/common";
 
 import type { SandboxInstanceDetailTabKey } from "@/lib/instances";
-import { formatDurationSeconds } from "../SandboxInstanceDetailPage/utils";
+import { SandboxInstanceExtendModal } from "./SandboxInstanceExtendModal";
 
 type SandboxInstance = InstanceRecord;
-type LifecycleAction = "pause" | "resume" | "extend" | "touch_idle" | "delete";
+type LifecycleAction = "pause" | "resume" | "touch_idle" | "delete";
 
 const TERMINAL_STATES = new Set(["expired", "deleted", "deleting"]);
 const BUSY_INSTANCE_STATES = new Set([
@@ -35,7 +35,6 @@ export function SandboxInstanceActions({
   display?: "row" | "detail";
 }) {
   const [extendVisible, setExtendVisible] = useState(false);
-  const [extendDuration, setExtendDuration] = useState("1h");
   const sandbox = instance.sandbox;
   const sessionState = sandbox?.session_state ?? instance.state;
   const running = sessionState === "running";
@@ -51,13 +50,12 @@ export function SandboxInstanceActions({
         errorFallback: "操作失败，请稍后重试",
       },
     },
-    mutationFn: async ({ action, duration }: { action: LifecycleAction; duration?: string }) => {
-      const submitData = { action, duration };
+    mutationFn: async ({ action }: { action: LifecycleAction }) => {
+      const submitData = { action };
       await applyInstanceLifecycle(instance.id, submitData);
       return action;
     },
     onSuccess: (action) => {
-      if (action === "extend") setExtendVisible(false);
       if (action === "delete") onDeleted();
       else onChanged();
     },
@@ -146,38 +144,15 @@ export function SandboxInstanceActions({
         </Dropdown>
       )}
 
-      <Modal
-        title={`延长会话 · ${instance.name || instance.id}`}
+      <SandboxInstanceExtendModal
+        instance={instance}
         visible={extendVisible}
-        confirmLoading={lifecycle.isPending}
-        onCancel={() => {
+        onCancel={() => setExtendVisible(false)}
+        onSubmitted={() => {
           setExtendVisible(false);
+          onChanged();
         }}
-        onOk={() =>
-          lifecycle.mutateAsync({
-            action: "extend",
-            duration: extendDuration,
-          })
-        }
-        unmountOnExit
-      >
-        <Alert
-          className="mb-4"
-          type="info"
-          content={`当前剩余：${formatDurationSeconds(sandbox?.remain_seconds)}。延长后仍受空闲超时约束。`}
-        />
-        <div className="mb-2 text-app-text-secondary">延长时长</div>
-        <Select
-          className="w-full"
-          value={extendDuration}
-          onChange={setExtendDuration}
-          options={[
-            { label: "+30 分钟", value: "30m" },
-            { label: "+1 小时", value: "1h" },
-            { label: "+2 小时", value: "2h" },
-          ]}
-        />
-      </Modal>
+      />
     </>
   );
 }

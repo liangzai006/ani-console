@@ -11,7 +11,6 @@ import {
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
-import { InstanceOperationPoller } from "../InstanceOperationPoller";
 import { VmInstanceCreateModal } from "../VmInstanceCreateModal";
 import { useVmInstanceRowActions } from "./VmInstanceRowActions";
 
@@ -33,7 +32,6 @@ function specLabel(instance: VmInstance) {
 
 export function VmInstancesPage() {
   const [createVisible, setCreateVisible] = useState(false);
-  const [operationId, setOperationId] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchText, setSearchText] = useState("");
   const { query, page, pageSize, setPage, setPageSize, refresh } =
@@ -61,9 +59,7 @@ export function VmInstancesPage() {
     setPage(1);
   }, [searchText, setPage, status]);
 
-  const { dialogNode, rowActions } = useVmInstanceRowActions({
-    onOperationSubmitted: setOperationId,
-  });
+  const { dialogNode, rowActions } = useVmInstanceRowActions();
 
   const items = query.data?.items ?? [];
   const statusTabs = [
@@ -79,7 +75,7 @@ export function VmInstancesPage() {
       render: (_, row) => (
         <DataTableNameCell
           name={
-            <Link from="/" to="/vm-instances/$instanceId" params={{ instanceId: row.id }}>
+            <Link to="/vm-instances/$instanceId" params={{ instanceId: row.id }}>
               {row.name}
             </Link>
           }
@@ -172,16 +168,6 @@ export function VmInstancesPage() {
           },
         }}
       >
-        {operationId ? (
-          <InstanceOperationPoller
-            key={operationId}
-            operationId={operationId}
-            onComplete={(operationStatus) => {
-              refresh();
-              if (operationStatus === "succeeded") setOperationId(null);
-            }}
-          />
-        ) : null}
         <ListDataTable
           data={items}
           columns={columns}
@@ -206,9 +192,8 @@ export function VmInstancesPage() {
       <VmInstanceCreateModal
         visible={createVisible}
         onCancel={() => setCreateVisible(false)}
-        onCreated={(id) => {
+        onCreated={() => {
           setCreateVisible(false);
-          setOperationId(id ?? null);
           refresh();
         }}
       />

@@ -4,11 +4,12 @@ import {
   DetailPageFrame,
   DetailPagePlaceholder,
   AliIcon,
+  ResourceId,
   StatusTag,
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Empty, Modal, Spin } from "@arco-design/web-react";
+import { Button, Empty, Modal } from "@arco-design/web-react";
 import {
   deleteNetworkLoadBalancer,
   getNetworkLoadBalancer,
@@ -80,25 +81,7 @@ export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: str
       navigate({ to: "/load-balancers" });
     },
   });
-  if (detail.isLoading && !detail.data)
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "网络" },
-          { label: "负载均衡", to: "/load-balancers" },
-          { label: loadBalancerId },
-        ]}
-        title={loadBalancerId}
-        idLabel="负载均衡 ID"
-        idValue={loadBalancerId}
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
   const item = detail.data as LoadBalancer;
   const parentVpc = vpc.data as Vpc | undefined;
   const parentSubnet = subnet.data as Subnet | undefined;
@@ -137,7 +120,6 @@ export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: str
       status={<StatusTag status={item.state} />}
       icon={<AliIcon name="fuzaijunhengqi" size={28} />}
       headerItems={[
-        { label: "负载均衡 ID", value: item.id },
         { label: "VIP", value: item.vip || "-" },
         { label: "创建时间", value: formatDateTime(item.created_at) },
       ]}
@@ -162,7 +144,7 @@ export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: str
           key: "basic",
           title: "基本信息",
           fields: [
-            { label: "ID", value: item.id },
+            { label: "ID", value: <ResourceId value={item.id} /> },
             { label: "名称", value: item.name },
             { label: "状态", value: <StatusTag status={item.state} /> },
             { label: "VIP", value: item.vip || "-" },

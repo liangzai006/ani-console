@@ -3,7 +3,13 @@ import type { InstanceRecord } from "@/api/instances";
 import { Tooltip } from "@arco-design/web-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
+import {
+  AliIcon,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ResourceId,
+  StatusTag,
+} from "@/components/common";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
@@ -14,6 +20,7 @@ import { InstanceStorage } from "@/components/instances/InstanceStorage";
 import { InstanceVersions } from "@/components/instances/InstanceVersions";
 import { ContainerInstanceActions } from "@/components/instances/ContainerInstanceActions";
 import { formatDateTime } from "@/lib/format";
+import { getImageDisplayName } from "@/lib/render";
 import {
   getInstanceDisplayIp,
   getInstanceNetworkValue,
@@ -44,30 +51,7 @@ export function ContainerInstanceDetailPage({
     queryKey: ["container-instance-detail", instanceId],
     queryFn: () => containerDetailDataSource.getDetail(instanceId),
   });
-  if (query.isLoading) {
-    return <div>正在加载容器实例详情...</div>;
-  }
-
-  if (!query.data)
-    return (
-      <DetailPageFrame
-        breadcrumbs={[{ label: "容器实例", to: "/container-instances" }, { label: instanceId }]}
-        title={instanceId}
-        icon={<AliIcon name="rongqishili" size={28} />}
-        headerItems={[
-          { label: "实例 ID", value: instanceId },
-          { label: "状态", value: "-" },
-          { label: "创建时间", value: "-" },
-        ]}
-        cards={[
-          {
-            key: "basic",
-            title: "基本信息",
-            fields: [{ label: "实例 ID", value: instanceId }],
-          },
-        ]}
-      />
-    );
+  if (!query.data) return <DetailPagePlaceholder loading={query.isLoading} />;
 
   const detail = query.data;
 
@@ -93,7 +77,7 @@ export function ContainerInstanceDetailPage({
         )
       }
       headerItems={[
-        { label: "镜像", value: <ImageNameText image={detail.image} /> },
+        { label: "镜像", value: getImageDisplayName(detail.image) },
         { label: "规格", value: nameValue },
         { label: "私网 IP", value: getInstanceDisplayIp(detail) || "-" },
       ]}
@@ -116,10 +100,8 @@ export function ContainerInstanceDetailPage({
           key: "basic",
           title: "基本信息",
           fields: [
-            { label: "实例 ID", value: detail.id },
-            { label: "Provider", value: detail.provider },
+            { label: "ID", value: <ResourceId value={detail.id} /> },
             { label: "节点", value: detail.node_name ?? "-" },
-            { label: "状态说明", value: detail.reason ?? "-" },
             { label: "创建时间", value: formatDateTime(detail.created_at) },
             { label: "更新时间", value: formatDateTime(detail.updated_at) },
             {

@@ -1,9 +1,9 @@
-import { withId } from "@/lib/id";
-import { listFilesystemMountTargets, listFilesystems } from "@/api/storage/filesystems";
+import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { StorageFilesystem } from "@/api/storage/filesystems";
-import type { InstanceRecord } from "@/api/instances";
-import { Alert, Checkbox, Form, Input, Modal, Select } from "@arco-design/web-react";
+import { listFilesystemMountTargets, listFilesystems } from "@/api/storage/filesystems";
+import { withId } from "@/lib/id";
+import { Checkbox, Form, Input, Modal, Select } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -119,14 +119,6 @@ export function VmInstanceAttachFilesystemModal({
             ))}
           </Select>
         </Form.Item>
-        {selectedId && !mountTargets.isLoading && !mountTargets.error && !hasMountTarget ? (
-          <Alert
-            type="warning"
-            showIcon
-            content="当前 NFS 没有 available 挂载目标，暂不可挂载。"
-            className="mb-4"
-          />
-        ) : null}
         <Form.Item
           field="mountPath"
           label="挂载路径"

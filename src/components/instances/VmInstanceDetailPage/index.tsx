@@ -1,9 +1,16 @@
 import { withId } from "@/lib/id";
 import { getInstance, type InstanceRecord } from "@/api/instances";
-import { Empty, Spin, Tooltip } from "@arco-design/web-react";
+import { Empty, Tooltip } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
+import {
+  AliIcon,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ImageNameText,
+  ResourceId,
+  StatusTag,
+} from "@/components/common";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
@@ -17,14 +24,6 @@ import { VmInstanceSnapshots } from "./VmInstanceSnapshots";
 import { VmInstanceSshAccess } from "./VmInstanceSshAccess";
 
 type VmInstance = InstanceRecord;
-
-const BUSY_STATES = new Set<VmInstance["state"]>([
-  "pending",
-  "provisioning",
-  "starting",
-  "stopping",
-  "deleting",
-]);
 
 function imageLabel(instance: VmInstance) {
   return getImageDisplayName(instance.image);
@@ -69,31 +68,8 @@ export function VmInstanceDetailPage({
     queryKey: ["vm-instance", instanceId],
     queryFn: () => getInstance(instanceId),
   });
-  if (detail.isLoading && !detail.data) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  }
-
   if (!detail.data) {
-    return (
-      <DetailPageFrame
-        breadcrumbs={[
-          { label: "算力" },
-          { label: "云主机", to: "/vm-instances" },
-          { label: instanceId },
-        ]}
-        title={instanceId}
-        headerItems={[
-          { label: "实例 ID", value: instanceId },
-          { label: "状态", value: "-" },
-          { label: "创建时间", value: "-" },
-        ]}
-        cards={[]}
-      />
-    );
+    return <DetailPagePlaceholder loading={detail.isLoading} />;
   }
 
   const instance = detail.data;
@@ -102,8 +78,6 @@ export function VmInstanceDetailPage({
   }
 
   const autoStart = (instance as VmInstance & { auto_start?: boolean | null }).auto_start;
-  const busy = BUSY_STATES.has(instance.state);
-  const stable = instance.state === "running" || instance.state === "stopped";
   const securityGroups = instance.network?.security_groups ?? [];
   const loadBalancerRefs = instance.network?.load_balancer_refs ?? [];
   const relatedItems: Array<{
@@ -211,7 +185,6 @@ export function VmInstanceDetailPage({
         }
         icon={<AliIcon name="yunzhuji" size={28} />}
         headerItems={[
-          { label: "实例 ID", value: instance.id },
           { label: "CPU / 内存", value: specLabel(instance) },
           { label: "创建时间", value: formatDateTime(instance.created_at) },
         ]}
@@ -227,7 +200,7 @@ export function VmInstanceDetailPage({
             key: "basic",
             title: "基本信息",
             fields: [
-              { label: "实例 ID", value: instance.id },
+              { label: "ID", value: <ResourceId value={instance.id} /> },
               { label: "状态", value: <StatusTag status={instance.state} /> },
               { label: "规格", value: flavorLabel(instance) },
               {
@@ -295,14 +268,7 @@ export function VmInstanceDetailPage({
           {
             key: "snapshots",
             label: "快照",
-            content: (
-              <VmInstanceSnapshots
-                instance={instance}
-                canCreate={stable && !busy}
-                canRollback={stable && !busy}
-                onChanged={refreshDetail}
-              />
-            ),
+            content: <VmInstanceSnapshots instance={instance} onChanged={refreshDetail} />,
           },
           {
             key: "monitoring",

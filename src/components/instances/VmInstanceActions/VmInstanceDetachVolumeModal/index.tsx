@@ -1,6 +1,6 @@
-import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Alert, Form, Modal, Select } from "@arco-design/web-react";
+import { applyInstanceLifecycle } from "@/api/instances";
+import { Form, Modal, Select } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 
 import { validateForm } from "@/lib/form";
@@ -59,12 +59,6 @@ export function VmInstanceDetachVolumeModal({
       unmountOnExit
     >
       <Form form={form} layout="vertical">
-        <Alert
-          type="warning"
-          showIcon
-          content="请先确保操作系统已卸载对应文件系统，系统盘不可卸载。"
-          className="mb-4"
-        />
         <Form.Item
           field="volumeId"
           label="云盘"

@@ -1,6 +1,6 @@
-import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Alert, Form, Modal, Select } from "@arco-design/web-react";
+import { applyInstanceLifecycle } from "@/api/instances";
+import { Form, Modal, Select } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 
 import { validateForm } from "@/lib/form";
@@ -60,12 +60,6 @@ export function ContainerInstanceDetachVolumeModal({
       unmountOnExit
     >
       <Form form={form} layout="vertical">
-        <Alert
-          type="warning"
-          showIcon
-          content="请先确保容器内已停止使用对应挂载点。"
-          className="mb-4"
-        />
         <Form.Item
           field="volumeId"
           label="云盘"

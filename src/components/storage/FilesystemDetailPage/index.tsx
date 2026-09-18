@@ -1,16 +1,3 @@
-import { withId } from "@/lib/id";
-import {
-  DataTable,
-  DetailPageFrame,
-  DetailPagePlaceholder,
-  AliIcon,
-  StatusTag,
-  TableSectionHeader,
-} from "@/components/common";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Empty, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
-import { useState } from "react";
 import {
   deleteFilesystem,
   getFilesystem,
@@ -18,6 +5,20 @@ import {
   type FilesystemMountTarget,
   type StorageFilesystem,
 } from "@/api/storage/filesystems";
+import {
+  AliIcon,
+  DataTable,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ResourceId,
+  StatusTag,
+  TableSectionHeader,
+} from "@/components/common";
+import { withId } from "@/lib/id";
+import { Button, Empty, Modal, Space, Tooltip } from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
@@ -69,26 +70,7 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
       navigate({ to: "/filesystems" });
     },
   });
-  if (detail.isLoading && !detail.data)
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "存储" },
-          { label: "文件存储", to: "/filesystems" },
-          { label: filesystemId },
-        ]}
-        title={filesystemId}
-        idLabel="文件系统 ID"
-        idValue={filesystemId}
-        iconName="wenjiancunchu"
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
 
   const filesystem = detail.data as Filesystem;
   const mountItems = (mounts.data?.items ?? []) as MountTarget[];
@@ -115,8 +97,7 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
         status={filesystemStatus}
         icon={<AliIcon name="wenjiancunchu" size={28} />}
         headerItems={[
-          { label: "文件系统 ID", value: filesystem.id },
-          { label: "容量 (GiB)", value: filesystem.size_gib },
+          { label: "容量 (GiB)", value: String(filesystem.size_gib) },
           { label: "创建时间", value: formatDateTime(filesystem.created_at) },
         ]}
         actions={
@@ -143,7 +124,7 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
             key: "basic",
             title: "基本信息",
             fields: [
-              { label: "ID", value: filesystem.id },
+              { label: "ID", value: <ResourceId value={filesystem.id} /> },
               { label: "名称", value: filesystem.name },
               { label: "状态", value: filesystemStatus },
               { label: "协议", value: filesystem.protocol.toUpperCase() },
@@ -246,9 +227,6 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
             label: "事件",
             content: (
               <Space direction="vertical" size={12} className="w-full">
-                {filesystem.reason ? (
-                  <Alert type="warning" showIcon content={filesystem.reason} />
-                ) : null}
                 {unavailable("当前 Core API 暂未提供文件存储事件列表")}
               </Space>
             ),

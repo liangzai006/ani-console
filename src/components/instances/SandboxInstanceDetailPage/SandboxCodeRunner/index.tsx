@@ -1,5 +1,6 @@
-import type { AsyncTask } from "@/api/tasks";
 import { createSandboxCodeRun, type SandboxCodeRun } from "@/api/instances";
+import type { AsyncTask } from "@/api/tasks";
+import { formatDateTime } from "@/lib/format";
 import {
   Alert,
   Button,
@@ -11,11 +12,11 @@ import {
   Select,
   Space,
   Tag,
+  Tooltip,
   Typography,
 } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { formatDateTime } from "@/lib/format";
 
 type Language = "python" | "javascript";
 
@@ -74,13 +75,7 @@ export function SandboxCodeRunner({
   const lastRun = runs[0];
 
   return (
-    <Space direction="vertical" size={24} className="w-full">
-      <Alert
-        type="info"
-        content="代码在隔离的 Sandbox 运行环境中执行，单次最长 300 秒。提交代码会同时刷新空闲计时。"
-      />
-      {!running ? <Alert type="warning" content="仅运行中的 Sandbox 可以执行代码。" /> : null}
-
+    <Space direction="vertical" className="w-full">
       <section>
         <Typography.Title heading={6}>代码</Typography.Title>
         <Form layout="vertical">
@@ -119,14 +114,18 @@ export function SandboxCodeRunner({
             />
           </Form.Item>
           <Space>
-            <Button
-              type="primary"
-              disabled={!running || !code.trim()}
-              loading={execute.isPending}
-              onClick={() => execute.mutate()}
-            >
-              运行
-            </Button>
+            <Tooltip content="仅运行中的 Sandbox 可以执行代码" disabled={running}>
+              <span className="inline-flex">
+                <Button
+                  type="primary"
+                  disabled={!running || !code.trim()}
+                  loading={execute.isPending}
+                  onClick={() => execute.mutate()}
+                >
+                  运行
+                </Button>
+              </span>
+            </Tooltip>
             <Button onClick={() => setCode(SAMPLES[language])}>载入示例</Button>
           </Space>
         </Form>
@@ -177,12 +176,12 @@ export function SandboxCodeRunner({
             {runs.map((run) => (
               <div
                 key={run.id}
-                className="flex items-center justify-between gap-4 rounded-md bg-(--color-fill-1) px-3 py-2"
+                className="flex items-center justify-between gap-4 rounded-md bg-app-fill px-3 py-2"
               >
                 <span>
                   {run.language} · exit {run.exit_code ?? "-"}
                 </span>
-                <span className="text-(--color-text-3)">
+                <span className="text-app-text-tertiary">
                   {formatDateTime(run.completed_at ?? run.created_at)}
                 </span>
               </div>
@@ -207,7 +206,7 @@ function OutputBlock({
     <div>
       <div className="mb-2 text-sm font-medium">{title}</div>
       <pre
-        className="max-h-80 overflow-auto rounded-md p-4 text-xs leading-6 whitespace-pre-wrap break-words"
+        className="max-h-80 overflow-auto rounded-md p-4 text-xs leading-6 whitespace-pre-wrap wrap-break-word"
         style={{
           background: "var(--color-fill-2)",
           color: error ? "rgb(var(--danger-6))" : "var(--color-text-1)",

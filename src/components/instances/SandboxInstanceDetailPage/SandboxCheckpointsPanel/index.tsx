@@ -1,4 +1,3 @@
-import { withId } from "@/lib/id";
 import {
   cloneSandboxCheckpoint,
   createSandboxCheckpoint,
@@ -6,8 +5,10 @@ import {
   restoreSandboxCheckpoint,
   type SandboxCheckpoint,
 } from "@/api/instances";
+import { DataTable } from "@/components/common";
+import { formatBytes, formatDateTime } from "@/lib/format";
+import { withId } from "@/lib/id";
 import {
-  Alert,
   Button,
   Empty,
   Form,
@@ -22,8 +23,6 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { DataTable } from "@/components/common";
-import { formatBytes, formatDateTime } from "@/lib/format";
 
 export function SandboxCheckpointsPanel({
   instanceId,
@@ -142,10 +141,6 @@ export function SandboxCheckpointsPanel({
   return (
     <>
       <Space direction="vertical" size={24} className="w-full">
-        <Alert
-          type="info"
-          content="检查点保存工作区文件系统；内存快照是否可用取决于当前 Runtime。恢复会覆盖当前工作区，克隆则创建新 Sandbox。"
-        />
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
             <Typography.Title heading={6}>检查点</Typography.Title>
@@ -251,12 +246,6 @@ export function SandboxCheckpointsPanel({
           <Form.Item label="包含内存状态">
             <Switch checked={keepMemory} onChange={setKeepMemory} />
           </Form.Item>
-          {keepMemory ? (
-            <Alert
-              type="warning"
-              content="当前 Runtime 若不支持内存检查点，提交会返回明确错误；可关闭此选项仅保存文件系统。"
-            />
-          ) : null}
         </Form>
       </Modal>
 

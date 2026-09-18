@@ -1,24 +1,14 @@
-import { withId } from "@/lib/id";
-import { listVolumes } from "@/api/storage/volumes";
-import { listFilesystemMountTargets, listFilesystems } from "@/api/storage/filesystems";
-import type { StorageFilesystem } from "@/api/storage/filesystems";
-import type { StorageVolume } from "@/api/storage/volumes";
 import type { InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import {
-  Alert,
-  Button,
-  Checkbox,
-  Empty,
-  Form,
-  Input,
-  Modal,
-  Select,
-  Space,
-} from "@arco-design/web-react";
+import type { StorageFilesystem } from "@/api/storage/filesystems";
+import { listFilesystemMountTargets, listFilesystems } from "@/api/storage/filesystems";
+import type { StorageVolume } from "@/api/storage/volumes";
+import { listVolumes } from "@/api/storage/volumes";
+import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
+import { withId } from "@/lib/id";
+import { Button, Checkbox, Empty, Form, Input, Modal, Select, Space } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
 
 import { validateForm } from "@/lib/form";
 
@@ -300,18 +290,6 @@ export function InstanceStorage({
                   ))}
             </Select>
           </Form.Item>
-          {mountKind === "filesystem" &&
-          selectedResourceId &&
-          !mountTargets.isLoading &&
-          !mountTargets.error &&
-          !hasAvailableMountTarget ? (
-            <Alert
-              className="mb-4"
-              type="warning"
-              showIcon
-              content="当前 NFS 没有 available 挂载目标，暂不可挂载"
-            />
-          ) : null}
           <Form.Item
             field="mountPath"
             label="挂载路径"

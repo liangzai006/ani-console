@@ -7,11 +7,11 @@ export type DetailBreadcrumbItem = {
 };
 
 export type DetailSummaryItem = {
-  label: ReactNode;
-  value: ReactNode;
+  label: string;
+  value: string;
 };
 
-export type DetailHeaderItems = [DetailSummaryItem, DetailSummaryItem, DetailSummaryItem];
+export type DetailHeaderItems = DetailSummaryItem[];
 
 export type DetailField = {
   label: ReactNode;

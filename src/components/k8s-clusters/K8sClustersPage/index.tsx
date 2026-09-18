@@ -1,7 +1,7 @@
 import { withId } from "@/lib/id";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Empty, Form, Grid, Input, Modal, Spin } from "@arco-design/web-react";
+import { Button, Card, Empty, Form, Grid, Input, Modal } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   createK8sCluster,
@@ -23,6 +23,7 @@ import {
   DetailPagePlaceholder,
   DataTableNameCell,
   ListPageFrame,
+  ResourceId,
   type ListColumn,
   ListDataTable,
 } from "@/components/common";
@@ -403,27 +404,7 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
     },
   });
 
-  if (detail.isLoading && !detail.data) {
-    return (
-      <div
-        className="flex min-h-[480px] items-center justify-center"
-        role="status"
-        aria-label="正在加载 K8s 集群详情"
-      >
-        <Spin tip="正在加载集群详情…" />
-      </div>
-    );
-  }
-
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[{ label: "算力" }, { label: "K8s 集群" }, { label: clusterId }]}
-        title={clusterId}
-        idLabel="集群 ID"
-        idValue={clusterId}
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
 
   const c = detail.data;
   const poolItems = (nodePools.data?.items ?? []) as NodePool[];
@@ -498,7 +479,7 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
         headerItems={[
           { label: "规格", value: "-" },
           { label: "K8s 版本", value: c?.version ?? "-" },
-          { label: "节点数", value: nodeCount },
+          { label: "节点数", value: String(nodeCount) },
         ]}
         actions={
           <Button type="outline" status="danger" onClick={confirmDeleteCluster}>
@@ -510,7 +491,7 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
             key: "basic",
             title: "基本信息",
             fields: [
-              { label: "ID", value: c?.id ?? clusterId },
+              { label: "ID", value: <ResourceId value={c?.id ?? clusterId} /> },
               { label: "状态", value: <StatusTag status={c?.state} /> },
               { label: "规格", value: "-" },
               { label: "K8s 版本", value: c?.version ?? "-" },

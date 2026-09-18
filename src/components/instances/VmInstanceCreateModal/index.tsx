@@ -1,13 +1,15 @@
-import { listSecrets } from "@/api/secrets";
-import type { Secret } from "@/api/secrets";
-import type { NetworkSecurityGroup } from "@/api/network";
-import type { StorageFilesystem } from "@/api/storage/filesystems";
 import { createInstance } from "@/api/instances";
+import type { NetworkSecurityGroup } from "@/api/network";
 import { listNetworkSecurityGroups, listNetworkSubnets, listNetworkVpcs } from "@/api/network";
 import { listRegistryImages } from "@/api/registry";
+import type { Secret } from "@/api/secrets";
+import { listSecrets } from "@/api/secrets";
+import type { StorageFilesystem } from "@/api/storage/filesystems";
 import { listFilesystems } from "@/api/storage/filesystems";
+import { ImageNameText, Ipv4CidrInput, WizardSteps } from "@/components/common";
+import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
+import { CPU_INSTANCE_COMPUTE_SPECS, type CpuInstanceComputeSpec } from "@/lib/instances";
 import {
-  Alert,
   Button,
   Collapse,
   Descriptions,
@@ -21,15 +23,12 @@ import {
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ImageNameText, Ipv4CidrInput, WizardSteps } from "@/components/common";
-import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
-import { CPU_INSTANCE_COMPUTE_SPECS, type CpuInstanceComputeSpec } from "@/lib/instances";
 
-import { optionalIpv4WithinCidrError, subnetFixedOctets, suggestGatewayIp } from "@/lib/validators";
-import styles from "./index.module.css";
 import { showMessage } from "@/lib/feedback";
 import { validateForm } from "@/lib/form";
 import { withId } from "@/lib/id";
+import { optionalIpv4WithinCidrError, subnetFixedOctets, suggestGatewayIp } from "@/lib/validators";
+import styles from "./index.module.css";
 
 type SecurityGroup = NetworkSecurityGroup;
 type Filesystem = StorageFilesystem;
@@ -619,7 +618,11 @@ export function VmInstanceCreateModal({
                     ]}
                   />
                 </Form.Item>
-                <Form.Item field="filesystemId" label="文件存储 NFS">
+                <Form.Item
+                  field="filesystemId"
+                  label="文件存储 NFS"
+                  help="文件存储将以读写方式挂载到 /mnt/nfs。"
+                >
                   <Select
                     allowClear
                     loading={filesystems.isLoading}
@@ -632,10 +635,7 @@ export function VmInstanceCreateModal({
                     )}
                   />
                 </Form.Item>
-                {values.filesystemId ? (
-                  <Alert type="info" content="文件存储将以读写方式挂载到 /mnt/nfs。" />
-                ) : null}
-                <Collapse>
+                <Collapse className="mt-4">
                   <CollapseItem header="高级选项" name="advanced-options">
                     <Form.Item field="userData" label="cloud-init / user-data">
                       <Input.TextArea

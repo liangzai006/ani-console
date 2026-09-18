@@ -1,6 +1,5 @@
 export { AliIcon } from "./AliIcon";
 export type { AliIconProps } from "./AliIcon";
-export { AsyncTaskPoller } from "./AsyncTaskPoller";
 export { CoreLineBarChart } from "./CoreLineBarChart";
 export { CorePieChart } from "./CorePieChart";
 export {
@@ -39,13 +38,6 @@ export type {
   DetailSummaryItem,
   DetailTab,
 } from "./DetailPageFrame/types";
-export { FormPageFrame } from "./FormPageFrame";
-export type {
-  FormPageAction,
-  FormPageBreadcrumbItem,
-  FormPageFrameProps,
-  FormPageSection,
-} from "./FormPageFrame/types";
 export { Ipv4CidrInput } from "./Ipv4CidrInput";
 export { ImageNameText } from "./ImageNameText";
 export { NotFoundPage } from "./NotFoundPage";

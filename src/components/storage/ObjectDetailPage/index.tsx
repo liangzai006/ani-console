@@ -1,7 +1,7 @@
 import { withId } from "@/lib/id";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Modal, Space, Spin, Tooltip } from "@arco-design/web-react";
+import { Button, Modal, Space, Tooltip } from "@arco-design/web-react";
 import {
   completeStorageObjectUpload,
   deleteStorageObject,
@@ -10,7 +10,13 @@ import {
   type StorageObject,
 } from "@/api/storage/objects";
 
-import { DetailPageFrame, DetailPagePlaceholder, AliIcon, StatusTag } from "@/components/common";
+import {
+  AliIcon,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ResourceId,
+  StatusTag,
+} from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
 
 export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; objectId: string }) {
@@ -67,26 +73,7 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
     },
   });
 
-  if (detail.isLoading && !detail.data)
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "存储" },
-          { label: "对象存储", to: "/objects" },
-          { label: bucketId, to: "/objects/$bucketId", params: { bucketId } },
-          { label: objectId },
-        ]}
-        title={objectId}
-        idLabel="对象 ID"
-        idValue={objectId}
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
 
   const object = detail.data as StorageObject;
   const objectStatus = object.reason ? (
@@ -115,7 +102,6 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
       status={objectStatus}
       icon={<AliIcon name="file" size={28} />}
       headerItems={[
-        { label: "对象 ID", value: object.id },
         { label: "大小", value: formatBytes(object.size_bytes) },
         { label: "创建时间", value: formatDateTime(object.created_at) },
       ]}
@@ -157,7 +143,7 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
           key: "basic",
           title: "基本信息",
           fields: [
-            { label: "ID", value: object.id },
+            { label: "ID", value: <ResourceId value={object.id} /> },
             { label: "Bucket", value: object.bucket },
             { label: "Key", value: object.key },
             { label: "大小", value: formatBytes(object.size_bytes) },

@@ -1,8 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Form, Modal, Select, Typography } from "@arco-design/web-react";
-import { useEffect, useState } from "react";
 import { applyInstanceLifecycle, listInstances, type InstanceRecord } from "@/api/instances";
 import { withId } from "@/lib/id";
+import { Form, Modal, Select, Typography } from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 type Instance = InstanceRecord;
 const attachableInstanceKinds = new Set<Instance["kind"]>(["vm", "container", "gpu_container"]);
@@ -98,14 +98,6 @@ export function AttachVolumeModal({
             ))}
           </Select>
         </Form.Item>
-        {!instances.isLoading && !instances.error && instanceItems.length === 0 ? (
-          <Alert
-            type="info"
-            showIcon
-            content="暂无可挂载的运行中或已停止 VM、容器或 GPU 容器"
-            className="mb-4"
-          />
-        ) : null}
         <Typography.Text type="secondary">
           挂载操作提交后，卷状态和关联实例会自动刷新。
         </Typography.Text>

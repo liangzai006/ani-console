@@ -1,9 +1,9 @@
-import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceRecord } from "@/api/instances";
-import { Alert, Form, Modal } from "@arco-design/web-react";
-import { useMutation } from "@tanstack/react-query";
+import { applyInstanceLifecycle } from "@/api/instances";
 import { InstanceComputeSpecSelect } from "@/components/instances/InstanceComputeSpecSelect";
 import { CPU_INSTANCE_COMPUTE_SPECS } from "@/lib/instances";
+import { Form, Modal } from "@arco-design/web-react";
+import { useMutation } from "@tanstack/react-query";
 
 import { validateForm } from "@/lib/form";
 
@@ -80,7 +80,6 @@ export function VmInstanceResizeModal({
       unmountOnExit
     >
       <Form form={form} layout="vertical" initialValues={{ spec: currentSpec.value }}>
-        <Alert type="info" showIcon content="VM 变配要求实例处于已停止状态。" className="mb-4" />
         <InstanceComputeSpecSelect
           field="spec"
           profile="cpu"

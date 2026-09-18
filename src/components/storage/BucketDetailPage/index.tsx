@@ -1,4 +1,10 @@
-import { DataTable, DetailPageFrame, DetailPagePlaceholder, AliIcon } from "@/components/common";
+import {
+  AliIcon,
+  DataTable,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ResourceId,
+} from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,7 +15,6 @@ import {
   Modal,
   Select,
   Space,
-  Spin,
   Tag,
   Typography,
   Upload,
@@ -246,25 +251,7 @@ export function BucketDetailPage({
     },
   });
 
-  if (bucket.isLoading && !bucket.data)
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  if (!bucket.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "存储" },
-          { label: "对象存储", to: "/objects" },
-          { label: bucketId },
-        ]}
-        title={bucketId}
-        idLabel="存储桶 ID"
-        idValue={bucketId}
-      />
-    );
+  if (!bucket.data) return <DetailPagePlaceholder loading={bucket.isLoading} />;
 
   const bucketInfo = bucket.data as Bucket;
   const entryItems = (bucketEntries.data?.items ?? []) as BucketEntry[];
@@ -287,10 +274,9 @@ export function BucketDetailPage({
         status={<Tag color={bucketInfo.acl === "tenant_read" ? "blue" : "gray"}>{aclLabel}</Tag>}
         icon={<AliIcon name="duixiangcunchu1" size={28} />}
         headerItems={[
-          { label: "桶 ID", value: bucketInfo.id },
           {
             label: "对象数",
-            value: bucketInfo.object_count ?? entryItems.length,
+            value: String(bucketInfo.object_count ?? entryItems.length),
           },
           { label: "创建时间", value: formatDateTime(bucketInfo.created_at) },
         ]}
@@ -299,7 +285,7 @@ export function BucketDetailPage({
             key: "basic",
             title: "基本信息",
             fields: [
-              { label: "ID", value: bucketInfo.id },
+              { label: "ID", value: <ResourceId value={bucketInfo.id} /> },
               { label: "名称", value: bucketInfo.name },
               { label: "权限", value: aclLabel },
               { label: "存储类型", value: storageClassLabel },
@@ -526,43 +512,6 @@ export function BucketDetailPage({
                   </Button>
                 </Space>
               </Space>
-            ),
-          },
-          {
-            key: "overview",
-            label: "概览",
-            content: (
-              <Descriptions
-                column={1}
-                labelStyle={{ width: "120px" }}
-                data={[
-                  { label: "桶 ID", value: bucketInfo.id },
-                  { label: "桶名称", value: bucketInfo.name },
-                  { label: "权限", value: aclLabel },
-                  { label: "存储类型", value: storageClassLabel },
-                  {
-                    label: "对象数",
-                    value: bucketInfo.object_count ?? entryItems.length,
-                  },
-                  {
-                    label: "总大小",
-                    value: formatBytes(bucketInfo.size_bytes),
-                  },
-                  { label: "Region", value: bucketInfo.region ?? "-" },
-                  {
-                    label: "版本控制",
-                    value: bucketInfo.versioning === "enabled" ? "开启" : "关闭",
-                  },
-                  {
-                    label: "创建时间",
-                    value: formatDateTime(bucketInfo.created_at),
-                  },
-                  {
-                    label: "更新时间",
-                    value: formatDateTime(bucketInfo.updated_at),
-                  },
-                ]}
-              />
             ),
           },
         ]}

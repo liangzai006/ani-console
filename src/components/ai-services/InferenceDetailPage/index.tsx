@@ -12,7 +12,6 @@ import {
   InputNumber,
   Modal,
   Space,
-  Spin,
   Tooltip,
   Typography,
 } from "@arco-design/web-react";
@@ -20,7 +19,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { AliIcon, DetailPageFrame, ImageNameText, StatusTag } from "@/components/common";
+import {
+  AliIcon,
+  DetailPageFrame,
+  DetailPagePlaceholder,
+  ImageNameText,
+  ResourceId,
+  StatusTag,
+} from "@/components/common";
 import { copyToClipboard } from "@/lib/clipboard";
 import { formatDateTime } from "@/lib/format";
 import { withId } from "@/lib/id";
@@ -122,39 +128,8 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
     },
   });
 
-  if (service.isLoading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Spin size={32} />
-      </div>
-    );
-  }
-
   if (!service.data) {
-    return (
-      <DetailPageFrame
-        breadcrumbs={[
-          { label: "AI 服务" },
-          { label: "推理服务", to: "/inference" },
-          { label: serviceId },
-        ]}
-        title={serviceId}
-        icon={<AliIcon name="tuilifuwu" size={28} />}
-        headerItems={[
-          { label: "服务 ID", value: serviceId },
-          { label: "状态", value: "-" },
-          { label: "创建时间", value: "-" },
-        ]}
-        cards={[
-          {
-            key: "basic",
-            title: "基本信息",
-            fields: [{ label: "服务 ID", value: serviceId }],
-          },
-        ]}
-        onBack={() => navigate({ to: "/inference" })}
-      />
-    );
+    return <DetailPagePlaceholder loading={service.isLoading} />;
   }
 
   const item = service.data;
@@ -267,7 +242,6 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
         status={serviceStatus}
         icon={<AliIcon name="tuili" size={28} />}
         headerItems={[
-          { label: "推理服务 ID", value: item.id },
           {
             label: "已就绪副本",
             value: `${item.ready_replicas} / ${item.replicas}`,
@@ -280,7 +254,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
             key: "basic",
             title: "基本信息",
             fields: [
-              { label: "ID", value: item.id },
+              { label: "ID", value: <ResourceId value={item.id} /> },
               { label: "状态", value: serviceStatus },
               { label: "规格", value: "-" },
               {

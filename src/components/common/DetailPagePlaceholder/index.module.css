@@ -1,0 +1,237 @@
+.page {
+  --detail-placeholder-surface: var(--color-bg-white, var(--color-bg-2));
+  --detail-placeholder-shadow: 0 2px 8px rgba(0, 73, 128, 0.05);
+  display: grid;
+  grid-template-rows: 22px 80px minmax(0, 1fr);
+  height: var(--app-content-available-height);
+  min-height: 0;
+}
+
+.breadcrumbRow {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-top: -8px;
+  overflow: hidden;
+}
+
+.breadcrumbRow :global(.arco-skeleton) {
+  width: 280px;
+}
+
+.headerCard {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 80px;
+  min-width: 0;
+  margin-top: 8px;
+  padding: 0 24px;
+  overflow: hidden;
+  gap: 32px;
+  border-radius: 8px;
+  background: var(--detail-placeholder-surface);
+  box-shadow: var(--detail-placeholder-shadow);
+}
+
+.identity {
+  flex: 0 1 240px;
+  min-width: 140px;
+  max-width: 240px;
+}
+
+.identity :global(.arco-skeleton) {
+  width: 100%;
+}
+
+.headerItems {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.headerItem {
+  position: relative;
+  flex: 0 1 180px;
+  min-width: 0;
+  max-width: 180px;
+}
+
+.headerItem + .headerItem {
+  padding-left: 17px;
+}
+
+.headerItem + .headerItem::before {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 1px;
+  background: var(--color-border-1);
+  content: "";
+}
+
+.headerActions {
+  flex: 0 0 128px;
+  width: 128px;
+  margin-left: auto;
+}
+
+.workspace {
+  position: relative;
+  display: grid;
+  grid-template-columns: min(320px, 42%) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  margin-top: 16px;
+  gap: 16px;
+}
+
+.leftPane {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.card,
+.rightPane {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--detail-placeholder-surface);
+  box-shadow: var(--detail-placeholder-shadow);
+}
+
+.card {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  margin-right: -4px;
+  padding-right: 4px;
+}
+
+.cardHeader {
+  display: flex;
+  flex: 0 0 40px;
+  align-items: center;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 24px;
+}
+
+.cardBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px 24px 16px;
+  overflow: hidden;
+}
+
+.rightPane {
+  display: flex;
+  flex-direction: column;
+}
+
+.tabsHeader {
+  display: flex;
+  flex: 0 0 56px;
+  align-items: center;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 56px;
+  padding: 8px 16px;
+  overflow: hidden;
+  gap: 24px;
+  border-bottom: 1px solid var(--color-border-2);
+}
+
+.tab {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.tabContent {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.cardBody :global(.arco-skeleton),
+.tabContent :global(.arco-skeleton) {
+  width: 100%;
+}
+
+@media (max-width: 1280px) {
+  .headerCard {
+    padding: 0 20px;
+    gap: 20px;
+  }
+
+  .identity {
+    flex-basis: 200px;
+    max-width: 200px;
+  }
+
+  .headerItems {
+    gap: 12px;
+  }
+
+  .headerItem {
+    max-width: 150px;
+  }
+
+  .headerItem + .headerItem {
+    padding-left: 13px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .page {
+    grid-template-rows: 22px 80px auto;
+    height: auto;
+    min-height: var(--app-content-available-height);
+  }
+
+  .headerCard {
+    overflow-x: hidden;
+  }
+
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .leftPane {
+    min-height: 420px;
+  }
+
+  .rightPane {
+    min-height: 600px;
+  }
+}
+
+@media (max-width: 600px) {
+  .headerCard {
+    padding: 0 12px;
+    gap: 16px;
+  }
+
+  .identity {
+    flex-basis: 160px;
+    min-width: 160px;
+  }
+
+  .headerItems,
+  .headerActions {
+    display: none;
+  }
+
+  .tabsHeader {
+    gap: 16px;
+  }
+}

@@ -1,10 +1,10 @@
-import { applyInstanceLifecycle } from "@/api/instances";
 import type { InstanceLifecycleRequest, InstanceRecord } from "@/api/instances";
+import { applyInstanceLifecycle } from "@/api/instances";
 import type { RowAction } from "@/components/common";
+import { openVmInstanceRemoteWindow } from "@/lib/instances";
 import { Modal } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { openVmInstanceRemoteWindow } from "@/lib/instances";
 
 import { VmInstanceAttachFilesystemModal } from "../../VmInstanceActions/VmInstanceAttachFilesystemModal";
 import { VmInstanceAttachVolumeModal } from "../../VmInstanceActions/VmInstanceAttachVolumeModal";
@@ -37,11 +37,7 @@ const BUSY_STATES = new Set<VmInstance["state"]>([
   "deleting",
 ]);
 
-export function useVmInstanceRowActions({
-  onOperationSubmitted,
-}: {
-  onOperationSubmitted: (operationId: string) => void;
-}) {
+export function useVmInstanceRowActions() {
   const [dialog, setDialog] = useState<DialogState>();
   const start = useMutation({
     meta: {
@@ -57,7 +53,6 @@ export function useVmInstanceRowActions({
       const data = await applyInstanceLifecycle(instance.id, { action: "start" });
       return data.operation_id;
     },
-    onSuccess: onOperationSubmitted,
   });
   const restart = useMutation({
     meta: {
@@ -73,7 +68,6 @@ export function useVmInstanceRowActions({
       const data = await applyInstanceLifecycle(instance.id, { action: "restart" });
       return data.operation_id;
     },
-    onSuccess: onOperationSubmitted,
   });
   const terminationProtection = useMutation({
     meta: {
@@ -92,7 +86,6 @@ export function useVmInstanceRowActions({
       });
       return data.operation_id;
     },
-    onSuccess: onOperationSubmitted,
   });
   const remove = useMutation({
     meta: {
@@ -108,7 +101,6 @@ export function useVmInstanceRowActions({
       const data = await applyInstanceLifecycle(instance.id, { action: "delete" });
       return data.operation_id;
     },
-    onSuccess: onOperationSubmitted,
   });
 
   const isPendingFor = (instance: VmInstance) =>
@@ -232,9 +224,8 @@ export function useVmInstanceRowActions({
   ];
 
   const closeDialog = () => setDialog(undefined);
-  const onDialogSubmitted = (operationId: string) => {
+  const onDialogSubmitted = () => {
     closeDialog();
-    onOperationSubmitted(operationId);
   };
   const dialogNode = dialog ? (
     dialog.action === "stop" ? (

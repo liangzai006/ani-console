@@ -4,21 +4,12 @@ import {
   DetailPageFrame,
   DetailPagePlaceholder,
   AliIcon,
+  ResourceId,
   StatusTag,
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Button,
-  Card,
-  Empty,
-  List,
-  Modal,
-  Space,
-  Spin,
-  Tag,
-  Typography,
-} from "@arco-design/web-react";
+import { Button, Card, Empty, List, Modal, Space, Tag, Typography } from "@arco-design/web-react";
 import { useState } from "react";
 import { listInstances, type InstanceRecord } from "@/api/instances";
 import {
@@ -156,25 +147,7 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
     },
   });
 
-  if (detail.isLoading && !detail.data)
-    return (
-      <div className="flex justify-center py-20">
-        <Spin />
-      </div>
-    );
-  if (!detail.data)
-    return (
-      <DetailPagePlaceholder
-        breadcrumbs={[
-          { label: "网络" },
-          { label: "安全组", to: "/security-groups" },
-          { label: securityGroupId },
-        ]}
-        title={securityGroupId}
-        idLabel="安全组 ID"
-        idValue={securityGroupId}
-      />
-    );
+  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
 
   const securityGroup = detail.data as SecurityGroup;
   const parentVpc = vpc.data as Vpc | undefined;
@@ -304,7 +277,6 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
         status={<StatusTag status={securityGroup.state} />}
         icon={<AliIcon name="anquanzu" size={28} />}
         headerItems={[
-          { label: "安全组 ID", value: securityGroup.id },
           {
             label: "VPC",
             value: parentVpc?.name ?? securityGroup.vpc_id ?? "-",
@@ -335,7 +307,7 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
             key: "basic",
             title: "基本信息",
             fields: [
-              { label: "ID", value: securityGroup.id },
+              { label: "ID", value: <ResourceId value={securityGroup.id} /> },
               { label: "名称", value: securityGroup.name },
               {
                 label: "VPC",

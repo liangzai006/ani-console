@@ -1,5 +1,3 @@
-import { Alert, Card, Empty, Grid, Skeleton } from "@arco-design/web-react";
-import type { EChartsOption } from "echarts";
 import type {
   GpuInventoryRecord,
   GpuOccupancyStats,
@@ -8,6 +6,8 @@ import type {
 } from "@/api/gpu-inventory";
 import { CorePieChart } from "@/components/common";
 import { MetricCard } from "@/components/common/MetricCard";
+import { Card, Empty, Grid, Skeleton } from "@arco-design/web-react";
+import type { EChartsOption } from "echarts";
 import { GpuAdmissionSummary } from "./GpuAdmissionSummary";
 import { GpuAnomalyList } from "./GpuAnomalyList";
 import { GpuModelInventory } from "./GpuModelInventory";
@@ -80,15 +80,6 @@ export function GpuCapacityOverview({
 
   return (
     <div>
-      {occupancy?.dev_profile.real_provider === false ? (
-        <Alert
-          className="mb-4"
-          type="warning"
-          showIcon
-          title="当前为开发数据源"
-          content="页面数据来自 Core 本地开发配置，不代表真实 GPU 资源池状态。"
-        />
-      ) : null}
       <Grid.Row gutter={[16, 16]}>
         <Grid.Col xs={12} md={6}>
           <CapacityMetric

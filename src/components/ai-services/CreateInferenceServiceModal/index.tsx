@@ -1,7 +1,3 @@
-import { withId } from "@/lib/id";
-import { Alert, Form, Input, InputNumber, Modal, Radio, Select } from "@arco-design/web-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
 import { createInferenceService } from "@/api/ai-services/inference";
 import { getModel, listModels } from "@/api/ai-services/models";
 import { getGpuSpecAvailability, listGpuSpecs } from "@/api/gpu-inventory";
@@ -10,14 +6,18 @@ import {
   listRegistryProjects,
   listRegistryRepositories,
 } from "@/api/registry";
+import { withId } from "@/lib/id";
+import { Form, Input, InputNumber, Modal, Radio, Select } from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 
+import { getLatestModelVersion } from "@/lib/ai-models";
 import {
   DEFAULT_GPU_INSTANCE_COMPUTE_SPEC,
   GPU_INSTANCE_COMPUTE_SPECS,
   INSTANCE_COMPUTE_SPEC_BY_VALUE,
   type GpuInstanceComputeSpec,
 } from "@/lib/instances";
-import { getLatestModelVersion } from "@/lib/ai-models";
 import { getImageSelectionLabel } from "@/lib/render";
 
 type RuntimeImage = {
@@ -386,14 +386,6 @@ export function CreateInferenceServiceModal({
             }))}
           />
         </Form.Item>
-        {!models.error &&
-        !modelDetail.error &&
-        !models.isLoading &&
-        !modelDetail.isLoading &&
-        selectedModel &&
-        modelVersions.length === 0 ? (
-          <Alert type="warning" showIcon content="所选模型暂无可部署版本" />
-        ) : null}
         <Form.Item label="镜像来源" required>
           <Radio.Group type="button" value={runtimeImageMode} onChange={setRuntimeImageMode}>
             <Radio value="registry">镜像仓库</Radio>
@@ -428,13 +420,6 @@ export function CreateInferenceServiceModal({
             />
           </Form.Item>
         )}
-        {runtimeImageMode === "registry" &&
-        !runtimeImages.error &&
-        !runtimeImages.isLoading &&
-        selectedModelVersion &&
-        (runtimeImages.data?.length ?? 0) === 0 ? (
-          <Alert type="warning" showIcon content="Registry 中暂无可选运行镜像" />
-        ) : null}
         <Form.Item label="推理引擎">
           <Input value="平台默认启动命令与环境" readOnly />
         </Form.Item>
@@ -470,17 +455,6 @@ export function CreateInferenceServiceModal({
             />
           </Form.Item>
         </div>
-        {selectedGpuSpec ? (
-          <Alert
-            type="info"
-            showIcon
-            content={`提交 GPU 型号 ${selectedGpuSpec.gpu_type}，每副本 ${Math.max(
-              1,
-              selectedGpuAvailability?.gpu_count ?? 1,
-            )} 卡${selectedGpuSpec.gpu_mode === "vgpu" ? `，显存 ${selectedGpuSpec.mb_per_share} MiB` : ""}；租户剩余配额 ${gpuSpecAvailability.data?.quota_remaining ?? 0} 卡`}
-            className="mb-4"
-          />
-        ) : null}
         <div className="grid grid-cols-1 gap-x-4 md:grid-cols-2">
           <Form.Item label="副本" required>
             <InputNumber
