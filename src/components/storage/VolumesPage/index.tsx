@@ -24,7 +24,7 @@ import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 
 type Volume = StorageVolume;
-type StatusFilter = "all" | "available" | "mounted" | "failed";
+type StatusFilter = "all" | "pending" | "available" | "mounted" | "failed";
 type SearchField = "name" | "id";
 
 export function VolumesPage() {
@@ -194,6 +194,10 @@ export function VolumesPage() {
             {
               value: "all",
               label: "全部",
+            },
+            {
+              value: "pending",
+              label: "创建中",
             },
             {
               value: "available",

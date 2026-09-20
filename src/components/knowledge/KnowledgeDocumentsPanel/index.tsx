@@ -134,7 +134,7 @@ export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action
       fixed: "left",
       render: (_, item) => (
         <DataTableNameCell
-          name={<Typography.Text bold>{item.file_name}</Typography.Text>}
+          name={item.file_name}
           id={item.id}
         />
       ),

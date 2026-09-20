@@ -17,12 +17,13 @@ import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { MODEL_SOURCE_LABELS, type Model } from "@/lib/ai-models";
 
-type StatusFilter = "all" | "available" | "importing" | "failed";
+type StatusFilter = "all" | "pending" | "available" | "importing" | "failed";
 type SearchField = "name";
 type SourceFilter = "all" | Model["source"];
 type CapabilityFilter = "all" | "text-generation" | "embedding" | "speech-to-text";
 
 function getApiStatus(status: StatusFilter) {
+  if (status === "pending") return "pending" as const;
   if (status === "available") return "ready" as const;
   if (status === "importing") return "downloading" as const;
   if (status === "failed") return "error" as const;
@@ -158,6 +159,10 @@ export function ModelsPage() {
             {
               value: "all",
               label: "全部",
+            },
+            {
+              value: "pending",
+              label: "等待中",
             },
             {
               value: "available",

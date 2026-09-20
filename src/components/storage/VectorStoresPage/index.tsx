@@ -20,7 +20,7 @@ import {
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 
-type StatusFilter = "all" | "ready" | "pending";
+type StatusFilter = "all" | "ready" | "pending" | "failed";
 type SearchField = "name" | "id";
 
 export function VectorStoresPage() {
@@ -194,6 +194,10 @@ export function VectorStoresPage() {
             {
               value: "pending",
               label: "创建中",
+            },
+            {
+              value: "failed",
+              label: "异常",
             },
           ],
         }}

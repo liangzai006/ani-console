@@ -182,7 +182,7 @@ export interface NetworkLoadBalancer {
 }
 export interface NetworkLoadBalancerListParams extends CursorPageParams {
   vpc_id?: string;
-  status?: string;
+  state?: string;
   search_field?: "name" | "id";
   keyword?: string;
 }

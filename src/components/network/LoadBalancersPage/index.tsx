@@ -23,7 +23,7 @@ import { formatDateTime } from "@/lib/format";
 
 type LoadBalancer = NetworkLoadBalancer;
 type Vpc = NetworkVPC;
-type StatusFilter = "all" | "running" | "error";
+type StatusFilter = "all" | "pending" | "available" | "failed";
 type SearchField = "name" | "id";
 
 export function LoadBalancersPage() {
@@ -56,7 +56,7 @@ export function LoadBalancersPage() {
         limit,
         cursor,
         vpc_id: vpcId || undefined,
-        status: status === "all" ? undefined : status,
+        state: status === "all" ? undefined : status,
         search_field: keyword ? searchField : undefined,
         keyword: keyword || undefined,
       });
@@ -159,11 +159,15 @@ export function LoadBalancersPage() {
               label: "全部",
             },
             {
-              value: "running",
-              label: "运行中",
+              value: "pending",
+              label: "创建中",
             },
             {
-              value: "error",
+              value: "available",
+              label: "可用",
+            },
+            {
+              value: "failed",
               label: "异常",
             },
           ],

@@ -23,7 +23,7 @@ import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
 
 type Filesystem = StorageFilesystem;
-type StatusFilter = "all" | "available" | "pending";
+type StatusFilter = "all" | "available" | "pending" | "failed";
 type SearchField = "name" | "id";
 
 export function FilesystemsPage() {
@@ -181,6 +181,10 @@ export function FilesystemsPage() {
             {
               value: "pending",
               label: "创建中",
+            },
+            {
+              value: "failed",
+              label: "异常",
             },
           ],
         }}

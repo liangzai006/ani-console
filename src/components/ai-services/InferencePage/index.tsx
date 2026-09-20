@@ -20,7 +20,7 @@ import {
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 
-type StatusFilter = "all" | "running" | "deploying" | "stopped" | "failed";
+type StatusFilter = "all" | "pending" | "deploying" | "running" | "stopping" | "stopped" | "failed";
 type SearchField = "name" | "id";
 
 export function InferencePage() {
@@ -213,12 +213,20 @@ export function InferencePage() {
               label: "全部",
             },
             {
+              value: "pending",
+              label: "等待中",
+            },
+            {
               value: "running",
               label: "运行中",
             },
             {
               value: "deploying",
               label: "部署中",
+            },
+            {
+              value: "stopping",
+              label: "停止中",
             },
             {
               value: "stopped",

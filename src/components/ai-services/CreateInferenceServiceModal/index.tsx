@@ -20,6 +20,8 @@ import {
 } from "@/lib/instances";
 import { getImageSelectionLabel } from "@/lib/render";
 
+import "./index.css";
+
 type RuntimeImage = {
   id: string;
   label: string;
@@ -343,6 +345,7 @@ export function CreateInferenceServiceModal({
 
   return (
     <Modal
+      className="create-inference-service-modal"
       visible={visible}
       title="部署推理服务"
       okText="开始部署"

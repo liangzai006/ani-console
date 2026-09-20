@@ -1,0 +1,4 @@
+.create-inference-service-modal .arco-modal-content {
+  max-height: calc(100vh - 162px);
+  overflow-y: auto;
+}
