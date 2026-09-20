@@ -6,6 +6,7 @@ import clsx from "clsx";
 import "@xterm/xterm/css/xterm.css";
 import { createInstanceExecSession } from "@/api/instances";
 import { ApiError } from "@/api/request";
+import { resolveWebSocketUrl } from "@/lib/browser";
 import styles from "./index.module.css";
 import { closeNotification, showMessage, showNotification } from "@/lib/feedback";
 import { withId } from "@/lib/id";
@@ -166,8 +167,10 @@ export function InstanceTerminal({
       if (socket?.readyState === WebSocket.OPEN) socket.send(packStdin(data));
     });
     const resizeDisposable = term.onResize(({ cols, rows }) => sendResize(cols, rows));
-    const resizeObserver = new ResizeObserver(scheduleFit);
-    resizeObserver.observe(host);
+    const resizeObserver =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleFit);
+    if (resizeObserver) resizeObserver.observe(host);
+    else window.addEventListener("resize", scheduleFit);
 
     const handleMessage = async (data: string | ArrayBuffer | Blob) => {
       let text: string;
@@ -212,7 +215,10 @@ export function InstanceTerminal({
         if (!data.ws_url) throw new Error("终端连接地址为空");
         if (disposed) return;
 
-        const socket = new WebSocket(data.ws_url, TERMINAL_SUBPROTOCOL);
+        if (typeof WebSocket === "undefined") {
+          throw new Error("当前浏览器不支持 WebSocket 终端");
+        }
+        const socket = new WebSocket(resolveWebSocketUrl(data.ws_url), TERMINAL_SUBPROTOCOL);
         socket.binaryType = "arraybuffer";
         socketRef.current = socket;
 
@@ -273,7 +279,8 @@ export function InstanceTerminal({
       disposed = true;
       abortController.abort();
       if (fitFrame !== undefined) window.cancelAnimationFrame(fitFrame);
-      resizeObserver.disconnect();
+      resizeObserver?.disconnect();
+      if (!resizeObserver) window.removeEventListener("resize", scheduleFit);
       inputDisposable.dispose();
       resizeDisposable.dispose();
       const socket = socketRef.current;

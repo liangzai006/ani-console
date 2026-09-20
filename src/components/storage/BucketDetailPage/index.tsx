@@ -39,6 +39,7 @@ import { CreateLifecycleRuleModal } from "@/components/storage/CreateLifecycleRu
 import { BucketAclEditor } from "@/components/storage/BucketAclEditor";
 import { BucketStorageClassModal } from "@/components/storage/BucketStorageClassModal";
 import { ObjectBrowser } from "@/components/storage/ObjectBrowser";
+import { openExternalUrl } from "@/lib/browser";
 import { copyToClipboard } from "@/lib/clipboard";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { withId } from "@/lib/id";
@@ -199,7 +200,7 @@ export function BucketDetailPage({
     onSuccess: async ({ data, action }) => {
       if (!data?.download_url) return;
       if (action === "download") {
-        window.open(data.download_url, "_blank", "noopener,noreferrer");
+        openExternalUrl(data.download_url);
         return;
       }
       await copyToClipboard(data.download_url, "临时链接");

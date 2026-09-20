@@ -1,3 +1,4 @@
+import { downloadBlob } from "@/lib/browser";
 import { withId } from "@/lib/id";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -115,12 +116,7 @@ function ClusterList() {
       if (!clusterId) throw new Error("缺少集群 ID");
       const data = await getK8sClusterKubeconfig(clusterId);
       const content = data.kubeconfig ?? JSON.stringify(data, null, 2);
-      const url = URL.createObjectURL(new Blob([content], { type: "text/yaml" }));
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `kubeconfig-${clusterId}.yaml`;
-      anchor.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(new Blob([content], { type: "text/yaml" }), `kubeconfig-${clusterId}.yaml`);
     },
   });
 
@@ -379,10 +375,7 @@ export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack
       const blob = new Blob([data.kubeconfig ?? ""], {
         type: "text/yaml",
       });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `kubeconfig-${clusterId}.yaml`;
-      a.click();
+      downloadBlob(blob, `kubeconfig-${clusterId}.yaml`);
     },
   });
 

@@ -1,5 +1,8 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import type { StateStorage } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+
+import { authStorage } from "@/lib/storage";
 
 export interface AuthTokens {
   access_token: string;
@@ -26,6 +29,30 @@ interface AuthState {
   getAccessTokenJti: () => string | null;
   setHydrated: (hydrated: boolean) => void;
 }
+
+const authStateStorage: StateStorage = {
+  async getItem(name) {
+    try {
+      return await authStorage.getItem<string>(name);
+    } catch {
+      return null;
+    }
+  },
+  async setItem(name, value) {
+    try {
+      await authStorage.setItem(name, value);
+    } catch {
+      // Authentication remains usable for the lifetime of the page.
+    }
+  },
+  async removeItem(name) {
+    try {
+      await authStorage.removeItem(name);
+    } catch {
+      // The in-memory Zustand state has still been cleared.
+    }
+  },
+};
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   const payload = token.split(".")[1];
@@ -86,6 +113,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "ani-console-auth",
+      storage: createJSONStorage(() => authStateStorage),
       partialize: (state) => ({
         tokens: state.tokens,
         username: state.username,

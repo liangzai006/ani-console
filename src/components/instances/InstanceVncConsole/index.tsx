@@ -3,6 +3,7 @@ import RFB from "@novnc/novnc/lib/rfb";
 import { Button, Radio, Spin, Tag } from "@arco-design/web-react";
 import clsx from "clsx";
 import { createInstanceConsoleSession } from "@/api/instances";
+import { resolveWebSocketUrl } from "@/lib/browser";
 import { isDateTimeExpired } from "@/lib/date";
 import { closeNotification, showNotification } from "@/lib/feedback";
 import { withId } from "@/lib/id";
@@ -83,7 +84,10 @@ export function InstanceVncConsole({
         }
         if (disposed) return;
 
-        rfb = new RFB(host, connectUrl, { wsProtocols: [VNC_SUBPROTOCOL] });
+        if (typeof WebSocket === "undefined") {
+          throw new Error("当前浏览器不支持 WebSocket 控制台");
+        }
+        rfb = new RFB(host, resolveWebSocketUrl(connectUrl), { wsProtocols: [VNC_SUBPROTOCOL] });
         applyViewMode(rfb, viewModeRef.current);
         rfb.background = "#0b0e16";
         rfb.addEventListener("connect", () => {

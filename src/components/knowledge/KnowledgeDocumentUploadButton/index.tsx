@@ -6,13 +6,9 @@ import {
   reserveKnowledgeDocumentUpload,
   uploadKnowledgeDocumentFile,
 } from "@/api/knowledge";
+import { sha256File } from "@/lib/hash";
 
 const allowedTypes = ["pdf", "docx", "xlsx", "pptx", "md", "txt"] as const;
-
-async function sha256(file: File) {
-  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
 
 export function KnowledgeDocumentUploadButton({ kbId }: { kbId: string }) {
   const qc = useQueryClient();
@@ -30,7 +26,7 @@ export function KnowledgeDocumentUploadButton({ kbId }: { kbId: string }) {
       if (!allowedTypes.includes(fileType as (typeof allowedTypes)[number]))
         throw new Error("仅支持 PDF、DOCX、XLSX、PPTX、Markdown 和 TXT 文件");
       if (file.size > 100 * 1024 * 1024) throw new Error("文件不能超过 100 MB");
-      const checksum = await sha256(file);
+      const checksum = await sha256File(file);
       const reservationData = {
         file_name: file.name,
         file_type: fileType as (typeof allowedTypes)[number],

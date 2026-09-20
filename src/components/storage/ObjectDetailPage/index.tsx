@@ -17,6 +17,7 @@ import {
   ResourceId,
   StatusTag,
 } from "@/components/common";
+import { openExternalUrl } from "@/lib/browser";
 import { formatBytes, formatDateTime } from "@/lib/format";
 
 export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; objectId: string }) {
@@ -53,7 +54,7 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
     },
     mutationFn: async (_: undefined) => {
       const data = await getStorageObjectDownload(objectId);
-      if (data?.download_url) window.open(data.download_url, "_blank");
+      if (data?.download_url) openExternalUrl(data.download_url);
     },
   });
   const deleteObject = useMutation({

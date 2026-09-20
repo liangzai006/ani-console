@@ -24,10 +24,12 @@ function useReducedMotion(): boolean {
   const [reduced, setReduced] = React.useState(
     () =>
       typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
 
   React.useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const handleChange = (event: MediaQueryListEvent) => setReduced(event.matches);
     setReduced(mediaQuery.matches);
