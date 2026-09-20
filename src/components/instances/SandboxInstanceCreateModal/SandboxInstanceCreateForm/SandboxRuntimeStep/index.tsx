@@ -25,7 +25,7 @@ export function SandboxRuntimeStep({ values }: { values: FormValues }) {
       >
         <Select>
           <Select.Option value="pause">暂停并保留工作区</Select.Option>
-          <Select.Option value="kill">销毁 Sandbox</Select.Option>
+          <Select.Option value="kill">销毁沙箱</Select.Option>
         </Select>
       </Form.Item>
       <Form.Item
@@ -53,7 +53,7 @@ export function SandboxRuntimeStep({ values }: { values: FormValues }) {
         </Form.Item>
       ) : null}
       <Form.Item field="auto_start" label="自动启动" triggerPropName="checked">
-        <Switch /> <Typography.Text type="secondary">创建后立即启动 Sandbox</Typography.Text>
+        <Switch /> <Typography.Text type="secondary">创建后立即启动沙箱</Typography.Text>
       </Form.Item>
     </>
   );

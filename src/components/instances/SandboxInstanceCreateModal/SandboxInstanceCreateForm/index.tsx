@@ -84,7 +84,7 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
 
   return (
     <Modal
-      title="创建 Sandbox"
+      title="创建沙箱"
       visible={visible}
       onCancel={onCancel}
       unmountOnExit
@@ -137,7 +137,7 @@ export function SandboxInstanceCreateForm({ visible, submitting, onCancel, onSub
             {step === 0 ? (
               <>
                 <Typography.Paragraph type="secondary">
-                  为 Sandbox 设置易于识别的名称。
+                  为沙箱设置易于识别的名称。
                 </Typography.Paragraph>
                 <Form.Item
                   field="name"

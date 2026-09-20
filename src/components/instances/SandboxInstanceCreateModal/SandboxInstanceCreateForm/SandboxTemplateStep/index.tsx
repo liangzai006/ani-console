@@ -12,7 +12,6 @@ type Props = {
 export function SandboxTemplateStep({ templates, loading, error, onChange }: Props) {
   return (
     <>
-      <Typography.Paragraph type="secondary">模板决定 Sandbox 的运行镜像。</Typography.Paragraph>
       {loading ? (
         <div className="py-12 text-center">
           <Spin />
@@ -20,15 +19,16 @@ export function SandboxTemplateStep({ templates, loading, error, onChange }: Pro
       ) : templates.length ? (
         <Form.Item
           field="template_id"
-          label="Sandbox 模板"
-          rules={[{ required: true, message: "请选择 Sandbox 模板" }]}
+          label="沙箱模板"
+          rules={[{ required: true, message: "请选择沙箱模板" }]}
+          help="模板决定沙箱的运行镜像"
         >
-          <Select placeholder="请选择 Sandbox 模板" showSearch allowClear onChange={onChange}>
+          <Select placeholder="请选择沙箱模板" showSearch allowClear onChange={onChange}>
             {templates.map((template) => (
               <Select.Option key={template.id} value={template.id}>
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="shrink-0">{template.name}</span>
-                  <span className="min-w-0 truncate text-[var(--color-text-3)]">
+                  <span className="min-w-0 truncate text-app-text-tertiary">
                     <ImageNameText image={template.image} />
                   </span>
                 </span>
@@ -37,7 +37,7 @@ export function SandboxTemplateStep({ templates, loading, error, onChange }: Pro
           </Select>
         </Form.Item>
       ) : error ? null : (
-        <Empty description="暂无可用 Sandbox 模板" />
+        <Empty description="暂无可用沙箱模板" />
       )}
     </>
   );

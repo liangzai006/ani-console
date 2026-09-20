@@ -118,7 +118,7 @@ export function SandboxCheckpointsPanel({
       setCloneTarget(undefined);
       setCloneName("");
       Modal.success({
-        title: "Sandbox 克隆已创建",
+        title: "沙箱克隆已创建",
         content: `${data.instance.name} 已从检查点创建。`,
         okText: "查看新实例",
         onOk: () =>
@@ -261,7 +261,7 @@ export function SandboxCheckpointsPanel({
         onOk={() => cloneCheckpoint.mutate()}
       >
         <Form layout="vertical">
-          <Form.Item label="新 Sandbox 名称" required>
+          <Form.Item label="新沙箱名称" required>
             <Input value={cloneName} onChange={setCloneName} maxLength={128} showWordLimit />
           </Form.Item>
         </Form>

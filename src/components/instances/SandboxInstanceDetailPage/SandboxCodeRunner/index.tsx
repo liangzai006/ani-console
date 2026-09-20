@@ -114,7 +114,7 @@ export function SandboxCodeRunner({
             />
           </Form.Item>
           <Space>
-            <Tooltip content="仅运行中的 Sandbox 可以执行代码" disabled={running}>
+            <Tooltip content="仅运行中的沙箱可以执行代码" disabled={running}>
               <span className="inline-flex">
                 <Button
                   type="primary"

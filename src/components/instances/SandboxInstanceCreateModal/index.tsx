@@ -17,7 +17,7 @@ export function SandboxInstanceCreateModal({ visible, onCancel, onCreated }: Pro
       feedback: {
         channel: "message",
         action: "创建",
-        successText: "Sandbox 创建已提交",
+        successText: "沙箱创建已提交",
         errorFallback: "创建失败，请检查配置后重试",
       },
     },

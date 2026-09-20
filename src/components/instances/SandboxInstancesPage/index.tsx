@@ -122,7 +122,7 @@ export function SandboxInstancesPage() {
           actions: [
             {
               key: "header-action-1",
-              label: "创建 Sandbox",
+              label: "创建沙箱",
               iconClassName: "icon-add-1",
               variant: "primary",
               onClick: () => setCreateVisible(true),

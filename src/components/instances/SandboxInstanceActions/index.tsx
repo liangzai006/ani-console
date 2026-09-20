@@ -79,7 +79,7 @@ export function SandboxInstanceActions({
     }
     if (action === "delete") {
       Modal.confirm({
-        title: "销毁 Sandbox",
+        title: "销毁沙箱",
         content: `确认销毁「${instance.name || instance.id}」？工作区和未保存数据将不可恢复。`,
         okButtonProps: { status: "danger" },
         onOk: () => lifecycle.mutateAsync({ action: "delete" }),

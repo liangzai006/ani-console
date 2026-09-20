@@ -103,7 +103,7 @@ export const homeQuickCreateItems: HomeShortcut[] = [
   },
   {
     id: "create-sandbox",
-    name: "创建 Sandbox",
+    name: "创建沙箱",
     icon: "Sandbox",
     route: "/sandbox-instances",
   },
@@ -127,7 +127,7 @@ const taskDomainLabels: Record<string, string> = {
   volume: "云盘",
   vector_store: "向量存储",
   kb: "知识库文档",
-  sandbox: "Sandbox",
+  sandbox: "沙箱",
 };
 
 const taskActionLabels: Record<string, string> = {

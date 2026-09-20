@@ -61,7 +61,7 @@ export function SandboxInstanceDetailPage({
 
   const instance = detail.data;
   if (instance.kind !== "sandbox" || !instance.sandbox) {
-    return <Empty description="当前资源不是 沙箱实例，或缺少 Sandbox 运行摘要" />;
+    return <Empty description="当前资源不是沙箱实例，或缺少沙箱运行摘要" />;
   }
 
   const sandbox = instance.sandbox;

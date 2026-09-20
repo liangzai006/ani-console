@@ -32,7 +32,7 @@ export function SandboxConfirmStep({
         },
         {
           label: "到期策略",
-          value: values.on_timeout === "kill" ? "销毁 Sandbox" : "暂停并保留工作区",
+          value: values.on_timeout === "kill" ? "销毁沙箱" : "暂停并保留工作区",
         },
         { label: "网络出口", value: EGRESS_LABELS[values.egress_policy] },
         {

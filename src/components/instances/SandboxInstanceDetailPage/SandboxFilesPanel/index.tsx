@@ -57,7 +57,7 @@ export function SandboxFilesPanel({
         channel: "notification",
         id: "sandbox-file-write",
         action: "文件写入",
-        successText: "文件已写入 Sandbox 工作区",
+        successText: "文件已写入沙箱工作区",
         errorFallback: "文件写入失败",
       },
     },
@@ -134,7 +134,7 @@ export function SandboxFilesPanel({
             >
               返回上级
             </Button>
-            <Tooltip content="仅运行中的 Sandbox 可以写入文件" disabled={running}>
+            <Tooltip content="仅运行中的沙箱可以写入文件" disabled={running}>
               <span className="inline-flex">
                 <Button type="primary" disabled={!running} onClick={() => setEditorVisible(true)}>
                   新建文本文件
@@ -165,7 +165,7 @@ export function SandboxFilesPanel({
                 intent: "danger",
                 visible: (item) => item.kind !== "directory",
                 disabled: () => !running || deleteFile.isPending,
-                tooltip: !running ? "仅运行中的 Sandbox 可以删除文件" : undefined,
+                tooltip: !running ? "仅运行中的沙箱可以删除文件" : undefined,
                 onClick: confirmDelete,
               },
             ]}
