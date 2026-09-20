@@ -2,12 +2,7 @@ export { AliIcon } from "./AliIcon";
 export type { AliIconProps } from "./AliIcon";
 export { CoreLineBarChart } from "./CoreLineBarChart";
 export { CorePieChart } from "./CorePieChart";
-export {
-  DataTable,
-  DataTableNameCell,
-  DataTableRowActionButton,
-  DataTableRowActions,
-} from "./DataTable";
+export { DataTable, DataTableRowActionButton, DataTableRowActions } from "./DataTable";
 export type {
   DataTableProps,
   ListColumn,
@@ -15,6 +10,9 @@ export type {
   RowAction,
   RowActionIntent,
 } from "./DataTable";
+export { ResourceNameId } from "./ResourceNameId";
+export type { ResourceNameIdProps } from "./ResourceNameId";
+export type { ResourceDetailType } from "@/lib/resources";
 export { ListDataTable } from "./ListDataTable";
 export type { ListDataTableProps } from "./ListDataTable";
 export { ResourcePageFrame } from "./ResourcePageFrame";

@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Form, Input, Modal, Typography } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
@@ -15,7 +14,7 @@ import {
 
 import {
   Ipv4CidrInput,
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   type ListColumn,
   StatusTag,
@@ -161,16 +160,7 @@ function VpcList() {
     {
       key: "name",
       title: "名称 / ID",
-      render: (_, vpc) => (
-        <DataTableNameCell
-          name={
-            <Link to="/vpcs/$vpcId" params={{ vpcId: vpc.id }}>
-              {vpc.name}
-            </Link>
-          }
-          id={vpc.id}
-        />
-      ),
+      render: (_, vpc) => <ResourceNameId name={vpc.name} id={vpc.id} type="vpc" />,
     },
     {
       key: "state",

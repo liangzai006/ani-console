@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   ListPageFrame,
-  DataTableNameCell,
+  ResourceNameId,
   type ListColumn,
   StatusTag,
   ListDataTable,
@@ -84,16 +83,7 @@ export function ContainerInstancesPage({
     {
       key: "name",
       title: COLUMN_LABELS.name,
-      render: (_, row) => (
-        <DataTableNameCell
-          name={
-            <Link to="/container-instances/$instanceId" params={{ instanceId: row.id }}>
-              {row.name}
-            </Link>
-          }
-          id={row.id}
-        />
-      ),
+      render: (_, row) => <ResourceNameId name={row.name} id={row.id} type="container-instance" />,
     },
     {
       key: "status",

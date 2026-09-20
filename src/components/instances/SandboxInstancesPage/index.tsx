@@ -1,8 +1,7 @@
 import { listInstances, type InstanceRecord, type SandboxSessionState } from "@/api/instances";
-import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   StatusTag,
   type ListColumn,
@@ -68,14 +67,7 @@ export function SandboxInstancesPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <DataTableNameCell
-          name={
-            <Link to="/sandbox-instances/$instanceId" params={{ instanceId: item.id }}>
-              {item.name || item.id}
-            </Link>
-          }
-          id={item.id}
-        />
+        <ResourceNameId name={item.name || item.id} id={item.id} type="sandbox-instance" />
       ),
     },
     {

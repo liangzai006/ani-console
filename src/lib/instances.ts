@@ -1,6 +1,3 @@
-import type { InstanceRecord } from "@/api/instances";
-import type { NavigateFn } from "@tanstack/react-router";
-
 type ComputeSpecLabel = `${number}C${number}G`;
 
 const INSTANCE_COMPUTE_SPEC_CATALOG = {
@@ -150,38 +147,6 @@ export const sandboxInstanceDetailTabKeys = [
 
 export type SandboxInstanceDetailTabKey = (typeof sandboxInstanceDetailTabKeys)[number];
 
-type Instance = Pick<InstanceRecord, "id" | "kind">;
-
-export function navigateToInstanceDetail(navigate: NavigateFn, instance: Instance) {
-  if (instance.kind === "vm") {
-    void navigate({
-      to: "/vm-instances/$instanceId",
-      params: { instanceId: instance.id },
-    });
-    return;
-  }
-  if (instance.kind === "container") {
-    void navigate({
-      to: "/container-instances/$instanceId",
-      params: { instanceId: instance.id },
-    });
-    return;
-  }
-  if (instance.kind === "gpu_container") {
-    void navigate({
-      to: "/gpu-instances/$instanceId",
-      params: { instanceId: instance.id },
-    });
-    return;
-  }
-  if (instance.kind === "sandbox") {
-    void navigate({
-      to: "/sandbox-instances/$instanceId",
-      params: { instanceId: instance.id },
-    });
-  }
-}
-
 type NetworkishRecord = Record<string, unknown>;
 
 function readString(value: unknown): string | undefined {
@@ -225,52 +190,6 @@ type ProviderLike = {
     real_provider?: boolean | null;
   } | null;
 };
-
-export function parseSandboxCommand(value: string): string[] | undefined {
-  const input = value.trim();
-  if (!input) return undefined;
-
-  const parts: string[] = [];
-  let current = "";
-  let quote: '"' | "'" | null = null;
-  let escaping = false;
-
-  for (const char of input) {
-    if (escaping) {
-      current += char;
-      escaping = false;
-      continue;
-    }
-    if (char === "\\") {
-      escaping = true;
-      continue;
-    }
-    if (quote) {
-      if (char === quote) {
-        quote = null;
-      } else {
-        current += char;
-      }
-      continue;
-    }
-    if (char === '"' || char === "'") {
-      quote = char;
-      continue;
-    }
-    if (/\s/.test(char)) {
-      if (current) {
-        parts.push(current);
-        current = "";
-      }
-      continue;
-    }
-    current += char;
-  }
-
-  if (escaping) current += "\\";
-  if (current) parts.push(current);
-  return parts.length ? parts : undefined;
-}
 
 export function getSandboxProviderLabel(instance: ProviderLike): string {
   const provider = instance.provider ?? instance.dev_profile?.provider ?? "-";

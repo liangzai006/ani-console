@@ -11,6 +11,7 @@ import {
   Button,
   Dropdown,
   Empty,
+  Link,
   Menu,
   Modal,
   Space,
@@ -18,7 +19,7 @@ import {
 } from "@arco-design/web-react";
 import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 
 import {
   AliIcon,
@@ -31,6 +32,7 @@ import {
 } from "@/components/common";
 import { VectorStoreWorkbench } from "@/components/storage/VectorStoreWorkbench";
 import { formatDateTime } from "@/lib/format";
+import { navigateToResourceDetail } from "@/lib/resources";
 
 export type VectorStoreDetailTabKey = "search" | "related";
 
@@ -246,11 +248,15 @@ export function VectorStoreDetailPage({
                       title: "名称",
                       render: (_, resource) => (
                         <Link
-                          to="/kb/$kbId"
-                          params={{ kbId: resource.id }}
-                          search={{ tab: "overview" }}
+                          onClick={() =>
+                            navigateToResourceDetail(navigate, {
+                              type: "knowledge-base",
+                              id: resource.id,
+                              search: { tab: "overview" },
+                            })
+                          }
                         >
-                          {resource.name}
+                          {resource.name || resource.id}
                         </Link>
                       ),
                     },

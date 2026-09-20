@@ -1,8 +1,9 @@
-import { Empty } from "@arco-design/web-react";
-import { Link } from "@tanstack/react-router";
+import { Empty, Link } from "@arco-design/web-react";
+import { useNavigate } from "@tanstack/react-router";
 import type { InferenceService } from "@/api/ai-services/inference";
 import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
+import { navigateToResourceDetail } from "@/lib/resources";
 
 export function ModelRelatedResources({
   services,
@@ -11,6 +12,7 @@ export function ModelRelatedResources({
   services: InferenceService[];
   loading: boolean;
 }) {
+  const navigate = useNavigate();
   return (
     <div>
       <TableSectionHeader title="关联推理服务" />
@@ -21,11 +23,15 @@ export function ModelRelatedResources({
             fixed: "left",
             render: (_, service) => (
               <Link
-                to="/inference/$serviceId"
-                params={{ serviceId: service.id }}
+                onClick={() =>
+                  navigateToResourceDetail(navigate, {
+                    type: "inference-service",
+                    id: service.id,
+                  })
+                }
                 className="text-app-primary no-underline"
               >
-                {service.name}
+                {service.name || service.id}
               </Link>
             ),
           },

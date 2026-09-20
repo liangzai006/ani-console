@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
 import { useState } from "react";
@@ -6,12 +5,7 @@ import { deleteBucket, listBuckets, type StorageBucketRecord } from "@/api/stora
 import { BucketAclModal } from "@/components/storage/BucketAclModal";
 import { BucketUploadModal } from "@/components/storage/BucketUploadModal";
 import { CreateBucketModal } from "@/components/storage/CreateBucketModal";
-import {
-  DataTableNameCell,
-  ListPageFrame,
-  type ListColumn,
-  ListDataTable,
-} from "@/components/common";
+import { ResourceNameId, ListPageFrame, type ListColumn, ListDataTable } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatBytes, formatDateTime } from "@/lib/format";
 
@@ -72,16 +66,7 @@ export function ObjectsPage() {
     {
       key: "name",
       title: "名称 / ID",
-      render: (_, item) => (
-        <DataTableNameCell
-          name={
-            <Link to="/objects/$bucketId" params={{ bucketId: item.id }}>
-              {item.name}
-            </Link>
-          }
-          id={item.id}
-        />
-      ),
+      render: (_, item) => <ResourceNameId name={item.name} id={item.id} type="bucket" />,
     },
     {
       key: "acl",

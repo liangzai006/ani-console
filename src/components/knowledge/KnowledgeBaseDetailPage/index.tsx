@@ -1,5 +1,5 @@
 import { withId } from "@/lib/id";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Modal } from "@arco-design/web-react";
 
@@ -131,21 +131,13 @@ export function KnowledgeBaseDetailPage({
             { label: "文档", value: `${kb.doc_count ?? 0} 个` },
             {
               label: "向量存储",
-              value: vectorStores.isLoading ? (
-                "加载中"
-              ) : vectorStores.error ? (
-                "-"
-              ) : relatedVectorStore ? (
-                <Link
-                  to="/vector-stores/$vectorStoreId"
-                  params={{ vectorStoreId: relatedVectorStore.id }}
-                  search={{ tab: undefined }}
-                >
-                  {relatedVectorStore.name}
-                </Link>
-              ) : (
-                "暂无关联向量存储"
-              ),
+              value: vectorStores.isLoading
+                ? "加载中"
+                : vectorStores.error
+                  ? "-"
+                  : relatedVectorStore
+                    ? relatedVectorStore.name || relatedVectorStore.id
+                    : "暂无关联向量存储",
             },
           ],
         },

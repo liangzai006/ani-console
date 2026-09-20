@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { InputNumber, Modal, Select, Space, Typography } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -12,7 +11,7 @@ import {
 
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import {
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   StatusTag,
   type ListColumn,
@@ -130,14 +129,7 @@ export function InferencePage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <DataTableNameCell
-          name={
-            <Link to="/inference/$serviceId" params={{ serviceId: item.id }}>
-              {item.name}
-            </Link>
-          }
-          id={item.id}
-        />
+        <ResourceNameId name={item.name} id={item.id} type="inference-service" />
       ),
     },
     {

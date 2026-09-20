@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Modal, Select } from "@arco-design/web-react";
+import { Link, Modal, Select } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
 import {
   copyNetworkSecurityGroup,
@@ -13,7 +13,7 @@ import {
 
 import { CreateSecurityGroupModal } from "@/components/network/CreateSecurityGroupModal";
 import {
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   type ListColumn,
   ListDataTable,
@@ -21,6 +21,7 @@ import {
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { navigateToResourceDetail } from "@/lib/resources";
 
 type SecurityGroup = NetworkSecurityGroup;
 type Vpc = NetworkVPC;
@@ -28,6 +29,7 @@ type StatusFilter = "all" | SecurityGroup["state"];
 type SearchField = "name" | "id";
 
 export function SecurityGroupsPage() {
+  const navigate = useNavigate();
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
@@ -118,28 +120,21 @@ export function SecurityGroupsPage() {
     {
       key: "name",
       title: "名称 / ID",
-      render: (_, item) => (
-        <DataTableNameCell
-          name={
-            <Link to="/security-groups/$securityGroupId" params={{ securityGroupId: item.id }}>
-              {item.name}
-            </Link>
-          }
-          id={item.id}
-        />
-      ),
+      render: (_, item) => <ResourceNameId name={item.name} id={item.id} type="security-group" />,
     },
     {
       key: "vpc",
       title: "VPC",
-      render: (_, item) =>
-        item.vpc_id ? (
-          <Link to="/vpcs/$vpcId" params={{ vpcId: item.vpc_id }}>
-            {vpcNames.get(item.vpc_id) ?? item.vpc_id}
+      render: (_, item) => {
+        const vpcId = item.vpc_id;
+        return vpcId ? (
+          <Link onClick={() => navigateToResourceDetail(navigate, { type: "vpc", id: vpcId })}>
+            {vpcNames.get(vpcId) || vpcId}
           </Link>
         ) : (
           "-"
-        ),
+        );
+      },
     },
     {
       key: "state",

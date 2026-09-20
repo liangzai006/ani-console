@@ -1,7 +1,7 @@
 import { withId } from "@/lib/id";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Empty, List, Modal, Tag, Typography } from "@arco-design/web-react";
+import { Button, Card, Empty, Link, List, Modal, Tag, Typography } from "@arco-design/web-react";
 import { getInstance, type InstanceRecord } from "@/api/instances";
 import {
   deleteNetworkRoute,
@@ -19,7 +19,7 @@ import {
   StatusTag,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
-import { navigateToInstanceDetail } from "@/lib/instances";
+import { navigateToResourceDetail, type ResourceDetailTypeWithoutSearch } from "@/lib/resources";
 
 type Vpc = NetworkVPC;
 type Instance = InstanceRecord;
@@ -28,8 +28,23 @@ type RelatedResource = {
   kind: "VPC" | "实例";
   name: string;
   status: string;
-  type: "vpc" | "instance";
+  detailType?: ResourceDetailTypeWithoutSearch;
 };
+
+function instanceDetailType(instance: Instance): ResourceDetailTypeWithoutSearch | undefined {
+  switch (instance.kind) {
+    case "vm":
+      return "vm-instance";
+    case "container":
+      return "container-instance";
+    case "gpu_container":
+      return "gpu-instance";
+    case "sandbox":
+      return "sandbox-instance";
+    default:
+      return undefined;
+  }
+}
 
 export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
   const navigate = useNavigate();
@@ -99,7 +114,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
             kind: "VPC" as const,
             name: parentVpc.name,
             status: parentVpc.state,
-            type: "vpc" as const,
+            detailType: "vpc" as const,
           },
         ]
       : []),
@@ -110,18 +125,11 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
             kind: "实例" as const,
             name: nextHopInstance.name,
             status: nextHopInstance.state,
-            type: "instance" as const,
+            detailType: instanceDetailType(nextHopInstance),
           },
         ]
       : []),
   ];
-  const openRelated = (resource: RelatedResource) =>
-    resource.type === "vpc"
-      ? navigate({ to: "/vpcs/$vpcId", params: { vpcId: resource.id } })
-      : nextHopInstance
-        ? navigateToInstanceDetail(navigate, nextHopInstance)
-        : undefined;
-
   return (
     <DetailPageFrame
       breadcrumbs={[{ label: "网络" }, { label: "路由", to: "/routes" }, { label: name }]}
@@ -191,19 +199,27 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
                   render={(resource) => (
                     <div className="flex w-full items-center gap-3 px-5 py-3">
                       <Tag className="shrink-0">{resource.kind}</Tag>
-                      <span className="min-w-0 flex-1 truncate">{resource.name}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {resource.detailType ? (
+                          <Link
+                            onClick={() => {
+                              if (!resource.detailType) return;
+                              navigateToResourceDetail(navigate, {
+                                type: resource.detailType,
+                                id: resource.id,
+                              });
+                            }}
+                          >
+                            {resource.name || resource.id}
+                          </Link>
+                        ) : (
+                          resource.name || resource.id
+                        )}
+                      </span>
                       <Typography.Text className="shrink-0" type="secondary">
                         {resource.id}
                       </Typography.Text>
                       <StatusTag status={resource.status} />
-                      <Button
-                        className="shrink-0"
-                        type="text"
-                        size="mini"
-                        onClick={() => openRelated(resource)}
-                      >
-                        打开
-                      </Button>
                     </div>
                   )}
                 />

@@ -1,7 +1,7 @@
 import type { InstanceRecord } from "@/api/instances";
 import { Button, Empty, Tooltip } from "@arco-design/web-react";
 import { useState } from "react";
-import { DataTable, DataTableNameCell, StatusTag, TableSectionHeader } from "@/components/common";
+import { DataTable, ResourceNameId, StatusTag, TableSectionHeader } from "@/components/common";
 import { VmInstanceRollbackModal } from "@/components/instances/VmInstanceActions/VmInstanceRollbackModal";
 import { VmInstanceSnapshotModal } from "@/components/instances/VmInstanceActions/VmInstanceSnapshotModal";
 import { formatDateTime } from "@/lib/format";
@@ -61,7 +61,7 @@ export function VmInstanceSnapshots({
               title: "名称 / ID",
               fixed: "left",
               width: 200,
-              render: (_, row) => <DataTableNameCell name={row.name} id={row.id} />,
+              render: (_, row) => <ResourceNameId name={row.name} id={row.id} openable={false} />,
             },
             {
               title: "状态",

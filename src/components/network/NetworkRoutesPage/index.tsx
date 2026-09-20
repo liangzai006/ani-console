@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Modal, Select } from "@arco-design/web-react";
+import { Link, Modal, Select } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
 import {
   deleteNetworkRoute,
@@ -11,19 +11,16 @@ import {
 } from "@/api/network";
 
 import { CreateRouteModal } from "@/components/network/CreateRouteModal";
-import {
-  DataTableNameCell,
-  ListPageFrame,
-  type ListColumn,
-  ListDataTable,
-} from "@/components/common";
+import { ResourceNameId, ListPageFrame, type ListColumn, ListDataTable } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { navigateToResourceDetail } from "@/lib/resources";
 
 type Vpc = NetworkVPC;
 type SearchField = "description" | "id";
 type StatusFilter = "all" | "available";
 
 export function NetworkRoutesPage() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
   const [searchField, setSearchField] = useState<SearchField>("description");
@@ -96,13 +93,10 @@ export function NetworkRoutesPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <DataTableNameCell
-          name={
-            <Link to="/routes/$routeId" params={{ routeId: item.id }}>
-              {item.description?.trim() || item.destination_cidr}
-            </Link>
-          }
+        <ResourceNameId
+          name={item.description?.trim() || item.destination_cidr}
           id={item.id}
+          type="network-route"
         />
       ),
     },
@@ -110,8 +104,8 @@ export function NetworkRoutesPage() {
       key: "vpc",
       title: "VPC",
       render: (_, item) => (
-        <Link to="/vpcs/$vpcId" params={{ vpcId: item.vpc_id }}>
-          {vpcNames.get(item.vpc_id) ?? item.vpc_id}
+        <Link onClick={() => navigateToResourceDetail(navigate, { type: "vpc", id: item.vpc_id })}>
+          {vpcNames.get(item.vpc_id) || item.vpc_id}
         </Link>
       ),
     },

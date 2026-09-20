@@ -8,6 +8,7 @@ import {
 import { DataTable } from "@/components/common";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { withId } from "@/lib/id";
+import { navigateToResourceDetail } from "@/lib/resources";
 import {
   Button,
   Empty,
@@ -121,9 +122,9 @@ export function SandboxCheckpointsPanel({
         content: `${data.instance.name} 已从检查点创建。`,
         okText: "查看新实例",
         onOk: () =>
-          navigate({
-            to: "/sandbox-instances/$instanceId",
-            params: { instanceId: data.instance.id },
+          navigateToResourceDetail(navigate, {
+            type: "sandbox-instance",
+            id: data.instance.id,
           }),
       });
     },

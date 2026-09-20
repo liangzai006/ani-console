@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Modal, Select } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
@@ -12,7 +12,7 @@ import {
 
 import { CreateLoadBalancerModal } from "@/components/network/CreateLoadBalancerModal";
 import {
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   type ListColumn,
   StatusTag,
@@ -20,6 +20,7 @@ import {
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
+import { navigateToResourceDetail } from "@/lib/resources";
 
 type LoadBalancer = NetworkLoadBalancer;
 type Vpc = NetworkVPC;
@@ -97,16 +98,7 @@ export function LoadBalancersPage() {
     {
       key: "name",
       title: "名称 / ID",
-      render: (_, item) => (
-        <DataTableNameCell
-          name={
-            <Link to="/load-balancers/$loadBalancerId" params={{ loadBalancerId: item.id }}>
-              {item.name}
-            </Link>
-          }
-          id={item.id}
-        />
-      ),
+      render: (_, item) => <ResourceNameId name={item.name} id={item.id} type="load-balancer" />,
     },
     {
       key: "state",
@@ -228,19 +220,13 @@ export function LoadBalancersPage() {
               key: "listeners",
               label: "配置监听",
               onClick: (item) =>
-                navigate({
-                  to: "/load-balancers/$loadBalancerId",
-                  params: { loadBalancerId: item.id },
-                }),
+                navigateToResourceDetail(navigate, { type: "load-balancer", id: item.id }),
             },
             {
               key: "backends",
               label: "绑定后端",
               onClick: (item) =>
-                navigate({
-                  to: "/load-balancers/$loadBalancerId",
-                  params: { loadBalancerId: item.id },
-                }),
+                navigateToResourceDetail(navigate, { type: "load-balancer", id: item.id }),
             },
             {
               key: "delete",

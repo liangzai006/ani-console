@@ -1,6 +1,5 @@
 import { downloadBlob } from "@/lib/browser";
 import { withId } from "@/lib/id";
-import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, Empty, Form, Grid, Input, Modal } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
@@ -22,7 +21,7 @@ import {
   StatusTag,
   DataTable,
   DetailPagePlaceholder,
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   ResourceId,
   type ListColumn,
@@ -152,13 +151,10 @@ function ClusterList() {
       key: "name",
       title: "名称 / ID",
       render: (_, cluster) => (
-        <DataTableNameCell
-          name={
-            <Link to="/k8s-clusters/$clusterId" params={{ clusterId: cluster.id ?? "" }}>
-              {cluster.name ?? cluster.id ?? "-"}
-            </Link>
-          }
+        <ResourceNameId
+          name={cluster.name ?? cluster.id ?? "-"}
           id={cluster.id ?? "-"}
+          type="k8s-cluster"
         />
       ),
     },

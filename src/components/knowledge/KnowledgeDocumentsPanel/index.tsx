@@ -11,7 +11,7 @@ import {
 } from "@/api/knowledge";
 import {
   DataTable,
-  DataTableNameCell,
+  ResourceNameId,
   TableSectionHeader,
   type ListColumn,
 } from "@/components/common";
@@ -132,12 +132,7 @@ export function KnowledgeDocumentsPanel({ kbId, action }: { kbId: string; action
       title: "文档 / ID",
       width: 280,
       fixed: "left",
-      render: (_, item) => (
-        <DataTableNameCell
-          name={item.file_name}
-          id={item.id}
-        />
-      ),
+      render: (_, item) => <ResourceNameId name={item.file_name} id={item.id} openable={false} />,
     },
     {
       title: "类型",

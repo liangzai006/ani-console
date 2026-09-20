@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
@@ -13,7 +12,7 @@ import { CreateFilesystemModal } from "@/components/storage/CreateFilesystemModa
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
 import {
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   type ListColumn,
   StatusTag,
@@ -94,16 +93,7 @@ export function FilesystemsPage() {
     {
       key: "name",
       title: "名称 / ID",
-      render: (_, item) => (
-        <DataTableNameCell
-          name={
-            <Link to="/filesystems/$filesystemId" params={{ filesystemId: item.id }}>
-              {item.name}
-            </Link>
-          }
-          id={item.id}
-        />
-      ),
+      render: (_, item) => <ResourceNameId name={item.name} id={item.id} type="filesystem" />,
     },
     {
       key: "state",

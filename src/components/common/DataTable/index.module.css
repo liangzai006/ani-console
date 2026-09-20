@@ -1,37 +1,3 @@
-.nameCell {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 2px;
-}
-
-.name {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  color: var(--list-primary);
-  font-size: 14px;
-  line-height: 20px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.name :global(a) {
-  color: inherit;
-  text-decoration: none;
-}
-
-.name :global(a:hover) {
-  color: var(--list-primary-hover);
-  text-decoration: none;
-}
-
-.nameId {
-  color: var(--list-text-secondary);
-  font-size: 12px;
-  line-height: 16px;
-}
-
 .rowActions {
   display: flex;
   align-items: center;

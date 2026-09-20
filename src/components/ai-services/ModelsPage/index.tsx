@@ -1,13 +1,12 @@
 import { Modal, Select, Space } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { deleteModel, listModels } from "@/api/ai-services/models";
 
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
 import { ImportModelModal } from "@/components/ai-services/ImportModelModal";
 import {
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   StatusTag,
   type ListColumn,
@@ -102,14 +101,7 @@ export function ModelsPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <DataTableNameCell
-          name={
-            <Link to="/models/$modelId" params={{ modelId: item.id }}>
-              {item.display_name || item.name}
-            </Link>
-          }
-          id={item.id}
-        />
+        <ResourceNameId name={item.display_name || item.name} id={item.id} type="model" />
       ),
     },
     {

@@ -1,4 +1,4 @@
-import { Link as RouterLink, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Form, Input, Link, Modal, Select } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
@@ -13,7 +13,7 @@ import {
 
 import {
   Ipv4CidrInput,
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   type ListColumn,
   StatusTag,
@@ -21,6 +21,7 @@ import {
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
+import { navigateToResourceDetail } from "@/lib/resources";
 import {
   ipv4CidrWithinError,
   optionalIpv4Error,
@@ -38,8 +39,8 @@ type SubnetStatusFilter = "all" | Subnet["state"];
 type SubnetSearchField = "name" | "id";
 
 export function SubnetsPage() {
-  const qc = useQueryClient();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
   const [name, setName] = useState("");
   const [vpcId, setVpcId] = useState("");
@@ -168,16 +169,7 @@ export function SubnetsPage() {
     {
       key: "name",
       title: "名称 / ID",
-      render: (_, subnet) => (
-        <DataTableNameCell
-          name={
-            <RouterLink to="/subnets/$subnetId" params={{ subnetId: subnet.id }}>
-              {subnet.name}
-            </RouterLink>
-          }
-          id={subnet.id}
-        />
-      ),
+      render: (_, subnet) => <ResourceNameId name={subnet.name} id={subnet.id} type="subnet" />,
     },
     {
       key: "state",
@@ -190,16 +182,9 @@ export function SubnetsPage() {
       title: "VPC",
       render: (_, subnet) => (
         <Link
-          href={`/vpcs/${encodeURIComponent(subnet.vpc_id)}`}
-          onClick={(event) => {
-            event.preventDefault();
-            void navigate({
-              to: "/vpcs/$vpcId",
-              params: { vpcId: subnet.vpc_id },
-            });
-          }}
+          onClick={() => navigateToResourceDetail(navigate, { type: "vpc", id: subnet.vpc_id })}
         >
-          {vpcNames.get(subnet.vpc_id) ?? subnet.vpc_id}
+          {vpcNames.get(subnet.vpc_id) || subnet.vpc_id}
         </Link>
       ),
     },

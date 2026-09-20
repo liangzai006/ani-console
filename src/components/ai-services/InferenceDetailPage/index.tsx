@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import {
@@ -259,11 +259,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
               { label: "规格", value: "-" },
               {
                 label: "模型",
-                value: (
-                  <Link to="/models/$modelId" params={{ modelId: item.model }}>
-                    {item.served_model_name || item.model}
-                  </Link>
-                ),
+                value: item.served_model_name || item.model,
               },
               {
                 label: "推理引擎",
@@ -323,11 +319,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
             fields: [
               {
                 label: "模型",
-                value: (
-                  <Link to="/models/$modelId" params={{ modelId: item.model }}>
-                    {item.served_model_name || item.model}
-                  </Link>
-                ),
+                value: item.served_model_name || item.model,
               },
               {
                 label: "模型版本",

@@ -5,10 +5,8 @@ import {
   normalizeDataTableColumns,
   resolveDataTableScroll,
 } from "./layout";
-import { ResourceId } from "../ResourceId";
 import { ConfiguredDataTableRowActions } from "./RowActions";
 import type { RowAction } from "./types";
-import styles from "./index.module.css";
 
 export { DataTableRowActionButton, DataTableRowActions } from "./RowActions";
 export type { RowAction, RowActionIntent } from "./types";
@@ -128,14 +126,5 @@ export function DataTable<T>({
       scroll={resolvedScroll}
       rowSelection={rowSelection}
     />
-  );
-}
-
-export function DataTableNameCell({ name, id }: { name: ReactNode; id?: string | null }) {
-  return (
-    <div className={styles.nameCell}>
-      <span className={styles.name}>{name}</span>
-      <span className={styles.nameId}>{id && id !== "-" ? <ResourceId value={id} /> : "-"}</span>
-    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
 import { useState } from "react";
@@ -6,7 +6,7 @@ import { deleteKnowledgeBase, listKnowledgeBases, type KnowledgeBase } from "@/a
 
 import { CreateKnowledgeBaseModal } from "@/components/knowledge/CreateKnowledgeBaseModal";
 import {
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   type ListColumn,
   StatusTag,
@@ -14,6 +14,7 @@ import {
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
+import { navigateToResourceDetail } from "@/lib/resources";
 
 type StatusFilter = "all" | "active" | "rebuilding";
 type SearchField = "name" | "id";
@@ -68,13 +69,11 @@ export function KnowledgeBasesPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <DataTableNameCell
-          name={
-            <Link to="/kb/$kbId" params={{ kbId: item.id }} search={{ tab: "overview" }}>
-              {item.name}
-            </Link>
-          }
+        <ResourceNameId
+          name={item.name}
           id={item.id}
+          type="knowledge-base"
+          search={{ tab: "overview" }}
         />
       ),
     },
@@ -194,9 +193,9 @@ export function KnowledgeBasesPage() {
               key: "chat",
               label: "问答",
               onClick: (item) =>
-                navigate({
-                  to: "/kb/$kbId",
-                  params: { kbId: item.id },
+                navigateToResourceDetail(navigate, {
+                  type: "knowledge-base",
+                  id: item.id,
                   search: { tab: "chat" },
                 }),
             },

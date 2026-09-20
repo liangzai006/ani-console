@@ -1,8 +1,7 @@
 import { listInstances, type FilterableInstanceState, type InstanceRecord } from "@/api/instances";
-import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   StatusTag,
   type ListColumn,
@@ -76,16 +75,7 @@ export function VmInstancesPage() {
     {
       key: "name",
       title: "名称 / ID",
-      render: (_, row) => (
-        <DataTableNameCell
-          name={
-            <Link to="/vm-instances/$instanceId" params={{ instanceId: row.id }}>
-              {row.name}
-            </Link>
-          }
-          id={row.id}
-        />
-      ),
+      render: (_, row) => <ResourceNameId name={row.name} id={row.id} type="vm-instance" />,
     },
     {
       key: "state",

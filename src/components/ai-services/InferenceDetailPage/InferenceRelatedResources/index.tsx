@@ -1,6 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from "@arco-design/web-react";
+import { useNavigate } from "@tanstack/react-router";
 import type { InferenceService } from "@/api/ai-services/inference";
 import { DataTable, TableSectionHeader, type ListColumn } from "@/components/common";
+import { navigateToResourceDetail } from "@/lib/resources";
 
 interface RelatedResource {
   id: string;
@@ -10,6 +12,7 @@ interface RelatedResource {
 }
 
 export function InferenceRelatedResources({ service }: { service: InferenceService }) {
+  const navigate = useNavigate();
   const resources: RelatedResource[] = [
     {
       id: "model",
@@ -23,8 +26,12 @@ export function InferenceRelatedResources({ service }: { service: InferenceServi
     {
       title: "名称",
       render: (_, resource) => (
-        <Link to="/models/$modelId" params={{ modelId: service.model }}>
-          {resource.name}
+        <Link
+          onClick={() =>
+            navigateToResourceDetail(navigate, { type: "model", id: resource.reference })
+          }
+        >
+          {resource.name || resource.reference}
         </Link>
       ),
     },

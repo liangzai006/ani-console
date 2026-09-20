@@ -1,10 +1,9 @@
 import { listInstances, type GPUSchedulingState, type InstanceRecord } from "@/api/instances";
-import { Link } from "@tanstack/react-router";
 import { Tooltip } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
 import { GpuContainerCreateModal } from "@/components/instances/GpuContainerCreateModal";
 import {
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   type ListColumn,
   StatusTag,
@@ -65,16 +64,7 @@ export function GpuInstancesPage() {
     {
       key: "name",
       title: "名称 / ID",
-      render: (_, row) => (
-        <DataTableNameCell
-          name={
-            <Link to="/gpu-instances/$instanceId" params={{ instanceId: row.id }}>
-              {row.name}
-            </Link>
-          }
-          id={row.id}
-        />
-      ),
+      render: (_, row) => <ResourceNameId name={row.name} id={row.id} type="gpu-instance" />,
     },
     {
       key: "state",

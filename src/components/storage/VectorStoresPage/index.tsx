@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Modal } from "@arco-design/web-react";
+import { Link, Modal } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
 import {
   deleteVectorStore,
@@ -11,7 +11,7 @@ import {
 
 import { CreateVectorStoreModal } from "@/components/storage/CreateVectorStoreModal";
 import {
-  DataTableNameCell,
+  ResourceNameId,
   ListPageFrame,
   type ListColumn,
   StatusTag,
@@ -19,11 +19,13 @@ import {
 } from "@/components/common";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
+import { navigateToResourceDetail } from "@/lib/resources";
 
 type StatusFilter = "all" | "ready" | "pending" | "failed";
 type SearchField = "name" | "id";
 
 export function VectorStoresPage() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -94,18 +96,11 @@ export function VectorStoresPage() {
       key: "name",
       title: "名称 / ID",
       render: (_, item) => (
-        <DataTableNameCell
-          name={
-            <Link
-              className="truncate"
-              to="/vector-stores/$vectorStoreId"
-              params={{ vectorStoreId: item.id }}
-              search={{ tab: undefined }}
-            >
-              {item.name}
-            </Link>
-          }
+        <ResourceNameId
+          name={item.name}
           id={item.id}
+          type="vector-store"
+          search={{ tab: undefined }}
         />
       ),
     },
@@ -142,18 +137,24 @@ export function VectorStoresPage() {
       key: "knowledgeBase",
       title: "关联知识库",
       ellipsis: true,
-      render: (_, item) =>
-        item.knowledge_base_ref ? (
+      render: (_, item) => {
+        const knowledgeBase = item.knowledge_base_ref;
+        return knowledgeBase ? (
           <Link
-            to="/kb/$kbId"
-            params={{ kbId: item.knowledge_base_ref.id }}
-            search={{ tab: "overview" }}
+            onClick={() =>
+              navigateToResourceDetail(navigate, {
+                type: "knowledge-base",
+                id: knowledgeBase.id,
+                search: { tab: "overview" },
+              })
+            }
           >
-            {item.knowledge_base_ref.name}
+            {knowledgeBase.name || knowledgeBase.id}
           </Link>
         ) : (
           "未关联"
-        ),
+        );
+      },
     },
     {
       key: "createdAt",
