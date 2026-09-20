@@ -57,7 +57,8 @@ export function VolumesPage() {
       return listVolumes({
         limit,
         cursor,
-        status: status === "all" ? undefined : status,
+        state: status === "all" || status === "mounted" ? undefined : status,
+        in_use: status === "mounted" ? true : undefined,
         search_field: keyword ? searchField : undefined,
         keyword: keyword || undefined,
       });
@@ -148,7 +149,11 @@ export function VolumesPage() {
     {
       key: "mountInstance",
       title: "挂载实例",
-      render: (_, item) => item.mount_name ?? item.mount_instance_id ?? "-",
+      render: (_, item) =>
+        item.used_by
+          ?.map((instance) => instance.instance_name)
+          .filter(Boolean)
+          .join("、") || "-",
     },
     {
       key: "createdAt",

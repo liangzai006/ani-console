@@ -30,13 +30,13 @@ export interface NetworkSubnet {
 
 export interface NetworkSubnetListParams extends CursorPageParams {
   vpc_id?: string;
-  status?: string;
+  state?: string;
   search_field?: "name" | "id";
   keyword?: string;
 }
 
 export interface NetworkVPCListParams extends CursorPageParams {
-  status?: string;
+  state?: string;
   search_field?: "name" | "id";
   keyword?: string;
 }
@@ -102,7 +102,7 @@ export interface NetworkSecurityGroup {
 
 export interface NetworkSecurityGroupListParams extends CursorPageParams {
   vpc_id?: string;
-  status?: string;
+  state?: string;
   search_field?: "name" | "id";
   keyword?: string;
 }

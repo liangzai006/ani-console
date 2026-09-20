@@ -23,6 +23,16 @@ export type InstanceState =
   | "failed"
   | "deleting"
   | "deleted";
+export type FilterableInstanceState = Exclude<InstanceState, "deleting" | "deleted">;
+export type ContainerRolloutStatus =
+  | "pending"
+  | "progressing"
+  | "healthy"
+  | "degraded"
+  | "rolled_back"
+  | "stopped";
+export type GPUSchedulingState = "pending" | "scheduled" | "running" | "failed" | "stopped";
+export type SandboxSessionState = "pending" | "running" | "paused" | "expired" | "stopped";
 export type SandboxNetworkEgressPolicy = "deny_all" | "allowlist" | "internet";
 
 export interface InstanceEnvVar {
@@ -71,7 +81,7 @@ export interface SandboxInstanceStatus {
     status: "creating" | "available" | "restoring" | "failed" | "deleted";
   }>;
   files_summary?: { file_count?: number; total_size_bytes?: number };
-  session_state: "pending" | "running" | "paused" | "expired" | "stopped";
+  session_state: SandboxSessionState;
   agent_ref?: string | null;
   stop_reason?: "TTL_EXPIRED" | "IDLE_EXPIRED" | "USER_REQUESTED" | "RUNTIME_FAILED" | null;
   connectivity?: { token_available?: boolean; ports_available?: boolean };
@@ -169,7 +179,7 @@ export interface InstanceRecord {
     replicas: number;
     ready_replicas: number;
     revision?: string | null;
-    rollout_status?: "pending" | "progressing" | "healthy" | "degraded" | "rolled_back" | null;
+    rollout_status?: ContainerRolloutStatus | null;
     env?: InstanceEnvVar[];
     history?: Array<{ revision: string; image?: string | null; created_at: string }>;
   } | null;
@@ -181,6 +191,7 @@ export interface InstanceRecord {
     gpu_type?: string | null;
     shares?: number | null;
     mb_per_share?: number | null;
+    scheduling_state?: GPUSchedulingState | null;
     scheduling_reason?: string | null;
     utilization_percent?: number | null;
   } | null;
@@ -208,7 +219,10 @@ export interface InstanceRecord {
 
 export interface InstanceListParams extends CursorPageParams {
   kind?: string;
-  status?: string;
+  state?: string;
+  rollout_status?: ContainerRolloutStatus;
+  scheduling_state?: GPUSchedulingState;
+  session_state?: SandboxSessionState;
   search_field?: "name" | "id";
   keyword?: string;
   mountable?: boolean;

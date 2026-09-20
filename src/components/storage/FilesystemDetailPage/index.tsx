@@ -1,6 +1,7 @@
 import {
   deleteFilesystem,
   getFilesystem,
+  getFilesystemMountCommand,
   listFilesystemMountTargets,
   type FilesystemMountTarget,
   type StorageFilesystem,
@@ -15,14 +16,15 @@ import {
   TableSectionHeader,
 } from "@/components/common";
 import { withId } from "@/lib/id";
-import { Button, Empty, Modal, Space, Tooltip } from "@arco-design/web-react";
+import { Button, Dropdown, Empty, Menu, Modal, Tooltip } from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
-import { FilesystemPermissionsTab } from "@/components/storage/FilesystemPermissionsTab";
+import { copyToClipboard } from "@/lib/clipboard";
 import { formatDateTime } from "@/lib/format";
 
 type Filesystem = StorageFilesystem;
@@ -33,6 +35,7 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
   const qc = useQueryClient();
   const [expandVisible, setExpandVisible] = useState(false);
   const [mountTargetVisible, setMountTargetVisible] = useState(false);
+  const [copyingMountTargetId, setCopyingMountTargetId] = useState<string>();
   const detail = useQuery({
     meta: {
       errorNotification: {
@@ -48,12 +51,24 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
     meta: {
       errorNotification: {
         id: withId("filesystem-mounts", filesystemId),
-        action: "挂载目标加载",
+        action: "挂载点加载",
         fallback: "请求失败，请稍后重试",
       },
     },
     queryKey: ["filesystem-mounts", filesystemId],
     queryFn: () => listFilesystemMountTargets(filesystemId, { limit: 100 }),
+  });
+  const mountCommand = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("filesystem-mount-command", filesystemId),
+        action: "挂载命令获取",
+        fallback: "挂载命令获取失败",
+      },
+    },
+    queryKey: ["filesystem-mount-command", filesystemId],
+    queryFn: () => getFilesystemMountCommand(filesystemId),
+    enabled: false,
   });
   const remove = useMutation({
     meta: {
@@ -74,7 +89,7 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
 
   const filesystem = detail.data as Filesystem;
   const mountItems = (mounts.data?.items ?? []) as MountTarget[];
-  const unavailable = (description: string) => <Empty description={description} />;
+  // const unavailable = (description: string) => <Empty description={description} />;
   const filesystemStatus = filesystem.reason ? (
     <Tooltip content={filesystem.reason}>
       <span className="inline-flex">
@@ -84,6 +99,47 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
   ) : (
     <StatusTag status={filesystem.state} />
   );
+  const handleMoreAction = (action: string) => {
+    if (action === "expand") {
+      setExpandVisible(true);
+      return;
+    }
+    if (action === "delete") {
+      Modal.confirm({
+        title: "删除文件存储",
+        content: `确定删除「${filesystem.name}」？请先卸载所有客户端并确认没有业务正在访问。`,
+        okButtonProps: { status: "danger" },
+        onOk: () => remove.mutateAsync(undefined),
+      });
+    }
+  };
+  const moreMenu = (
+    <Menu onClickMenuItem={handleMoreAction}>
+      <Menu.Item key="expand">扩容</Menu.Item>
+      <Menu.Item
+        key="delete"
+        disabled={remove.isPending}
+        style={{ color: "var(--color-danger-6)" }}
+      >
+        删除
+      </Menu.Item>
+    </Menu>
+  );
+  const copyMountCommand = async (target: MountTarget) => {
+    setCopyingMountTargetId(target.id);
+    try {
+      const result = await mountCommand.refetch();
+      if (!result.isSuccess || !result.data.command) return;
+      // 接口返回文件系统级命令；列表操作需保留服务端协议和路径，仅替换为当前行挂载点 IP。
+      const command =
+        result.data.ip_address && result.data.ip_address !== target.ip_address
+          ? result.data.command.replace(result.data.ip_address, target.ip_address)
+          : result.data.command;
+      await copyToClipboard(command, "挂载命令");
+    } finally {
+      setCopyingMountTargetId(undefined);
+    }
+  };
 
   return (
     <>
@@ -101,23 +157,11 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
           { label: "创建时间", value: formatDateTime(filesystem.created_at) },
         ]}
         actions={
-          <Space>
-            <Button onClick={() => setExpandVisible(true)}>扩容</Button>
-            <Button
-              status="danger"
-              loading={remove.isPending}
-              onClick={() =>
-                Modal.confirm({
-                  title: "删除文件存储",
-                  content: `确定删除「${filesystem.name}」？请先卸载所有客户端并确认没有业务正在访问。`,
-                  okButtonProps: { status: "danger" },
-                  onOk: () => remove.mutateAsync(undefined),
-                })
-              }
-            >
-              删除
+          <Dropdown trigger="click" position="br" droplist={moreMenu}>
+            <Button disabled={remove.isPending} aria-label="更多操作" title="更多操作">
+              <IconMoreVertical />
             </Button>
-          </Space>
+          </Dropdown>
         }
         cards={[
           {
@@ -151,34 +195,27 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
           {
             key: "related-summary",
             title: "关联摘要",
-            fields: mountItems.length
-              ? [
-                  { label: "挂载目标", value: `${mountItems.length} 个` },
-                  {
-                    label: "可用挂载目标",
-                    value: `${mountItems.filter((item) => item.status === "available").length} 个`,
-                  },
-                ]
-              : [{ label: "暂无挂载目标", value: "-" }],
+            fields: [{ label: "挂载点", value: `${mountItems.length} 个` }],
           },
         ]}
         tabs={[
           {
             key: "mount-targets",
-            label: "挂载目标",
+            label: "挂载点",
             content: (
               <div>
                 <TableSectionHeader
-                  title="挂载目标"
+                  title="挂载点"
                   extra={
                     <Button type="primary" onClick={() => setMountTargetVisible(true)}>
-                      创建挂载目标
+                      创建挂载点
                     </Button>
                   }
                 />
                 <DataTable<MountTarget>
                   columns={[
-                    { title: "挂载目标 ID", dataIndex: "id" },
+                    { title: "挂载地址", dataIndex: "ip_address", width: 100, fixed: "left" },
+                    // { title: "挂载目标 ID", dataIndex: "id" },
                     {
                       title: "状态",
                       width: 120,
@@ -186,51 +223,50 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
                     },
                     {
                       title: "VPC",
-                      render: (_, row) =>
-                        row.vpc_id ? (
-                          <Link to="/vpcs/$vpcId" params={{ vpcId: row.vpc_id }}>
-                            {row.vpc_id}
-                          </Link>
-                        ) : (
-                          "-"
-                        ),
+                      width: 200,
+                      ellipsis: true,
+                      dataIndex: "vpc_id",
+                      placeholder: "-",
                     },
                     {
                       title: "子网",
-                      render: (_, row) => (
-                        <Link to="/subnets/$subnetId" params={{ subnetId: row.subnet_id }}>
-                          {row.subnet_id}
-                        </Link>
-                      ),
+                      width: 200,
+                      ellipsis: true,
+                      dataIndex: "subnet_id",
+                      placeholder: "-",
                     },
-                    { title: "IP 地址", dataIndex: "ip_address" },
                     {
                       title: "创建时间",
+                      width: 200,
                       render: (_, row) => formatDateTime(row.created_at),
                     },
                   ]}
                   data={mountItems}
                   loading={mounts.isLoading}
                   pagination={false}
+                  rowActions={[
+                    {
+                      key: "copy-mount-command",
+                      label: "复制挂载命令",
+                      disabled: (row) => row.status !== "available" || mountCommand.isFetching,
+                      loading: (row) => copyingMountTargetId === row.id,
+                      onClick: copyMountCommand,
+                    },
+                  ]}
                   noDataElement={<Empty description="暂无挂载目标，请创建挂载目标后获取访问地址" />}
                 />
               </div>
             ),
           },
-          {
-            key: "permissions",
-            label: "权限",
-            content: <FilesystemPermissionsTab />,
-          },
-          {
-            key: "events",
-            label: "事件",
-            content: (
-              <Space direction="vertical" size={12} className="w-full">
-                {unavailable("当前 Core API 暂未提供文件存储事件列表")}
-              </Space>
-            ),
-          },
+          // {
+          //   key: "events",
+          //   label: "事件",
+          //   content: (
+          //     <Space direction="vertical" size={12} className="w-full">
+          //       {unavailable("当前 Core API 暂未提供文件存储事件列表")}
+          //     </Space>
+          //   ),
+          // },
         ]}
         onBack={() => navigate({ to: "/filesystems" })}
       />

@@ -65,7 +65,7 @@ function VpcList() {
       return listNetworkVpcs({
         limit,
         cursor,
-        status: status === "all" ? undefined : status,
+        state: status === "all" ? undefined : status,
         search_field: keyword ? searchField : undefined,
         keyword: keyword || undefined,
       });

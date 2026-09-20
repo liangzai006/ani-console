@@ -145,7 +145,6 @@ export const sandboxInstanceDetailTabKeys = [
   "metrics",
   "logs",
   "events",
-  "security",
   "operations",
 ] as const;
 

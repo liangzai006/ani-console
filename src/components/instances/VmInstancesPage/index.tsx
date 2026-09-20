@@ -1,4 +1,4 @@
-import { listInstances, type InstanceRecord } from "@/api/instances";
+import { listInstances, type FilterableInstanceState, type InstanceRecord } from "@/api/instances";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -15,7 +15,7 @@ import { VmInstanceCreateModal } from "../VmInstanceCreateModal";
 import { useVmInstanceRowActions } from "./VmInstanceRowActions";
 
 type VmInstance = InstanceRecord;
-type StatusFilter = "all" | VmInstance["state"];
+type StatusFilter = "all" | FilterableInstanceState;
 
 function specLabel(instance: VmInstance) {
   const cpu = instance.compute?.cpu;
@@ -49,7 +49,7 @@ export function VmInstancesPage() {
           kind: "vm",
           limit,
           cursor,
-          status: status === "all" ? undefined : status,
+          state: status === "all" ? undefined : status,
           keyword: keyword || undefined,
         });
       },
@@ -64,7 +64,11 @@ export function VmInstancesPage() {
   const items = query.data?.items ?? [];
   const statusTabs = [
     { value: "all" as const, label: "全部" },
+    { value: "pending" as const, label: "等待中" },
+    { value: "provisioning" as const, label: "配置中" },
+    { value: "starting" as const, label: "启动中" },
     { value: "running" as const, label: "运行中" },
+    { value: "stopping" as const, label: "停止中" },
     { value: "stopped" as const, label: "已停止" },
     { value: "failed" as const, label: "异常" },
   ];

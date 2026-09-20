@@ -9,6 +9,8 @@ import type {
   CreateVolumeSnapshotInput,
   CreateVolumeSnapshotRequest,
   StorageVolume,
+  StorageVolumeAutoSnapshotPolicyUpdateInput,
+  StorageVolumeAutoSnapshotPolicyUpdateRequest,
   StorageVolumeExpandInput,
   StorageVolumeExpandRequest,
   StorageVolumeListParams,
@@ -21,6 +23,7 @@ import type {
 
 const createScope = createIdempotencyScope("storage-volume-create", ["POST"]);
 const expandScope = createIdempotencyScope("storage-volume-expand", ["POST"]);
+const autoSnapshotScope = createIdempotencyScope("storage-volume-auto-snapshot-policy", ["PUT"]);
 const snapshotScope = createIdempotencyScope("storage-volume-snapshot-create", ["POST"]);
 const osInitScope = createIdempotencyScope("storage-volume-os-init-complete", ["POST"]);
 const volumePath = (volumeId: string) => `/volumes/${encodeURIComponent(volumeId)}`;
@@ -90,6 +93,22 @@ export function expandVolume(
   );
 }
 
+export function updateVolumeAutoSnapshotPolicy(
+  volumeId: string,
+  submitData: StorageVolumeAutoSnapshotPolicyUpdateInput,
+): Promise<StorageVolume> {
+  return runIdempotentRequest(
+    autoSnapshotScope,
+    submitData,
+    (body) =>
+      coreRequest<StorageVolume, StorageVolumeAutoSnapshotPolicyUpdateRequest>(
+        `${volumePath(volumeId)}/auto-snapshot-policy`,
+        { method: "PUT", data: body },
+      ),
+    [volumeId],
+  );
+}
+
 export function getVolumeOSInitGuide(volumeId: string): Promise<VolumeOSInitGuide> {
   return coreRequest<VolumeOSInitGuide>(`${volumePath(volumeId)}/os-init-guide`, {
     method: "GET",
@@ -120,10 +139,13 @@ export type {
   StorageResourceState,
   StorageVolume,
   StorageVolumeAutoSnapshotPolicy,
+  StorageVolumeAutoSnapshotPolicyUpdateInput,
+  StorageVolumeAutoSnapshotPolicyUpdateRequest,
   StorageVolumeExpandInput,
   StorageVolumeExpandRequest,
   StorageVolumeListParams,
   StorageVolumeListResponse,
+  StorageVolumeMountHistoryEntry,
   VolumeOSInitCompleteInput,
   VolumeOSInitCompleteRequest,
   VolumeOSInitGuide,

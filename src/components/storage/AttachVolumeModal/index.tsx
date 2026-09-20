@@ -33,11 +33,11 @@ export function AttachVolumeModal({
       listInstances({
         limit: 100,
         kind: "vm,container,gpu_container",
-        status: "running,stopped",
+        state: "running,stopped",
       }),
     enabled: visible,
   });
-  // TODO: 实例接口确认按 kind/status 过滤后，移除此处关联资源选择的本地兜底过滤。
+  // TODO: 实例接口确认按 kind/state 过滤后，移除此处关联资源选择的本地兜底过滤。
   const instanceItems = ((instances.data?.items ?? []) as Instance[]).filter(
     (item) => attachableInstanceKinds.has(item.kind) && ["running", "stopped"].includes(item.state),
   );

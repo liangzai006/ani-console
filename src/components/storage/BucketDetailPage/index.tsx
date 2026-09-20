@@ -9,16 +9,17 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
-  Descriptions,
+  Dropdown,
   Empty,
   Input,
+  Menu,
   Modal,
-  Select,
   Space,
   Tag,
   Typography,
   Upload,
 } from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useEffect, useRef, useState } from "react";
 import {
   createBucketPrefix,
@@ -28,8 +29,6 @@ import {
   getBucket,
   listBucketLifecycleRules,
   listBucketObjects,
-  updateBucketAcl,
-  updateBucketStorageClass,
   type StorageBucketLifecycleRule,
   type StorageBucketObjectEntry,
   type StorageBucketRecord,
@@ -37,6 +36,8 @@ import {
 import { uploadStorageObjectFile } from "@/api/storage/objects";
 
 import { CreateLifecycleRuleModal } from "@/components/storage/CreateLifecycleRuleModal";
+import { BucketAclEditor } from "@/components/storage/BucketAclEditor";
+import { BucketStorageClassModal } from "@/components/storage/BucketStorageClassModal";
 import { ObjectBrowser } from "@/components/storage/ObjectBrowser";
 import { copyToClipboard } from "@/lib/clipboard";
 import { formatBytes, formatDateTime } from "@/lib/format";
@@ -45,6 +46,12 @@ import { withId } from "@/lib/id";
 type Bucket = StorageBucketRecord;
 type BucketEntry = StorageBucketObjectEntry;
 type LifecycleRule = StorageBucketLifecycleRule;
+type AccessDomainRow = {
+  key: "region" | "endpoint" | "bucket";
+  type: string;
+  address: string;
+  copyable?: boolean;
+};
 
 export function BucketDetailPage({
   bucketId,
@@ -63,8 +70,7 @@ export function BucketDetailPage({
   const [folderName, setFolderName] = useState("");
   const [ruleVisible, setRuleVisible] = useState(false);
   const [editingRule, setEditingRule] = useState<LifecycleRule | undefined>(undefined);
-  const [aclDraft, setAclDraft] = useState<Bucket["acl"]>("private");
-  const [classDraft, setClassDraft] = useState<Bucket["storage_class"]>("standard");
+  const [storageClassVisible, setStorageClassVisible] = useState(false);
 
   const bucket = useQuery({
     meta: {
@@ -101,13 +107,6 @@ export function BucketDetailPage({
     queryFn: () => listBucketLifecycleRules(bucketId),
     enabled: !!bucket.data,
   });
-  useEffect(() => {
-    if (bucket.data) {
-      setAclDraft(bucket.data.acl ?? "private");
-      setClassDraft(bucket.data.storage_class ?? "standard");
-    }
-  }, [bucket.data]);
-
   useEffect(() => {
     if (action !== "upload" || !bucket.data) return;
     const frame = window.requestAnimationFrame(() => {
@@ -206,35 +205,6 @@ export function BucketDetailPage({
       await copyToClipboard(data.download_url, "临时链接");
     },
   });
-  const updateAcl = useMutation({
-    meta: {
-      feedback: {
-        channel: "notification",
-        id: "bucket-acl-update",
-        action: "更新",
-        errorFallback: "请求失败",
-      },
-    },
-    mutationFn: (_: undefined) => updateBucketAcl(bucketId, { acl: aclDraft ?? "private" }),
-    onSuccess: () => {
-      refreshBucket();
-    },
-  });
-  const updateClass = useMutation({
-    meta: {
-      feedback: {
-        channel: "notification",
-        id: "bucket-class-update",
-        action: "更新",
-        errorFallback: "请求失败",
-      },
-    },
-    mutationFn: (_: undefined) =>
-      updateBucketStorageClass(bucketId, { storage_class: classDraft ?? "standard" }),
-    onSuccess: () => {
-      refreshBucket();
-    },
-  });
   const deleteRule = useMutation({
     meta: {
       feedback: {
@@ -262,6 +232,16 @@ export function BucketDetailPage({
   };
   const aclLabel = bucketInfo.acl === "tenant_read" ? "租户内读" : "私有";
   const storageClassLabel = bucketInfo.storage_class === "infrequent_access" ? "低频" : "标准";
+  const accessDomainRows: AccessDomainRow[] = [
+    { key: "region", type: "地域", address: bucketInfo.region ?? "-" },
+    {
+      key: "endpoint",
+      type: "Endpoint",
+      address: bucketInfo.endpoint ?? "-",
+      copyable: Boolean(bucketInfo.endpoint),
+    },
+    { key: "bucket", type: "存储桶名称", address: bucketInfo.name },
+  ];
   return (
     <>
       <DetailPageFrame
@@ -280,13 +260,33 @@ export function BucketDetailPage({
           },
           { label: "创建时间", value: formatDateTime(bucketInfo.created_at) },
         ]}
+        actions={
+          <Dropdown
+            trigger="click"
+            position="br"
+            droplist={
+              <Menu
+                onClickMenuItem={(key) => {
+                  if (key !== "storage-class") return;
+                  setStorageClassVisible(true);
+                }}
+              >
+                <Menu.Item key="storage-class">存储类型</Menu.Item>
+              </Menu>
+            }
+          >
+            <Button aria-label="更多操作" title="更多操作">
+              <IconMoreVertical />
+            </Button>
+          </Dropdown>
+        }
         cards={[
           {
             key: "basic",
             title: "基本信息",
             fields: [
-              { label: "ID", value: <ResourceId value={bucketInfo.id} /> },
-              { label: "名称", value: bucketInfo.name },
+              { label: "存储桶ID", value: <ResourceId value={bucketInfo.id} /> },
+              { label: "存储桶名称", value: bucketInfo.name },
               { label: "权限", value: aclLabel },
               { label: "存储类型", value: storageClassLabel },
               {
@@ -309,7 +309,7 @@ export function BucketDetailPage({
         tabs={[
           {
             key: "objects",
-            label: "对象浏览器",
+            label: "文件",
             content: (
               <ObjectBrowser
                 bucketName={bucketInfo.name}
@@ -348,33 +348,8 @@ export function BucketDetailPage({
           },
           {
             key: "permissions",
-            label: "权限",
-            content: (
-              <Space direction="vertical" size={20} className="w-full">
-                <Typography.Text type="secondary">
-                  P0 支持私有与租户内读两档权限；跨账户 ACL 与桶策略编辑暂不在当前范围内。
-                </Typography.Text>
-                <Descriptions column={1} border data={[{ label: "当前权限", value: aclLabel }]} />
-                <Space>
-                  <Select
-                    value={aclDraft ?? "private"}
-                    onChange={setAclDraft}
-                    style={{ width: 180 }}
-                  >
-                    <Select.Option value="private">私有</Select.Option>
-                    <Select.Option value="tenant_read">租户内读</Select.Option>
-                  </Select>
-                  <Button
-                    type="primary"
-                    loading={updateAcl.isPending}
-                    disabled={(aclDraft ?? "private") === (bucketInfo.acl ?? "private")}
-                    onClick={() => updateAcl.mutateAsync(undefined)}
-                  >
-                    保存权限
-                  </Button>
-                </Space>
-              </Space>
-            ),
+            label: "权限管理",
+            content: <BucketAclEditor bucket={bucketInfo} />,
           },
           {
             key: "lifecycle",
@@ -455,27 +430,26 @@ export function BucketDetailPage({
           },
           {
             key: "access",
-            label: "访问信息",
+            label: "访问域名",
             content: (
               <Space direction="vertical" size={20} className="w-full">
-                <Typography.Text type="secondary">
-                  以下信息用于 S3 兼容 SDK 与 CLI 接入。访问凭据由租户管理员统一提供。
-                </Typography.Text>
-                <Descriptions
-                  column={1}
-                  border
-                  data={[
-                    { label: "Region", value: bucketInfo.region ?? "-" },
+                <Typography.Title heading={6}>访问域名</Typography.Title>
+                <DataTable<AccessDomainRow>
+                  tableLabel="访问域名"
+                  rowKey="key"
+                  pagination={false}
+                  data={accessDomainRows}
+                  columns={[
+                    { title: "类型", dataIndex: "type", width: 240 },
                     {
-                      label: "Endpoint",
-                      value: (
+                      title: "地址",
+                      render: (_, row) => (
                         <Space>
-                          <Typography.Text code>{bucketInfo.endpoint ?? "-"}</Typography.Text>
-                          {bucketInfo.endpoint ? (
+                          <Typography.Text>{row.address}</Typography.Text>
+                          {row.copyable ? (
                             <Button
-                              type="text"
                               size="mini"
-                              onClick={() => void copyToClipboard(bucketInfo.endpoint!, "Endpoint")}
+                              onClick={() => void copyToClipboard(row.address, "Endpoint")}
                             >
                               复制
                             </Button>
@@ -483,39 +457,18 @@ export function BucketDetailPage({
                         </Space>
                       ),
                     },
-                    { label: "桶名", value: bucketInfo.name },
-                    {
-                      label: "版本控制",
-                      value: bucketInfo.versioning === "enabled" ? "开启" : "关闭",
-                    },
-                    { label: "存储类型", value: storageClassLabel },
                   ]}
                 />
-                <Space>
-                  <Select
-                    value={classDraft ?? "standard"}
-                    onChange={setClassDraft}
-                    style={{ width: 180 }}
-                  >
-                    <Select.Option value="standard">标准</Select.Option>
-                    <Select.Option value="infrequent_access">低频</Select.Option>
-                  </Select>
-                  <Button
-                    type="primary"
-                    loading={updateClass.isPending}
-                    disabled={
-                      (classDraft ?? "standard") === (bucketInfo.storage_class ?? "standard")
-                    }
-                    onClick={() => updateClass.mutateAsync(undefined)}
-                  >
-                    保存存储类型
-                  </Button>
-                </Space>
               </Space>
             ),
           },
         ]}
         onBack={() => navigate({ to: "/objects" })}
+      />
+      <BucketStorageClassModal
+        bucket={bucketInfo}
+        visible={storageClassVisible}
+        onCancel={() => setStorageClassVisible(false)}
       />
       <Modal
         visible={folderVisible}

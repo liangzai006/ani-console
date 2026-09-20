@@ -1,4 +1,4 @@
-import { listInstances, type InstanceRecord } from "@/api/instances";
+import { listInstances, type GPUSchedulingState, type InstanceRecord } from "@/api/instances";
 import { Link } from "@tanstack/react-router";
 import { Tooltip } from "@arco-design/web-react";
 import { useEffect, useState } from "react";
@@ -16,7 +16,7 @@ import { getImageDisplayName } from "@/lib/render";
 import { useGpuInstanceRowActions } from "./GpuInstanceRowActions";
 
 type Instance = InstanceRecord;
-type StatusFilter = "all" | "running" | "stopped" | "queued" | "failed";
+type StatusFilter = "all" | GPUSchedulingState;
 type SearchField = "name" | "id";
 
 export function GpuInstancesPage() {
@@ -39,7 +39,7 @@ export function GpuInstancesPage() {
           limit,
           cursor,
           kind: "gpu_container",
-          status: status === "all" ? undefined : status,
+          scheduling_state: status === "all" ? undefined : status,
           search_field: keyword ? searchField : undefined,
           keyword: keyword || undefined,
         };
@@ -55,9 +55,10 @@ export function GpuInstancesPage() {
   const items = allItems;
   const tabs = [
     { value: "all" as const, label: "全部" },
+    { value: "pending" as const, label: "排队中" },
+    { value: "scheduled" as const, label: "已调度" },
     { value: "running" as const, label: "运行中" },
     { value: "stopped" as const, label: "已停止" },
-    { value: "queued" as const, label: "排队中" },
     { value: "failed" as const, label: "异常" },
   ];
   const columns: Array<ListColumn<Instance>> = [

@@ -33,7 +33,7 @@ export function InstanceOperations({ instanceId }: { instanceId: string }) {
     useCursorPaginatedQuery<InstanceOperation>({
       errorNotification: {
         id: withId("instance-operations", instanceId),
-        action: "操作历史加载",
+        action: "操作记录加载",
         fallback: "请求失败，请稍后重试",
       },
       queryKey: ["instance-operations", instanceId],
@@ -54,7 +54,7 @@ export function InstanceOperations({ instanceId }: { instanceId: string }) {
         onPageChange: setPage,
         onPageSizeChange: setPageSize,
       }}
-      noDataElement={<Empty description="暂无操作历史" />}
+      noDataElement={<Empty description="暂无操作记录" />}
       columns={[
         {
           title: "操作时间",

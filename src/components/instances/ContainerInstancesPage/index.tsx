@@ -137,6 +137,7 @@ export function ContainerInstancesPage({
       key: "endpoint",
       title: COLUMN_LABELS.endpoint,
       dataIndex: "endpoint",
+      placeholder: "-",
       width: 120,
     },
     {
@@ -149,10 +150,12 @@ export function ContainerInstancesPage({
 
   const statusTabs = [
     { value: "all" as const, label: "全部" },
-    { value: "running" as const, label: "运行中" },
+    { value: "pending" as const, label: "待发布" },
+    { value: "progressing" as const, label: "发布中" },
+    { value: "healthy" as const, label: "健康" },
+    { value: "degraded" as const, label: "异常" },
+    { value: "rolled_back" as const, label: "已回滚" },
     { value: "stopped" as const, label: "已停止" },
-    { value: "deploying" as const, label: "部署中" },
-    { value: "failed" as const, label: "异常" },
   ];
   return (
     <>

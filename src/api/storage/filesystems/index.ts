@@ -8,6 +8,7 @@ import type {
   CreateFilesystemMountTargetRequest,
   CreateStorageFilesystemInput,
   CreateStorageFilesystemRequest,
+  FilesystemMountCommand,
   FilesystemMountTargetListResponse,
   StorageFilesystem,
   StorageFilesystemExpandInput,
@@ -56,6 +57,12 @@ export function listFilesystemMountTargets(
   );
 }
 
+export function getFilesystemMountCommand(filesystemId: string): Promise<FilesystemMountCommand> {
+  return coreRequest<FilesystemMountCommand>(`${filesystemPath(filesystemId)}/mount-command`, {
+    method: "GET",
+  });
+}
+
 export function createFilesystemMountTarget(
   filesystemId: string,
   submitData: CreateFilesystemMountTargetInput,
@@ -93,6 +100,7 @@ export type {
   CreateFilesystemMountTargetRequest,
   CreateStorageFilesystemInput,
   CreateStorageFilesystemRequest,
+  FilesystemMountCommand,
   FilesystemMountTarget,
   FilesystemMountTargetListResponse,
   StorageFilesystem,

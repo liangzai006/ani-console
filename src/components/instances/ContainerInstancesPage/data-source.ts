@@ -80,7 +80,7 @@ async function fetchContainerInstancePage(
     kind: "container",
     limit: API_PAGE_SIZE,
     ...(cursor ? { cursor } : {}),
-    status: filters?.status === "all" ? undefined : filters?.status,
+    rollout_status: filters?.status === "all" ? undefined : filters?.status,
     search_field: keyword ? filters?.searchField : undefined,
     keyword: keyword || undefined,
   };

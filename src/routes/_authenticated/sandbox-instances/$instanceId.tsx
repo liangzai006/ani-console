@@ -3,11 +3,14 @@ import { SandboxInstanceDetailPage } from "@/components/instances/SandboxInstanc
 import { sandboxInstanceDetailTabKeys, type SandboxInstanceDetailTabKey } from "@/lib/instances";
 
 export const Route = createFileRoute("/_authenticated/sandbox-instances/$instanceId")({
-  validateSearch: (search: Record<string, unknown>): { tab?: SandboxInstanceDetailTabKey } => ({
-    tab: sandboxInstanceDetailTabKeys.includes(search.tab as SandboxInstanceDetailTabKey)
-      ? (search.tab as SandboxInstanceDetailTabKey)
-      : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { tab?: SandboxInstanceDetailTabKey } => {
+    const tab = search.tab === "security" ? "events" : search.tab;
+    return {
+      tab: sandboxInstanceDetailTabKeys.includes(tab as SandboxInstanceDetailTabKey)
+        ? (tab as SandboxInstanceDetailTabKey)
+        : undefined,
+    };
+  },
   component: function SandboxInstanceDetailRoute() {
     const { instanceId } = Route.useParams();
     const { tab = "access" } = Route.useSearch();

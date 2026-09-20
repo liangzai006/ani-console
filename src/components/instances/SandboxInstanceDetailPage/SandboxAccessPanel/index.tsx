@@ -59,13 +59,89 @@ export function SandboxAccessPanel({
 
   return (
     <>
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <Typography.Title heading={6}>预览端口</Typography.Title>
+          <Space>
+            <Button
+              size="small"
+              disabled={!running || !portsAvailable}
+              onClick={() => setPortVisible(true)}
+            >
+              打开预览
+            </Button>
+          </Space>
+        </div>
+        <DataTable<SandboxPortSummary>
+          data={sandbox.ports ?? []}
+          rowKey={(item) => String(item.port)}
+          pagination={false}
+          noDataElement={<Empty description="暂无预览端口" />}
+          rowActions={[
+            {
+              key: "copy",
+              label: "复制",
+              disabled: (item) => !item.preview_url,
+              onClick: (item) => {
+                if (item.preview_url) void copyToClipboard(item.preview_url, "预览地址");
+              },
+            },
+            {
+              key: "close",
+              label: "关闭",
+              intent: "danger",
+              disabled: () => closePort.isPending,
+              onClick: (item) => confirmClosePort(item.port),
+            },
+          ]}
+          columns={[
+            {
+              title: "端口",
+              width: 100,
+              render: (_, item) => `:${item.port}`,
+            },
+            // { title: "名称", dataIndex: "name", placeholder: "-" },
+            {
+              title: "协议",
+              width: 100,
+              dataIndex: "protocol",
+              placeholder: "tcp",
+            },
+            {
+              title: "状态",
+              width: 120,
+              render: (_, item) => (
+                <Tag color={item.status === "available" ? "green" : "orange"}>{item.status}</Tag>
+              ),
+            },
+            {
+              title: "预览地址",
+              ellipsis: true,
+              width: 200,
+              render: (_, item) =>
+                item.preview_url ? (
+                  <a
+                    href={item.preview_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[rgb(var(--link-6))]"
+                  >
+                    {item.preview_url}
+                  </a>
+                ) : (
+                  "-"
+                ),
+            },
+          ]}
+        />
+      </section>
+
       <Space direction="vertical" size={24} className="w-full">
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
             <Typography.Title heading={6}>短期连接令牌</Typography.Title>
             <Button
               size="small"
-              type="primary"
               disabled={!running || !tokenAvailable}
               onClick={() => setTokenVisible(true)}
             >
@@ -75,85 +151,6 @@ export function SandboxAccessPanel({
           <Typography.Text type="secondary">
             在弹窗中配置有效期与授权范围；签发结果仅显示一次。
           </Typography.Text>
-        </section>
-
-        <section>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <Typography.Title heading={6}>预览端口</Typography.Title>
-            <Space>
-              <Button size="small" onClick={onChanged}>
-                刷新
-              </Button>
-              <Button
-                size="small"
-                disabled={!running || !portsAvailable}
-                onClick={() => setPortVisible(true)}
-              >
-                开放预览端口
-              </Button>
-            </Space>
-          </div>
-          <DataTable<SandboxPortSummary>
-            data={sandbox.ports ?? []}
-            rowKey={(item) => String(item.port)}
-            pagination={false}
-            noDataElement={<Empty description="暂无预览端口" />}
-            rowActions={[
-              {
-                key: "copy",
-                label: "复制",
-                disabled: (item) => !item.preview_url,
-                onClick: (item) => {
-                  if (item.preview_url) void copyToClipboard(item.preview_url, "预览地址");
-                },
-              },
-              {
-                key: "close",
-                label: "关闭",
-                intent: "danger",
-                disabled: () => closePort.isPending,
-                onClick: (item) => confirmClosePort(item.port),
-              },
-            ]}
-            columns={[
-              {
-                title: "端口",
-                width: 100,
-                render: (_, item) => `:${item.port}`,
-              },
-              { title: "名称", dataIndex: "name", placeholder: "-" },
-              {
-                title: "协议",
-                width: 100,
-                dataIndex: "protocol",
-                placeholder: "tcp",
-              },
-              {
-                title: "状态",
-                width: 120,
-                render: (_, item) => (
-                  <Tag color={item.status === "available" ? "green" : "orange"}>{item.status}</Tag>
-                ),
-              },
-              {
-                title: "预览地址",
-                ellipsis: true,
-                render: (_, item) =>
-                  item.preview_url ? (
-                    <a
-                      href={item.preview_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[rgb(var(--link-6))]"
-                    >
-                      {item.preview_url}
-                    </a>
-                  ) : (
-                    "-"
-                  ),
-              },
-            ]}
-          />
         </section>
       </Space>
 

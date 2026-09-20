@@ -34,7 +34,7 @@ export function SandboxSecurityEvents({ instanceId }: { instanceId: string }) {
         <div className="mb-3 flex items-center justify-between gap-3">
           <Typography.Title heading={6}>安全事件</Typography.Title>
           <Space>
-            <span className="text-(--color-text-2)">级别</span>
+            <span className="text-app-text-secondary">级别</span>
             <Select
               className="w-40"
               value={severity}

@@ -9,6 +9,13 @@ export interface StorageVolumeAutoSnapshotPolicy {
   schedule: string;
 }
 
+export interface StorageVolumeMountHistoryEntry {
+  at: string;
+  action: "mount" | "unmount" | "create_from_snapshot" | "os_init";
+  target?: string | null;
+  result: "success" | "failed";
+}
+
 export interface StorageVolume {
   id: string;
   tenant_id: string;
@@ -32,6 +39,7 @@ export interface StorageVolume {
   }>;
   snapshots_count?: number | null;
   auto_snapshot?: StorageVolumeAutoSnapshotPolicy;
+  mount_history?: StorageVolumeMountHistoryEntry[];
   os_init_status?: string | null;
   os_init_device?: string | null;
   from_snapshot_id?: string | null;
@@ -44,7 +52,7 @@ export interface StorageVolume {
 }
 
 export interface StorageVolumeListParams extends CursorPageParams {
-  status?: string;
+  state?: string;
   search_field?: "name" | "id";
   keyword?: string;
   in_use?: boolean;
@@ -73,6 +81,14 @@ export interface StorageVolumeExpandInput {
   size_gib: number;
 }
 export type StorageVolumeExpandRequest = StorageVolumeExpandInput & { idempotency_key: string };
+
+export interface StorageVolumeAutoSnapshotPolicyUpdateInput {
+  enabled: boolean;
+  retain_days: number;
+  schedule: string;
+}
+export type StorageVolumeAutoSnapshotPolicyUpdateRequest =
+  StorageVolumeAutoSnapshotPolicyUpdateInput & { idempotency_key: string };
 
 export interface VolumeSnapshotRecord {
   id: string;

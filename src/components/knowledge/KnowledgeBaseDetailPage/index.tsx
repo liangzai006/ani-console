@@ -179,7 +179,7 @@ export function KnowledgeBaseDetailPage({
         },
         {
           key: "history",
-          label: "操作历史",
+          label: "操作记录",
           content: <KnowledgeBaseAuditLogsPanel kbId={kbId} />,
         },
       ]}

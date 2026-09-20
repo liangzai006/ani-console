@@ -159,7 +159,7 @@ export function ObjectBrowser({
 
       <DataTable<BrowserEntry>
         className={styles.table}
-        tableLabel="对象浏览器"
+        tableLabel="文件"
         rowKey={(entry) => entry.key}
         columns={columns}
         data={tableEntries}

@@ -83,7 +83,7 @@ export function SubnetsPage() {
         limit,
         cursor,
         vpc_id: filterVpcId || undefined,
-        status: status === "all" ? undefined : status,
+        state: status === "all" ? undefined : status,
         search_field: keyword ? searchField : undefined,
         keyword: keyword || undefined,
       });

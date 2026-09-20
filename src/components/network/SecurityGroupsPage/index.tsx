@@ -17,13 +17,14 @@ import {
   ListPageFrame,
   type ListColumn,
   ListDataTable,
+  StatusTag,
 } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 
 type SecurityGroup = NetworkSecurityGroup;
 type Vpc = NetworkVPC;
-type StatusFilter = "all" | "available";
+type StatusFilter = "all" | SecurityGroup["state"];
 type SearchField = "name" | "id";
 
 export function SecurityGroupsPage() {
@@ -54,7 +55,7 @@ export function SecurityGroupsPage() {
         limit,
         cursor,
         vpc_id: filterVpcId || undefined,
-        status: status === "all" ? undefined : status,
+        state: status === "all" ? undefined : status,
         search_field: keyword ? searchField : undefined,
         keyword: keyword || undefined,
       });
@@ -141,6 +142,12 @@ export function SecurityGroupsPage() {
         ),
     },
     {
+      key: "state",
+      title: "状态",
+      width: 100,
+      render: (_, item) => <StatusTag status={item.state} />,
+    },
+    {
       key: "rules",
       title: "规则数",
       render: (_, item) => item.rule_count ?? item.rules.length,
@@ -186,6 +193,14 @@ export function SecurityGroupsPage() {
             {
               value: "available",
               label: "可用",
+            },
+            {
+              value: "pending",
+              label: "创建中",
+            },
+            {
+              value: "failed",
+              label: "异常",
             },
           ],
         }}

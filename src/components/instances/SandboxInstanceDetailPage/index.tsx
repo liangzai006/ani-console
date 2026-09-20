@@ -11,7 +11,6 @@ import {
   ResourceId,
   StatusTag,
 } from "@/components/common";
-import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
@@ -22,8 +21,8 @@ import { SandboxAccessPanel } from "./SandboxAccessPanel";
 import { SandboxCheckpointsPanel } from "./SandboxCheckpointsPanel";
 import { SandboxCodeRunner } from "./SandboxCodeRunner";
 import { SandboxEnvironmentPanel } from "./SandboxEnvironmentPanel";
+import { SandboxEventsPanel } from "./SandboxEventsPanel";
 import { SandboxFilesPanel } from "./SandboxFilesPanel";
-import { SandboxSecurityEvents } from "./SandboxSecurityEvents";
 import { formatDurationSeconds, sandboxEgressLabel, sandboxTimeoutLabel } from "./utils";
 
 export function SandboxInstanceDetailPage({
@@ -42,7 +41,7 @@ export function SandboxInstanceDetailPage({
     meta: {
       errorNotification: {
         id: withId("sandbox", instanceId),
-        action: "Sandbox 实例加载",
+        action: "沙箱实例加载",
         fallback: "请求失败，请稍后重试",
       },
     },
@@ -62,7 +61,7 @@ export function SandboxInstanceDetailPage({
 
   const instance = detail.data;
   if (instance.kind !== "sandbox" || !instance.sandbox) {
-    return <Empty description="当前资源不是 Sandbox 实例，或缺少 Sandbox 运行摘要" />;
+    return <Empty description="当前资源不是 沙箱实例，或缺少 Sandbox 运行摘要" />;
   }
 
   const sandbox = instance.sandbox;
@@ -73,7 +72,7 @@ export function SandboxInstanceDetailPage({
     <DetailPageFrame
       breadcrumbs={[
         { label: "算力" },
-        { label: "Sandbox 实例", to: "/sandbox-instances" },
+        { label: "沙箱实例", to: "/sandbox-instances" },
         { label: instance.name || instance.id },
       ]}
       title={instance.name || instance.id}
@@ -190,7 +189,7 @@ export function SandboxInstanceDetailPage({
       tabs={[
         {
           key: "access",
-          label: "访问与端口",
+          label: "访问配置",
           content: (
             <SandboxAccessPanel instance={instance} onChanged={() => void refreshDetail()} />
           ),
@@ -201,10 +200,10 @@ export function SandboxInstanceDetailPage({
           content: <SandboxEnvironmentPanel sandbox={sandbox} />,
         },
         {
-          key: "code",
-          label: "代码解释器",
+          key: "files",
+          label: "文件",
           content: (
-            <SandboxCodeRunner
+            <SandboxFilesPanel
               instanceId={instanceId}
               running={running}
               onChanged={() => void refreshDetail()}
@@ -212,10 +211,10 @@ export function SandboxInstanceDetailPage({
           ),
         },
         {
-          key: "files",
-          label: "文件",
+          key: "code",
+          label: "运行代码",
           content: (
-            <SandboxFilesPanel
+            <SandboxCodeRunner
               instanceId={instanceId}
               running={running}
               onChanged={() => void refreshDetail()}
@@ -235,7 +234,7 @@ export function SandboxInstanceDetailPage({
         },
         {
           key: "metrics",
-          label: "监控",
+          label: "资源监控",
           content: <InstanceMetrics instanceId={instanceId} instanceKind="sandbox" />,
         },
         {
@@ -246,16 +245,11 @@ export function SandboxInstanceDetailPage({
         {
           key: "events",
           label: "事件",
-          content: <InstanceEvents instanceId={instanceId} />,
-        },
-        {
-          key: "security",
-          label: "安全事件",
-          content: <SandboxSecurityEvents instanceId={instanceId} />,
+          content: <SandboxEventsPanel instanceId={instanceId} />,
         },
         {
           key: "operations",
-          label: "操作历史",
+          label: "操作记录",
           content: <InstanceOperations instanceId={instanceId} />,
         },
       ]}

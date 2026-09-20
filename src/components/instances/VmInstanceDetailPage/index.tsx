@@ -287,7 +287,7 @@ export function VmInstanceDetailPage({
           },
           {
             key: "operations",
-            label: "操作历史",
+            label: "操作记录",
             content: <InstanceOperations instanceId={instance.id} />,
           },
         ]}

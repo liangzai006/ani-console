@@ -25,7 +25,7 @@ export interface StorageFilesystem {
 }
 
 export interface StorageFilesystemListParams extends CursorPageParams {
-  status?: string;
+  state?: string;
   search_field?: "name" | "id";
   keyword?: string;
   in_use?: boolean;
@@ -64,6 +64,13 @@ export interface FilesystemMountTargetListResponse {
   items: FilesystemMountTarget[];
   total: number;
   next_cursor?: string | null;
+}
+
+export interface FilesystemMountCommand {
+  command: string;
+  protocol: "nfs" | "cephfs";
+  ip_address?: string | null;
+  mount_path?: string | null;
 }
 
 export interface CreateFilesystemMountTargetInput {

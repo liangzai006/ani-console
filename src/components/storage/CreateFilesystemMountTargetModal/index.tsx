@@ -79,7 +79,7 @@ export function CreateFilesystemMountTargetModal({
   return (
     <Modal
       visible={visible}
-      title="创建挂载目标"
+      title="创建挂载点"
       onCancel={close}
       onOk={() => create.mutateAsync(undefined)}
       confirmLoading={create.isPending}

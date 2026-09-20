@@ -180,7 +180,7 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
           },
           {
             key: "operation-history",
-            label: "操作历史",
+            label: "操作记录",
             content: (
               <div className="flex min-h-60 items-center justify-center">
                 <Empty description="暂无模型操作记录" />

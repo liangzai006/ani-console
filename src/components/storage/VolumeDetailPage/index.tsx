@@ -4,6 +4,7 @@ import {
   listVolumeSnapshots,
   deleteVolume as removeVolume,
   type StorageVolume,
+  type StorageVolumeMountHistoryEntry,
   type VolumeSnapshotRecord,
 } from "@/api/storage/volumes";
 import {
@@ -16,7 +17,8 @@ import {
   TableSectionHeader,
 } from "@/components/common";
 import { withId } from "@/lib/id";
-import { Button, Empty, Modal, Space, Tooltip } from "@arco-design/web-react";
+import { Button, Dropdown, Empty, Menu, Modal, Tooltip } from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -24,12 +26,21 @@ import { useState } from "react";
 import { AttachVolumeModal } from "@/components/storage/AttachVolumeModal";
 import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnapshotModal";
 import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
+import { VolumeAutoSnapshotPanel } from "@/components/storage/VolumeAutoSnapshotPanel";
 import { VolumeOSInitGuideModal } from "@/components/storage/VolumeOSInitGuideModal";
 import { formatBytes, formatDateTime } from "@/lib/format";
 
 type Volume = StorageVolume;
 type VolumeSnapshot = VolumeSnapshotRecord;
-type MountedInstanceRow = { id: string; name: string; route?: string | null };
+type MountedInstanceRow = NonNullable<StorageVolume["used_by"]>[number];
+type MountHistoryRow = StorageVolumeMountHistoryEntry;
+
+const mountHistoryActionText: Record<MountHistoryRow["action"], string> = {
+  mount: "挂载",
+  unmount: "卸载",
+  create_from_snapshot: "从快照创建",
+  os_init: "OS 初始化",
+};
 
 export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const navigate = useNavigate();
@@ -100,8 +111,13 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
 
   const volume = detail.data as Volume;
   const snapshotItems = (snapshots.data?.items ?? []) as VolumeSnapshot[];
-  const mounted = Boolean(volume.mount_instance_id);
-  const unavailable = (description: string) => <Empty description={description} />;
+  const mountedInstances = volume.used_by ?? [];
+  const mountedInstanceNames = mountedInstances
+    .map((instance) => instance.instance_name)
+    .filter(Boolean)
+    .join("、");
+  const mounted = mountedInstances.length > 0;
+  // const unavailable = (description: string) => <Empty description={description} />;
   const volumeStatus = volume.reason ? (
     <Tooltip content={volume.reason}>
       <span className="inline-flex">
@@ -117,6 +133,37 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
     ? `${autoSnapshot.enabled ? "开" : "关"} · 保留 ${autoSnapshot.retain_days} 天`
     : "-";
   const osInitStatus = volume.os_init_status === "n_a" ? "n/a" : volume.os_init_status || "-";
+  const handleMoreAction = (action: string) => {
+    if (action === "expand") {
+      setExpandVisible(true);
+      return;
+    }
+    if (action === "os-init") {
+      setInitGuideVisible(true);
+      return;
+    }
+    if (action === "delete") {
+      Modal.confirm({
+        title: "删除块存储卷",
+        content: `确定删除「${volume.name}」？卷被实例挂载时无法删除。`,
+        okButtonProps: { status: "danger" },
+        onOk: () => deleteVolume.mutateAsync(undefined),
+      });
+    }
+  };
+  const moreMenu = (
+    <Menu onClickMenuItem={handleMoreAction}>
+      <Menu.Item key="expand">扩容</Menu.Item>
+      <Menu.Item key="os-init">初始化引导</Menu.Item>
+      <Menu.Item
+        key="delete"
+        disabled={deleteVolume.isPending}
+        style={{ color: "var(--color-danger-6)" }}
+      >
+        删除
+      </Menu.Item>
+    </Menu>
+  );
 
   return (
     <>
@@ -134,24 +181,11 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
           { label: "创建时间", value: formatDateTime(volume.created_at) },
         ]}
         actions={
-          <Space>
-            <Button onClick={() => setExpandVisible(true)}>扩容</Button>
-            <Button onClick={() => setInitGuideVisible(true)}>初始化引导</Button>
-            <Button
-              status="danger"
-              loading={deleteVolume.isPending}
-              onClick={() =>
-                Modal.confirm({
-                  title: "删除块存储卷",
-                  content: `确定删除「${volume.name}」？卷被实例挂载时无法删除。`,
-                  okButtonProps: { status: "danger" },
-                  onOk: () => deleteVolume.mutateAsync(undefined),
-                })
-              }
-            >
-              删除
+          <Dropdown trigger="click" position="br" droplist={moreMenu}>
+            <Button disabled={deleteVolume.isPending} aria-label="更多操作" title="更多操作">
+              <IconMoreVertical />
             </Button>
-          </Space>
+          </Dropdown>
         }
         cards={[
           {
@@ -178,7 +212,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
               },
               {
                 label: "挂载实例",
-                value: mounted ? (volume.mount_name ?? volume.mount_instance_id) : "未挂载",
+                value: mounted ? mountedInstanceNames : "未挂载",
               },
               { label: "OS 初始化", value: osInitStatus },
               { label: "约束", value: "已挂载不可删 · 扩容不可缩" },
@@ -191,7 +225,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
               ? [
                   {
                     label: "实例",
-                    value: volume.mount_name ?? volume.mount_instance_id,
+                    value: mountedInstanceNames,
                   },
                 ]
               : [{ label: "暂无关联实例", value: "-" }],
@@ -207,33 +241,25 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                   title="关联实例"
                   extra={
                     !mounted ? (
-                      <Button type="primary" onClick={() => setAttachVisible(true)}>
-                        挂载
-                      </Button>
+                      <Button onClick={() => setAttachVisible(true)}>挂载</Button>
                     ) : undefined
                   }
                 />
                 <DataTable<MountedInstanceRow>
                   columns={[
-                    { title: "实例名称", dataIndex: "name" },
-                    { title: "实例 ID", dataIndex: "id" },
+                    { title: "实例名称", dataIndex: "instance_name" },
+                    { title: "实例 ID", dataIndex: "instance_id" },
                     {
                       title: "实例类型",
-                      dataIndex: "route",
+                      dataIndex: "kind",
                       placeholder: "-",
                     },
+                    {
+                      title: "状态",
+                      render: (_, item) => <StatusTag status={item.state} />,
+                    },
                   ]}
-                  data={
-                    mounted
-                      ? [
-                          {
-                            id: volume.mount_instance_id!,
-                            name: volume.mount_name ?? volume.mount_instance_id!,
-                            route: volume.mount_route,
-                          },
-                        ]
-                      : []
-                  }
+                  data={mountedInstances}
                   pagination={false}
                   rowActions={[
                     {
@@ -241,12 +267,12 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
                       label: "卸载",
                       intent: "danger",
                       loading: () => detachVolume.isPending,
-                      onClick: () => {
+                      onClick: (item) => {
                         Modal.confirm({
                           title: "卸载块存储卷",
-                          content: `确定从实例「${volume.mount_name ?? volume.mount_instance_id}」卸载该卷？`,
+                          content: `确定从实例「${item.instance_name}」卸载该卷？`,
                           okButtonProps: { status: "danger" },
-                          onOk: () => detachVolume.mutateAsync(volume.mount_instance_id!),
+                          onOk: () => detachVolume.mutateAsync(item.instance_id),
                         });
                       },
                     },
@@ -263,11 +289,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
               <div>
                 <TableSectionHeader
                   title="快照"
-                  extra={
-                    <Button type="primary" onClick={() => setSnapshotVisible(true)}>
-                      创建快照
-                    </Button>
-                  }
+                  extra={<Button onClick={() => setSnapshotVisible(true)}>创建快照</Button>}
                 />
                 <DataTable<VolumeSnapshot>
                   columns={[
@@ -297,13 +319,39 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
           {
             key: "auto-snapshot",
             label: "自动快照",
-            content: unavailable("当前 Core API 暂未提供自动快照策略查询与设置能力"),
+            content: autoSnapshot ? (
+              <VolumeAutoSnapshotPanel volumeId={volumeId} policy={autoSnapshot} />
+            ) : (
+              <Empty description="暂无自动快照策略" />
+            ),
           },
           {
             key: "mount-history",
             label: "挂载历史",
-            content: unavailable("当前 Core API 暂未提供卷挂载历史数据"),
+            content: (
+              <DataTable<MountHistoryRow>
+                columns={[
+                  {
+                    title: "时间",
+                    render: (_, item) => formatDateTime(item.at),
+                  },
+                  {
+                    title: "操作",
+                    render: (_, item) => mountHistoryActionText[item.action],
+                  },
+                  { title: "目标", dataIndex: "target", placeholder: "-" },
+                  {
+                    title: "结果",
+                    render: (_, item) => <StatusTag status={item.result} />,
+                  },
+                ]}
+                data={volume.mount_history ?? []}
+                pagination={false}
+                noDataElement={<Empty description="暂无挂载历史" />}
+              />
+            ),
           },
+          /* 当前 Core API 未提供块存储事件列表接口，保留代码待接口开放后恢复。
           {
             key: "events",
             label: "事件",
@@ -313,6 +361,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
               </Space>
             ),
           },
+          */
         ]}
         onBack={() => navigate({ to: "/volumes" })}
       />

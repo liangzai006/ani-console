@@ -26,7 +26,7 @@ export interface VectorStore {
 }
 
 export interface VectorStoreListParams extends CursorPageParams {
-  status?: string;
+  state?: string;
   search_field?: "name" | "id";
   keyword?: string;
 }

@@ -1,4 +1,4 @@
-import { listInstances, type InstanceRecord } from "@/api/instances";
+import { listInstances, type InstanceRecord, type SandboxSessionState } from "@/api/instances";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -15,7 +15,7 @@ import { SandboxInstanceCreateModal } from "@/components/instances/SandboxInstan
 import { useSandboxInstanceRowActions } from "./SandboxInstanceRowActions";
 
 type SandboxInstance = InstanceRecord;
-type SandboxStatus = "all" | "running" | "paused" | "expired";
+type SandboxStatus = "all" | SandboxSessionState;
 type SearchField = "name" | "id";
 
 function sessionStatus(instance: SandboxInstance) {
@@ -32,7 +32,7 @@ export function SandboxInstancesPage() {
     useCursorPaginatedQuery<SandboxInstance>({
       errorNotification: {
         id: "sandboxes",
-        action: "Sandbox 实例列表加载",
+        action: "沙箱实例列表加载",
         fallback: "请求失败，请稍后重试",
       },
       queryKey: ["sandbox-instances", { status, searchField, searchText }],
@@ -41,7 +41,7 @@ export function SandboxInstancesPage() {
         const keyword = searchText.trim();
         return listInstances({
           kind: "sandbox",
-          status: status === "all" ? undefined : status,
+          session_state: status === "all" ? undefined : status,
           search_field: keyword ? searchField : undefined,
           keyword: keyword || undefined,
           cursor,
@@ -56,9 +56,11 @@ export function SandboxInstancesPage() {
   const rows = (query.data?.items ?? []) as SandboxInstance[];
   const statusTabs = [
     { value: "all" as const, label: "全部" },
+    { value: "pending" as const, label: "等待中" },
     { value: "running" as const, label: "运行中" },
     { value: "paused" as const, label: "已暂停" },
     { value: "expired" as const, label: "已过期" },
+    { value: "stopped" as const, label: "已停止" },
   ];
 
   const columns: Array<ListColumn<SandboxInstance>> = [
@@ -123,7 +125,7 @@ export function SandboxInstancesPage() {
       <ListPageFrame
         header={{
           iconClassName: "icon-Sandbox",
-          title: "Sandbox 实例",
+          title: "沙箱实例",
           subtitle: "隔离会话、双超时与受控网络出口",
           actions: [
             {
@@ -170,8 +172,8 @@ export function SandboxInstancesPage() {
           rowActions={rowActions}
           loading={query.isFetching}
           emptyIconClassName="icon-Sandbox"
-          emptyText="还没有 Sandbox 实例，点击右上角创建"
-          tableLabel="Sandbox 实例列表"
+          emptyText="还没有沙箱实例，点击右上角创建"
+          tableLabel="沙箱实例列表"
           preserveTableOnEmpty
           pagination={{
             page,

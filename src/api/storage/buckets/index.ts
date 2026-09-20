@@ -47,6 +47,10 @@ export async function getBucket(bucketId: string): Promise<StorageBucketRecord> 
   return bucket;
 }
 
+export function deleteBucket(bucketId: string): Promise<StorageBucketRecord> {
+  return coreRequest<StorageBucketRecord>(bucketPath(bucketId), { method: "DELETE" });
+}
+
 export function createBucket(submitData: CreateStorageBucketInput): Promise<StorageBucketRecord> {
   return runIdempotentRequest(createScope, submitData, (body) =>
     coreRequest<StorageBucketRecord, CreateStorageBucketRequest>("/buckets", {

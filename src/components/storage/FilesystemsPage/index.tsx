@@ -55,7 +55,7 @@ export function FilesystemsPage() {
       return listFilesystems({
         limit,
         cursor,
-        status: status === "all" ? undefined : status,
+        state: status === "all" ? undefined : status,
         search_field: keyword ? searchField : undefined,
         keyword: keyword || undefined,
       });
@@ -133,7 +133,7 @@ export function FilesystemsPage() {
     },
     {
       key: "mountTargetCount",
-      title: "挂载目标数",
+      title: "挂载点",
       render: (_, item) => mountTargetCounts.get(item.id) ?? "-",
     },
     {
@@ -212,7 +212,7 @@ export function FilesystemsPage() {
             },
             {
               key: "mount-target",
-              label: "添加挂载目标",
+              label: "添加挂载点",
               onClick: setMountTargetFilesystem,
             },
             {

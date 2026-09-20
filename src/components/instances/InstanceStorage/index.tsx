@@ -71,7 +71,7 @@ export function InstanceStorage({
     queryFn: () =>
       listVolumes({
         limit: 100,
-        status: "pending,available",
+        state: "pending,available",
         available_for_instance_id: instance.id,
       }),
     enabled: mountKind === "volume",

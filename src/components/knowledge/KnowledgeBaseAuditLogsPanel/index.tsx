@@ -25,7 +25,7 @@ export function KnowledgeBaseAuditLogsPanel({ kbId }: { kbId: string }) {
     meta: {
       errorNotification: {
         id: withId("knowledge-audit", kbId),
-        action: "操作历史加载",
+        action: "操作记录加载",
         fallback: "请求失败，请稍后重试",
       },
     },
@@ -43,7 +43,7 @@ export function KnowledgeBaseAuditLogsPanel({ kbId }: { kbId: string }) {
   return (
     <div>
       <TableSectionHeader
-        title="操作历史"
+        title="操作记录"
         extra={
           <Button
             size="small"
@@ -59,8 +59,8 @@ export function KnowledgeBaseAuditLogsPanel({ kbId }: { kbId: string }) {
         data={items}
         loading={logs.isPending}
         pagination={false}
-        noDataElement={<Empty description="暂无操作历史" />}
-        tableLabel="知识库操作历史列表"
+        noDataElement={<Empty description="暂无操作记录" />}
+        tableLabel="知识库操作记录列表"
         columns={[
           {
             title: "操作时间",
