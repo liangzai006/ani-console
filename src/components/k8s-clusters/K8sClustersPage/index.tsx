@@ -177,6 +177,7 @@ function ClusterList() {
     {
       key: "createdAt",
       title: "创建时间",
+      width: 150,
       render: (_, cluster) => formatDateTime(cluster.created_at),
     },
     {

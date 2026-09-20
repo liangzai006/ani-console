@@ -19,7 +19,17 @@ import {
   type ListColumn,
 } from "@/components/common";
 import { withId } from "@/lib/id";
-import { Button, Empty, Modal, Space, Tag, Typography } from "@arco-design/web-react";
+import {
+  Button,
+  Dropdown,
+  Empty,
+  Menu,
+  Modal,
+  Space,
+  Tag,
+  Typography,
+} from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
@@ -130,35 +140,12 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
       protected: false,
     })),
   ];
-  const relatedLoading = vpc.isLoading || instances.isLoading || routes.isLoading;
-  const summaryItems = [
-    ...(parentVpc
-      ? [
-          {
-            id: parentVpc.id,
-            kind: "VPC",
-            name: parentVpc.name,
-            status: parentVpc.state,
-            type: "vpc" as const,
-          },
-        ]
-      : []),
-    ...vpcRoutes.map((item) => ({
-      id: item.id,
-      kind: "路由",
-      name: item.description || item.destination_cidr,
-      status: "-",
-      type: "route" as const,
-    })),
-    ...associatedInstances.map((item) => ({
-      id: item.id,
-      kind: "实例",
-      name: item.name,
-      status: item.state,
-      type: "instance" as const,
-    })),
-  ];
-  const relatedResources = summaryItems.filter((item) => item.type === "instance");
+  const relatedResources = associatedInstances.map((item) => ({
+    id: item.id,
+    kind: "实例" as const,
+    name: item.name,
+    status: item.state,
+  }));
   const relatedResourceColumns: Array<ListColumn<(typeof relatedResources)[number]>> = [
     {
       title: "类型",
@@ -173,6 +160,27 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
       render: (_, item) => <StatusTag status={item.status} />,
     },
   ];
+  const moreMenu = (
+    <Menu
+      onClickMenuItem={(key) => {
+        if (key !== "delete") return;
+        Modal.confirm({
+          title: "删除子网",
+          content: `确定删除「${subnet.name}」？存在关联实例时无法删除，请先清理相关资源。`,
+          okButtonProps: { status: "danger" },
+          onOk: () => deleteSubnet.mutateAsync(undefined),
+        });
+      }}
+    >
+      <Menu.Item
+        key="delete"
+        disabled={deleteSubnet.isPending}
+        style={{ color: "var(--color-danger-6)" }}
+      >
+        删除
+      </Menu.Item>
+    </Menu>
+  );
 
   return (
     <DetailPageFrame
@@ -185,22 +193,11 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
         { label: "创建时间", value: formatDateTime(subnet.created_at) },
       ]}
       actions={
-        <Space>
-          <Button
-            status="danger"
-            loading={deleteSubnet.isPending}
-            onClick={() =>
-              Modal.confirm({
-                title: "删除子网",
-                content: "确定删除「${subnet.name}」？存在关联实例时无法删除，请先清理相关资源。",
-                okButtonProps: { status: "danger" },
-                onOk: () => deleteSubnet.mutateAsync(undefined),
-              })
-            }
-          >
-            删除
+        <Dropdown trigger="click" position="br" droplist={moreMenu}>
+          <Button disabled={deleteSubnet.isPending} aria-label="更多操作" title="更多操作">
+            <IconMoreVertical />
           </Button>
-        </Space>
+        </Dropdown>
       }
       cards={[
         {
@@ -220,20 +217,28 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
             { label: "更新时间", value: formatDateTime(subnet.updated_at) },
           ],
         },
-        {
-          key: "related-summary",
-          title: "关联摘要",
-          fields: relatedLoading
-            ? [{ label: "加载中…", value: "-" }]
-            : summaryItems.length
-              ? summaryItems.slice(0, 5).map((item) => ({
-                  label: item.kind,
-                  value: item.name,
-                }))
-              : [{ label: "暂无关联对象", value: "-" }],
-        },
       ]}
       tabs={[
+        {
+          key: "routes",
+          label: "路由",
+          content: (
+            <Space direction="vertical" size={12} className="w-full">
+              <DataTable<SubnetRouteRow>
+                columns={[
+                  { title: "目标网段", dataIndex: "destinationCidr" },
+                  { title: "下一跳类型", dataIndex: "nextHopType" },
+                  { title: "下一跳", dataIndex: "nextHop" },
+                  { title: "优先级", dataIndex: "priority" },
+                  { title: "来源", dataIndex: "source" },
+                ]}
+                data={routeRows}
+                loading={routes.isLoading}
+                pagination={false}
+              />
+            </Space>
+          ),
+        },
         {
           key: "related",
           label: "关联资源",
@@ -254,26 +259,6 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
                 tableLabel="子网关联资源"
               />
             </section>
-          ),
-        },
-        {
-          key: "routes",
-          label: "路由",
-          content: (
-            <Space direction="vertical" size={12} className="w-full">
-              <DataTable<SubnetRouteRow>
-                columns={[
-                  { title: "目标网段", dataIndex: "destinationCidr" },
-                  { title: "下一跳类型", dataIndex: "nextHopType" },
-                  { title: "下一跳", dataIndex: "nextHop" },
-                  { title: "优先级", dataIndex: "priority" },
-                  { title: "来源", dataIndex: "source" },
-                ]}
-                data={routeRows}
-                loading={routes.isLoading}
-                pagination={false}
-              />
-            </Space>
           ),
         },
       ]}

@@ -1,0 +1,47 @@
+.breadcrumbRow {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  gap: 4px;
+  white-space: nowrap;
+  margin-top: -8px;
+}
+
+.backButton {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--color-text-2);
+}
+
+.backButton:hover {
+  color: rgb(var(--primary-6));
+  background: transparent;
+}
+
+.breadcrumbs {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-3);
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumbLink,
+.breadcrumbText,
+.breadcrumbCurrent {
+  color: inherit;
+  text-decoration: none;
+}
+
+.breadcrumbLink:hover {
+  color: rgb(var(--primary-6));
+}
+
+.breadcrumbCurrent {
+  color: var(--color-text-1);
+  font-weight: 700;
+}

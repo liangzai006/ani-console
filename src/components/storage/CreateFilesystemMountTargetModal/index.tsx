@@ -1,6 +1,3 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Form, Modal, Select, Typography } from "@arco-design/web-react";
-import { useEffect, useState } from "react";
 import {
   listNetworkSubnets,
   listNetworkVpcs,
@@ -8,6 +5,9 @@ import {
   type NetworkVPC,
 } from "@/api/network";
 import { createFilesystemMountTarget } from "@/api/storage/filesystems";
+import { Alert, Form, Modal, Select } from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 type Vpc = NetworkVPC;
 type Subnet = NetworkSubnet;
@@ -85,8 +85,12 @@ export function CreateFilesystemMountTargetModal({
       confirmLoading={create.isPending}
       unmountOnExit
     >
-      <Form layout="vertical">
-        <Alert type="info" showIcon content="挂载目标用于为指定 VPC 和子网提供文件存储访问地址。" />
+      <Alert
+        type="info"
+        showIcon
+        title="挂载点为指定 VPC 和子网分配文件存储访问地址。同一 VPC 内的实例可通过该地址挂载。"
+      />
+      <Form layout="vertical" className="mt-2">
         <Form.Item label="VPC" required>
           <Select
             value={vpcId || undefined}
@@ -116,7 +120,6 @@ export function CreateFilesystemMountTargetModal({
             ))}
           </Select>
         </Form.Item>
-        <Typography.Text type="secondary">IP 地址由后端在所选子网中分配。</Typography.Text>
       </Form>
     </Modal>
   );

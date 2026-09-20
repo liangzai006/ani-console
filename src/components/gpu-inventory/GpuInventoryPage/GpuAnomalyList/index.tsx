@@ -1,5 +1,6 @@
 import { Card, Empty, Skeleton, Space, Tag, Typography } from "@arco-design/web-react";
-import type { GpuInventoryRecord } from "@/api/gpu-inventory";
+import { useQuery } from "@tanstack/react-query";
+import { listGpuAnomalies, type GpuInventoryRecord } from "@/api/gpu-inventory";
 
 const statusLabel: Record<GpuInventoryRecord["status"], string> = {
   available: "空闲",
@@ -8,21 +9,26 @@ const statusLabel: Record<GpuInventoryRecord["status"], string> = {
   maintenance: "维护",
 };
 
-export function GpuAnomalyList({
-  items,
-  loading,
-}: {
-  items?: GpuInventoryRecord[];
-  loading: boolean;
-}) {
-  const anomalies = items ?? [];
+export function GpuAnomalyList() {
+  const anomalyQuery = useQuery({
+    meta: {
+      errorNotification: {
+        id: "gpu-inventory-anomalies",
+        action: "GPU 异常数据加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
+    queryKey: ["gpu-inventory", "anomalies"],
+    queryFn: listGpuAnomalies,
+  });
+  const anomalies = anomalyQuery.data ?? [];
   return (
     <Card
       title="异常"
       className="h-full"
       extra={<Typography.Text type="secondary">{anomalies.length} 项</Typography.Text>}
     >
-      {loading ? (
+      {anomalyQuery.isLoading ? (
         <Skeleton animation text={{ rows: 4 }} />
       ) : anomalies.length === 0 ? (
         <div className="flex h-52 items-center justify-center">

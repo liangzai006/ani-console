@@ -112,7 +112,7 @@ export function KnowledgeBaseDetailPage({
             { label: "名称", value: kb.name },
             { label: "状态", value: <StatusTag status={kb.status} /> },
             { label: "描述", value: kb.description || "-" },
-            { label: "Embedding 模型", value: kb.embedding_model || "-" },
+            { label: "向量化模型", value: kb.embedding_model || "-" },
             {
               label: "默认推理模型",
               value: kb.default_inference_service || "平台默认模型",

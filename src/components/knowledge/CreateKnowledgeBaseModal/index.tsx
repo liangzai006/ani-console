@@ -33,7 +33,7 @@ export function CreateKnowledgeBaseModal({
     meta: {
       errorNotification: {
         id: withId("models", "embedding"),
-        action: "Embedding 模型列表加载",
+        action: "向量化模型列表加载",
         fallback: "请求失败，请稍后重试",
       },
     },
@@ -133,9 +133,9 @@ export function CreateKnowledgeBaseModal({
           <Input.TextArea placeholder="说明知识库的内容和用途" maxLength={500} showWordLimit />
         </Form.Item>
         <Form.Item
-          label="Embedding 模型"
+          label="向量化模型"
           field="embedding_model"
-          rules={[{ required: true, message: "请选择 Embedding 模型" }]}
+          rules={[{ required: true, message: "请选择 向量化模型" }]}
         >
           <Select
             loading={embeddingModels.isLoading}
@@ -150,7 +150,7 @@ export function CreateKnowledgeBaseModal({
             renderFormat={(option, value) => (
               <span title={String(option?.extra ?? value)}>{String(value)}</span>
             )}
-            placeholder="请选择已就绪的 Embedding 模型"
+            placeholder="请选择已就绪的 向量化模型"
           >
             {embeddingModelOptions.map((option) => (
               <Select.Option

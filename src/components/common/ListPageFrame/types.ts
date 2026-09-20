@@ -1,37 +1,7 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ReactNode } from "react";
+import type { ResourcePageHeaderConfig } from "../ResourcePageFrame";
 import type { SearchField } from "../ListToolbar";
 import type { ListStatusTab } from "../StatusTabs";
-
-type ListPageTitleProps = {
-  iconClassName: string;
-  title: string;
-  subtitle?: string;
-};
-
-export type ListPageHeaderAction = {
-  key: string;
-  label: ReactNode;
-  iconClassName?: string;
-  variant?: "primary" | "outline" | "secondary" | "danger";
-  tooltip?: ReactNode;
-  disabled?: boolean;
-  onClick?: () => void;
-  buttonProps?: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "disabled" | "onClick">;
-};
-
-type ListPageHeaderBaseConfig = ListPageTitleProps;
-
-export type ListPageHeaderConfig = ListPageHeaderBaseConfig &
-  (
-    | {
-        actions?: ListPageHeaderAction[];
-        extra?: never;
-      }
-    | {
-        actions?: never;
-        extra: ReactNode;
-      }
-  );
 
 export type ListPageTabsConfig<TStatus extends string> = {
   items: Array<ListStatusTab<TStatus>>;
@@ -68,7 +38,7 @@ export type ListPageFrameProps<
   TStatus extends string = string,
   TSearchField extends string = string,
 > = {
-  header: ListPageHeaderConfig;
+  header: ResourcePageHeaderConfig;
   tabs?: ListPageTabsConfig<TStatus>;
   toolbar?: ListPageToolbarConfig<TSearchField>;
   children: ReactNode;

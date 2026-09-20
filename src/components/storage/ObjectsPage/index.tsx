@@ -86,33 +86,42 @@ export function ObjectsPage() {
     {
       key: "acl",
       title: "权限",
+      width: 100,
       render: (_, item) => (item.acl === "tenant_read" ? "租户内读" : "私有"),
     },
     {
       key: "storageClass",
       title: "存储类型",
+      width: 100,
       render: (_, item) => (item.storage_class === "infrequent_access" ? "低频" : "标准"),
     },
     {
       key: "region",
       title: "Region",
       dataIndex: "region",
+      width: 100,
+      ellipsis: true,
       placeholder: "-",
     },
     {
       key: "objectCount",
       title: "对象数",
       dataIndex: "object_count",
+      width: 100,
+      ellipsis: true,
       placeholder: 0,
     },
     {
       key: "sizeBytes",
       title: "总大小",
+      width: 100,
+      ellipsis: true,
       render: (_, item) => formatBytes(item.size_bytes),
     },
     {
       key: "createdAt",
       title: "创建时间",
+      width: 150,
       render: (_, item) => formatDateTime(item.created_at),
     },
   ];

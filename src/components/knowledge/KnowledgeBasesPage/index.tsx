@@ -93,7 +93,7 @@ export function KnowledgeBasesPage() {
     },
     {
       key: "model",
-      title: "Embedding 模型",
+      title: "向量化模型",
       dataIndex: "embedding_model",
       placeholder: "-",
       ellipsis: true,

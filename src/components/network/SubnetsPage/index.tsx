@@ -217,6 +217,7 @@ export function SubnetsPage() {
     {
       key: "createdAt",
       title: "创建时间",
+      width: 150,
       render: (_, subnet) => formatDateTime(subnet.created_at),
     },
   ];

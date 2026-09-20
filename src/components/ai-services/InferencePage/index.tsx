@@ -183,6 +183,7 @@ export function InferencePage() {
     {
       key: "createdAt",
       title: "创建时间",
+      width: 150,
       render: (_, item) => formatDateTime(item.created_at),
     },
   ];

@@ -195,7 +195,7 @@ export function VmInstanceCreateModal({
     meta: {
       errorNotification: {
         id: withId("system-images", "vm"),
-        action: "系统镜像加载",
+        action: "云主机镜像加载",
         fallback: "请稍后重试",
       },
     },
@@ -463,10 +463,10 @@ export function VmInstanceCreateModal({
             ) : null}
             {step === 1 ? (
               <>
-                <Form.Item field="imageRef" label="启动镜像（系统镜像）" required>
+                <Form.Item field="imageRef" label="启动镜像" required>
                   <Select
                     loading={images.isLoading}
-                    placeholder="选择 Registry 中的 system 镜像"
+                    placeholder="选择云主机镜像"
                     showSearch
                     allowClear
                   >

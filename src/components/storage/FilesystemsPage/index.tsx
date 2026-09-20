@@ -114,16 +114,20 @@ export function FilesystemsPage() {
     {
       key: "size",
       title: "容量",
+      width: 100,
+      ellipsis: true,
       render: (_, item) => `${item.size_gib} GiB`,
     },
     {
       key: "protocol",
       title: "协议",
+      width: 100,
       render: (_, item) => item.protocol.toUpperCase(),
     },
     {
       key: "performanceMode",
       title: "性能模式",
+      width: 100,
       render: (_, item) =>
         item.performance_mode === "standard"
           ? "标准型"
@@ -134,11 +138,14 @@ export function FilesystemsPage() {
     {
       key: "mountTargetCount",
       title: "挂载点",
+      width: 100,
+      ellipsis: true,
       render: (_, item) => mountTargetCounts.get(item.id) ?? "-",
     },
     {
       key: "createdAt",
       title: "创建时间",
+      width: 150,
       render: (_, item) => formatDateTime(item.created_at),
     },
   ];

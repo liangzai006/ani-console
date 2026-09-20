@@ -4,7 +4,7 @@ import {
 } from "@/components/storage/VectorStoreDetailPage";
 import { createFileRoute } from "@tanstack/react-router";
 
-const vectorStoreDetailTabKeys = ["index", "search", "related", "events"] as const;
+const vectorStoreDetailTabKeys = ["search", "related"] as const;
 
 export const Route = createFileRoute("/_authenticated/vector-stores/$vectorStoreId")({
   validateSearch: (search: Record<string, unknown>) => ({

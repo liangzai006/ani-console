@@ -8,27 +8,33 @@ import {
   Tag,
   Typography,
 } from "@arco-design/web-react";
-import type { GpuSpecAvailabilityListResponse } from "@/api/gpu-inventory";
+import { useQuery } from "@tanstack/react-query";
+import { getGpuSpecAvailability } from "@/api/gpu-inventory";
 
-export function GpuAdmissionSummary({
-  availability,
-  loading,
-}: {
-  availability?: GpuSpecAvailabilityListResponse;
-  loading: boolean;
-}) {
-  const specs = availability?.items ?? [];
+export function GpuAdmissionSummary() {
+  const availability = useQuery({
+    meta: {
+      errorNotification: {
+        id: "gpu-spec-availability-summary",
+        action: "GPU 规格可用性加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
+    queryKey: ["gpu-specs", "availability"],
+    queryFn: getGpuSpecAvailability,
+  });
+  const specs = availability.data?.items ?? [];
   const availableSpecs = specs.filter(
     (item) => item.status === "available" && item.available_count > 0,
   ).length;
   const quotaFullSpecs = specs.filter((item) => item.status === "full").length;
   const deviceFullSpecs = specs.filter((item) => item.status === "device_full").length;
   const unavailableSpecs = specs.filter((item) => item.status === "unavailable").length;
-  const canCreate = availableSpecs > 0 && (availability?.quota_remaining ?? 0) > 0;
+  const canCreate = availableSpecs > 0 && (availability.data?.quota_remaining ?? 0) > 0;
 
   return (
     <Card title="创建准入预检" className="h-full">
-      {loading ? (
+      {availability.isLoading ? (
         <Skeleton animation text={{ rows: 5 }} />
       ) : specs.length === 0 ? (
         <div className="flex h-56 items-center justify-center">
@@ -47,7 +53,7 @@ export function GpuAdmissionSummary({
                 {availableSpecs} / {specs.length} 个规格可创建
               </Typography.Title>
               <Typography.Text type="secondary">
-                配额余量 {availability?.quota_remaining ?? "-"}
+                配额余量 {availability.data?.quota_remaining ?? "-"}
                 ，提交创建时仍以实时调度结果为准
               </Typography.Text>
             </div>

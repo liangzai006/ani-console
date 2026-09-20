@@ -27,6 +27,7 @@
 }
 
 .item {
+  flex-shrink: 0;
   display: flex;
   width: 100%;
   padding: 10px 12px;

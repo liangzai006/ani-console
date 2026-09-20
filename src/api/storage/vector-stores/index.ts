@@ -42,6 +42,12 @@ export function deleteVectorStore(vectorStoreId: string): Promise<VectorStore> {
   return coreRequest<VectorStore>(vectorStorePath(vectorStoreId), { method: "DELETE" });
 }
 
+export function deleteVectorStoreKnowledgeBaseLink(vectorStoreId: string): Promise<VectorStore> {
+  return coreRequest<VectorStore>(`${vectorStorePath(vectorStoreId)}/knowledge-base-link`, {
+    method: "DELETE",
+  });
+}
+
 export function searchVectorStore(
   vectorStoreId: string,
   submitData: VectorStoreSearchInput,

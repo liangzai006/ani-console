@@ -22,7 +22,7 @@ const PURPOSE_LABELS: Record<RegistryPurpose, string> = {
   container: "容器镜像",
   gpu: "GPU 镜像",
   sandbox: "沙箱镜像",
-  system: "系统镜像",
+  system: "云主机镜像",
 };
 
 function scanSummary(scan: RegistryScanResult) {

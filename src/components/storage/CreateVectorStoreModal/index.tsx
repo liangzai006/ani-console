@@ -27,7 +27,7 @@ export function CreateVectorStoreModal({
     meta: {
       errorNotification: {
         id: withId("models", "embedding"),
-        action: "Embedding 模型列表加载",
+        action: "向量化模型列表加载",
         fallback: "请求失败，请稍后重试",
       },
     },
@@ -54,7 +54,7 @@ export function CreateVectorStoreModal({
     mutationFn: async (_: undefined) => {
       const trimmedName = name.trim();
       if (!trimmedName) throw new Error("请输入向量存储名称");
-      if (!embeddingModel) throw new Error("请选择 Embedding 模型");
+      if (!embeddingModel) throw new Error("请选择 向量化模型");
       if (!Number.isInteger(dimension) || dimension < 1)
         throw new Error("向量维度必须是大于 0 的整数");
       const submitData = {
@@ -94,13 +94,13 @@ export function CreateVectorStoreModal({
             showWordLimit
           />
         </Form.Item>
-        <Form.Item label="Embedding 模型" required>
+        <Form.Item label="向量化模型" required>
           <Select
             value={embeddingModel}
             onChange={setEmbeddingModel}
             loading={models.isLoading}
             showSearch
-            placeholder="请选择 Embedding 模型"
+            placeholder="请选择 向量化模型"
           >
             {modelOptions.map((model) => (
               <Select.Option key={model} value={model}>

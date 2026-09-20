@@ -128,27 +128,34 @@ export function VolumesPage() {
     {
       key: "size",
       title: "容量 (GiB)",
+      width: 100,
       dataIndex: "size_gib",
     },
     {
       key: "storageClass",
       title: "类型",
+      width: 100,
       dataIndex: "storage_class",
     },
     {
       key: "encrypted",
       title: "加密",
+      width: 80,
       render: (_, item) => (item.encrypted ? "是" : "否"),
     },
     {
       key: "zone",
       title: "可用区",
+      width: 100,
       dataIndex: "zone",
+      ellipsis: true,
       placeholder: "-",
     },
     {
       key: "mountInstance",
       title: "挂载实例",
+      width: 150,
+      ellipsis: true,
       render: (_, item) =>
         item.used_by
           ?.map((instance) => instance.instance_name)
@@ -158,6 +165,7 @@ export function VolumesPage() {
     {
       key: "createdAt",
       title: "创建时间",
+      width: 150,
       render: (_, item) => formatDateTime(item.created_at),
     },
   ];

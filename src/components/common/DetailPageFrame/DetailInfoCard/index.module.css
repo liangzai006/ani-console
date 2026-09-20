@@ -1,0 +1,133 @@
+.card {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  min-height: 0;
+  margin-right: -4px;
+  overflow: hidden;
+  padding-right: 4px;
+  border-radius: 8px;
+  background: var(--detail-surface);
+  box-shadow: var(--detail-shadow);
+}
+
+.cardFill {
+  flex: 1 1 auto;
+}
+
+.cardHeader {
+  position: relative;
+  display: flex;
+  flex: 0 0 40px;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  padding: 0 16px;
+  gap: 8px;
+  border: 0;
+  border-radius: 4px;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-1);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cardHeader:focus-visible {
+  box-shadow: inset 0 0 0 2px rgb(var(--primary-3));
+}
+
+.cardAccent {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  width: 2px;
+  height: 24px;
+  border-radius: 0 2px 2px 0;
+  background: transparent;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.cardHeader:hover .cardAccent,
+.cardHeader:focus-visible .cardAccent {
+  background: rgb(var(--primary-6));
+  box-shadow: 4px 0 12px rgba(var(--primary-6), 0.28);
+}
+
+.cardChevron,
+.cardChevronCollapsed {
+  flex: 0 0 auto;
+  color: rgb(var(--primary-6));
+  transition: transform 0.2s ease;
+}
+
+.cardChevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+.cardTitle {
+  min-width: 0;
+  overflow: hidden;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardBody {
+  min-height: 0;
+  padding: 0 16px 8px;
+  overflow-y: auto;
+}
+
+.cardFill .cardBody {
+  flex: 1 1 auto;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  align-items: start;
+  min-height: 30px;
+  padding: 4px 8px;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.fieldRow:last-child {
+  margin-bottom: 0;
+}
+
+.fieldLabel {
+  color: var(--color-text-2);
+  line-height: 22px;
+}
+
+.fieldValue {
+  min-width: 0;
+  color: var(--color-text-1);
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1280px) {
+  .fieldRow {
+    grid-template-columns: 128px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .fieldRow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .fieldLabel {
+    color: var(--color-text-3);
+    font-size: 12px;
+  }
+}

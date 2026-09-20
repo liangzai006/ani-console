@@ -1,8 +1,11 @@
-import { Breadcrumb, Button, Tabs, Tooltip } from "@arco-design/web-react";
-import { Link, useRouter } from "@tanstack/react-router";
+import { Button, Tooltip } from "@arco-design/web-react";
 import clsx from "clsx";
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { AliIcon } from "../AliIcon";
+import { DetailBreadcrumbs } from "./DetailBreadcrumbs";
+import { DetailContentTabs } from "./DetailContentTabs";
+import { DetailInfoSidebar } from "./DetailInfoSidebar";
+import { DetailPageHeader } from "./DetailPageHeader";
 import styles from "./index.module.css";
 import type { DetailBreadcrumbItem, DetailCard, DetailHeaderItems, DetailTab } from "./types";
 
@@ -22,11 +25,6 @@ type DetailPageFrameProps = {
   onTabChange?: (key: string) => void;
 };
 
-function buildInitialCollapsed(cardsSignature: string) {
-  const cardEntries = JSON.parse(cardsSignature) as Array<[string, boolean]>;
-  return Object.fromEntries(cardEntries) as Record<string, boolean>;
-}
-
 export function DetailPageFrame({
   breadcrumbs,
   title,
@@ -39,104 +37,23 @@ export function DetailPageFrame({
   onBack,
   leftWidth = 320,
   defaultTabKey,
-  activeTabKey: controlledActiveTabKey,
+  activeTabKey,
   onTabChange,
 }: DetailPageFrameProps) {
-  const router = useRouter();
-  const visibleBreadcrumbs = breadcrumbs.filter((item) => item.to !== "/");
   const hasTabs = Boolean(tabs?.length);
-  const cardsSignature = JSON.stringify(
-    cards.map((card) => [card.key, Boolean(card.defaultCollapsed)]),
-  );
-  const initialCollapsed = useMemo(() => buildInitialCollapsed(cardsSignature), [cardsSignature]);
-  const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>(initialCollapsed);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [internalActiveTabKey, setInternalActiveTabKey] = useState(
-    defaultTabKey ?? tabs?.[0]?.key ?? "",
-  );
-  const activeTabKey = controlledActiveTabKey ?? internalActiveTabKey;
-
-  useEffect(() => {
-    setCollapsedCards(initialCollapsed);
-  }, [initialCollapsed]);
-
-  useEffect(() => {
-    if (!tabs?.length) return;
-    if (!tabs.some((tab) => tab.key === activeTabKey)) {
-      setInternalActiveTabKey(defaultTabKey ?? tabs[0].key);
-    }
-  }, [activeTabKey, defaultTabKey, tabs]);
-
-  const activeTab = tabs?.find((tab) => tab.key === activeTabKey) ?? tabs?.[0];
-  const expandedCardCount = cards.reduce(
-    (count, card) => count + (collapsedCards[card.key] ? 0 : 1),
-    0,
-  );
-
-  const toggleCard = (key: string) => {
-    setCollapsedCards((current) => ({ ...current, [key]: !current[key] }));
-  };
-
   const workspaceStyle = { ["--detail-left-width" as string]: `${leftWidth}px` } as CSSProperties;
 
   return (
     <div className={styles.page}>
-      <div className={styles.breadcrumbRow}>
-        <Tooltip content="返回上一级">
-          <Button
-            type="text"
-            shape="circle"
-            className={styles.backButton}
-            aria-label="返回上一级"
-            onClick={onBack ?? (() => router.history.back())}
-          >
-            <AliIcon name="left-arrow" size={16} />
-          </Button>
-        </Tooltip>
-        <Breadcrumb className={styles.breadcrumbs} aria-label="详情面包屑">
-          {visibleBreadcrumbs.map((item, index) => {
-            const isLast = index === visibleBreadcrumbs.length - 1;
-            return (
-              <Breadcrumb.Item key={`${index}-${String(item.label)}`}>
-                {item.to && !isLast ? (
-                  <Link
-                    to={item.to as any}
-                    params={item.params as any}
-                    className={styles.breadcrumbLink}
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <span className={isLast ? styles.breadcrumbCurrent : styles.breadcrumbText}>
-                    {item.label}
-                  </span>
-                )}
-              </Breadcrumb.Item>
-            );
-          })}
-        </Breadcrumb>
-      </div>
-
-      <section className={styles.headerCard}>
-        <div className={styles.identity}>
-          {icon ? <div className={styles.identityIcon}>{icon}</div> : null}
-          <div className={styles.identityText}>
-            <h1 className={styles.title}>{title}</h1>
-            {status ? <div className={styles.status}>{status}</div> : null}
-          </div>
-        </div>
-
-        <div className={styles.headerItems} aria-label="关键字段">
-          {headerItems.map((item, index) => (
-            <div key={`${index}-${String(item.label)}`} className={styles.headerItem}>
-              <span className={styles.headerItemLabel}>{item.label}</span>
-              <span className={styles.headerItemValue}>{item.value}</span>
-            </div>
-          ))}
-        </div>
-
-        {actions ? <div className={styles.headerActions}>{actions}</div> : null}
-      </section>
+      <DetailBreadcrumbs items={breadcrumbs} onBack={onBack} />
+      <DetailPageHeader
+        title={title}
+        status={status}
+        icon={icon}
+        items={headerItems}
+        actions={actions}
+      />
 
       <div
         className={clsx(
@@ -146,55 +63,7 @@ export function DetailPageFrame({
         )}
         style={workspaceStyle}
       >
-        <aside
-          className={clsx(styles.leftPane, leftCollapsed && styles.leftPaneCollapsed)}
-          aria-label="详情信息"
-        >
-          <div className={styles.cardStack}>
-            {cards.map((card) => {
-              const isCollapsed = Boolean(collapsedCards[card.key]);
-              const bodyId = `detail-card-${card.key}`;
-              return (
-                <section
-                  key={card.key}
-                  className={clsx(
-                    styles.card,
-                    !isCollapsed && expandedCardCount === 1 && styles.cardFill,
-                  )}
-                >
-                  <button
-                    type="button"
-                    className={styles.cardHeader}
-                    aria-expanded={!isCollapsed}
-                    aria-controls={bodyId}
-                    aria-label={`${isCollapsed ? "展开" : "折叠"}${String(card.title)}`}
-                    onClick={() => toggleCard(card.key)}
-                  >
-                    <span className={styles.cardAccent} />
-                    <AliIcon
-                      name="down-chevron-small"
-                      size={14}
-                      className={isCollapsed ? styles.cardChevronCollapsed : styles.cardChevron}
-                    />
-                    <span className={styles.cardTitle}>{card.title}</span>
-                  </button>
-                  {!isCollapsed ? (
-                    <div id={bodyId} className={styles.cardBody}>
-                      {card.fields.map((field, index) => (
-                        <div key={`${card.key}-${index}`} className={styles.fieldRow}>
-                          <div className={styles.fieldLabel}>{field.label}</div>
-                          <div className={clsx(styles.fieldValue, field.valueClassName)}>
-                            {field.value ?? "-"}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </section>
-              );
-            })}
-          </div>
-        </aside>
+        <DetailInfoSidebar cards={cards} collapsed={leftCollapsed} />
 
         {hasTabs ? (
           <Tooltip content={leftCollapsed ? "展开详情栏" : "收起详情栏"}>
@@ -211,30 +80,12 @@ export function DetailPageFrame({
         ) : null}
 
         {hasTabs ? (
-          <section className={styles.rightPane}>
-            <Tabs
-              className={styles.tabs}
-              type="line"
-              headerPadding={false}
-              inkBarSize={{ width: 16 }}
-              activeTab={activeTab?.key}
-              onChange={(key) => {
-                if (controlledActiveTabKey === undefined) setInternalActiveTabKey(key);
-                onTabChange?.(key);
-              }}
-              extra={activeTab?.extra}
-              overflow="scroll"
-              scrollPosition="auto"
-              destroyOnHide
-              justify
-            >
-              {tabs?.map((tab) => (
-                <Tabs.TabPane key={tab.key} title={tab.label}>
-                  {tab.content}
-                </Tabs.TabPane>
-              ))}
-            </Tabs>
-          </section>
+          <DetailContentTabs
+            tabs={tabs ?? []}
+            defaultTabKey={defaultTabKey}
+            activeTabKey={activeTabKey}
+            onTabChange={onTabChange}
+          />
         ) : null}
       </div>
     </div>

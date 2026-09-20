@@ -1,6 +1,7 @@
 import { Progress, Typography } from "@arco-design/web-react";
 import type { GpuOccupancyStats } from "@/api/gpu-inventory";
 import { ListDataTable, TableSectionHeader } from "@/components/common";
+import { useGpuOccupancyQuery } from "../useGpuOccupancyQuery";
 
 type ModelInventoryRow = {
   id: string;
@@ -28,16 +29,9 @@ function getModelInventory(occupancy?: GpuOccupancyStats): ModelInventoryRow[] {
   });
 }
 
-export function GpuModelInventory({
-  occupancy,
-  loading,
-  onCreate,
-}: {
-  occupancy?: GpuOccupancyStats;
-  loading: boolean;
-  onCreate: () => void;
-}) {
-  const modelInventory = getModelInventory(occupancy);
+export function GpuModelInventory({ onCreate }: { onCreate: () => void }) {
+  const occupancy = useGpuOccupancyQuery();
+  const modelInventory = getModelInventory(occupancy.data);
 
   return (
     <section className="mt-5">
@@ -50,7 +44,7 @@ export function GpuModelInventory({
       <ListDataTable<ModelInventoryRow>
         rowKey="id"
         data={modelInventory}
-        loading={loading}
+        loading={occupancy.isLoading}
         pagination={false}
         scroll={{ x: false, y: false }}
         emptyIconClassName="icon-GPU"

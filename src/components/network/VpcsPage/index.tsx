@@ -192,6 +192,7 @@ function VpcList() {
     {
       key: "createdAt",
       title: "创建时间",
+      width: 150,
       render: (_, vpc) => formatDateTime(vpc.created_at),
     },
   ];

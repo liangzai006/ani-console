@@ -17,11 +17,15 @@ export type {
 } from "./DataTable";
 export { ListDataTable } from "./ListDataTable";
 export type { ListDataTableProps } from "./ListDataTable";
+export { ResourcePageFrame } from "./ResourcePageFrame";
+export type {
+  ResourcePageFrameProps,
+  ResourcePageHeaderAction,
+  ResourcePageHeaderConfig,
+} from "./ResourcePageFrame";
 export { ListPageFrame } from "./ListPageFrame";
 export type {
   ListPageFrameProps,
-  ListPageHeaderAction,
-  ListPageHeaderConfig,
   ListPageRefreshConfig,
   ListPageSearchConfig,
   ListPageTabsConfig,

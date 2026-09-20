@@ -11,7 +11,17 @@ import {
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Empty, Modal, Space, Tag, Typography } from "@arco-design/web-react";
+import {
+  Button,
+  Dropdown,
+  Empty,
+  Menu,
+  Modal,
+  Space,
+  Tag,
+  Typography,
+} from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { listInstances, type InstanceRecord } from "@/api/instances";
 import {
   deleteNetworkVpc,
@@ -195,6 +205,27 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
       render: (_, resource) => <StatusTag status={resource.status} />,
     },
   ];
+  const moreMenu = (
+    <Menu
+      onClickMenuItem={(key) => {
+        if (key !== "delete") return;
+        Modal.confirm({
+          title: "删除 VPC",
+          content: `确定删除「${vpc.name}」？存在子网或关联资源时无法删除，请先清理相关资源。`,
+          okButtonProps: { status: "danger" },
+          onOk: () => deleteVpc.mutateAsync(undefined),
+        });
+      }}
+    >
+      <Menu.Item
+        key="delete"
+        disabled={deleteVpc.isPending}
+        style={{ color: "var(--color-danger-6)" }}
+      >
+        删除
+      </Menu.Item>
+    </Menu>
+  );
 
   return (
     <DetailPageFrame
@@ -207,22 +238,11 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
         { label: "创建时间", value: formatDateTime(vpc.created_at) },
       ]}
       actions={
-        <Space>
-          <Button
-            status="danger"
-            loading={deleteVpc.isPending}
-            onClick={() =>
-              Modal.confirm({
-                title: "删除 VPC",
-                content: `确定删除「${vpc.name}」？存在子网或关联资源时无法删除，请先清理相关资源。`,
-                okButtonProps: { status: "danger" },
-                onOk: () => deleteVpc.mutateAsync(undefined),
-              })
-            }
-          >
-            删除
+        <Dropdown trigger="click" position="br" droplist={moreMenu}>
+          <Button disabled={deleteVpc.isPending} aria-label="更多操作" title="更多操作">
+            <IconMoreVertical />
           </Button>
-        </Space>
+        </Dropdown>
       }
       cards={[
         {
@@ -236,18 +256,6 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
             { label: "创建时间", value: formatDateTime(vpc.created_at) },
             { label: "更新时间", value: formatDateTime(vpc.updated_at) },
           ],
-        },
-        {
-          key: "related-summary",
-          title: "关联摘要",
-          fields: relatedLoading
-            ? [{ label: "加载中…", value: "-" }]
-            : relatedResources.length
-              ? relatedResources.slice(0, 5).map((resource) => ({
-                  label: resource.kind,
-                  value: resource.name,
-                }))
-              : [{ label: "暂无关联对象", value: "-" }],
         },
       ]}
       tabs={[

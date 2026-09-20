@@ -42,12 +42,12 @@ export function ExpandVolumeModal({
       confirmLoading={expand.isPending}
       unmountOnExit
     >
-      <Form layout="vertical">
-        <Alert
-          type="info"
-          showIcon
-          content={`当前容量 ${volume?.size_gib ?? "-"} GiB；块存储只支持扩容，不支持缩容。`}
-        />
+      <Alert
+        type="info"
+        showIcon
+        content={`当前容量 ${volume?.size_gib ?? "-"} GiB；块存储只支持扩容，不支持缩容。`}
+      />
+      <Form layout="vertical" className="mt-2">
         <Form.Item label="新容量 (GiB)" required>
           <InputNumber
             value={sizeGiB}

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@arco-design/web-react";
 import { useMemo, useState } from "react";
@@ -25,7 +25,6 @@ type SearchField = "name" | "id";
 
 export function VectorStoresPage() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const [createVisible, setCreateVisible] = useState(false);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [searchField, setSearchField] = useState<SearchField>("name");
@@ -128,7 +127,7 @@ export function VectorStoresPage() {
     },
     {
       key: "embeddingModel",
-      title: "Embedding 模型",
+      title: "向量化模型",
       ellipsis: true,
       dataIndex: "embedding_model",
       placeholder: "-",
@@ -159,6 +158,7 @@ export function VectorStoresPage() {
     {
       key: "createdAt",
       title: "创建时间",
+      width: 150,
       render: (_, item) => formatDateTime(item.created_at),
     },
   ];
@@ -225,18 +225,6 @@ export function VectorStoresPage() {
           data={items}
           columns={columns}
           rowActions={[
-            {
-              key: "search",
-              label: "检索测试",
-              disabled: (item) => item.state !== "ready",
-              tooltip: (item) => (item.state === "ready" ? undefined : "仅可用状态支持检索测试"),
-              onClick: (item) =>
-                navigate({
-                  to: "/vector-stores/$vectorStoreId",
-                  params: { vectorStoreId: item.id },
-                  search: { tab: "search" },
-                }),
-            },
             {
               key: "rebuild-index",
               label: (item) =>

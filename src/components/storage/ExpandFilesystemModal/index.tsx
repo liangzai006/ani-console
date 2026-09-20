@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Alert, Form, InputNumber, Modal, Typography } from "@arco-design/web-react";
-import { useEffect, useState } from "react";
 import { expandFilesystem, type StorageFilesystem } from "@/api/storage/filesystems";
+import { Alert, Form, InputNumber, Modal, Typography } from "@arco-design/web-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 type Filesystem = StorageFilesystem;
 
@@ -46,12 +46,12 @@ export function ExpandFilesystemModal({
       confirmLoading={expand.isPending}
       unmountOnExit
     >
-      <Form layout="vertical">
-        <Alert
-          type="info"
-          showIcon
-          content={`当前容量 ${filesystem?.size_gib ?? "-"} GiB；文件存储只支持扩容，不支持缩容。`}
-        />
+      <Alert
+        type="info"
+        showIcon
+        content={`当前容量 ${filesystem?.size_gib ?? "-"} GiB；文件存储只支持扩容，不支持缩容。`}
+      />
+      <Form layout="vertical" className="mt-2">
         <Form.Item label="新容量 (GiB)" required>
           <InputNumber
             value={sizeGiB}

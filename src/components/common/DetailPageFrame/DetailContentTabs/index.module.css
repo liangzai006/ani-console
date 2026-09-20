@@ -1,0 +1,80 @@
+.rightPane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--detail-surface);
+  box-shadow: var(--detail-shadow);
+}
+
+.tabs {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tabs :global(.arco-tabs-header-nav) {
+  box-sizing: border-box;
+  min-height: 56px;
+  padding: 8px 16px;
+}
+
+.tabs :global(.arco-tabs-header-nav-line .arco-tabs-header-title) {
+  height: 40px;
+  margin: 0 4px;
+  padding: 0 16px;
+  border-radius: 4px;
+  color: var(--color-text-1);
+  font-weight: 700;
+  line-height: 40px;
+}
+
+.tabs :global(.arco-tabs-header-nav-line .arco-tabs-header-title:last-of-type) {
+  margin-right: 0;
+}
+
+.tabs :global(.arco-tabs-header-nav-line .arco-tabs-header-title:hover) {
+  color: rgb(var(--primary-6));
+}
+
+.tabs
+  :global(
+    .arco-tabs-header-nav-line .arco-tabs-header-title:hover .arco-tabs-header-title-text::before
+  ) {
+  background: transparent;
+}
+
+.tabs :global(.arco-tabs-header-nav-line .arco-tabs-header-title-active) {
+  background: var(--color-primary-light-1);
+  color: rgb(var(--primary-6));
+}
+
+.tabs :global(.arco-tabs-content) {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.tabs :global(.arco-tabs-content-inner),
+.tabs :global(.arco-tabs-content-item),
+.tabs :global(.arco-tabs-pane) {
+  min-width: 0;
+  min-height: 0;
+}
+
+.tabs :global(.arco-tabs-content .arco-tabs-content-item.arco-tabs-content-item-active) {
+  box-sizing: border-box;
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
+}
+
+@media (max-width: 1024px) {
+  .rightPane {
+    min-height: 600px;
+  }
+}
