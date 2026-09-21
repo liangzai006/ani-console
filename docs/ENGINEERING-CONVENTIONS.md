@@ -1,5 +1,7 @@
 # ANI Console 工程约定
 
+本文档统一维护工程目录与命名、路由适配、公共适配层、浏览器兼容和验证规则；UI 实现与 API 对接细则由各自规范维护。
+
 ## 目录
 
 - 本仓库根目录已经代表产品原型中的 Console 范围；路由、页面、组件及其文件或目录不得再使用 `console`、`console-*`、`*Console` 等重复表达 Console 层级的命名，应直接按业务领域或资源命名。
@@ -8,15 +10,16 @@
 - 页面级组件的目录名与导出名必须以 `Page` 结尾（例如 `VmInstancesPage`），普通业务组件不得使用 `Page` 后缀，以便从命名上明确区分路由页面与可复用组件。
 - `src/components/`：按 page scope 组织的组件目录。组件必须使用 `src/components/<scope>/<ComponentName>/index.tsx`；私有样式使用同目录的 `index.css`、`index.less`、`index.module.css` 或 `index.module.less`；子组件使用 `src/components/<scope>/<ComponentName>/<SubComponentName>/index.tsx`。禁止在 scope 目录直接平铺组件或组件样式文件。
 - 跨页面、跨领域复用的通用组件统一放在 `src/components/common/<ComponentName>/index.tsx`；业务组件放在对应 page scope。scope 级 `index.ts` 仅作为导出清单，不承载组件实现。
-- 资源创建模态框统一放在 `src/components/<domain>/<ComponentName>/index.tsx`，通过 `visible`、`onCancel`、成功回调及必要的上下文默认值暴露复用接口，避免绑定具体路由。
+- 新建或改造的业务模态框统一放在 `src/components/<domain>/<ComponentName>Modal/index.tsx`，目录名与导出名保持一致；组件边界、挂载方式和复用接口遵循 [UI 开发约定](./UI-CONVENTIONS.md)。
 - `src/api/`：按业务资源组织的 API 请求函数、静态类型与 Axios 公共请求基础设施。
 - `src/stores/`：客户端状态。
 - `src/lib/`、`src/hooks/`：共享逻辑。
 - 禁止新增 `src/pages/`。
 
-## UI
+## 关联规范
 
 - UI 组件、页面组织、样式降级顺序、交互反馈和组件拆分统一遵循 [UI 开发约定](./UI-CONVENTIONS.md)，本文件不重复维护 UI 细则。
+- API 模块、类型、请求层、幂等、SSE、预签名上传及页面接入统一遵循 [API 对接流程](./API-INTEGRATION.md)，本文件不重复维护 API 细则。
 
 ## 公共适配与类型
 
@@ -52,15 +55,6 @@
 - WebSocket、Streams、编码器和取消能力等无法由普通 polyfill 完整替代的底层能力，应结合项目浏览器基线判断。新增使用点仍须处理构造失败、权限/协议不满足和资源释放，不得让异常逃逸为白屏。
 - localForage 操作均为异步调用，必须 `await` 或显式处理 Promise；OIDC 等临时数据必须在成功、失败和已完成分支清理，不能因 IndexedDB 的持久性无限保留。
 - 新增公共适配器时应在本章节补充统一入口和禁止写法；评审时搜索对应原生 API，确认业务代码没有绕过适配层。
-
-## API
-
-- 新增或调整接口的完整步骤遵循 [API 对接流程](./API-INTEGRATION.md)；本节只保留长期有效的结构边界。
-- Core 与 Services 请求分别由 `src/api/request.ts` 的 Axios 实例统一处理认证、刷新、响应解包与错误归一化；页面只调用对应 `src/api/<domain>/` 模块的业务请求函数。
-- 接口类型随业务资源保存在各模块 `types.ts`；契约核对独立 ANI 仓库的 Core/Services OpenAPI、实现与 GitNexus 接口补充索引，不在前端保留整份生成式 schema 快照。
-- POST 和有副作用的 PUT/PATCH 由业务 API 模块内部注入 `idempotency_key`；页面仅提交无 key DTO，相同内容失败重试复用 key，成功或请求取消后重置。
-- SSE 使用 Axios fetch adapter 的流式响应；预签名直传使用不带平台 JWT 的隔离 Axios 实例。
-- 服务端状态使用 TanStack Query；跨组件客户端状态使用 Zustand，组件局部 UI 状态使用 React 状态。
 
 ## 验证
 

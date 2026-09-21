@@ -22,7 +22,7 @@
 
 ## 模块与类型落位
 
-- 请求函数与接口类型统一放在 `src/api/<domain>/`，页面、组件、Hook 和 Store 不得直接导入 Axios 或 `src/api/request.ts` 拼装平台请求。
+- 请求函数与接口类型统一放在 `src/api/<domain>/`，页面、路由、组件、Hook 和 Store 不得直接导入 Axios 或 `src/api/request.ts` 拼装平台请求。
 - 简单领域使用 `index.ts` 与 `types.ts`；包含多个独立资源的领域按资源拆分文件或子目录，再由领域 `index.ts` 汇总公开接口。
 - 页面提交类型命名为 `*Input`，不得包含 `idempotency_key`；API 内部最终请求类型命名为 `*Request`，需要幂等时在这里加入 key。响应、列表参数及资源记录使用具有业务含义的稳定名称。
 - API 函数返回解包后的响应 data，并通过异常报告失败；不得恢复 `{ data, error }` 双通道或要求页面重复解包。
@@ -40,7 +40,7 @@
 - 受保护请求返回 401 时由公共层执行单飞令牌刷新并重试一次；业务 API 和页面不得自行刷新令牌或重复实现 401 重试。
 - 普通响应直接返回 `response.data`，204 或空响应按 `undefined` 处理。
 - 查询数组序列化为重复参数；`null` 和 `undefined` 不进入查询字符串。
-- 请求失败统一转换为 `ApiError`，保留 `status`、`code`、`requestId`、`details` 和原始响应上下文。页面不得自行解析 Axios 错误结构，也不得新增平行错误解析或反馈辅助函数；少数需要按 `code`、`status` 映射业务文案的场景直接判断 `error instanceof ApiError`。
+- 请求失败统一转换为 `ApiError`，保留 `status`、`code`、`requestId`、`details` 和原始响应上下文。`ApiError` 是请求错误的唯一结构化模型；页面不得自行解析 Axios 错误结构，也不得新增 `ApiErrorAlert`、`showApiError`、列表错误通知 Hook、公开的通用错误解析对象或其他平行错误解析与反馈辅助函数。少数需要按 `code`、`status` 映射业务文案的场景直接判断 `error instanceof ApiError`。
 - 需要取消的请求透传 `AbortSignal`。Axios 取消保持为取消错误，以便幂等层识别并重置作用域。
 
 ## 幂等写请求
@@ -63,13 +63,9 @@
 
 ## 页面接入
 
-- 查询通过 TanStack Query 调用领域 API 函数，并以 `meta.errorNotification` 声明稳定 ID、操作文案和 fallback；全局 `QueryCache` 负责失败 Notification 及成功后的关闭。未配置 meta 的查询保持静默，用户可见查询不得省略声明。
-- mutation 只提交无 key DTO，并以 `meta.feedback` 声明渠道和文案；表单提交使用 Message，非表单操作和后台任务使用 Notification，全局 `MutationCache` 负责 loading、成功和失败反馈。
-- Query 与 mutation 的反馈 ID 使用页面无关的资源或操作语义；相同数据源或操作跨入口复用同一短 ID。动态资源维度通过 `src/lib/id.ts` 的 `withId(base, ...segments)` 追加，查询键等稳定作用域标识也复用该工具；不得拼接文件路径或组件名称。
+- 查询和 mutation 通过 TanStack Query 调用领域 API 函数；mutation 只提交无 key DTO。反馈渠道、meta、稳定 ID、请求状态展示及错误呈现统一遵循 [UI 开发约定](./UI-CONVENTIONS.md)。
 - 成功后由页面按资源关系失效或刷新查询缓存，API 模块不直接操作 Query Client。
-- 业务组件的 `onSuccess`、`onError` 只保留缓存失效、关闭弹窗、导航等业务副作用，不直接显示 mutation 反馈。查询失败不得渲染组件内 Alert、Result、错误文本或错误专用重试占位；列表、表格无数据时沿用组件既有空占位，不得增加 `loadFailed`、`failed` 或错误专用条件包装。
-- 统一反馈模块只负责 Message、Notification 的展示与关闭；`ApiError` 是请求错误的唯一结构化模型，不再引入 `ApiErrorAlert`、`showApiError`、列表错误通知 Hook 或公开的通用错误解析对象。
-- 页面、路由和组件中不得出现 `coreRequest`、`servicesRequest`、Axios 平台请求或 `idempotency_key`。
+- 页面、路由和组件中不得出现 `coreRequest`、`servicesRequest`、Axios 平台请求或 `idempotency_key`；这些能力分别收敛在公共请求层和业务 API 模块。
 
 ## 完成检查
 
@@ -77,4 +73,4 @@
 2. 请求函数和静态类型已落在正确领域；页面只传普通业务参数和无 key DTO。
 3. 认证、刷新、错误、幂等、取消、SSE 和预签名上传复用公共基础设施，没有平行实现。
 4. 已手动核对成功、空数据、典型失败、401 刷新、取消与重复提交；流式或上传接口还需核对中断及重试。
-5. 对本次新增或修改的代码运行 Oxlint，通过 `pnpm fmt` 对全仓运行 oxfmt，并运行 `pnpm typecheck`、`git diff --check` 与 GitNexus `detect_changes`。
+5. 已执行 [工程约定](./ENGINEERING-CONVENTIONS.md#验证) 的完整验证流程。

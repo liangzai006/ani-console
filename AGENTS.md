@@ -1,20 +1,22 @@
 # AGENTS.md
 
-## 项目定位
+## 项目范围
 
 本仓库只包含 ANI Console 前端。
 
-## 开发入口
+## 规范入口
 
 开始工作前按任务范围阅读对应规范：
 
-- 工程目录、命名、路由适配、公共工具、浏览器兼容和验证遵循 [工程约定](./docs/CONVENTIONS.md)。
+- 工程目录、命名、路由适配、公共工具、浏览器兼容和验证遵循 [工程约定](./docs/ENGINEERING-CONVENTIONS.md)。
 - UI 实现顺序、组件复用、样式、反馈、请求状态展示和组件拆分遵循 [UI 开发约定](./docs/UI-CONVENTIONS.md)。
 - 接口契约核对、API 模块与类型落位、公共请求层、幂等、SSE、预签名上传及页面接入遵循 [API 对接流程](./docs/API-INTEGRATION.md)。
 
-具体规则只在所属规范文档维护；本文件只保留 Agent 工作流、工具约束和规范入口，不复制业务或实现细则。
+具体规则仅在所属规范文档维护；本文件只保留规范入口、Agent 工作流和工具约束，不重复业务或实现细则。
 
-## Agent 工作边界
+新增或调整规则时，先依据 [文档职责](./docs/README.md#文档职责) 确定唯一归属；完整规则只写入该文档，其他文档仅保留链接。无法唯一归属，或拟记录内容与现有规则的强度、范围、顺序或例外冲突时，必须先请用户确认，不得并行记录或自行取舍。
+
+## 工作边界
 
 - 不覆盖或清理用户已有的无关工作区改动。
 - 不运行 production build，也不启动、重启或中断用户的 `pnpm dev`。
@@ -22,8 +24,8 @@
 
 ## 验证
 
-- pnpm 命令执行门禁：所有 Agent 执行任何 `pnpm` 命令时，都必须在 Codex 沙箱外的系统环境运行，由系统 Corepack 根据 `package.json` 的 `packageManager` 选择 pnpm 版本；不得使用沙箱内的 fallback pnpm，也不得绕过项目声明手动选择其他版本。
-- 完成修改后执行 [工程约定](./docs/CONVENTIONS.md) 的完整验证清单和 GitNexus 变更检测；检查失败时先修复，无法在当前范围处理的既有问题必须如实记录。
+- 所有 `pnpm` 命令必须在 Codex 沙箱外的系统环境运行，由系统 Corepack 根据 `package.json` 的 `packageManager` 选择版本；不得使用沙箱内的 fallback pnpm，也不得绕过项目声明手动选择其他版本。
+- 完成修改后执行 [工程约定](./docs/ENGINEERING-CONVENTIONS.md) 的完整验证清单和 GitNexus 变更检测；检查失败时先修复，无法在当前范围处理的既有问题必须如实记录。
 
 ## GitNexus
 
@@ -36,7 +38,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ani-console** (3125 symbols, 8124 relationships, 249 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ani-console** (3240 symbols, 8486 relationships, 256 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
