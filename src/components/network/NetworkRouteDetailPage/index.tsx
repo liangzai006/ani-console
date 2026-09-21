@@ -1,7 +1,19 @@
 import { withId } from "@/lib/id";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Empty, Link, List, Modal, Tag, Typography } from "@arco-design/web-react";
+import {
+  Button,
+  Card,
+  Dropdown,
+  Empty,
+  Link,
+  List,
+  Menu,
+  Modal,
+  Tag,
+  Typography,
+} from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { getInstance, type InstanceRecord } from "@/api/instances";
 import {
   deleteNetworkRoute,
@@ -140,20 +152,33 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
         { label: "创建时间", value: formatDateTime(item.created_at) },
       ]}
       actions={
-        <Button
-          status="danger"
-          loading={deleteRoute.isPending}
-          onClick={() =>
-            Modal.confirm({
-              title: "删除路由",
-              content: `确定删除「${name}」？删除后该转发规则将立即失效。`,
-              okButtonProps: { status: "danger" },
-              onOk: () => deleteRoute.mutateAsync(undefined),
-            })
+        <Dropdown
+          trigger="click"
+          position="br"
+          droplist={
+            <Menu>
+              <Menu.Item
+                key="delete"
+                disabled={deleteRoute.isPending}
+                style={{ color: "var(--color-danger-6)" }}
+                onClick={() =>
+                  Modal.confirm({
+                    title: "删除路由",
+                    content: `确定删除「${name}」？删除后该转发规则将立即失效。`,
+                    okButtonProps: { status: "danger" },
+                    onOk: () => deleteRoute.mutateAsync(undefined),
+                  })
+                }
+              >
+                删除
+              </Menu.Item>
+            </Menu>
           }
         >
-          删除
-        </Button>
+          <Button disabled={deleteRoute.isPending} aria-label="更多操作" title="更多操作">
+            <IconMoreVertical />
+          </Button>
+        </Dropdown>
       }
       cards={[
         {

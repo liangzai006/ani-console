@@ -8,13 +8,16 @@ import {
 import {
   Link as ArcoLink,
   Button,
+  Dropdown,
   Empty,
   InputNumber,
+  Menu,
   Modal,
   Space,
   Tooltip,
   Typography,
 } from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -187,47 +190,76 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
     <StatusTag status={item.status} />
   );
   const actions = (
-    <Space wrap>
-      {item.status === "running" ? (
-        <Button loading={lifecycle.isPending} onClick={() => lifecycle.mutate("stop")}>
-          停止
-        </Button>
-      ) : null}
-      {item.status === "stopped" ? (
-        <Button loading={lifecycle.isPending} onClick={() => lifecycle.mutate("start")}>
-          启动
-        </Button>
-      ) : null}
-      {item.status === "running" || item.status === "failed" ? (
-        <Button loading={lifecycle.isPending} onClick={() => lifecycle.mutate("restart")}>
-          重启
-        </Button>
-      ) : null}
-      {item.status === "running" ? (
-        <Button
-          onClick={() => {
-            setReplicas(item.replicas);
-            setScaleVisible(true);
-          }}
-        >
-          调整副本
-        </Button>
-      ) : null}
+    <Dropdown
+      trigger="click"
+      position="br"
+      droplist={
+        <Menu>
+          {item.status === "running" ? (
+            <Menu.Item
+              key="stop"
+              disabled={lifecycle.isPending}
+              onClick={() => lifecycle.mutate("stop")}
+            >
+              停止
+            </Menu.Item>
+          ) : null}
+          {item.status === "stopped" ? (
+            <Menu.Item
+              key="start"
+              disabled={lifecycle.isPending}
+              onClick={() => lifecycle.mutate("start")}
+            >
+              启动
+            </Menu.Item>
+          ) : null}
+          {item.status === "running" || item.status === "failed" ? (
+            <Menu.Item
+              key="restart"
+              disabled={lifecycle.isPending}
+              onClick={() => lifecycle.mutate("restart")}
+            >
+              重启
+            </Menu.Item>
+          ) : null}
+          {item.status === "running" ? (
+            <Menu.Item
+              key="scale"
+              disabled={lifecycle.isPending}
+              onClick={() => {
+                setReplicas(item.replicas);
+                setScaleVisible(true);
+              }}
+            >
+              调整副本
+            </Menu.Item>
+          ) : null}
+          <Menu.Item
+            key="delete"
+            disabled={remove.isPending}
+            style={{ color: "var(--color-danger-6)" }}
+            onClick={() =>
+              Modal.confirm({
+                title: "删除推理服务",
+                content: `确定删除「${item.name}」？删除请求提交后将异步停止并清理该服务。`,
+                okButtonProps: { status: "danger" },
+                onOk: () => remove.mutateAsync(),
+              })
+            }
+          >
+            删除
+          </Menu.Item>
+        </Menu>
+      }
+    >
       <Button
-        status="danger"
-        loading={remove.isPending}
-        onClick={() =>
-          Modal.confirm({
-            title: "删除推理服务",
-            content: `确定删除「${item.name}」？删除请求提交后将异步停止并清理该服务。`,
-            okButtonProps: { status: "danger" },
-            onOk: () => remove.mutateAsync(),
-          })
-        }
+        disabled={lifecycle.isPending || remove.isPending}
+        aria-label="更多操作"
+        title="更多操作"
       >
-        删除
+        <IconMoreVertical />
       </Button>
-    </Space>
+    </Dropdown>
   );
 
   return (

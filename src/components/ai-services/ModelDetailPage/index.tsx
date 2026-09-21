@@ -1,5 +1,6 @@
 import { withId } from "@/lib/id";
-import { Button, Empty, Modal, Space } from "@arco-design/web-react";
+import { Button, Dropdown, Empty, Menu, Modal, Space } from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -138,23 +139,36 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
             >
               部署
             </Button>
-            <Button
-              status="danger"
-              loading={remove.isPending}
-              onClick={() =>
-                Modal.confirm({
-                  title: "删除模型",
-                  content:
-                    "确定删除「" +
-                    (item.display_name || item.name) +
-                    "」？有关联推理服务时后端可能拒绝删除。",
-                  okButtonProps: { status: "danger" },
-                  onOk: () => remove.mutateAsync(),
-                })
+            <Dropdown
+              trigger="click"
+              position="br"
+              droplist={
+                <Menu>
+                  <Menu.Item
+                    key="delete"
+                    disabled={remove.isPending}
+                    style={{ color: "var(--color-danger-6)" }}
+                    onClick={() =>
+                      Modal.confirm({
+                        title: "删除模型",
+                        content:
+                          "确定删除「" +
+                          (item.display_name || item.name) +
+                          "」？有关联推理服务时后端可能拒绝删除。",
+                        okButtonProps: { status: "danger" },
+                        onOk: () => remove.mutateAsync(),
+                      })
+                    }
+                  >
+                    删除
+                  </Menu.Item>
+                </Menu>
               }
             >
-              删除
-            </Button>
+              <Button disabled={remove.isPending} aria-label="更多操作" title="更多操作">
+                <IconMoreVertical />
+              </Button>
+            </Dropdown>
           </Space>
         }
         cards={detailCards}

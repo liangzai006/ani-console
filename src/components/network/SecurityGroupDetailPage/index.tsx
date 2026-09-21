@@ -9,7 +9,19 @@ import {
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Empty, List, Modal, Space, Tag, Typography } from "@arco-design/web-react";
+import {
+  Button,
+  Card,
+  Dropdown,
+  Empty,
+  List,
+  Menu,
+  Modal,
+  Space,
+  Tag,
+  Typography,
+} from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useState } from "react";
 import { listInstances, type InstanceRecord } from "@/api/instances";
 import {
@@ -287,20 +299,33 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
           },
         ]}
         actions={
-          <Button
-            status="danger"
-            loading={deleteSecurityGroup.isPending}
-            onClick={() =>
-              Modal.confirm({
-                title: "删除安全组",
-                content: `确定删除「${securityGroup.name}」？安全组被实例使用时无法删除，请先解除关联。`,
-                okButtonProps: { status: "danger" },
-                onOk: () => deleteSecurityGroup.mutateAsync(),
-              })
+          <Dropdown
+            trigger="click"
+            position="br"
+            droplist={
+              <Menu>
+                <Menu.Item
+                  key="delete"
+                  disabled={deleteSecurityGroup.isPending}
+                  style={{ color: "var(--color-danger-6)" }}
+                  onClick={() =>
+                    Modal.confirm({
+                      title: "删除安全组",
+                      content: `确定删除「${securityGroup.name}」？安全组被实例使用时无法删除，请先解除关联。`,
+                      okButtonProps: { status: "danger" },
+                      onOk: () => deleteSecurityGroup.mutateAsync(),
+                    })
+                  }
+                >
+                  删除
+                </Menu.Item>
+              </Menu>
             }
           >
-            删除
-          </Button>
+            <Button disabled={deleteSecurityGroup.isPending} aria-label="更多操作" title="更多操作">
+              <IconMoreVertical />
+            </Button>
+          </Dropdown>
         }
         cards={[
           {

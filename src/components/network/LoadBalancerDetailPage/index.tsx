@@ -9,7 +9,8 @@ import {
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Empty, Modal } from "@arco-design/web-react";
+import { Button, Dropdown, Empty, Menu, Modal } from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 import {
   deleteNetworkLoadBalancer,
   getNetworkLoadBalancer,
@@ -124,20 +125,33 @@ export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: str
         { label: "创建时间", value: formatDateTime(item.created_at) },
       ]}
       actions={
-        <Button
-          status="danger"
-          loading={remove.isPending}
-          onClick={() =>
-            Modal.confirm({
-              title: "删除负载均衡",
-              content: `确定删除「${item.name}」？`,
-              okButtonProps: { status: "danger" },
-              onOk: () => remove.mutateAsync(undefined),
-            })
+        <Dropdown
+          trigger="click"
+          position="br"
+          droplist={
+            <Menu>
+              <Menu.Item
+                key="delete"
+                disabled={remove.isPending}
+                style={{ color: "var(--color-danger-6)" }}
+                onClick={() =>
+                  Modal.confirm({
+                    title: "删除负载均衡",
+                    content: `确定删除「${item.name}」？`,
+                    okButtonProps: { status: "danger" },
+                    onOk: () => remove.mutateAsync(undefined),
+                  })
+                }
+              >
+                删除
+              </Menu.Item>
+            </Menu>
           }
         >
-          删除
-        </Button>
+          <Button disabled={remove.isPending} aria-label="更多操作" title="更多操作">
+            <IconMoreVertical />
+          </Button>
+        </Dropdown>
       }
       cards={[
         {

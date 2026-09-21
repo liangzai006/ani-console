@@ -1,7 +1,8 @@
 import { withId } from "@/lib/id";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Modal } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Modal } from "@arco-design/web-react";
+import { IconMoreVertical } from "@arco-design/web-react/icon";
 
 import { deleteKnowledgeBase, getKnowledgeBase } from "@/api/knowledge";
 import { listVectorStores, type VectorStore } from "@/api/storage/vector-stores";
@@ -88,20 +89,33 @@ export function KnowledgeBaseDetailPage({
         { label: "创建时间", value: formatDateTime(kb.created_at) },
       ]}
       actions={
-        <Button
-          status="danger"
-          loading={remove.isPending}
-          onClick={() =>
-            Modal.confirm({
-              title: "删除知识库",
-              content: `确定删除「${kb.name}」？知识库及其文档将不可恢复。`,
-              okButtonProps: { status: "danger" },
-              onOk: () => remove.mutateAsync(),
-            })
+        <Dropdown
+          trigger="click"
+          position="br"
+          droplist={
+            <Menu>
+              <Menu.Item
+                key="delete"
+                disabled={remove.isPending}
+                style={{ color: "var(--color-danger-6)" }}
+                onClick={() =>
+                  Modal.confirm({
+                    title: "删除知识库",
+                    content: `确定删除「${kb.name}」？知识库及其文档将不可恢复。`,
+                    okButtonProps: { status: "danger" },
+                    onOk: () => remove.mutateAsync(),
+                  })
+                }
+              >
+                删除
+              </Menu.Item>
+            </Menu>
           }
         >
-          删除
-        </Button>
+          <Button disabled={remove.isPending} aria-label="更多操作" title="更多操作">
+            <IconMoreVertical />
+          </Button>
+        </Dropdown>
       }
       cards={[
         {
