@@ -293,21 +293,18 @@ export function VolumesPage() {
         />
       </ListPageFrame>
       <CreateVolumeModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
-      <AttachVolumeModal
-        visible={Boolean(attachTarget)}
-        volumeId={attachTarget?.id ?? ""}
-        onCancel={() => setAttachTarget(null)}
-      />
-      <ExpandVolumeModal
-        visible={Boolean(expandTarget)}
-        volume={expandTarget}
-        onCancel={() => setExpandTarget(null)}
-      />
-      <CreateVolumeSnapshotModal
-        visible={Boolean(snapshotTarget)}
-        volumeId={snapshotTarget?.id ?? ""}
-        onCancel={() => setSnapshotTarget(null)}
-      />
+      {attachTarget && (
+        <AttachVolumeModal volumeId={attachTarget.id} onCancel={() => setAttachTarget(null)} />
+      )}
+      {expandTarget && (
+        <ExpandVolumeModal volume={expandTarget} onCancel={() => setExpandTarget(null)} />
+      )}
+      {snapshotTarget && (
+        <CreateVolumeSnapshotModal
+          volumeId={snapshotTarget.id}
+          onCancel={() => setSnapshotTarget(null)}
+        />
+      )}
     </>
   );
 }

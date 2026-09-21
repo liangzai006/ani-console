@@ -335,10 +335,7 @@ export function InferencePage() {
           tableLabel="推理服务列表"
         />
       </ListPageFrame>
-      <CreateInferenceServiceModal
-        visible={createVisible}
-        onCancel={() => setCreateVisible(false)}
-      />
+      {createVisible && <CreateInferenceServiceModal onCancel={() => setCreateVisible(false)} />}
       <Modal
         visible={Boolean(resizeTarget)}
         title={resizeTarget ? `变配 · ${resizeTarget.name}` : "变配"}

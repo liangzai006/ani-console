@@ -1,34 +1,19 @@
-import { listInstances, type InstanceRecord } from "@/api/instances";
 import {
   deleteNetworkSubnet,
   getNetworkSubnet,
   getNetworkVpc,
-  listNetworkRoutes,
-  type NetworkRoute,
   type NetworkSubnet,
   type NetworkVPC,
 } from "@/api/network";
 import {
   AliIcon,
-  DataTable,
   DetailPageFrame,
   DetailPagePlaceholder,
   ResourceId,
   StatusTag,
-  TableSectionHeader,
-  type ListColumn,
 } from "@/components/common";
 import { withId } from "@/lib/id";
-import {
-  Button,
-  Dropdown,
-  Empty,
-  Menu,
-  Modal,
-  Space,
-  Tag,
-  Typography,
-} from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Modal } from "@arco-design/web-react";
 import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -37,16 +22,8 @@ import { formatDateTime } from "@/lib/format";
 
 type Subnet = NetworkSubnet;
 type Vpc = NetworkVPC;
-type Instance = InstanceRecord;
-type SubnetRouteRow = {
-  id: string;
-  destinationCidr: string;
-  nextHopType: string;
-  nextHop: string;
-  priority: number;
-  source: "系统" | "自定义";
-  protected: boolean;
-};
+import { SubnetRelatedResources } from "./SubnetRelatedResources";
+import { SubnetRoutes } from "./SubnetRoutes";
 
 export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
   const navigate = useNavigate();
@@ -74,29 +51,6 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
     queryFn: () => getNetworkVpc(detail.data!.vpc_id),
     enabled: Boolean(detail.data?.vpc_id),
   });
-  const instances = useQuery({
-    meta: {
-      errorNotification: {
-        id: withId("subnet-instances", subnetId),
-        action: `关联实例加载`,
-        fallback: "请求失败，请稍后重试",
-      },
-    },
-    queryKey: ["instances", "subnet", subnetId],
-    queryFn: () => listInstances({ limit: 100, subnet_id: subnetId }),
-  });
-  const routes = useQuery({
-    meta: {
-      errorNotification: {
-        id: withId("subnet-routes", subnetId),
-        action: `路由加载`,
-        fallback: "请求失败，请稍后重试",
-      },
-    },
-    queryKey: ["network-routes", "subnet-vpc", detail.data?.vpc_id],
-    queryFn: () => listNetworkRoutes({ vpc_id: detail.data!.vpc_id, limit: 100 }),
-    enabled: Boolean(detail.data?.vpc_id),
-  });
   const deleteSubnet = useMutation({
     meta: {
       feedback: {
@@ -117,49 +71,6 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
 
   const subnet = detail.data as Subnet;
   const parentVpc = vpc.data as Vpc | undefined;
-  const associatedInstances = (instances.data?.items ?? []) as Instance[];
-  const vpcRoutes = (routes.data?.items ?? []) as NetworkRoute[];
-  const routeRows: SubnetRouteRow[] = [
-    {
-      id: "system-default",
-      destinationCidr: "0.0.0.0/0",
-      nextHopType: "本地",
-      nextHop: "本地",
-      priority: 100,
-      source: "系统",
-      protected: true,
-    },
-    ...vpcRoutes.map((item) => ({
-      id: item.id,
-      destinationCidr: item.destination_cidr,
-      nextHopType:
-        item.next_hop_type === "instance" ? "实例" : item.next_hop_type === "nat" ? "NAT" : "网关",
-      nextHop: item.next_hop_id,
-      priority: item.next_hop_type === "instance" ? 150 : 200,
-      source: "自定义" as const,
-      protected: false,
-    })),
-  ];
-  const relatedResources = associatedInstances.map((item) => ({
-    id: item.id,
-    kind: "实例" as const,
-    name: item.name,
-    status: item.state,
-  }));
-  const relatedResourceColumns: Array<ListColumn<(typeof relatedResources)[number]>> = [
-    {
-      title: "类型",
-      width: 120,
-      render: (_, item) => <Tag>{item.kind}</Tag>,
-    },
-    { title: "名称", dataIndex: "name" },
-    { title: "资源 ID", dataIndex: "id" },
-    {
-      title: "状态",
-      width: 120,
-      render: (_, item) => <StatusTag status={item.status} />,
-    },
-  ];
   const moreMenu = (
     <Menu
       onClickMenuItem={(key) => {
@@ -222,44 +133,12 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
         {
           key: "routes",
           label: "路由",
-          content: (
-            <Space direction="vertical" size={12} className="w-full">
-              <DataTable<SubnetRouteRow>
-                columns={[
-                  { title: "目标网段", dataIndex: "destinationCidr" },
-                  { title: "下一跳类型", dataIndex: "nextHopType" },
-                  { title: "下一跳", dataIndex: "nextHop" },
-                  { title: "优先级", dataIndex: "priority" },
-                  { title: "来源", dataIndex: "source" },
-                ]}
-                data={routeRows}
-                loading={routes.isLoading}
-                pagination={false}
-              />
-            </Space>
-          ),
+          content: <SubnetRoutes subnetId={subnetId} vpcId={subnet.vpc_id} />,
         },
         {
           key: "related",
           label: "关联资源",
-          content: (
-            <section>
-              <TableSectionHeader
-                title="关联资源"
-                extra={
-                  <Typography.Text type="secondary">{relatedResources.length} 个</Typography.Text>
-                }
-              />
-              <DataTable<(typeof relatedResources)[number]>
-                columns={relatedResourceColumns}
-                data={relatedResources}
-                loading={instances.isLoading}
-                noDataElement={<Empty description="暂无关联资源" />}
-                pagination={false}
-                tableLabel="子网关联资源"
-              />
-            </section>
-          ),
+          content: <SubnetRelatedResources subnetId={subnetId} />,
         },
       ]}
       onBack={() => navigate({ to: "/subnets" })}

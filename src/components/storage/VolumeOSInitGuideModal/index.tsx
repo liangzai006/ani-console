@@ -6,11 +6,9 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { withId } from "@/lib/id";
 
 export function VolumeOSInitGuideModal({
-  visible,
   volumeId,
   onCancel,
 }: {
-  visible: boolean;
   volumeId: string;
   onCancel: () => void;
 }) {
@@ -25,7 +23,6 @@ export function VolumeOSInitGuideModal({
     },
     queryKey: ["volume-os-init-guide", volumeId],
     queryFn: () => getVolumeOSInitGuide(volumeId),
-    enabled: visible,
   });
   const complete = useMutation({
     meta: { feedback: { channel: "message", action: "操作", errorFallback: "请求失败" } },
@@ -38,7 +35,7 @@ export function VolumeOSInitGuideModal({
   });
   return (
     <Modal
-      visible={visible}
+      visible
       title="初始化引导"
       onCancel={onCancel}
       footer={

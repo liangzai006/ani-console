@@ -10,7 +10,7 @@ import {
   ResourceId,
   StatusTag,
 } from "@/components/common";
-import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
+import { InstanceLogs } from "@/components/instances/InstanceLogs";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
@@ -179,7 +179,7 @@ export function ContainerInstanceDetailPage({
         {
           key: "logs",
           label: "日志",
-          content: <InstanceLogsPanel instanceId={instanceId} active={true} />,
+          content: <InstanceLogs instanceId={instanceId} active={true} />,
         },
         {
           key: "events",

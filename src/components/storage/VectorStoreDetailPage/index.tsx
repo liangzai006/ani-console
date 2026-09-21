@@ -1,46 +1,27 @@
 import {
   deleteVectorStore,
-  deleteVectorStoreKnowledgeBaseLink,
   getVectorStore,
   rebuildVectorStoreIndex,
   type VectorStore,
 } from "@/api/storage/vector-stores";
 import { withId } from "@/lib/id";
-import {
-  Alert,
-  Button,
-  Dropdown,
-  Empty,
-  Link,
-  Menu,
-  Modal,
-  Space,
-  Tooltip,
-} from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Modal, Tooltip } from "@arco-design/web-react";
 import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
 import {
   AliIcon,
-  DataTable,
   DetailPageFrame,
   DetailPagePlaceholder,
   ResourceId,
   StatusTag,
-  TableSectionHeader,
 } from "@/components/common";
 import { VectorStoreWorkbench } from "@/components/storage/VectorStoreWorkbench";
 import { formatDateTime } from "@/lib/format";
-import { navigateToResourceDetail } from "@/lib/resources";
+import { VectorStoreRelatedResources } from "./VectorStoreRelatedResources";
 
 export type VectorStoreDetailTabKey = "search" | "related";
-
-interface VectorStoreRelatedResource {
-  id: string;
-  type: "知识库";
-  name: string;
-}
 
 export function VectorStoreDetailPage({
   vectorStoreId,
@@ -93,32 +74,8 @@ export function VectorStoreDetailPage({
       void qc.invalidateQueries({ queryKey: ["vector-store", vectorStoreId] });
     },
   });
-  const unlinkKnowledgeBase = useMutation({
-    meta: {
-      feedback: {
-        channel: "notification",
-        id: "vector-store-knowledge-base-unlink",
-        action: "解除关联",
-        errorFallback: "请求失败",
-      },
-    },
-    mutationFn: (_knowledgeBaseId: string) => deleteVectorStoreKnowledgeBaseLink(vectorStoreId),
-    onSuccess: (updatedStore) => {
-      qc.setQueryData(["vector-store", vectorStoreId], updatedStore);
-      void qc.invalidateQueries({ queryKey: ["vector-stores"] });
-    },
-  });
   if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
   const store = detail.data as VectorStore;
-  const relatedResources: VectorStoreRelatedResource[] = store.knowledge_base_ref
-    ? [
-        {
-          id: store.knowledge_base_ref.id,
-          type: "知识库",
-          name: store.knowledge_base_ref.name,
-        },
-      ]
-    : [];
   const storeStatus = store.reason ? (
     <Tooltip content={store.reason}>
       <span className="inline-flex">
@@ -231,63 +188,7 @@ export function VectorStoreDetailPage({
         {
           key: "related",
           label: "关联资源",
-          content: (
-            <Space direction="vertical" size={12} className="w-full">
-              <Alert type="info" showIcon title="删除向量存储前须解除知识库关联。" />
-              <section>
-                <TableSectionHeader title="关联资源" />
-                <DataTable<VectorStoreRelatedResource>
-                  data={relatedResources}
-                  rowKey="id"
-                  pagination={false}
-                  noDataElement={<Empty description="暂无关联资源" />}
-                  tableLabel="向量存储关联资源列表"
-                  columns={[
-                    { title: "类型", dataIndex: "type", width: 160 },
-                    {
-                      title: "名称",
-                      render: (_, resource) => (
-                        <Link
-                          onClick={() =>
-                            navigateToResourceDetail(navigate, {
-                              type: "knowledge-base",
-                              id: resource.id,
-                              search: { tab: "overview" },
-                            })
-                          }
-                        >
-                          {resource.name || resource.id}
-                        </Link>
-                      ),
-                    },
-                    {
-                      title: "操作",
-                      width: 160,
-                      render: (_, resource) => (
-                        <Button
-                          type="text"
-                          size="small"
-                          loading={
-                            unlinkKnowledgeBase.isPending &&
-                            unlinkKnowledgeBase.variables === resource.id
-                          }
-                          onClick={() =>
-                            void Modal.confirm({
-                              title: "解除知识库关联",
-                              content: `确定解除向量存储「${store.name}」与知识库「${resource.name}」的关联？`,
-                              onOk: () => unlinkKnowledgeBase.mutateAsync(resource.id),
-                            })
-                          }
-                        >
-                          解除关联
-                        </Button>
-                      ),
-                    },
-                  ]}
-                />
-              </section>
-            </Space>
-          ),
+          content: <VectorStoreRelatedResources store={store} />,
         },
         {
           key: "search",

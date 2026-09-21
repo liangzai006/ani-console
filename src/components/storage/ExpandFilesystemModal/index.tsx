@@ -1,26 +1,21 @@
 import { expandFilesystem, type StorageFilesystem } from "@/api/storage/filesystems";
 import { Alert, Form, InputNumber, Modal, Typography } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type Filesystem = StorageFilesystem;
 
 export function ExpandFilesystemModal({
-  visible,
   filesystem,
   onCancel,
   onExpanded,
 }: {
-  visible: boolean;
-  filesystem: Filesystem | null;
+  filesystem: Filesystem;
   onCancel: () => void;
   onExpanded?: () => void;
 }) {
   const qc = useQueryClient();
-  const [sizeGiB, setSizeGiB] = useState(1);
-  useEffect(() => {
-    if (visible && filesystem) setSizeGiB(filesystem.size_gib + 1);
-  }, [filesystem, visible]);
+  const [sizeGiB, setSizeGiB] = useState(filesystem.size_gib + 1);
   const expand = useMutation({
     meta: { feedback: { channel: "message", action: "扩容", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
@@ -39,7 +34,7 @@ export function ExpandFilesystemModal({
   });
   return (
     <Modal
-      visible={visible}
+      visible
       title="扩容文件存储"
       onCancel={onCancel}
       onOk={() => expand.mutateAsync(undefined)}

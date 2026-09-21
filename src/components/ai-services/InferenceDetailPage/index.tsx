@@ -3,14 +3,11 @@ import {
   deleteInferenceService,
   getInferenceService,
   listInferenceServicePolicies,
-  updateInferenceService,
 } from "@/api/ai-services/inference";
 import {
   Link as ArcoLink,
   Button,
   Dropdown,
-  Empty,
-  InputNumber,
   Menu,
   Modal,
   Space,
@@ -34,9 +31,12 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { formatDateTime } from "@/lib/format";
 import { withId } from "@/lib/id";
 import { InferenceInvocationTest } from "./InferenceInvocationTest";
+import { InferenceEvents } from "./InferenceEvents";
 import { InferenceLogs } from "./InferenceLogs";
+import { InferenceMonitoring } from "./InferenceMonitoring";
 import { InferencePolicies } from "./InferencePolicies";
 import { InferenceRelatedResources } from "./InferenceRelatedResources";
+import { InferenceScaleModal } from "./InferenceScaleModal";
 
 type LifecycleAction = "start" | "stop" | "restart";
 
@@ -44,7 +44,6 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [scaleVisible, setScaleVisible] = useState(false);
-  const [replicas, setReplicas] = useState(1);
   const [activeTabKey, setActiveTabKey] = useState("related");
 
   const service = useQuery({
@@ -86,28 +85,6 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
       return applyInferenceServiceLifecycle(serviceId, submitData);
     },
     onSuccess: () => {
-      void qc.invalidateQueries({
-        queryKey: ["inference-service", serviceId],
-      });
-      void qc.invalidateQueries({ queryKey: ["inference-services"] });
-    },
-  });
-  const scale = useMutation({
-    meta: {
-      feedback: {
-        channel: "notification",
-        id: "inference-scale",
-        action: "操作",
-        successText: "副本调整已提交",
-        errorFallback: "请求失败",
-      },
-    },
-    mutationFn: async () => {
-      const submitData = { replicas };
-      return updateInferenceService(serviceId, submitData);
-    },
-    onSuccess: () => {
-      setScaleVisible(false);
       void qc.invalidateQueries({
         queryKey: ["inference-service", serviceId],
       });
@@ -226,10 +203,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
             <Menu.Item
               key="scale"
               disabled={lifecycle.isPending}
-              onClick={() => {
-                setReplicas(item.replicas);
-                setScaleVisible(true);
-              }}
+              onClick={() => setScaleVisible(true)}
             >
               调整副本
             </Menu.Item>
@@ -389,11 +363,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
           {
             key: "monitoring",
             label: "监控",
-            content: (
-              <div className="flex min-h-60 items-center justify-center">
-                <Empty description="暂无监控数据，监控能力尚未开放" />
-              </div>
-            ),
+            content: <InferenceMonitoring />,
           },
           {
             key: "logs",
@@ -403,40 +373,20 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
           {
             key: "events",
             label: "事件",
-            content: (
-              <div className="flex min-h-60 items-center justify-center">
-                <Empty description="暂无服务事件，事件查询能力尚未开放" />
-              </div>
-            ),
+            content: <InferenceEvents />,
           },
         ]}
         activeTabKey={activeTabKey}
         onTabChange={setActiveTabKey}
         onBack={() => navigate({ to: "/inference" })}
       />
-      <Modal
-        visible={scaleVisible}
-        title="调整副本数"
-        onCancel={() => {
-          setScaleVisible(false);
-        }}
-        onOk={() => scale.mutateAsync()}
-        confirmLoading={scale.isPending}
-      >
-        <Space direction="vertical" size={12} className="w-full">
-          <Typography.Text>期望副本数</Typography.Text>
-          <InputNumber
-            value={replicas}
-            onChange={(value) => setReplicas(value ?? 1)}
-            min={1}
-            precision={0}
-            className="w-full"
-          />
-          <Typography.Text type="secondary">
-            调整请求将异步执行，可在详情栏的“当前操作”中查看进度。
-          </Typography.Text>
-        </Space>
-      </Modal>
+      {scaleVisible && (
+        <InferenceScaleModal
+          serviceId={serviceId}
+          initialReplicas={item.replicas}
+          onCancel={() => setScaleVisible(false)}
+        />
+      )}
     </>
   );
 }

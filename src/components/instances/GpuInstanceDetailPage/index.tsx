@@ -11,7 +11,7 @@ import {
   ResourceId,
   StatusTag,
 } from "@/components/common";
-import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
+import { InstanceLogs } from "@/components/instances/InstanceLogs";
 import { InstanceVersions } from "@/components/instances/InstanceVersions";
 import { GpuInstanceActions } from "@/components/instances/GpuInstanceActions";
 import { formatDateTime } from "@/lib/format";
@@ -363,7 +363,7 @@ export function GpuInstanceDetailPage({
         {
           key: "logs",
           label: "日志",
-          content: <InstanceLogsPanel instanceId={instance.id} active />,
+          content: <InstanceLogs instanceId={instance.id} active />,
         },
         {
           key: "events",

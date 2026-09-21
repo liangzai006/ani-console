@@ -1,35 +1,25 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Form, Input, InputNumber, Modal, Select } from "@arco-design/web-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createBucketLifecycleRule, type StorageBucketLifecycleRule } from "@/api/storage/buckets";
 
 type LifecycleRule = StorageBucketLifecycleRule;
 
 export function CreateLifecycleRuleModal({
-  visible,
   bucketId,
   rule,
   onCancel,
 }: {
-  visible: boolean;
   bucketId: string;
   rule?: LifecycleRule;
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
-  const [name, setName] = useState("");
-  const [prefix, setPrefix] = useState("");
-  const [expireDays, setExpireDays] = useState(90);
-  const [toInfrequentDays, setToInfrequentDays] = useState(30);
-  const [enabled, setEnabled] = useState<boolean>(true);
-  useEffect(() => {
-    if (!visible) return;
-    setName(rule?.name ?? "");
-    setPrefix(rule?.prefix ?? "");
-    setExpireDays(rule?.expire_days ?? 90);
-    setToInfrequentDays(rule?.to_infrequent_days ?? 30);
-    setEnabled(rule?.enabled ?? true);
-  }, [rule, visible]);
+  const [name, setName] = useState(rule?.name ?? "");
+  const [prefix, setPrefix] = useState(rule?.prefix ?? "");
+  const [expireDays, setExpireDays] = useState(rule?.expire_days ?? 90);
+  const [toInfrequentDays, setToInfrequentDays] = useState(rule?.to_infrequent_days ?? 30);
+  const [enabled, setEnabled] = useState<boolean>(rule?.enabled ?? true);
   const create = useMutation({
     meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
@@ -50,7 +40,7 @@ export function CreateLifecycleRuleModal({
   });
   return (
     <Modal
-      visible={visible}
+      visible
       title={rule ? "编辑生命周期规则" : "添加生命周期规则"}
       onCancel={onCancel}
       onOk={() => create.mutateAsync(undefined)}

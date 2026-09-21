@@ -1,0 +1,141 @@
+import { withId } from "@/lib/id";
+import {
+  Alert,
+  Button,
+  Form,
+  Input,
+  Space,
+  Spin,
+  Switch,
+  Typography,
+} from "@arco-design/web-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+
+import { getKnowledgeBasePermissions, updateKnowledgeBasePermissions } from "@/api/knowledge";
+import { formatDateTime } from "@/lib/format";
+import { validateForm } from "@/lib/form";
+
+type PermissionFormValues = {
+  public_read: boolean;
+  allowed_user_ids_text?: string;
+};
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function parseUserIds(value?: string) {
+  return Array.from(
+    new Set(
+      (value ?? "")
+        .split(/[\s,，]+/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+export function KnowledgePermissions({ kbId }: { kbId: string }) {
+  const [form] = Form.useForm<PermissionFormValues>();
+  const qc = useQueryClient();
+  const permissions = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("knowledge-permissions", kbId),
+        action: "权限配置加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
+    queryKey: ["knowledge-base-permissions", kbId],
+    queryFn: () => getKnowledgeBasePermissions(kbId),
+  });
+  useEffect(() => {
+    if (!permissions.data) return;
+    form.setFieldsValue({
+      public_read: permissions.data.public_read,
+      allowed_user_ids_text: permissions.data.allowed_user_ids.join("\n"),
+    });
+  }, [form, permissions.data]);
+
+  const update = useMutation({
+    meta: {
+      feedback: {
+        channel: "notification",
+        id: "knowledge-permissions-update",
+        action: "保存知识库权限",
+        successText: "知识库权限已保存",
+        errorFallback: "保存知识库权限失败",
+      },
+    },
+    mutationFn: async (values: PermissionFormValues) => {
+      const allowedUserIds = parseUserIds(values.allowed_user_ids_text);
+      const invalidId = allowedUserIds.find((id) => !UUID_PATTERN.test(id));
+      if (invalidId) throw new Error(`成员 ID 格式不正确：${invalidId}`);
+      const submitData = {
+        public_read: values.public_read,
+        allowed_user_ids: allowedUserIds,
+      };
+      await updateKnowledgeBasePermissions(kbId, submitData);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["knowledge-base-permissions", kbId] });
+      void qc.invalidateQueries({ queryKey: ["knowledge-base", kbId] });
+    },
+  });
+
+  if (permissions.isLoading && !permissions.data) {
+    return (
+      <div className="flex justify-center py-16">
+        <Spin />
+      </div>
+    );
+  }
+
+  if (permissions.error && !permissions.data) {
+    return <div className="min-h-40" />;
+  }
+
+  return (
+    <Space direction="vertical" size={16} className="w-full">
+      <Alert
+        type="info"
+        showIcon
+        content="租户内公开读取开启后，本租户成员均可读取；关闭后仅指定成员可访问。"
+      />
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{ public_read: false, allowed_user_ids_text: "" }}
+      >
+        <Form.Item label="租户内公开读取" field="public_read" triggerPropName="checked">
+          <Switch />
+        </Form.Item>
+        <Form.Item
+          label="指定成员 ID"
+          field="allowed_user_ids_text"
+          extra="每行填写一个成员用户 ID；也支持使用逗号分隔。"
+        >
+          <Input.TextArea
+            autoSize={{ minRows: 4, maxRows: 10 }}
+            placeholder="例如：8c6d5d54-8fae-4d65-b2f0-c64c45adf3cf"
+          />
+        </Form.Item>
+        {permissions.data?.updated_at ? (
+          <Typography.Text type="secondary">
+            最近更新：{formatDateTime(permissions.data.updated_at)}
+          </Typography.Text>
+        ) : null}
+        <div className="mt-4">
+          <Button
+            type="primary"
+            loading={update.isPending}
+            onClick={() =>
+              validateForm<PermissionFormValues>(form).then((values) => update.mutate(values))
+            }
+          >
+            保存权限
+          </Button>
+        </div>
+      </Form>
+    </Space>
+  );
+}

@@ -1,29 +1,18 @@
 import { downloadBlob } from "@/lib/browser";
-import { withId } from "@/lib/id";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Empty, Form, Grid, Input, Modal } from "@arco-design/web-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Form, Input, Modal } from "@arco-design/web-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   createK8sCluster,
   deleteK8sCluster,
-  getK8sCluster,
   getK8sClusterKubeconfig,
-  listK8sClusterNodePools,
   listK8sClusters,
-  listK8sClusterWorkloads,
   type K8sCluster,
-  type K8sClusterNodePool,
-  type K8sClusterWorkload,
 } from "@/api/k8s-clusters";
 import {
-  DetailPageFrame,
-  AliIcon,
   StatusTag,
-  DataTable,
-  DetailPagePlaceholder,
   ResourceNameId,
   ListPageFrame,
-  ResourceId,
   type ListColumn,
   ListDataTable,
 } from "@/components/common";
@@ -31,7 +20,6 @@ import {
 import { formatDateTime } from "@/lib/format";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 type Cluster = K8sCluster;
-type NodePool = K8sClusterNodePool;
 type ClusterStatusFilter = "all" | NonNullable<Cluster["state"]>;
 type ClusterSearchField = "name" | "id";
 
@@ -316,230 +304,6 @@ function ClusterList() {
           </Form.Item>
         </Form>
       </Modal>
-    </>
-  );
-}
-
-export function ClusterDetail({ clusterId, onBack }: { clusterId: string; onBack: () => void }) {
-  const qc = useQueryClient();
-
-  const detail = useQuery({
-    meta: {
-      errorNotification: {
-        id: withId("k8s-cluster", clusterId),
-        action: "K8s 集群加载",
-        fallback: "请求失败，请稍后重试",
-      },
-    },
-    queryKey: ["k8s-cluster", clusterId],
-    queryFn: () => getK8sCluster(clusterId),
-  });
-
-  const nodePools = useQuery({
-    meta: {
-      errorNotification: {
-        id: withId("k8s-node-pools", clusterId),
-        action: "节点池加载",
-        fallback: "请求失败，请稍后重试",
-      },
-    },
-    queryKey: ["k8s-node-pools", clusterId],
-    queryFn: () => listK8sClusterNodePools(clusterId),
-  });
-
-  const workloads = useQuery({
-    meta: {
-      errorNotification: {
-        id: withId("k8s-workloads", clusterId),
-        action: "工作负载加载",
-        fallback: "请求失败，请稍后重试",
-      },
-    },
-    queryKey: ["k8s-workloads", clusterId],
-    queryFn: () => listK8sClusterWorkloads(clusterId),
-  });
-  const downloadKubeconfig = useMutation({
-    meta: {
-      feedback: {
-        channel: "notification",
-        id: "kubeconfig-download",
-        action: "操作",
-        errorFallback: "请求失败",
-      },
-    },
-    mutationFn: async () => {
-      const data = await getK8sClusterKubeconfig(clusterId);
-      const blob = new Blob([data.kubeconfig ?? ""], {
-        type: "text/yaml",
-      });
-      downloadBlob(blob, `kubeconfig-${clusterId}.yaml`);
-    },
-  });
-
-  const deleteCluster = useMutation({
-    meta: {
-      feedback: {
-        channel: "notification",
-        id: "k8s-cluster-delete",
-        action: "删除",
-        errorFallback: "请求失败",
-      },
-    },
-    mutationFn: async () => {
-      await deleteK8sCluster(clusterId);
-    },
-    onSuccess: () => {
-      onBack();
-      qc.invalidateQueries({ queryKey: ["k8s-clusters"] });
-    },
-  });
-
-  if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
-
-  const c = detail.data;
-  const poolItems = (nodePools.data?.items ?? []) as NodePool[];
-  const workloadItems = workloads.data?.items ?? [];
-
-  const confirmDeleteCluster = () => {
-    Modal.confirm({
-      title: "删除集群",
-      content: `确定删除「${c?.name ?? clusterId}」？此操作不可恢复。`,
-      onOk: () => deleteCluster.mutateAsync(),
-    });
-  };
-
-  const nodePoolTab = (
-    <div>
-      <DataTable<NodePool>
-        columns={[
-          { title: "名称", dataIndex: "name" },
-          { title: "规格", dataIndex: "instance_type" },
-          {
-            title: "状态",
-            width: 120,
-            render: (_, r) => <StatusTag status={r.state} />,
-          },
-        ]}
-        data={poolItems}
-        loading={nodePools.isLoading}
-        pagination={false}
-        noDataElement={<Empty description="暂无节点池，点击上方创建" />}
-      />
-    </div>
-  );
-
-  const workloadTab = (
-    <DataTable<K8sClusterWorkload>
-      columns={[
-        { title: "名称", dataIndex: "name" },
-        { title: "类型", dataIndex: "kind" },
-        { title: "命名空间", dataIndex: "namespace" },
-        { title: "副本", dataIndex: "replicas" },
-        { title: "就绪副本", dataIndex: "ready_replicas" },
-        {
-          title: "状态",
-          width: 120,
-          render: (_, r) => <StatusTag status={r.status} />,
-        },
-      ]}
-      data={workloadItems}
-      loading={workloads.isLoading}
-      rowKey={(row) => `${row.namespace}/${row.kind}/${row.name}`}
-      pagination={false}
-      noDataElement={<Empty description="暂无工作负载" />}
-    />
-  );
-
-  const deploymentCount = workloadItems.filter((item) => item.kind === "Deployment").length;
-  const podCount = workloadItems.reduce(
-    (total, item) => total + Number(item.ready_replicas ?? 0),
-    0,
-  );
-  const serviceCount = 0;
-
-  const nodeCount = poolItems.reduce((total, pool) => total + Number(pool.node_count ?? 0), 0);
-
-  return (
-    <>
-      <DetailPageFrame
-        breadcrumbs={[{ label: "K8s 集群", to: "/k8s-clusters" }, { label: c?.name ?? clusterId }]}
-        icon={<AliIcon name="jiqun" size={28} />}
-        title={c?.name ?? clusterId}
-        status={<StatusTag status={c?.state} />}
-        headerItems={[
-          { label: "规格", value: "-" },
-          { label: "K8s 版本", value: c?.version ?? "-" },
-          { label: "节点数", value: String(nodeCount) },
-        ]}
-        actions={
-          <Button type="outline" status="danger" onClick={confirmDeleteCluster}>
-            删除
-          </Button>
-        }
-        cards={[
-          {
-            key: "basic",
-            title: "基本信息",
-            fields: [
-              { label: "ID", value: <ResourceId value={c?.id ?? clusterId} /> },
-              { label: "状态", value: <StatusTag status={c?.state} /> },
-              { label: "规格", value: "-" },
-              { label: "K8s 版本", value: c?.version ?? "-" },
-              { label: "节点数", value: nodeCount },
-              { label: "创建时间", value: formatDateTime(c?.created_at) },
-              { label: "关联对象", value: "1 个" },
-            ],
-          },
-          {
-            key: "related",
-            title: "关联摘要",
-            fields: [{ label: "关联对象", value: "1 个" }],
-            defaultCollapsed: true,
-          },
-        ]}
-        tabs={[
-          { key: "nodes", label: "节点", content: nodePoolTab },
-          {
-            key: "workloads",
-            label: "工作负载",
-            content: (
-              <div>
-                <Grid.Row gutter={16} className="mb-4">
-                  <Grid.Col span={8}>
-                    <Card title="Deployments">{deploymentCount}</Card>
-                  </Grid.Col>
-                  <Grid.Col span={8}>
-                    <Card title="Pods">{podCount}</Card>
-                  </Grid.Col>
-                  <Grid.Col span={8}>
-                    <Card title="Services">{serviceCount}</Card>
-                  </Grid.Col>
-                </Grid.Row>
-                {workloadTab}
-              </div>
-            ),
-          },
-          {
-            key: "kubeconfig",
-            label: "kubeconfig",
-            content: (
-              <Button
-                type="primary"
-                loading={downloadKubeconfig.isPending}
-                onClick={() => downloadKubeconfig.mutateAsync()}
-              >
-                下载 Kubeconfig
-              </Button>
-            ),
-          },
-          {
-            key: "events",
-            label: "事件",
-            content: <Empty description="暂无集群事件" />,
-          },
-        ]}
-        onBack={onBack}
-      />
     </>
   );
 }

@@ -1,52 +1,31 @@
-import { applyInstanceLifecycle } from "@/api/instances";
-import {
-  getVolume,
-  listVolumeSnapshots,
-  deleteVolume as removeVolume,
-  type StorageVolume,
-  type StorageVolumeMountHistoryEntry,
-  type VolumeSnapshotRecord,
-} from "@/api/storage/volumes";
+import { getVolume, deleteVolume as removeVolume, type StorageVolume } from "@/api/storage/volumes";
 import {
   AliIcon,
-  DataTable,
   DetailPageFrame,
   DetailPagePlaceholder,
   ResourceId,
   StatusTag,
-  TableSectionHeader,
 } from "@/components/common";
 import { withId } from "@/lib/id";
-import { Button, Dropdown, Empty, Menu, Modal, Tooltip } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Modal, Tooltip } from "@arco-design/web-react";
 import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { AttachVolumeModal } from "@/components/storage/AttachVolumeModal";
-import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnapshotModal";
 import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
-import { VolumeAutoSnapshotPanel } from "@/components/storage/VolumeAutoSnapshotPanel";
 import { VolumeOSInitGuideModal } from "@/components/storage/VolumeOSInitGuideModal";
-import { formatBytes, formatDateTime } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
+import { VolumeAutoSnapshot } from "@/components/storage/VolumeAutoSnapshot";
+import { VolumeMountHistory } from "./VolumeMountHistory";
+import { VolumeRelatedResources } from "./VolumeRelatedResources";
+import { VolumeSnapshots } from "./VolumeSnapshots";
 
 type Volume = StorageVolume;
-type VolumeSnapshot = VolumeSnapshotRecord;
-type MountedInstanceRow = NonNullable<StorageVolume["used_by"]>[number];
-type MountHistoryRow = StorageVolumeMountHistoryEntry;
-
-const mountHistoryActionText: Record<MountHistoryRow["action"], string> = {
-  mount: "挂载",
-  unmount: "卸载",
-  create_from_snapshot: "从快照创建",
-  os_init: "OS 初始化",
-};
 
 export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [snapshotVisible, setSnapshotVisible] = useState(false);
-  const [attachVisible, setAttachVisible] = useState(false);
   const [expandVisible, setExpandVisible] = useState(false);
   const [initGuideVisible, setInitGuideVisible] = useState(false);
   const detail = useQuery({
@@ -59,17 +38,6 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
     },
     queryKey: ["volume", volumeId],
     queryFn: () => getVolume(volumeId),
-  });
-  const snapshots = useQuery({
-    meta: {
-      errorNotification: {
-        id: withId("volume-snapshots", volumeId),
-        action: "快照列表加载",
-        fallback: "请求失败，请稍后重试",
-      },
-    },
-    queryKey: ["volume-snapshots", volumeId],
-    queryFn: () => listVolumeSnapshots(volumeId, { limit: 100 }),
   });
   const deleteVolume = useMutation({
     meta: {
@@ -86,31 +54,9 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
       navigate({ to: "/volumes" });
     },
   });
-  const detachVolume = useMutation({
-    meta: {
-      feedback: {
-        channel: "notification",
-        id: "volume-detach",
-        action: "卸载",
-        errorFallback: "请求失败",
-      },
-    },
-    mutationFn: (instanceId: string) =>
-      applyInstanceLifecycle(instanceId, {
-        action: "detach_volume" as const,
-        volume_id: volumeId,
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["instances"] });
-      qc.invalidateQueries({ queryKey: ["volume", volumeId] });
-      qc.invalidateQueries({ queryKey: ["volumes"] });
-    },
-  });
-
   if (!detail.data) return <DetailPagePlaceholder loading={detail.isLoading} />;
 
   const volume = detail.data as Volume;
-  const snapshotItems = (snapshots.data?.items ?? []) as VolumeSnapshot[];
   const mountedInstances = volume.used_by ?? [];
   const mountedInstanceNames = mountedInstances
     .map((instance) => instance.instance_name)
@@ -235,121 +181,22 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
           {
             key: "related",
             label: "关联资源",
-            content: (
-              <div>
-                <TableSectionHeader
-                  title="关联实例"
-                  extra={
-                    !mounted ? (
-                      <Button onClick={() => setAttachVisible(true)}>挂载</Button>
-                    ) : undefined
-                  }
-                />
-                <DataTable<MountedInstanceRow>
-                  columns={[
-                    { title: "实例名称", dataIndex: "instance_name" },
-                    { title: "实例 ID", dataIndex: "instance_id" },
-                    {
-                      title: "实例类型",
-                      dataIndex: "kind",
-                      placeholder: "-",
-                    },
-                    {
-                      title: "状态",
-                      render: (_, item) => <StatusTag status={item.state} />,
-                    },
-                  ]}
-                  data={mountedInstances}
-                  pagination={false}
-                  rowActions={[
-                    {
-                      key: "detach",
-                      label: "卸载",
-                      intent: "danger",
-                      loading: () => detachVolume.isPending,
-                      onClick: (item) => {
-                        Modal.confirm({
-                          title: "卸载块存储卷",
-                          content: `确定从实例「${item.instance_name}」卸载该卷？`,
-                          okButtonProps: { status: "danger" },
-                          onOk: () => detachVolume.mutateAsync(item.instance_id),
-                        });
-                      },
-                    },
-                  ]}
-                  noDataElement={<Empty description="该卷当前未挂载实例，点击右上角「挂载」开始" />}
-                />
-              </div>
-            ),
+            content: <VolumeRelatedResources volume={volume} />,
           },
           {
             key: "snapshots",
             label: "快照",
-            content: (
-              <div>
-                <TableSectionHeader
-                  title="快照"
-                  extra={<Button onClick={() => setSnapshotVisible(true)}>创建快照</Button>}
-                />
-                <DataTable<VolumeSnapshot>
-                  columns={[
-                    { title: "名称", dataIndex: "name" },
-                    {
-                      title: "状态",
-                      width: 120,
-                      render: (_, row) => <StatusTag status={row.status} />,
-                    },
-                    {
-                      title: "大小",
-                      render: (_, row) => formatBytes(row.size_bytes),
-                    },
-                    {
-                      title: "创建时间",
-                      render: (_, row) => formatDateTime(row.created_at),
-                    },
-                  ]}
-                  data={snapshotItems}
-                  loading={snapshots.isLoading}
-                  pagination={false}
-                  noDataElement={<Empty description="暂无快照，点击右上角「创建快照」开始" />}
-                />
-              </div>
-            ),
+            content: <VolumeSnapshots volumeId={volumeId} />,
           },
           {
             key: "auto-snapshot",
             label: "自动快照",
-            content: autoSnapshot ? (
-              <VolumeAutoSnapshotPanel volumeId={volumeId} policy={autoSnapshot} />
-            ) : (
-              <Empty description="暂无自动快照策略" />
-            ),
+            content: <VolumeAutoSnapshot volumeId={volumeId} policy={autoSnapshot} />,
           },
           {
             key: "mount-history",
             label: "挂载历史",
-            content: (
-              <DataTable<MountHistoryRow>
-                columns={[
-                  {
-                    title: "时间",
-                    render: (_, item) => formatDateTime(item.at),
-                  },
-                  {
-                    title: "操作",
-                    render: (_, item) => mountHistoryActionText[item.action],
-                  },
-                  { title: "目标", dataIndex: "target", placeholder: "-" },
-                  {
-                    title: "结果",
-                    render: (_, item) => <StatusTag status={item.result} />,
-                  },
-                ]}
-                data={volume.mount_history ?? []}
-                pagination={false}
-                noDataElement={<Empty description="暂无挂载历史" />}
-              />
-            ),
+            content: <VolumeMountHistory items={volume.mount_history ?? []} />,
           },
           /* 当前 Core API 未提供块存储事件列表接口，保留代码待接口开放后恢复。
           {
@@ -365,26 +212,12 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
         ]}
         onBack={() => navigate({ to: "/volumes" })}
       />
-      <CreateVolumeSnapshotModal
-        visible={snapshotVisible}
-        volumeId={volumeId}
-        onCancel={() => setSnapshotVisible(false)}
-      />
-      <AttachVolumeModal
-        visible={attachVisible}
-        volumeId={volumeId}
-        onCancel={() => setAttachVisible(false)}
-      />
-      <ExpandVolumeModal
-        visible={expandVisible}
-        volume={volume}
-        onCancel={() => setExpandVisible(false)}
-      />
-      <VolumeOSInitGuideModal
-        visible={initGuideVisible}
-        volumeId={volumeId}
-        onCancel={() => setInitGuideVisible(false)}
-      />
+      {expandVisible && (
+        <ExpandVolumeModal volume={volume} onCancel={() => setExpandVisible(false)} />
+      )}
+      {initGuideVisible && (
+        <VolumeOSInitGuideModal volumeId={volumeId} onCancel={() => setInitGuideVisible(false)} />
+      )}
     </>
   );
 }

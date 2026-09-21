@@ -13,11 +13,11 @@ import {
   ResourceId,
   StatusTag,
 } from "@/components/common";
-import { KnowledgeChatPanel } from "@/components/knowledge/KnowledgeChatPanel";
-import { KnowledgeDocumentsPanel } from "@/components/knowledge/KnowledgeDocumentsPanel";
+import { KnowledgeChat } from "@/components/knowledge/KnowledgeChat";
+import { KnowledgeDocuments } from "@/components/knowledge/KnowledgeDocuments";
 import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeDocumentUploadButton";
-import { KnowledgePermissionsPanel } from "@/components/knowledge/KnowledgePermissionsPanel";
-import { KnowledgeBaseAuditLogsPanel } from "@/components/knowledge/KnowledgeBaseAuditLogsPanel";
+import { KnowledgePermissions } from "@/components/knowledge/KnowledgePermissions";
+import { KnowledgeBaseAuditLogs } from "@/components/knowledge/KnowledgeBaseAuditLogs";
 import { formatDateTime } from "@/lib/format";
 
 export type KnowledgeBaseDetailTabKey =
@@ -161,7 +161,7 @@ export function KnowledgeBaseDetailPage({
           key: "documents",
           label: "文档与解析",
           content: (
-            <KnowledgeDocumentsPanel
+            <KnowledgeDocuments
               kbId={kbId}
               action={<KnowledgeDocumentUploadButton kbId={kbId} />}
             />
@@ -171,7 +171,7 @@ export function KnowledgeBaseDetailPage({
           key: "chat",
           label: "问答",
           content: (
-            <KnowledgeChatPanel
+            <KnowledgeChat
               kbId={kbId}
               defaultTopK={kb.top_k ?? 5}
               defaultInferenceService={kb.default_inference_service || undefined}
@@ -181,12 +181,12 @@ export function KnowledgeBaseDetailPage({
         {
           key: "permissions",
           label: "权限",
-          content: <KnowledgePermissionsPanel kbId={kbId} />,
+          content: <KnowledgePermissions kbId={kbId} />,
         },
         {
           key: "history",
           label: "操作记录",
-          content: <KnowledgeBaseAuditLogsPanel kbId={kbId} />,
+          content: <KnowledgeBaseAuditLogs kbId={kbId} />,
         },
       ]}
       defaultTabKey={tab}

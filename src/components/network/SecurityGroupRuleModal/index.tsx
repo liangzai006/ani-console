@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Form, Input, InputNumber, Modal, Select } from "@arco-design/web-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   createNetworkSecurityGroupRule,
   updateNetworkSecurityGroupRule,
@@ -23,16 +23,26 @@ const emptyRule = (direction: Direction): RuleDraft => ({
   action: "allow",
   description: "",
 });
+const initialRule = (direction: Direction, rule?: SecurityGroupRuleResource | null): RuleDraft =>
+  rule
+    ? {
+        priority: rule.priority,
+        direction: rule.direction,
+        protocol: rule.protocol,
+        port_range: rule.port_range,
+        cidr: rule.cidr,
+        action: rule.action,
+        description: rule.description ?? "",
+      }
+    : emptyRule(direction);
 
 export function SecurityGroupRuleModal({
-  visible,
   securityGroupId,
   direction,
   rule,
   onCancel,
   onSuccess,
 }: {
-  visible: boolean;
   securityGroupId: string;
   direction: Direction;
   rule?: SecurityGroupRuleResource | null;
@@ -40,23 +50,7 @@ export function SecurityGroupRuleModal({
   onSuccess?: () => void;
 }) {
   const qc = useQueryClient();
-  const [draft, setDraft] = useState<RuleDraft>(() => emptyRule(direction));
-  useEffect(() => {
-    if (visible)
-      setDraft(
-        rule
-          ? {
-              priority: rule.priority,
-              direction: rule.direction,
-              protocol: rule.protocol,
-              port_range: rule.port_range,
-              cidr: rule.cidr,
-              action: rule.action,
-              description: rule.description ?? "",
-            }
-          : emptyRule(direction),
-      );
-  }, [direction, rule, visible]);
+  const [draft, setDraft] = useState<RuleDraft>(() => initialRule(direction, rule));
   const save = useMutation({
     meta: { feedback: { channel: "message", action: "更新", errorFallback: "请求失败" } },
     mutationFn: async () => {
@@ -84,7 +78,7 @@ export function SecurityGroupRuleModal({
 
   return (
     <Modal
-      visible={visible}
+      visible
       title={`${rule ? "编辑" : "添加"}${direction === "ingress" ? "入站" : "出站"}规则`}
       okText={rule ? "保存" : "添加"}
       onCancel={onCancel}

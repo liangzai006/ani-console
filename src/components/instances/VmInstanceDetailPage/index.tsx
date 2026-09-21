@@ -12,7 +12,7 @@ import {
   StatusTag,
 } from "@/components/common";
 import { InstanceEvents } from "@/components/instances/InstanceEvents";
-import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
+import { InstanceLogs } from "@/components/instances/InstanceLogs";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { InstanceStorage } from "@/components/instances/InstanceStorage";
@@ -278,7 +278,7 @@ export function VmInstanceDetailPage({
           {
             key: "logs",
             label: "日志",
-            content: <InstanceLogsPanel instanceId={instance.id} active={tab === "logs"} />,
+            content: <InstanceLogs instanceId={instance.id} active={tab === "logs"} />,
           },
           {
             key: "events",

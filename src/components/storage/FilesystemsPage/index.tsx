@@ -248,16 +248,15 @@ export function FilesystemsPage() {
         />
       </ListPageFrame>
       <CreateFilesystemModal visible={createVisible} onCancel={() => setCreateVisible(false)} />
-      <ExpandFilesystemModal
-        visible={Boolean(expandTarget)}
-        filesystem={expandTarget}
-        onCancel={() => setExpandTarget(null)}
-      />
-      <CreateFilesystemMountTargetModal
-        visible={Boolean(mountTargetFilesystem)}
-        filesystemId={mountTargetFilesystem?.id ?? ""}
-        onCancel={() => setMountTargetFilesystem(null)}
-      />
+      {expandTarget && (
+        <ExpandFilesystemModal filesystem={expandTarget} onCancel={() => setExpandTarget(null)} />
+      )}
+      {mountTargetFilesystem && (
+        <CreateFilesystemMountTargetModal
+          filesystemId={mountTargetFilesystem.id}
+          onCancel={() => setMountTargetFilesystem(null)}
+        />
+      )}
     </>
   );
 }

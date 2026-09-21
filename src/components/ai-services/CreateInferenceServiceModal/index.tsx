@@ -76,7 +76,6 @@ function gpuSpecLabel(spec: GpuSpec, availability?: GpuSpecAvailability) {
 }
 
 type CreateInferenceServiceModalProps = {
-  visible: boolean;
   onCancel: () => void;
   initialServiceName?: string;
   initialModelId?: string;
@@ -84,16 +83,15 @@ type CreateInferenceServiceModalProps = {
 };
 
 export function CreateInferenceServiceModal({
-  visible,
   onCancel,
   initialServiceName,
   initialModelId,
   initialModelVersionId,
 }: CreateInferenceServiceModalProps) {
   const qc = useQueryClient();
-  const [name, setName] = useState("");
-  const [modelId, setModelId] = useState("");
-  const [modelVersionId, setModelVersionId] = useState("");
+  const [name, setName] = useState(initialServiceName ?? "");
+  const [modelId, setModelId] = useState(initialModelId ?? "");
+  const [modelVersionId, setModelVersionId] = useState(initialModelVersionId ?? "");
   const [replicas, setReplicas] = useState(1);
   const [computeSpec, setComputeSpec] = useState<GpuInstanceComputeSpec>(
     DEFAULT_GPU_INSTANCE_COMPUTE_SPEC,
@@ -111,7 +109,6 @@ export function CreateInferenceServiceModal({
       },
     },
     queryKey: ["models", "inference-service-create"],
-    enabled: visible,
     queryFn: () => listModels({ status: "ready", limit: 100 }),
   });
   const selectedModelSummary = useMemo(
@@ -127,7 +124,7 @@ export function CreateInferenceServiceModal({
       },
     },
     queryKey: ["model", modelId],
-    enabled: visible && Boolean(modelId),
+    enabled: Boolean(modelId),
     queryFn: () => getModel(modelId),
   });
   const selectedModel = modelDetail.data ?? selectedModelSummary;
@@ -149,7 +146,6 @@ export function CreateInferenceServiceModal({
       },
     },
     queryKey: ["gpu-specs", "inference-service-create"],
-    enabled: visible,
     queryFn: async () =>
       (await listGpuSpecs({ available: true, limit: 100 })) as unknown as GpuSpecListResponse,
   });
@@ -163,7 +159,6 @@ export function CreateInferenceServiceModal({
       },
     },
     queryKey: ["gpu-specs", "availability", "inference-service-create"],
-    enabled: visible,
     queryFn: async () => (await getGpuSpecAvailability()) as GpuSpecAvailabilityListResponse,
   });
 
@@ -187,7 +182,7 @@ export function CreateInferenceServiceModal({
       },
     },
     queryKey: ["inference-runtime-images"],
-    enabled: visible && runtimeImageMode === "registry" && Boolean(selectedModelVersion),
+    enabled: runtimeImageMode === "registry" && Boolean(selectedModelVersion),
     queryFn: async () => {
       const projectData = await listRegistryProjects({ limit: 50 });
       const images: RuntimeImage[] = [];
@@ -217,21 +212,8 @@ export function CreateInferenceServiceModal({
   const runtimeImage = (runtimeImages.data ?? []).find((image) => image.id === runtimeImageId);
 
   useEffect(() => {
-    if (!visible) return;
-    setName(initialServiceName ?? "");
-    setModelId(initialModelId ?? "");
-    setModelVersionId(initialModelVersionId ?? "");
-    setReplicas(1);
-    setComputeSpec(DEFAULT_GPU_INSTANCE_COMPUTE_SPEC);
-    setAcceleratorSpecId("");
-    setRuntimeImageMode("registry");
-    setRuntimeImageId("");
-    setRuntimeImageRef("");
-  }, [initialModelId, initialModelVersionId, initialServiceName, visible]);
-
-  useEffect(() => {
     const items = models.data?.items ?? [];
-    if (!visible || items.length === 0) return;
+    if (items.length === 0) return;
     setModelId((current) => {
       if (initialModelId && items.some((item) => item.id === initialModelId)) {
         return initialModelId;
@@ -239,10 +221,10 @@ export function CreateInferenceServiceModal({
       if (items.some((item) => item.id === current)) return current;
       return items[0].id;
     });
-  }, [initialModelId, models.data?.items, visible]);
+  }, [initialModelId, models.data?.items]);
 
   useEffect(() => {
-    if (!visible || !modelDetail.data || modelVersions.length === 0) return;
+    if (!modelDetail.data || modelVersions.length === 0) return;
     setModelVersionId((current) => {
       if (
         initialModelVersionId &&
@@ -253,10 +235,10 @@ export function CreateInferenceServiceModal({
       if (modelVersions.some((item) => item.id === current)) return current;
       return getLatestModelVersion(modelDetail.data)?.id ?? modelVersions[0].id;
     });
-  }, [initialModelVersionId, modelDetail.data, modelVersions, visible]);
+  }, [initialModelVersionId, modelDetail.data, modelVersions]);
 
   useEffect(() => {
-    if (!visible || !gpuSpecs.data || !gpuSpecAvailability.data) return;
+    if (!gpuSpecs.data || !gpuSpecAvailability.data) return;
     const specs = gpuSpecs.data.items;
     setAcceleratorSpecId((current) => {
       if (current === "cpu") return current;
@@ -272,7 +254,7 @@ export function CreateInferenceServiceModal({
         "cpu"
       );
     });
-  }, [availabilityBySpecId, gpuSpecAvailability.data, gpuSpecs.data, visible]);
+  }, [availabilityBySpecId, gpuSpecAvailability.data, gpuSpecs.data]);
 
   const create = useMutation({
     meta: {
@@ -346,7 +328,7 @@ export function CreateInferenceServiceModal({
   return (
     <Modal
       className="create-inference-service-modal"
-      visible={visible}
+      visible
       title="部署推理服务"
       okText="开始部署"
       onCancel={() => {

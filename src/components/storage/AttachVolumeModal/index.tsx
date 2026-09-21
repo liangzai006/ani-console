@@ -8,12 +8,10 @@ type Instance = InstanceRecord;
 const attachableInstanceKinds = new Set<Instance["kind"]>(["vm", "container", "gpu_container"]);
 
 export function AttachVolumeModal({
-  visible,
   volumeId,
   onCancel,
   onAttached,
 }: {
-  visible: boolean;
   volumeId: string;
   onCancel: () => void;
   onAttached?: () => void;
@@ -35,7 +33,6 @@ export function AttachVolumeModal({
         kind: "vm,container,gpu_container",
         state: "running,stopped",
       }),
-    enabled: visible,
   });
   // TODO: 实例接口确认按 kind/state 过滤后，移除此处关联资源选择的本地兜底过滤。
   const instanceItems = ((instances.data?.items ?? []) as Instance[]).filter(
@@ -60,7 +57,6 @@ export function AttachVolumeModal({
       qc.invalidateQueries({ queryKey: ["instances"] });
       qc.invalidateQueries({ queryKey: ["volume", volumeId] });
       qc.invalidateQueries({ queryKey: ["volumes"] });
-      setInstanceId("");
       onAttached?.();
       onCancel();
     },
@@ -68,12 +64,9 @@ export function AttachVolumeModal({
 
   return (
     <Modal
-      visible={visible}
+      visible
       title="挂载块存储卷"
-      onCancel={() => {
-        setInstanceId("");
-        onCancel();
-      }}
+      onCancel={onCancel}
       onOk={() => attach.mutateAsync()}
       okButtonProps={{ disabled: !instanceId }}
       confirmLoading={attach.isPending}

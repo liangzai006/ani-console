@@ -312,12 +312,13 @@ export function ModelsPage() {
           refresh();
         }}
       />
-      <CreateInferenceServiceModal
-        visible={deployModel !== null}
-        initialModelId={deployModel?.id}
-        initialServiceName={deployModel ? ("infer-" + deployModel.name).slice(0, 63) : undefined}
-        onCancel={() => setDeployModel(null)}
-      />
+      {deployModel && (
+        <CreateInferenceServiceModal
+          initialModelId={deployModel.id}
+          initialServiceName={("infer-" + deployModel.name).slice(0, 63)}
+          onCancel={() => setDeployModel(null)}
+        />
+      )}
     </>
   );
 }

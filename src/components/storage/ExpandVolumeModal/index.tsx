@@ -1,24 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Alert, Form, InputNumber, Modal, Typography } from "@arco-design/web-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { expandVolume, type StorageVolume } from "@/api/storage/volumes";
 
 type Volume = StorageVolume;
 
-export function ExpandVolumeModal({
-  visible,
-  volume,
-  onCancel,
-}: {
-  visible: boolean;
-  volume: Volume | null;
-  onCancel: () => void;
-}) {
+export function ExpandVolumeModal({ volume, onCancel }: { volume: Volume; onCancel: () => void }) {
   const qc = useQueryClient();
-  const [sizeGiB, setSizeGiB] = useState(1);
-  useEffect(() => {
-    if (visible && volume) setSizeGiB(volume.size_gib + 1);
-  }, [visible, volume]);
+  const [sizeGiB, setSizeGiB] = useState(volume.size_gib + 1);
   const expand = useMutation({
     meta: { feedback: { channel: "message", action: "扩容", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
@@ -35,7 +24,7 @@ export function ExpandVolumeModal({
   });
   return (
     <Modal
-      visible={visible}
+      visible
       title="扩容块存储卷"
       onCancel={onCancel}
       onOk={() => expand.mutateAsync(undefined)}

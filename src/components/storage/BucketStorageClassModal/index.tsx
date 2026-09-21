@@ -5,27 +5,18 @@ import {
 } from "@/api/storage/buckets";
 import { Modal, Select, Space, Typography } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type BucketStorageClassModalProps = {
   bucket: StorageBucketRecord;
-  visible: boolean;
   onCancel: () => void;
 };
 
-export function BucketStorageClassModal({
-  bucket,
-  visible,
-  onCancel,
-}: BucketStorageClassModalProps) {
+export function BucketStorageClassModal({ bucket, onCancel }: BucketStorageClassModalProps) {
   const queryClient = useQueryClient();
   const [storageClass, setStorageClass] = useState<StorageBucketClass>(
     bucket.storage_class ?? "standard",
   );
-
-  useEffect(() => {
-    if (visible) setStorageClass(bucket.storage_class ?? "standard");
-  }, [bucket.storage_class, visible]);
 
   const updateStorageClass = useMutation({
     meta: {
@@ -46,7 +37,7 @@ export function BucketStorageClassModal({
 
   return (
     <Modal
-      visible={visible}
+      visible
       title="修改存储类型"
       onCancel={onCancel}
       onOk={() => updateStorageClass.mutateAsync()}

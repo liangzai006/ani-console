@@ -1,11 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ClusterDetail } from "@/components/k8s-clusters/K8sClustersPage";
+import { K8sClusterDetailPage } from "@/components/k8s-clusters/K8sClusterDetailPage";
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/k8s-clusters/$clusterId")({
   component: function K8sClusterDetailRoute() {
     const { clusterId } = Route.useParams();
-    const navigate = useNavigate();
-
-    return <ClusterDetail clusterId={clusterId} onBack={() => navigate({ to: "/k8s-clusters" })} />;
+    return <K8sClusterDetailPage clusterId={clusterId} />;
   },
 });

@@ -1,4 +1,4 @@
-import { Empty, Form, Select, Spin, Typography } from "@arco-design/web-react";
+import { Empty, Form, Select, Spin } from "@arco-design/web-react";
 import { ImageNameText } from "@/components/common";
 import type { SandboxTemplate } from "../../types";
 

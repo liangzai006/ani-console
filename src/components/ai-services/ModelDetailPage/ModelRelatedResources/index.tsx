@@ -1,18 +1,33 @@
 import { Empty, Link } from "@arco-design/web-react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import type { InferenceService } from "@/api/ai-services/inference";
+import { listInferenceServices, type InferenceService } from "@/api/ai-services/inference";
+import type { Model } from "@/api/ai-services/models";
 import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
+import { withId } from "@/lib/id";
 import { navigateToResourceDetail } from "@/lib/resources";
 
-export function ModelRelatedResources({
-  services,
-  loading,
-}: {
-  services: InferenceService[];
-  loading: boolean;
-}) {
+export function ModelRelatedResources({ model }: { model: Model }) {
   const navigate = useNavigate();
+  const relatedServices = useQuery({
+    meta: {
+      errorNotification: {
+        id: withId("model-services", model.id),
+        action: "关联推理服务加载",
+        fallback: "请求失败，请稍后重试",
+      },
+    },
+    queryKey: ["model-related-inference-services", model.id],
+    queryFn: () => listInferenceServices(),
+  });
+  const versionIds = new Set((model.versions ?? []).map((version) => version.id));
+  const services = (relatedServices.data?.items ?? []).filter(
+    (service) =>
+      service.model === model.name ||
+      Boolean(service.model_version_id && versionIds.has(service.model_version_id)),
+  );
+
   return (
     <div>
       <TableSectionHeader title="关联推理服务" />
@@ -53,7 +68,7 @@ export function ModelRelatedResources({
           },
         ]}
         data={services}
-        loading={loading}
+        loading={relatedServices.isFetching}
         pagination={false}
         noDataElement={<Empty description="暂无关联推理服务" />}
         tableLabel="关联推理服务列表"

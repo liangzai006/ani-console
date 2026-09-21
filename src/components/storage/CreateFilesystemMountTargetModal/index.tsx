@@ -13,11 +13,9 @@ type Vpc = NetworkVPC;
 type Subnet = NetworkSubnet;
 
 export function CreateFilesystemMountTargetModal({
-  visible,
   filesystemId,
   onCancel,
 }: {
-  visible: boolean;
   filesystemId: string;
   onCancel: () => void;
 }) {
@@ -34,7 +32,6 @@ export function CreateFilesystemMountTargetModal({
     },
     queryKey: ["network-vpcs", "filesystem-mount-target-create"],
     queryFn: () => listNetworkVpcs({ limit: 100 }),
-    enabled: visible,
   });
   const subnets = useQuery({
     meta: {
@@ -46,7 +43,7 @@ export function CreateFilesystemMountTargetModal({
     },
     queryKey: ["network-subnets", "filesystem-mount-target-create", vpcId],
     queryFn: () => listNetworkSubnets({ limit: 100, vpc_id: vpcId || undefined }),
-    enabled: visible && !!vpcId,
+    enabled: !!vpcId,
   });
   // TODO: 子网接口确认按 vpc_id 过滤后，移除此处创建表单的本地兜底过滤。
   const availableSubnets = ((subnets.data?.items ?? []) as Subnet[]).filter(
@@ -57,11 +54,6 @@ export function CreateFilesystemMountTargetModal({
     if (subnetId && !availableSubnets.some((item) => item.id === subnetId)) setSubnetId("");
   }, [availableSubnets, subnetId]);
 
-  const close = () => {
-    setVpcId("");
-    setSubnetId("");
-    onCancel();
-  };
   const create = useMutation({
     meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
@@ -72,15 +64,15 @@ export function CreateFilesystemMountTargetModal({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["filesystem-mounts", filesystemId] });
       qc.invalidateQueries({ queryKey: ["filesystems"] });
-      close();
+      onCancel();
     },
   });
 
   return (
     <Modal
-      visible={visible}
+      visible
       title="创建挂载点"
-      onCancel={close}
+      onCancel={onCancel}
       onOk={() => create.mutateAsync(undefined)}
       confirmLoading={create.isPending}
       unmountOnExit

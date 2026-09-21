@@ -11,18 +11,18 @@ import {
   ResourceId,
   StatusTag,
 } from "@/components/common";
-import { InstanceLogsPanel } from "@/components/instances/InstanceLogsPanel";
+import { InstanceLogs } from "@/components/instances/InstanceLogs";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { SandboxInstanceActions } from "@/components/instances/SandboxInstanceActions";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { getSandboxProviderLabel, type SandboxInstanceDetailTabKey } from "@/lib/instances";
-import { SandboxAccessPanel } from "./SandboxAccessPanel";
-import { SandboxCheckpointsPanel } from "./SandboxCheckpointsPanel";
+import { SandboxAccess } from "./SandboxAccess";
+import { SandboxCheckpoints } from "./SandboxCheckpoints";
 import { SandboxCodeRunner } from "./SandboxCodeRunner";
-import { SandboxEnvironmentPanel } from "./SandboxEnvironmentPanel";
-import { SandboxEventsPanel } from "./SandboxEventsPanel";
-import { SandboxFilesPanel } from "./SandboxFilesPanel";
+import { SandboxEnvironment } from "./SandboxEnvironment";
+import { SandboxEvents } from "./SandboxEvents";
+import { SandboxFiles } from "./SandboxFiles";
 import { formatDurationSeconds, sandboxEgressLabel, sandboxTimeoutLabel } from "./utils";
 
 export function SandboxInstanceDetailPage({
@@ -190,20 +190,18 @@ export function SandboxInstanceDetailPage({
         {
           key: "access",
           label: "访问配置",
-          content: (
-            <SandboxAccessPanel instance={instance} onChanged={() => void refreshDetail()} />
-          ),
+          content: <SandboxAccess instance={instance} onChanged={() => void refreshDetail()} />,
         },
         {
           key: "env",
           label: "环境变量",
-          content: <SandboxEnvironmentPanel sandbox={sandbox} />,
+          content: <SandboxEnvironment sandbox={sandbox} />,
         },
         {
           key: "files",
           label: "文件",
           content: (
-            <SandboxFilesPanel
+            <SandboxFiles
               instanceId={instanceId}
               running={running}
               onChanged={() => void refreshDetail()}
@@ -225,7 +223,7 @@ export function SandboxInstanceDetailPage({
           key: "checkpoints",
           label: "检查点",
           content: (
-            <SandboxCheckpointsPanel
+            <SandboxCheckpoints
               instanceId={instanceId}
               sessionState={sessionState}
               onChanged={() => void refreshDetail()}
@@ -240,12 +238,12 @@ export function SandboxInstanceDetailPage({
         {
           key: "logs",
           label: "日志",
-          content: <InstanceLogsPanel instanceId={instanceId} active />,
+          content: <InstanceLogs instanceId={instanceId} active />,
         },
         {
           key: "events",
           label: "事件",
-          content: <SandboxEventsPanel instanceId={instanceId} />,
+          content: <SandboxEvents instanceId={instanceId} />,
         },
         {
           key: "operations",

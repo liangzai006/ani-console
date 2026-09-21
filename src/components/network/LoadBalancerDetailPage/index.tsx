@@ -1,6 +1,5 @@
 import { withId } from "@/lib/id";
 import {
-  DataTable,
   DetailPageFrame,
   DetailPagePlaceholder,
   AliIcon,
@@ -9,7 +8,7 @@ import {
 } from "@/components/common";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Dropdown, Empty, Menu, Modal } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Modal } from "@arco-design/web-react";
 import { IconMoreVertical } from "@arco-design/web-react/icon";
 import {
   deleteNetworkLoadBalancer,
@@ -17,15 +16,17 @@ import {
   getNetworkSubnet,
   getNetworkVpc,
   type NetworkLoadBalancer,
-  type NetworkLoadBalancerListener,
   type NetworkSubnet,
   type NetworkVPC,
 } from "@/api/network";
 
 import { formatDateTime } from "@/lib/format";
+import { LoadBalancerBackends } from "./LoadBalancerBackends";
+import { LoadBalancerEvents } from "./LoadBalancerEvents";
+import { LoadBalancerListeners } from "./LoadBalancerListeners";
+import { LoadBalancerMonitoring } from "./LoadBalancerMonitoring";
 
 type LoadBalancer = NetworkLoadBalancer;
-type Listener = NetworkLoadBalancerListener;
 type Vpc = NetworkVPC;
 type Subnet = NetworkSubnet;
 
@@ -109,7 +110,6 @@ export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: str
         ]
       : []),
   ];
-  const unavailable = (description: string) => <Empty description={description} />;
   return (
     <DetailPageFrame
       breadcrumbs={[
@@ -192,37 +192,22 @@ export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: str
         {
           key: "listeners",
           label: "监听器",
-          content: (
-            <DataTable<Listener>
-              columns={[
-                {
-                  title: "协议",
-                  render: (_, row) => row.protocol.toUpperCase(),
-                },
-                { title: "监听端口", dataIndex: "port" },
-                { title: "目标端口", dataIndex: "target_port" },
-              ]}
-              data={item.listeners}
-              rowKey={(row) => `${row.protocol}-${row.port}-${row.target_port}`}
-              pagination={false}
-              noDataElement={<Empty description="暂无监听器" />}
-            />
-          ),
+          content: <LoadBalancerListeners listeners={item.listeners} />,
         },
         {
           key: "backends",
           label: "后端组",
-          content: unavailable("当前 Core API 暂未提供后端组数据"),
+          content: <LoadBalancerBackends />,
         },
         {
           key: "metrics",
           label: "监控",
-          content: unavailable("当前 Core API 暂未提供负载均衡监控数据"),
+          content: <LoadBalancerMonitoring />,
         },
         {
           key: "events",
           label: "事件",
-          content: unavailable("当前 Core API 暂未提供负载均衡事件数据"),
+          content: <LoadBalancerEvents />,
         },
       ]}
       onBack={() => navigate({ to: "/load-balancers" })}

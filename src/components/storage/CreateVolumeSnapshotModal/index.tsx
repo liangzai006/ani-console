@@ -4,19 +4,14 @@ import { useState } from "react";
 import { createVolumeSnapshot } from "@/api/storage/volumes";
 
 export function CreateVolumeSnapshotModal({
-  visible,
   volumeId,
   onCancel,
 }: {
-  visible: boolean;
   volumeId: string;
   onCancel: () => void;
 }) {
   const qc = useQueryClient();
   const [name, setName] = useState("");
-  const reset = () => {
-    setName("");
-  };
   const create = useMutation({
     meta: { feedback: { channel: "message", action: "创建", errorFallback: "请求失败" } },
     mutationFn: async (_: undefined) => {
@@ -28,18 +23,14 @@ export function CreateVolumeSnapshotModal({
       qc.invalidateQueries({ queryKey: ["volume-snapshots", volumeId] });
       qc.invalidateQueries({ queryKey: ["volume", volumeId] });
       qc.invalidateQueries({ queryKey: ["volumes"] });
-      reset();
       onCancel();
     },
   });
   return (
     <Modal
-      visible={visible}
+      visible
       title="创建快照"
-      onCancel={() => {
-        reset();
-        onCancel();
-      }}
+      onCancel={onCancel}
       onOk={() => create.mutateAsync(undefined)}
       confirmLoading={create.isPending}
       unmountOnExit

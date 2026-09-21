@@ -1,10 +1,9 @@
 import { withId } from "@/lib/id";
-import { Button, Dropdown, Empty, Menu, Modal, Space } from "@arco-design/web-react";
+import { Button, Dropdown, Menu, Modal, Space } from "@arco-design/web-react";
 import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { listInferenceServices } from "@/api/ai-services/inference";
 import { deleteModel, getModel } from "@/api/ai-services/models";
 
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
@@ -23,6 +22,8 @@ import {
   MODEL_SOURCE_LABELS,
 } from "@/lib/ai-models";
 import { ModelRelatedResources } from "./ModelRelatedResources";
+import { ModelOperationHistory } from "./ModelOperationHistory";
+import { ModelRecommendedConfiguration } from "./ModelRecommendedConfiguration";
 
 export function ModelDetailPage({ modelId }: { modelId: string }) {
   const navigate = useNavigate();
@@ -38,18 +39,6 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
     },
     queryKey: ["model", modelId],
     queryFn: () => getModel(modelId),
-  });
-  const relatedServices = useQuery({
-    meta: {
-      errorNotification: {
-        id: withId("model-services", modelId),
-        action: "关联推理服务加载",
-        fallback: "请求失败，请稍后重试",
-      },
-    },
-    queryKey: ["model-related-inference-services", modelId],
-    enabled: Boolean(model.data),
-    queryFn: () => listInferenceServices(),
   });
   const remove = useMutation({
     meta: {
@@ -74,12 +63,6 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
 
   const item = model.data;
   const latestVersion = getLatestModelVersion(item);
-  const versionIds = new Set((item.versions ?? []).map((version) => version.id));
-  const inferenceItems = (relatedServices.data?.items ?? []).filter(
-    (service) =>
-      service.model === item.name ||
-      Boolean(service.model_version_id && versionIds.has(service.model_version_id)),
-  );
   const detailCards: DetailCard[] = [
     {
       key: "basic",
@@ -176,41 +159,29 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
           {
             key: "related",
             label: "关联资源",
-            content: (
-              <ModelRelatedResources
-                services={inferenceItems}
-                loading={relatedServices.isFetching}
-              />
-            ),
+            content: <ModelRelatedResources model={item} />,
           },
           {
             key: "recommended-configuration",
             label: "推荐配置",
-            content: (
-              <div className="flex min-h-60 items-center justify-center">
-                <Empty description="推荐配置接口尚未开放" />
-              </div>
-            ),
+            content: <ModelRecommendedConfiguration />,
           },
           {
             key: "operation-history",
             label: "操作记录",
-            content: (
-              <div className="flex min-h-60 items-center justify-center">
-                <Empty description="暂无模型操作记录" />
-              </div>
-            ),
+            content: <ModelOperationHistory />,
           },
         ]}
         onBack={() => navigate({ to: "/models" })}
       />
-      <CreateInferenceServiceModal
-        visible={deployVisible}
-        initialServiceName={("infer-" + item.name).slice(0, 63)}
-        initialModelId={item.id}
-        initialModelVersionId={latestVersion?.id}
-        onCancel={() => setDeployVisible(false)}
-      />
+      {deployVisible && (
+        <CreateInferenceServiceModal
+          initialServiceName={("infer-" + item.name).slice(0, 63)}
+          initialModelId={item.id}
+          initialModelVersionId={latestVersion?.id}
+          onCancel={() => setDeployVisible(false)}
+        />
+      )}
     </>
   );
 }
