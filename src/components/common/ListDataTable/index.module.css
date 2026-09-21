@@ -65,30 +65,6 @@
   flex: 0 0 auto;
 }
 
-.listDataTable :global(.arco-table-th) {
-  box-sizing: border-box;
-  height: 40px;
-  padding: 0;
-  border-bottom: 1px solid var(--list-table-divider);
-  background: var(--list-primary-header);
-  color: var(--list-text-secondary);
-  font-size: 14px;
-  font-weight: 700;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.listDataTable :global(.arco-table-th-item) {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  height: 40px;
-  padding: 0 16px;
-  line-height: 39px;
-  white-space: nowrap;
-}
-
 .listDataTable :global(.arco-table-td) {
   box-sizing: border-box;
   height: 56px;
@@ -102,9 +78,7 @@
   white-space: nowrap;
 }
 
-.listDataTable :global(.arco-table-th.arco-table-checkbox),
-.listDataTable :global(.arco-table-td.arco-table-checkbox),
-.listDataTable :global(.arco-table-th.arco-table-checkbox .arco-table-th-item) {
+.listDataTable :global(.arco-table-td.arco-table-checkbox) {
   padding: 0;
 }
 

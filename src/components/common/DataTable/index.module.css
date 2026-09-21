@@ -1,3 +1,32 @@
+.dataTable :global(.arco-table-th) {
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0;
+  border-bottom: 1px solid var(--list-table-divider, var(--color-neutral-3));
+  background: var(--list-primary-header, var(--color-primary-light-1));
+  color: var(--list-text-secondary, var(--color-text-2));
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dataTable :global(.arco-table-th-item) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 16px;
+  line-height: 39px;
+  white-space: nowrap;
+}
+
+.dataTable :global(.arco-table-th.arco-table-checkbox),
+.dataTable :global(.arco-table-th.arco-table-checkbox .arco-table-th-item) {
+  padding: 0;
+}
+
 .rowActions {
   display: flex;
   align-items: center;
