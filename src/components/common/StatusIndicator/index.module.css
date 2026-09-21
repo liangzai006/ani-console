@@ -1,0 +1,39 @@
+.indicator {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.indicator :global(.arco-tag-icon) {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 5px;
+  color: inherit;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.loadingIcon {
+  font-size: 12px;
+  animation: status-indicator-spin 1s linear infinite;
+}
+
+@keyframes status-indicator-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingIcon {
+    animation-duration: 2s;
+  }
+}

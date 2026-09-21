@@ -16,6 +16,7 @@ import { Route as LoginIndexRouteImport } from './routes/login.index'
 import { Route as LoginCallbackRouteImport } from './routes/login.callback'
 import { Route as AuthenticatedContainerInstancesIndexRouteImport } from './routes/_authenticated/container-instances/index'
 import { Route as AuthenticatedContainerInstancesInstanceIdRouteImport } from './routes/_authenticated/container-instances/$instanceId'
+import { Route as AuthenticatedDevStatusIndicatorsRouteImport } from './routes/_authenticated/dev/status-indicators'
 import { Route as AuthenticatedFilesystemsIndexRouteImport } from './routes/_authenticated/filesystems/index'
 import { Route as AuthenticatedFilesystemsFilesystemIdRouteImport } from './routes/_authenticated/filesystems/$filesystemId'
 import { Route as AuthenticatedGpuInstancesIndexRouteImport } from './routes/_authenticated/gpu-instances/index'
@@ -92,6 +93,12 @@ const AuthenticatedContainerInstancesInstanceIdRoute =
   AuthenticatedContainerInstancesInstanceIdRouteImport.update({
     id: '/container-instances/$instanceId',
     path: '/container-instances/$instanceId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedDevStatusIndicatorsRoute =
+  AuthenticatedDevStatusIndicatorsRouteImport.update({
+    id: '/dev/status-indicators',
+    path: '/dev/status-indicators',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedFilesystemsIndexRoute =
@@ -343,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/login/callback': typeof LoginCallbackRoute
   '/login/': typeof LoginIndexRoute
   '/container-instances/$instanceId': typeof AuthenticatedContainerInstancesInstanceIdRoute
+  '/dev/status-indicators': typeof AuthenticatedDevStatusIndicatorsRoute
   '/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
   '/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
@@ -391,6 +399,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginIndexRoute
   '/container-instances/$instanceId': typeof AuthenticatedContainerInstancesInstanceIdRoute
+  '/dev/status-indicators': typeof AuthenticatedDevStatusIndicatorsRoute
   '/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
   '/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
@@ -441,6 +450,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/login/': typeof LoginIndexRoute
   '/_authenticated/container-instances/$instanceId': typeof AuthenticatedContainerInstancesInstanceIdRoute
+  '/_authenticated/dev/status-indicators': typeof AuthenticatedDevStatusIndicatorsRoute
   '/_authenticated/filesystems/$filesystemId': typeof AuthenticatedFilesystemsFilesystemIdRoute
   '/_authenticated/gpu-instances/$instanceId': typeof AuthenticatedGpuInstancesInstanceIdRoute
   '/_authenticated/inference/$serviceId': typeof AuthenticatedInferenceServiceIdRoute
@@ -492,6 +502,7 @@ export interface FileRouteTypes {
     | '/login/callback'
     | '/login/'
     | '/container-instances/$instanceId'
+    | '/dev/status-indicators'
     | '/filesystems/$filesystemId'
     | '/gpu-instances/$instanceId'
     | '/inference/$serviceId'
@@ -540,6 +551,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/container-instances/$instanceId'
+    | '/dev/status-indicators'
     | '/filesystems/$filesystemId'
     | '/gpu-instances/$instanceId'
     | '/inference/$serviceId'
@@ -589,6 +601,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/login/'
     | '/_authenticated/container-instances/$instanceId'
+    | '/_authenticated/dev/status-indicators'
     | '/_authenticated/filesystems/$filesystemId'
     | '/_authenticated/gpu-instances/$instanceId'
     | '/_authenticated/inference/$serviceId'
@@ -691,6 +704,13 @@ declare module '@tanstack/react-router' {
       path: '/container-instances/$instanceId'
       fullPath: '/container-instances/$instanceId'
       preLoaderRoute: typeof AuthenticatedContainerInstancesInstanceIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dev/status-indicators': {
+      id: '/_authenticated/dev/status-indicators'
+      path: '/dev/status-indicators'
+      fullPath: '/dev/status-indicators'
+      preLoaderRoute: typeof AuthenticatedDevStatusIndicatorsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/filesystems/': {
@@ -1004,6 +1024,7 @@ const AuthenticatedObjectsBucketIdRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedContainerInstancesInstanceIdRoute: typeof AuthenticatedContainerInstancesInstanceIdRoute
+  AuthenticatedDevStatusIndicatorsRoute: typeof AuthenticatedDevStatusIndicatorsRoute
   AuthenticatedFilesystemsFilesystemIdRoute: typeof AuthenticatedFilesystemsFilesystemIdRoute
   AuthenticatedGpuInstancesInstanceIdRoute: typeof AuthenticatedGpuInstancesInstanceIdRoute
   AuthenticatedInferenceServiceIdRoute: typeof AuthenticatedInferenceServiceIdRoute
@@ -1046,6 +1067,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedContainerInstancesInstanceIdRoute:
     AuthenticatedContainerInstancesInstanceIdRoute,
+  AuthenticatedDevStatusIndicatorsRoute: AuthenticatedDevStatusIndicatorsRoute,
   AuthenticatedFilesystemsFilesystemIdRoute:
     AuthenticatedFilesystemsFilesystemIdRoute,
   AuthenticatedGpuInstancesInstanceIdRoute:
