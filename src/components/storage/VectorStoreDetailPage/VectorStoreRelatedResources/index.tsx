@@ -1,5 +1,5 @@
 import { deleteVectorStoreKnowledgeBaseLink, type VectorStore } from "@/api/storage/vector-stores";
-import { DataTable, TableSectionHeader } from "@/components/common";
+import { DataTable } from "@/components/common";
 import { navigateToResourceDetail } from "@/lib/resources";
 import { Alert, Button, Empty, Link, Modal, Space } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -39,8 +39,8 @@ export function VectorStoreRelatedResources({ store }: { store: VectorStore }) {
     <Space direction="vertical" size={12} className="w-full">
       <Alert type="info" showIcon title="删除向量存储前需解除知识库关联" />
       <section>
-        <TableSectionHeader title="关联资源" />
         <DataTable<RelatedResource>
+          header={{ title: "关联资源" }}
           data={resources}
           rowKey="id"
           pagination={false}

@@ -19,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import {
   AliIcon,
   DetailPageFrame,
@@ -239,11 +240,7 @@ export function InferenceDetailPage({ serviceId }: { serviceId: string }) {
   return (
     <>
       <DetailPageFrame
-        breadcrumbs={[
-          { label: "AI 服务" },
-          { label: "推理服务", to: "/inference" },
-          { label: item.name },
-        ]}
+        breadcrumbs={[...navigationBreadcrumbsForPath("/inference"), { label: item.name }]}
         title={item.name}
         status={serviceStatus}
         icon={<AliIcon name="tuili" size={28} />}

@@ -9,7 +9,7 @@ import {
   type NetworkSecurityGroup,
   type NetworkSubnet,
 } from "@/api/network";
-import { DataTable, StatusTag, TableSectionHeader, type ListColumn } from "@/components/common";
+import { DataTable, StatusTag, type ListColumn } from "@/components/common";
 import { withId } from "@/lib/id";
 import { Empty, Space, Tag, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
@@ -137,11 +137,11 @@ export function VpcRelatedResources({ vpcId }: { vpcId: string }) {
   return (
     <Space direction="vertical" size={24} className="w-full">
       <section>
-        <TableSectionHeader
-          title="网络关联"
-          extra={<Typography.Text type="secondary">{networkResources.length} 个</Typography.Text>}
-        />
         <DataTable<RelatedResource>
+          header={{
+            title: "网络关联",
+            extra: <Typography.Text type="secondary">{networkResources.length} 个</Typography.Text>,
+          }}
           columns={columns}
           data={networkResources}
           loading={loading}
@@ -151,11 +151,11 @@ export function VpcRelatedResources({ vpcId }: { vpcId: string }) {
         />
       </section>
       <section>
-        <TableSectionHeader
-          title="算力关联"
-          extra={<Typography.Text type="secondary">{computeResources.length} 个</Typography.Text>}
-        />
         <DataTable<RelatedResource>
+          header={{
+            title: "算力关联",
+            extra: <Typography.Text type="secondary">{computeResources.length} 个</Typography.Text>,
+          }}
           columns={columns}
           data={computeResources}
           loading={loading}

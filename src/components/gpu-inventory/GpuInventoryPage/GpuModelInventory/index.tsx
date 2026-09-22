@@ -1,6 +1,6 @@
 import { Progress, Typography } from "@arco-design/web-react";
 import type { GpuOccupancyStats } from "@/api/gpu-inventory";
-import { ListDataTable, TableSectionHeader } from "@/components/common";
+import { ListDataTable } from "@/components/common";
 import { useGpuOccupancyQuery } from "../useGpuOccupancyQuery";
 
 type ModelInventoryRow = {
@@ -35,13 +35,13 @@ export function GpuModelInventory({ onCreate }: { onCreate: () => void }) {
 
   return (
     <section className="mt-5">
-      <TableSectionHeader
-        title="型号库存"
-        extra={
-          <Typography.Text type="secondary">共 {modelInventory.length} 个型号</Typography.Text>
-        }
-      />
       <ListDataTable<ModelInventoryRow>
+        header={{
+          title: "型号库存",
+          extra: (
+            <Typography.Text type="secondary">共 {modelInventory.length} 个型号</Typography.Text>
+          ),
+        }}
         rowKey="id"
         data={modelInventory}
         loading={occupancy.isLoading}

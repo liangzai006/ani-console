@@ -14,6 +14,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 
 import { ExpandFilesystemModal } from "@/components/storage/ExpandFilesystemModal";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { formatDateTime } from "@/lib/format";
 import { FilesystemMountTargets } from "./FilesystemMountTargets";
 
@@ -93,11 +94,7 @@ export function FilesystemDetailPage({ filesystemId }: { filesystemId: string })
   return (
     <>
       <DetailPageFrame
-        breadcrumbs={[
-          { label: "存储" },
-          { label: "文件存储", to: "/filesystems" },
-          { label: filesystem.name },
-        ]}
+        breadcrumbs={[...navigationBreadcrumbsForPath("/filesystems"), { label: filesystem.name }]}
         title={filesystem.name}
         status={filesystemStatus}
         icon={<AliIcon name="wenjiancunchu" size={28} />}

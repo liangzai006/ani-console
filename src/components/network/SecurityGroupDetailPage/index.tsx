@@ -19,6 +19,7 @@ import {
 } from "@/api/network";
 
 import { formatDateTime } from "@/lib/format";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { SecurityGroupRelatedResources } from "./SecurityGroupRelatedResources";
 import { SecurityGroupRules } from "./SecurityGroupRules";
 
@@ -75,8 +76,7 @@ export function SecurityGroupDetailPage({ securityGroupId }: { securityGroupId: 
     <>
       <DetailPageFrame
         breadcrumbs={[
-          { label: "网络" },
-          { label: "安全组", to: "/security-groups" },
+          ...navigationBreadcrumbsForPath("/security-groups"),
           { label: securityGroup.name },
         ]}
         title={securityGroup.name}

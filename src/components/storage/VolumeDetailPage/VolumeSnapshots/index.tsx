@@ -1,5 +1,5 @@
 import { listVolumeSnapshots, type VolumeSnapshotRecord } from "@/api/storage/volumes";
-import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
+import { DataTable, StatusTag } from "@/components/common";
 import { CreateVolumeSnapshotModal } from "@/components/storage/CreateVolumeSnapshotModal";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { withId } from "@/lib/id";
@@ -25,11 +25,11 @@ export function VolumeSnapshots({ volumeId }: { volumeId: string }) {
   return (
     <>
       <div>
-        <TableSectionHeader
-          title="快照"
-          extra={<Button onClick={() => setVisible(true)}>创建快照</Button>}
-        />
         <DataTable<VolumeSnapshotRecord>
+          header={{
+            title: "快照",
+            extra: <Button onClick={() => setVisible(true)}>创建快照</Button>,
+          }}
           columns={[
             { title: "名称", dataIndex: "name" },
             {

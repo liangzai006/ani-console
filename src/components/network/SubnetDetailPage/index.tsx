@@ -19,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
 import { formatDateTime } from "@/lib/format";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 
 type Subnet = NetworkSubnet;
 type Vpc = NetworkVPC;
@@ -95,7 +96,7 @@ export function SubnetDetailPage({ subnetId }: { subnetId: string }) {
 
   return (
     <DetailPageFrame
-      breadcrumbs={[{ label: "网络" }, { label: "子网", to: "/subnets" }, { label: subnet.name }]}
+      breadcrumbs={[...navigationBreadcrumbsForPath("/subnets"), { label: subnet.name }]}
       title={subnet.name}
       status={<StatusTag status={subnet.state} />}
       icon={<AliIcon name="VPCwangluo" size={28} />}

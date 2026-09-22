@@ -1,12 +1,34 @@
 import { Space, Tooltip } from "@arco-design/web-react";
 import clsx from "clsx";
-import { ToolbarButton } from "../ListToolbar";
+import { forwardRef, type ButtonHTMLAttributes } from "react";
 import type {
   ResourcePageFrameProps,
   ResourcePageHeaderAction,
   ResourcePageHeaderConfig,
 } from "./types";
 import styles from "./index.module.css";
+
+type ToolbarButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  iconClassName?: string;
+  variant?: "primary" | "outline" | "secondary" | "danger";
+};
+
+const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(function ToolbarButton(
+  { iconClassName, variant = "outline", className = "", children, ...buttonProps },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={clsx(styles.toolbarButton, styles[`toolbarButton_${variant}`], className)}
+      {...buttonProps}
+    >
+      {iconClassName ? <i className={clsx("iconfont", iconClassName)} aria-hidden="true" /> : null}
+      {children}
+    </button>
+  );
+});
 
 function ResourcePageTitle({
   iconClassName,

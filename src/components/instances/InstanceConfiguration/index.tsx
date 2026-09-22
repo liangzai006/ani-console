@@ -1,6 +1,6 @@
 import type { InstanceEnvVar, InstanceRecord } from "@/api/instances";
 import { applyInstanceLifecycle } from "@/api/instances";
-import { DataTable, TableSectionHeader } from "@/components/common";
+import { DataTable } from "@/components/common";
 import { Empty, Modal, Space, Tooltip, Typography } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -115,8 +115,8 @@ export function InstanceConfiguration({
       </section>
 
       <section>
-        <TableSectionHeader title="绑定密钥" extra={secretAction} />
         <DataTable<SecretRow>
+          header={{ title: "绑定密钥", extra: secretAction }}
           data={secretRows}
           rowKey="reference"
           pagination={false}

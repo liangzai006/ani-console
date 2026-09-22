@@ -1,6 +1,6 @@
 import { applyInstanceLifecycle } from "@/api/instances";
 import type { StorageVolume } from "@/api/storage/volumes";
-import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
+import { DataTable, StatusTag } from "@/components/common";
 import { AttachVolumeModal } from "@/components/storage/AttachVolumeModal";
 import { Button, Empty, Modal } from "@arco-design/web-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -36,15 +36,14 @@ export function VolumeRelatedResources({ volume }: { volume: StorageVolume }) {
   return (
     <>
       <div>
-        <TableSectionHeader
-          title="关联实例"
-          extra={
-            items.length === 0 ? (
-              <Button onClick={() => setAttachVisible(true)}>挂载</Button>
-            ) : undefined
-          }
-        />
         <DataTable<MountedInstance>
+          header={{
+            title: "关联实例",
+            extra:
+              items.length === 0 ? (
+                <Button onClick={() => setAttachVisible(true)}>挂载</Button>
+              ) : undefined,
+          }}
           columns={[
             { title: "实例名称", dataIndex: "instance_name" },
             { title: "实例 ID", dataIndex: "instance_id" },

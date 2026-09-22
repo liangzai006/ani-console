@@ -13,6 +13,7 @@ import { IconMoreVertical } from "@arco-design/web-react/icon";
 import { deleteNetworkVpc, getNetworkVpc, type NetworkVPC } from "@/api/network";
 
 import { formatDateTime } from "@/lib/format";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { VpcRelatedResources } from "./VpcRelatedResources";
 import { VpcRoutes } from "./VpcRoutes";
 import { VpcSubnets } from "./VpcSubnets";
@@ -76,7 +77,7 @@ export function VpcDetailPage({ vpcId }: { vpcId: string }) {
 
   return (
     <DetailPageFrame
-      breadcrumbs={[{ label: "网络" }, { label: "VPC", to: "/vpcs" }, { label: vpc.name }]}
+      breadcrumbs={[...navigationBreadcrumbsForPath("/vpcs"), { label: vpc.name }]}
       title={vpc.name}
       status={<StatusTag status={vpc.state} />}
       icon={<AliIcon name="VPCwangluo" size={28} />}

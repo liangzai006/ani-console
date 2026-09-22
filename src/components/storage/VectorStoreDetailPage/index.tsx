@@ -17,6 +17,7 @@ import {
   ResourceId,
   StatusTag,
 } from "@/components/common";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { VectorStoreWorkbench } from "@/components/storage/VectorStoreWorkbench";
 import { formatDateTime } from "@/lib/format";
 import { VectorStoreRelatedResources } from "./VectorStoreRelatedResources";
@@ -87,11 +88,7 @@ export function VectorStoreDetailPage({
   );
   return (
     <DetailPageFrame
-      breadcrumbs={[
-        { label: "存储" },
-        { label: "向量存储", to: "/vector-stores" },
-        { label: store.name },
-      ]}
+      breadcrumbs={[...navigationBreadcrumbsForPath("/vector-stores"), { label: store.name }]}
       title={store.name}
       status={storeStatus}
       icon={<AliIcon name="xiangliangcunchu" size={28} />}

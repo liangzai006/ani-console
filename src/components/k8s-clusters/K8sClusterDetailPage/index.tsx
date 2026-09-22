@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { K8sEvents } from "./K8sEvents";
 import { K8sKubeconfig } from "./K8sKubeconfig";
 import { K8sNodePools } from "./K8sNodePools";
@@ -57,7 +58,7 @@ export function K8sClusterDetailPage({ clusterId }: { clusterId: string }) {
   return (
     <DetailPageFrame
       breadcrumbs={[
-        { label: "K8s 集群", to: "/k8s-clusters" },
+        ...navigationBreadcrumbsForPath("/k8s-clusters"),
         { label: cluster.name ?? clusterId },
       ]}
       icon={<AliIcon name="jiqun" size={28} />}

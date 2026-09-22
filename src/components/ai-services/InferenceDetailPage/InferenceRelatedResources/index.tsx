@@ -1,7 +1,7 @@
 import { Link } from "@arco-design/web-react";
 import { useNavigate } from "@tanstack/react-router";
 import type { InferenceService } from "@/api/ai-services/inference";
-import { DataTable, TableSectionHeader, type ListColumn } from "@/components/common";
+import { DataTable, type ListColumn } from "@/components/common";
 import { navigateToResourceDetail } from "@/lib/resources";
 
 interface RelatedResource {
@@ -44,8 +44,8 @@ export function InferenceRelatedResources({ service }: { service: InferenceServi
 
   return (
     <section>
-      <TableSectionHeader title="AI 关联" />
       <DataTable<RelatedResource>
+        header={{ title: "AI 关联" }}
         data={resources}
         pagination={false}
         rowKey="id"

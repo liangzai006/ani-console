@@ -8,6 +8,7 @@ import { getBucket, type StorageBucketRecord } from "@/api/storage/buckets";
 
 import { BucketAclEditor } from "@/components/storage/BucketAclEditor";
 import { BucketStorageClassModal } from "@/components/storage/BucketStorageClassModal";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { withId } from "@/lib/id";
 import { BucketAccess } from "./BucketAccess";
@@ -45,11 +46,7 @@ export function BucketDetailPage({
   return (
     <>
       <DetailPageFrame
-        breadcrumbs={[
-          { label: "存储" },
-          { label: "对象存储", to: "/objects" },
-          { label: bucketInfo.name },
-        ]}
+        breadcrumbs={[...navigationBreadcrumbsForPath("/objects"), { label: bucketInfo.name }]}
         title={bucketInfo.name}
         status={<Tag color={bucketInfo.acl === "tenant_read" ? "blue" : "gray"}>{aclLabel}</Tag>}
         icon={<AliIcon name="duixiangcunchu1" size={28} />}

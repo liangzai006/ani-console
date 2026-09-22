@@ -9,12 +9,7 @@ import {
   reparseKnowledgeBaseDocument,
   type KBDocument,
 } from "@/api/knowledge";
-import {
-  DataTable,
-  ResourceNameId,
-  TableSectionHeader,
-  type ListColumn,
-} from "@/components/common";
+import { DataTable, ResourceNameId, type ListColumn } from "@/components/common";
 import { KnowledgeDocumentChunksDrawer } from "@/components/knowledge/KnowledgeDocumentChunksDrawer";
 import { useCursorPaginatedQuery } from "@/hooks/useCursorPaginatedQuery";
 import { formatDateTime } from "@/lib/format";
@@ -181,8 +176,8 @@ export function KnowledgeDocuments({ kbId, action }: { kbId: string; action?: Re
 
   return (
     <Space direction="vertical" size={16} className="w-full">
-      <TableSectionHeader title="文档列表" extra={action} className="mb-0" />
       <DataTable<KBDocument>
+        header={{ title: "文档列表", extra: action, className: "mb-0" }}
         columns={columns}
         loading={documents.isLoading}
         data={rows}

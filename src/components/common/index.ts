@@ -5,6 +5,7 @@ export { CorePieChart } from "./CorePieChart";
 export { DataTable, DataTableRowActionButton, DataTableRowActions } from "./DataTable";
 export type {
   DataTableProps,
+  DataTableSectionHeaderProps,
   ListColumn,
   ListPagination,
   RowAction,
@@ -29,7 +30,6 @@ export type {
   ListPageTabsConfig,
   ListPageToolbarConfig,
 } from "./ListPageFrame";
-export { TableSectionHeader } from "./TableSectionHeader";
 export { DetailPageFrame } from "./DetailPageFrame";
 export { DetailPagePlaceholder } from "./DetailPagePlaceholder";
 export type {

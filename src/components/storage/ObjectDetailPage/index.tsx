@@ -17,6 +17,7 @@ import {
   ResourceId,
   StatusTag,
 } from "@/components/common";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { openExternalUrl } from "@/lib/browser";
 import { formatBytes, formatDateTime } from "@/lib/format";
 
@@ -90,8 +91,7 @@ export function ObjectDetailPage({ bucketId, objectId }: { bucketId: string; obj
   return (
     <DetailPageFrame
       breadcrumbs={[
-        { label: "存储" },
-        { label: "对象存储", to: "/objects" },
+        ...navigationBreadcrumbsForPath("/objects"),
         {
           label: object.bucket,
           to: "/objects/$bucketId",

@@ -4,7 +4,7 @@ import type { StorageFilesystem } from "@/api/storage/filesystems";
 import { listFilesystemMountTargets, listFilesystems } from "@/api/storage/filesystems";
 import type { StorageVolume } from "@/api/storage/volumes";
 import { listVolumes } from "@/api/storage/volumes";
-import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
+import { DataTable, StatusTag } from "@/components/common";
 import { withId } from "@/lib/id";
 import { Button, Checkbox, Empty, Form, Input, Modal, Select, Space } from "@arco-design/web-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -168,15 +168,15 @@ export function InstanceStorage({
     <>
       <Space direction="vertical" size={24} className="w-full">
         <section>
-          <TableSectionHeader
-            title="挂载点"
-            extra={
-              <Button disabled={mountDisabled} onClick={() => setMountKind("volume")}>
-                挂载云盘
-              </Button>
-            }
-          />
           <DataTable<Volume>
+            header={{
+              title: "挂载点",
+              extra: (
+                <Button disabled={mountDisabled} onClick={() => setMountKind("volume")}>
+                  挂载云盘
+                </Button>
+              ),
+            }}
             data={volumes}
             rowKey={(volume) =>
               `${volume.kind}:${volume.source_ref ?? volume.name}:${volume.mount_path ?? ""}`
@@ -201,15 +201,15 @@ export function InstanceStorage({
         </section>
 
         <section>
-          <TableSectionHeader
-            title="文件存储 NFS"
-            extra={
-              <Button disabled={mountDisabled} onClick={() => setMountKind("filesystem")}>
-                挂载 NFS
-              </Button>
-            }
-          />
           <DataTable<FilesystemAttachment>
+            header={{
+              title: "文件存储 NFS",
+              extra: (
+                <Button disabled={mountDisabled} onClick={() => setMountKind("filesystem")}>
+                  挂载 NFS
+                </Button>
+              ),
+            }}
             data={filesystems}
             rowKey={(filesystem) => `${filesystem.resource_id}:${filesystem.mount_path ?? ""}`}
             pagination={false}

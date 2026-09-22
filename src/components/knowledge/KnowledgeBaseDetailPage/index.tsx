@@ -18,6 +18,7 @@ import { KnowledgeDocuments } from "@/components/knowledge/KnowledgeDocuments";
 import { KnowledgeDocumentUploadButton } from "@/components/knowledge/KnowledgeDocumentUploadButton";
 import { KnowledgePermissions } from "@/components/knowledge/KnowledgePermissions";
 import { KnowledgeBaseAuditLogs } from "@/components/knowledge/KnowledgeBaseAuditLogs";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { formatDateTime } from "@/lib/format";
 
 export type KnowledgeBaseDetailTabKey =
@@ -80,7 +81,7 @@ export function KnowledgeBaseDetailPage({
   ) as VectorStore | undefined;
   return (
     <DetailPageFrame
-      breadcrumbs={[{ label: "知识库" }, { label: "知识库管理", to: "/kb" }, { label: kb.name }]}
+      breadcrumbs={[...navigationBreadcrumbsForPath("/kb"), { label: kb.name }]}
       title={kb.name}
       status={<StatusTag status={kb.status} />}
       icon={<AliIcon name="zhishiku" size={28} />}

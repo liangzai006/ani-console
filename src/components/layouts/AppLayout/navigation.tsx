@@ -22,6 +22,11 @@ export interface ProductGroupSection {
   groupKeys: readonly string[];
 }
 
+export interface NavigationBreadcrumbItem {
+  label: string;
+  to?: string;
+}
+
 export const menuItems: readonly MenuItem[] = [
   { key: "/", label: "概览", icon: <IconDashboard /> },
   {
@@ -243,6 +248,31 @@ function menuItemMatchesPath(item: MenuItem, pathname: string): boolean {
     return item.children.some((child) => menuItemMatchesPath(child, pathname));
   }
   return item.key === pathname || (item.key !== "/" && pathname.startsWith(`${item.key}/`));
+}
+
+function menuPathForPath(items: readonly MenuItem[], pathname: string): MenuItem[] | null {
+  for (const item of items) {
+    if (!menuItemMatchesPath(item, pathname)) continue;
+    if (!isGroupItem(item)) return [item];
+
+    const childPath = menuPathForPath(item.children, pathname);
+    if (childPath) return [item, ...childPath];
+  }
+  return null;
+}
+
+/** 从导航配置生成详情页使用的分组与叶子菜单面包屑。 */
+export function navigationBreadcrumbsForPath(pathname: string): NavigationBreadcrumbItem[] {
+  const items = sidebarItemsForTopNavKey(activeTopNavKeyForPath(pathname));
+  if (!items) return [];
+
+  const path = menuPathForPath(items, pathname);
+  if (!path) return [];
+
+  return path.flatMap((item, index) => {
+    if (item.label === path[index + 1]?.label) return [];
+    return [{ label: item.label, ...(isGroupItem(item) ? {} : { to: item.key }) }];
+  });
 }
 
 /** 当前路由对应的产品领域及其侧栏条目。 */

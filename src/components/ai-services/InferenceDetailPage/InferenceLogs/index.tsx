@@ -3,7 +3,7 @@ import { Button, Empty, Select, Space } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { listInferenceServiceLogs, type InferenceServiceLog } from "@/api/ai-services/inference";
-import { DataTable, TableSectionHeader } from "@/components/common";
+import { DataTable } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 
 type LogLevel = "all" | "debug" | "info" | "warn" | "error";
@@ -28,30 +28,30 @@ export function InferenceLogs({ serviceId }: { serviceId: string }) {
 
   return (
     <div>
-      <TableSectionHeader
-        title="推理日志"
-        extra={
-          <Space wrap>
-            <Select
-              size="small"
-              value={level}
-              onChange={setLevel}
-              className="w-[120px]"
-              options={[
-                { value: "all", label: "全部级别" },
-                { value: "debug", label: "Debug" },
-                { value: "info", label: "Info" },
-                { value: "warn", label: "Warn" },
-                { value: "error", label: "Error" },
-              ]}
-            />
-            <Button size="small" loading={logs.isFetching} onClick={() => void logs.refetch()}>
-              刷新
-            </Button>
-          </Space>
-        }
-      />
       <DataTable<InferenceServiceLog>
+        header={{
+          title: "推理日志",
+          extra: (
+            <Space wrap>
+              <Select
+                size="small"
+                value={level}
+                onChange={setLevel}
+                className="w-30"
+                options={[
+                  { value: "all", label: "全部级别" },
+                  { value: "debug", label: "Debug" },
+                  { value: "info", label: "Info" },
+                  { value: "warn", label: "Warn" },
+                  { value: "error", label: "Error" },
+                ]}
+              />
+              <Button size="small" loading={logs.isFetching} onClick={() => void logs.refetch()}>
+                刷新
+              </Button>
+            </Space>
+          ),
+        }}
         loading={logs.isFetching}
         data={logs.data?.items ?? []}
         rowKey={(row) => `${row.timestamp}-${row.container}-${row.stream}-${row.message}`}

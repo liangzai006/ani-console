@@ -1,5 +1,5 @@
 import { listInstances, type InstanceRecord } from "@/api/instances";
-import { DataTable, StatusTag, TableSectionHeader, type ListColumn } from "@/components/common";
+import { DataTable, StatusTag, type ListColumn } from "@/components/common";
 import { withId } from "@/lib/id";
 import { Empty, Tag, Typography } from "@arco-design/web-react";
 import { useQuery } from "@tanstack/react-query";
@@ -30,11 +30,11 @@ export function SubnetRelatedResources({ subnetId }: { subnetId: string }) {
 
   return (
     <section>
-      <TableSectionHeader
-        title="关联资源"
-        extra={<Typography.Text type="secondary">{resources.length} 项</Typography.Text>}
-      />
       <DataTable<RelatedResource>
+        header={{
+          title: "关联资源",
+          extra: <Typography.Text type="secondary">{resources.length} 项</Typography.Text>,
+        }}
         columns={columns}
         data={resources}
         loading={instances.isLoading}

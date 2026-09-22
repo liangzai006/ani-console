@@ -3,7 +3,7 @@ import {
   type VectorStore,
   type VectorStoreSearchHit,
 } from "@/api/storage/vector-stores";
-import { DataTable, TableSectionHeader } from "@/components/common";
+import { DataTable } from "@/components/common";
 import { Alert, Button, Empty, Form, Input, InputNumber, Typography } from "@arco-design/web-react";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -115,15 +115,15 @@ export function VectorStoreWorkbench({ store }: { store: VectorStore }) {
 
       {search.data ? (
         <section>
-          <TableSectionHeader
-            title="检索结果"
-            extra={
-              <Typography.Text type="secondary">
-                {search.data.total ?? hits.length} 条
-              </Typography.Text>
-            }
-          />
           <DataTable<SearchHit>
+            header={{
+              title: "检索结果",
+              extra: (
+                <Typography.Text type="secondary">
+                  {search.data.total ?? hits.length} 条
+                </Typography.Text>
+              ),
+            }}
             columns={[
               { title: "ID", dataIndex: "id", width: 160, ellipsis: true },
               {

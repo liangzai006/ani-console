@@ -14,6 +14,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { ExpandVolumeModal } from "@/components/storage/ExpandVolumeModal";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { VolumeOSInitGuideModal } from "@/components/storage/VolumeOSInitGuideModal";
 import { formatDateTime } from "@/lib/format";
 import { VolumeAutoSnapshot } from "@/components/storage/VolumeAutoSnapshot";
@@ -114,11 +115,7 @@ export function VolumeDetailPage({ volumeId }: { volumeId: string }) {
   return (
     <>
       <DetailPageFrame
-        breadcrumbs={[
-          { label: "存储" },
-          { label: "块存储", to: "/volumes" },
-          { label: volume.name },
-        ]}
+        breadcrumbs={[...navigationBreadcrumbsForPath("/volumes"), { label: volume.name }]}
         title={volume.name}
         status={volumeStatus}
         icon={<AliIcon name="kuaicunchu" size={28} />}

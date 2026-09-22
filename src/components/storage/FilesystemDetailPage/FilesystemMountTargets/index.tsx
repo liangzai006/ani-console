@@ -3,7 +3,7 @@ import {
   listFilesystemMountTargets,
   type FilesystemMountTarget,
 } from "@/api/storage/filesystems";
-import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
+import { DataTable, StatusTag } from "@/components/common";
 import { CreateFilesystemMountTargetModal } from "@/components/storage/CreateFilesystemMountTargetModal";
 import { copyToClipboard } from "@/lib/clipboard";
 import { formatDateTime } from "@/lib/format";
@@ -67,15 +67,15 @@ export function FilesystemMountTargets({
   return (
     <>
       <div>
-        <TableSectionHeader
-          title="挂载点"
-          extra={
-            <Button type="primary" onClick={() => setVisible(true)}>
-              创建挂载点
-            </Button>
-          }
-        />
         <DataTable<FilesystemMountTarget>
+          header={{
+            title: "挂载点",
+            extra: (
+              <Button type="primary" onClick={() => setVisible(true)}>
+                创建挂载点
+              </Button>
+            ),
+          }}
           columns={[
             { title: "挂载地址", dataIndex: "ip_address", width: 100, fixed: "left" },
             {

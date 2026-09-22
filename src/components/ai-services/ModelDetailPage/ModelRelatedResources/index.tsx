@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { listInferenceServices, type InferenceService } from "@/api/ai-services/inference";
 import type { Model } from "@/api/ai-services/models";
-import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
+import { DataTable, StatusTag } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { withId } from "@/lib/id";
 import { navigateToResourceDetail } from "@/lib/resources";
@@ -30,8 +30,8 @@ export function ModelRelatedResources({ model }: { model: Model }) {
 
   return (
     <div>
-      <TableSectionHeader title="关联推理服务" />
       <DataTable<InferenceService>
+        header={{ title: "关联推理服务" }}
         columns={[
           {
             title: "推理服务",

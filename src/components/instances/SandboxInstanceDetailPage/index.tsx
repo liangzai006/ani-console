@@ -15,6 +15,7 @@ import { InstanceLogs } from "@/components/instances/InstanceLogs";
 import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { SandboxInstanceActions } from "@/components/instances/SandboxInstanceActions";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { getSandboxProviderLabel, type SandboxInstanceDetailTabKey } from "@/lib/instances";
 import { SandboxAccess } from "./SandboxAccess";
@@ -71,8 +72,7 @@ export function SandboxInstanceDetailPage({
   return (
     <DetailPageFrame
       breadcrumbs={[
-        { label: "算力" },
-        { label: "沙箱实例", to: "/sandbox-instances" },
+        ...navigationBreadcrumbsForPath("/sandbox-instances"),
         { label: instance.name || instance.id },
       ]}
       title={instance.name || instance.id}

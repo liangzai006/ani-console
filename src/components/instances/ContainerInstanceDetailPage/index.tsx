@@ -19,6 +19,7 @@ import { InstanceNetwork } from "@/components/instances/InstanceNetwork";
 import { InstanceStorage } from "@/components/instances/InstanceStorage";
 import { InstanceVersions } from "@/components/instances/InstanceVersions";
 import { ContainerInstanceActions } from "@/components/instances/ContainerInstanceActions";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import {
@@ -62,7 +63,10 @@ export function ContainerInstanceDetailPage({
 
   return (
     <DetailPageFrame
-      breadcrumbs={[{ label: "容器实例", to: "/container-instances" }, { label: detail.name }]}
+      breadcrumbs={[
+        ...navigationBreadcrumbsForPath("/container-instances"),
+        { label: detail.name },
+      ]}
       icon={<AliIcon name="icon-rongqishili" size={28} />}
       title={detail.name}
       status={

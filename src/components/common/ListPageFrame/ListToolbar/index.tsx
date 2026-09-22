@@ -1,6 +1,6 @@
-import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Select } from "@arco-design/web-react";
 import clsx from "clsx";
+import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode } from "react";
 import styles from "./index.module.css";
 
 type ListToolbarProps = {
@@ -18,32 +18,6 @@ export function ListToolbar({ actions, filters, tools }: ListToolbarProps) {
     </div>
   );
 }
-
-type ToolbarButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  iconClassName?: string;
-  variant?: "primary" | "outline" | "secondary" | "danger";
-};
-
-export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
-  function ToolbarButton(
-    { iconClassName, variant = "outline", className = "", children, ...buttonProps },
-    ref,
-  ) {
-    return (
-      <button
-        ref={ref}
-        type="button"
-        className={clsx(styles.toolbarButton, styles[`toolbarButton_${variant}`], className)}
-        {...buttonProps}
-      >
-        {iconClassName ? (
-          <i className={clsx("iconfont", iconClassName)} aria-hidden="true" />
-        ) : null}
-        {children}
-      </button>
-    );
-  },
-);
 
 type ToolbarIconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   iconClassName: string;

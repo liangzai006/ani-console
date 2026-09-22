@@ -14,6 +14,7 @@ import {
 import { InstanceLogs } from "@/components/instances/InstanceLogs";
 import { InstanceVersions } from "@/components/instances/InstanceVersions";
 import { GpuInstanceActions } from "@/components/instances/GpuInstanceActions";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import type { GpuInstanceDetailTabKey } from "@/lib/instances";
@@ -180,11 +181,7 @@ export function GpuInstanceDetailPage({
 
   return (
     <DetailPageFrame
-      breadcrumbs={[
-        { label: "算力" },
-        { label: "GPU 容器实例", to: "/gpu-instances" },
-        { label: instance.name },
-      ]}
+      breadcrumbs={[...navigationBreadcrumbsForPath("/gpu-instances"), { label: instance.name }]}
       title={instance.name}
       status={
         instance.reason ? (

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { deleteModel, getModel } from "@/api/ai-services/models";
 
 import { CreateInferenceServiceModal } from "@/components/ai-services/CreateInferenceServiceModal";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import {
   AliIcon,
   DetailPageFrame,
@@ -102,8 +103,7 @@ export function ModelDetailPage({ modelId }: { modelId: string }) {
     <>
       <DetailPageFrame
         breadcrumbs={[
-          { label: "AI 服务" },
-          { label: "模型仓库", to: "/models" },
+          ...navigationBreadcrumbsForPath("/models"),
           { label: item.display_name || item.name },
         ]}
         title={item.display_name || item.name}

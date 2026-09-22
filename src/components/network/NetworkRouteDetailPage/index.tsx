@@ -12,6 +12,7 @@ import {
 } from "@/api/network";
 
 import { AliIcon, DetailPageFrame, DetailPagePlaceholder, ResourceId } from "@/components/common";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { formatDateTime } from "@/lib/format";
 import { NetworkRouteRelatedResources } from "./NetworkRouteRelatedResources";
 
@@ -63,7 +64,7 @@ export function NetworkRouteDetailPage({ routeId }: { routeId: string }) {
   const name = item.description?.trim() || item.destination_cidr;
   return (
     <DetailPageFrame
-      breadcrumbs={[{ label: "网络" }, { label: "路由", to: "/routes" }, { label: name }]}
+      breadcrumbs={[...navigationBreadcrumbsForPath("/routes"), { label: name }]}
       title={name}
       icon={<AliIcon name="VPCluyouqi" size={28} />}
       headerItems={[

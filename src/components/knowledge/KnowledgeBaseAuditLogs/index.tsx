@@ -2,7 +2,7 @@ import { withId } from "@/lib/id";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Button, Empty, Tag } from "@arco-design/web-react";
 import { listKnowledgeBaseAuditLogs, type KBAuditLog } from "@/api/knowledge";
-import { DataTable, TableSectionHeader } from "@/components/common";
+import { DataTable } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 
 const PAGE_SIZE = 20;
@@ -44,20 +44,19 @@ export function KnowledgeBaseAuditLogs({ kbId }: { kbId: string }) {
 
   return (
     <div>
-      <TableSectionHeader
-        title="操作记录"
-        extra={
-          <Button
-            size="small"
-            loading={logs.isFetching && !logs.isFetchingNextPage}
-            onClick={() => void logs.refetch()}
-          >
-            刷新
-          </Button>
-        }
-      />
-
       <DataTable<KBAuditLog>
+        header={{
+          title: "操作记录",
+          extra: (
+            <Button
+              size="small"
+              loading={logs.isFetching && !logs.isFetchingNextPage}
+              onClick={() => void logs.refetch()}
+            >
+              刷新
+            </Button>
+          ),
+        }}
         data={items}
         loading={logs.isPending}
         pagination={false}

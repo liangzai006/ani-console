@@ -5,7 +5,7 @@ import {
   listInferenceServicePolicies,
   type InferenceAccessPolicy,
 } from "@/api/ai-services/inference";
-import { DataTable, StatusTag, TableSectionHeader } from "@/components/common";
+import { DataTable, StatusTag } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 
 const SCOPE_LABELS: Record<InferenceAccessPolicy["scope"]["type"], string> = {
@@ -38,19 +38,19 @@ export function InferencePolicies({ serviceId }: { serviceId: string }) {
 
   return (
     <div>
-      <TableSectionHeader
-        title="已绑定访问策略"
-        extra={
-          <Button
-            size="small"
-            loading={policies.isFetching}
-            onClick={() => void policies.refetch()}
-          >
-            刷新
-          </Button>
-        }
-      />
       <DataTable<InferenceAccessPolicy>
+        header={{
+          title: "已绑定访问策略",
+          extra: (
+            <Button
+              size="small"
+              loading={policies.isFetching}
+              onClick={() => void policies.refetch()}
+            >
+              刷新
+            </Button>
+          ),
+        }}
         data={policies.data?.policies ?? []}
         loading={policies.isFetching}
         pagination={false}

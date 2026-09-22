@@ -1,7 +1,7 @@
 import type { InstanceRecord } from "@/api/instances";
-import { Descriptions, Empty, Space, Tag, Tooltip } from "@arco-design/web-react";
+import { Descriptions, Empty, Space, Tag, Tooltip, Typography } from "@arco-design/web-react";
 import type { ReactNode } from "react";
-import { DataTable, ImageNameText, TableSectionHeader } from "@/components/common";
+import { DataTable, ImageNameText } from "@/components/common";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 
@@ -37,7 +37,12 @@ export function InstanceReleases({
     return (
       <Space direction="vertical" size={32} className="w-full">
         <section>
-          <TableSectionHeader title="当前镜像" extra={actions} className="mb-5" />
+          <div className="mb-5 flex min-w-0 items-center justify-between gap-3">
+            <Typography.Title heading={6} className="m-0!">
+              当前镜像
+            </Typography.Title>
+            {actions ? <div className="shrink-0">{actions}</div> : null}
+          </div>
           <Descriptions
             column={1}
             labelStyle={{ width: "120px" }}
@@ -53,8 +58,8 @@ export function InstanceReleases({
         </section>
 
         <section>
-          <TableSectionHeader title="版本记录" />
           <DataTable<Release>
+            header={{ title: "版本记录" }}
             data={releases}
             rowKey="revision"
             pagination={false}
@@ -134,8 +139,8 @@ export function InstanceReleases({
           { label: "镜像", value: <ImageNameText image={instance.image} /> },
         ]}
       />
-      <TableSectionHeader title="发布历史" extra={actions} className="mb-0" />
       <DataTable<Release>
+        header={{ title: "发布历史", extra: actions, className: "mb-0" }}
         data={releases}
         rowKey="revision"
         pagination={false}

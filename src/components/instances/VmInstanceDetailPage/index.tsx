@@ -17,6 +17,7 @@ import { InstanceMetrics } from "@/components/instances/InstanceMetrics";
 import { InstanceOperations } from "@/components/instances/InstanceOperations";
 import { InstanceStorage } from "@/components/instances/InstanceStorage";
 import { VmInstanceActions } from "@/components/instances/VmInstanceActions";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { formatDateTime } from "@/lib/format";
 import { getImageDisplayName } from "@/lib/render";
 import { openVmInstanceRemoteWindow, type ComputeInstanceDetailTabKey } from "@/lib/instances";
@@ -166,11 +167,7 @@ export function VmInstanceDetailPage({
   return (
     <>
       <DetailPageFrame
-        breadcrumbs={[
-          { label: "算力" },
-          { label: "云主机 VM", to: "/vm-instances" },
-          { label: instance.name },
-        ]}
+        breadcrumbs={[...navigationBreadcrumbsForPath("/vm-instances"), { label: instance.name }]}
         title={instance.name}
         status={
           instance.reason ? (

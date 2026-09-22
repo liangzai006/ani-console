@@ -21,6 +21,7 @@ import {
 } from "@/api/network";
 
 import { formatDateTime } from "@/lib/format";
+import { navigationBreadcrumbsForPath } from "@/components/layouts/AppLayout/navigation";
 import { LoadBalancerBackends } from "./LoadBalancerBackends";
 import { LoadBalancerEvents } from "./LoadBalancerEvents";
 import { LoadBalancerListeners } from "./LoadBalancerListeners";
@@ -112,11 +113,7 @@ export function LoadBalancerDetailPage({ loadBalancerId }: { loadBalancerId: str
   ];
   return (
     <DetailPageFrame
-      breadcrumbs={[
-        { label: "网络" },
-        { label: "负载均衡", to: "/load-balancers" },
-        { label: item.name },
-      ]}
+      breadcrumbs={[...navigationBreadcrumbsForPath("/load-balancers"), { label: item.name }]}
       title={item.name}
       status={<StatusTag status={item.state} />}
       icon={<AliIcon name="fuzaijunhengqi" size={28} />}

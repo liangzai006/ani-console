@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { ResourcePageHeaderConfig } from "../ResourcePageFrame";
-import type { SearchField } from "../ListToolbar";
-import type { ListStatusTab } from "../StatusTabs";
+import type { SearchField } from "./ListToolbar";
+import type { ListStatusTab } from "./StatusTabs";
 
 export type ListPageTabsConfig<TStatus extends string> = {
   items: Array<ListStatusTab<TStatus>>;
